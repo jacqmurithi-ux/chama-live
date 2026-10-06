@@ -47,12 +47,6 @@ import {
   getMyApplicationContext
 } from "./auth.js";
 
-
-console.log(
-  "CHAMA LIVE: contributions.js loaded"
-);
-
-
 /* =========================================================
    ELEMENTS
 ========================================================= */
@@ -133,7 +127,6 @@ const contributionIdempotencyKeyInput =
     "contributionIdempotencyKey"
   );
 
-
 /* =========================================================
    MEMBER PAYMENT EVIDENCE ELEMENTS
 ========================================================= */
@@ -193,7 +186,6 @@ const memberEvidenceMessage =
     "memberEvidenceMessage"
   );
 
-
 /* =========================================================
    VERIFIER PAYMENT EVIDENCE ELEMENTS
 ========================================================= */
@@ -217,7 +209,6 @@ const verifierPaymentEvidenceDetail =
   document.getElementById(
     "verifierPaymentEvidenceDetail"
   );
-
 
 /* =========================================================
    CUSTOM CONTRIBUTION EDITOR ELEMENTS
@@ -303,7 +294,6 @@ const cancelCustomContribution =
     "cancelCustomContribution"
   );
 
-
 /* =========================================================
    OPTIONAL ACTIVE CUSTOM CONTRIBUTION DISPLAY
 ========================================================= */
@@ -327,7 +317,6 @@ const draftCustomContributionRows =
   document.getElementById(
     "draftCustomContributionRows"
   );
-
 
 /* =========================================================
    STATE
@@ -365,7 +354,6 @@ let accountingMonth =
 let selectedVerifierEvidenceId =
   null;
 
-
 /*
  * Keeps the Custom Contribution that was just created
  * selected until the backend refresh confirms the
@@ -373,7 +361,6 @@ let selectedVerifierEvidenceId =
  */
 let preferredCustomContributionValue =
   null;
-
 
 /* =========================================================
    CONSTANTS
@@ -389,7 +376,6 @@ const PAYMENT_METHODS = {
 
 };
 
-
 const MEMBER_EVIDENCE_STATUSES = {
 
   PENDING: "pending",
@@ -399,7 +385,6 @@ const MEMBER_EVIDENCE_STATUSES = {
   REJECTED: "rejected"
 
 };
-
 
 const RECORDER_ROLES = new Set([
 
@@ -415,13 +400,11 @@ const RECORDER_ROLES = new Set([
 
 ]);
 
-
 const CUSTOM_CONTRIBUTION_ACTIVATOR_ROLES = new Set([
 
   "chairperson"
 
 ]);
-
 
 const VERIFIER_ROLES = new Set([
 
@@ -435,7 +418,6 @@ const VERIFIER_ROLES = new Set([
 
 ]);
 
-
 const ACTIVE_CUSTOM_PERIOD_STATUSES = new Set([
 
   "open",
@@ -445,7 +427,6 @@ const ACTIVE_CUSTOM_PERIOD_STATUSES = new Set([
   "grace"
 
 ]);
-
 
 /* =========================================================
    GENERIC HELPERS
@@ -467,7 +448,6 @@ function money(value) {
 
 }
 
-
 function number(value) {
 
   const result =
@@ -478,7 +458,6 @@ function number(value) {
     : 0;
 
 }
-
 
 function todayString() {
 
@@ -500,7 +479,6 @@ function todayString() {
   ].join("-");
 
 }
-
 
 /*
  * Canonical date-only value for RPC parameters.
@@ -555,7 +533,6 @@ function normalizeContributionDate(value) {
 
 }
 
-
 function getCurrentMonth() {
 
   const now =
@@ -569,7 +546,6 @@ function getCurrentMonth() {
   );
 
 }
-
 
 function formatAccountingMonth(month) {
 
@@ -608,7 +584,6 @@ function formatAccountingMonth(month) {
 
 }
 
-
 function monthKeyFromDate(date) {
 
   return (
@@ -619,7 +594,6 @@ function monthKeyFromDate(date) {
   );
 
 }
-
 
 function shiftMonth(
   month,
@@ -646,7 +620,6 @@ function shiftMonth(
   );
 
 }
-
 
 function escapeHtml(value) {
 
@@ -675,7 +648,6 @@ function escapeHtml(value) {
     );
 
 }
-
 
 function formatDate(value) {
 
@@ -707,7 +679,6 @@ function formatDate(value) {
 
 }
 
-
 function safeUuid() {
 
   if (
@@ -725,7 +696,6 @@ function safeUuid() {
 
 }
 
-
 function normalizeRpcResult(data) {
 
   if (Array.isArray(data)) {
@@ -737,7 +707,6 @@ function normalizeRpcResult(data) {
   return data || null;
 
 }
-
 
 /* =========================================================
    ACCOUNTING MONTH
@@ -805,7 +774,6 @@ function buildAccountingMonthOptions() {
 
 }
 
-
 function renderAccountingMonthLabel() {
 
   if (
@@ -820,7 +788,6 @@ function renderAccountingMonthLabel() {
     );
 
 }
-
 
 function getSelectedAccountingMonth() {
 
@@ -904,19 +871,9 @@ async function refreshCanonicalAccountingThroughMonth(
 
   }
 
-  console.log(
-    "CHAMA LIVE: Canonical group accounting refreshed",
-    {
-      groupId,
-      month,
-      result: data
-    }
-  );
-
   return data;
 
 }
-
 
 /* =========================================================
    ACCOUNTING MONTH CHANGE
@@ -986,8 +943,6 @@ async function changeAccountingMonth() {
 
 }
 
-
-
 function getContributionMonth(item) {
 
   if (
@@ -1027,7 +982,6 @@ function getContributionMonth(item) {
 
 }
 
-
 /* =========================================================
    STATUS / ERROR
 ========================================================= */
@@ -1062,7 +1016,6 @@ function showError(error) {
 
 }
 
-
 function clearError() {
 
   if (errorEl) {
@@ -1076,7 +1029,6 @@ function clearError() {
   }
 
 }
-
 
 /* =========================================================
    CURRENT MEMBER / ROLE
@@ -1093,7 +1045,6 @@ function getCurrentMemberRole() {
 
 }
 
-
 function isOrdinaryMember() {
 
   return (
@@ -1103,7 +1054,6 @@ function isOrdinaryMember() {
 
 }
 
-
 function isAuthorizedRecorder() {
 
   return RECORDER_ROLES.has(
@@ -1112,7 +1062,6 @@ function isAuthorizedRecorder() {
 
 }
 
-
 function isAuthorizedVerifier() {
 
   return VERIFIER_ROLES.has(
@@ -1120,7 +1069,6 @@ function isAuthorizedVerifier() {
   );
 
 }
-
 
 /* =========================================================
    PAYMENT METHOD
@@ -1165,7 +1113,6 @@ function normalizePaymentMethod(value) {
 
 }
 
-
 /*
  * Keep the canonical recording form's M-Pesa reference field
  * synchronized with the selected payment method. This is a
@@ -1199,7 +1146,6 @@ function updatePaymentMethod() {
   }
 
 }
-
 
 /*
  * Keep the member payment-evidence form's M-Pesa reference
@@ -1237,7 +1183,6 @@ function updateMemberEvidencePaymentMethod() {
 
 }
 
-
 /* =========================================================
    IDEMPOTENCY
 ========================================================= */
@@ -1247,7 +1192,6 @@ function generateIdempotencyKey() {
   return safeUuid();
 
 }
-
 
 function getContributionIdempotencyKey() {
 
@@ -1279,7 +1223,6 @@ function getContributionIdempotencyKey() {
 
 }
 
-
 function resetContributionIdempotencyKey() {
 
   if (!contributionIdempotencyKeyInput) {
@@ -1290,7 +1233,6 @@ function resetContributionIdempotencyKey() {
     generateIdempotencyKey();
 
 }
-
 
 /* =========================================================
    CURRENT GROUP
@@ -1323,7 +1265,6 @@ async function getGroupId() {
   return data;
 
 }
-
 
 /* =========================================================
    LOAD GROUP
@@ -1394,7 +1335,6 @@ async function loadGroup() {
 
 }
 
-
 /* =========================================================
    ACTIVE CUSTOM CONTRIBUTIONS
 ========================================================= */
@@ -1408,7 +1348,6 @@ async function loadActiveCustomContributions() {
     return [];
 
   }
-
 
   const {
     data: contributionTypes,
@@ -1428,13 +1367,11 @@ async function loadActiveCustomContributions() {
         "custom"
       );
 
-
   if (contributionTypeError) {
 
     throw contributionTypeError;
 
   }
-
 
   const customTypes =
     Array.isArray(
@@ -1443,19 +1380,16 @@ async function loadActiveCustomContributions() {
       ? contributionTypes
       : [];
 
-
   if (!customTypes.length) {
     return [];
 
   }
-
 
   const customTypeIds =
     customTypes.map(
       type =>
         type.id
     );
-
 
   const {
     data: periods,
@@ -1500,13 +1434,11 @@ async function loadActiveCustomContributions() {
         }
       );
 
-
   if (periodError) {
 
     throw periodError;
 
   }
-
 
   const typeById =
     new Map(
@@ -1517,7 +1449,6 @@ async function loadActiveCustomContributions() {
         ]
       )
     );
-
 
   activeCustomContributions =
     (
@@ -1571,7 +1502,6 @@ async function loadActiveCustomContributions() {
 
 }
 
-
 /* =========================================================
    DRAFT CUSTOM CONTRIBUTIONS
 ========================================================= */
@@ -1587,7 +1517,6 @@ async function loadDraftCustomContributions() {
     return [];
 
   }
-
 
   const {
     data: contributionTypes,
@@ -1607,13 +1536,11 @@ async function loadDraftCustomContributions() {
         "custom"
       );
 
-
   if (contributionTypeError) {
 
     throw contributionTypeError;
 
   }
-
 
   const customTypes =
     Array.isArray(
@@ -1621,7 +1548,6 @@ async function loadDraftCustomContributions() {
     )
       ? contributionTypes
       : [];
-
 
   if (!customTypes.length) {
 
@@ -1631,13 +1557,11 @@ async function loadDraftCustomContributions() {
 
   }
 
-
   const customTypeIds =
     customTypes.map(
       type =>
         type.id
     );
-
 
   const {
     data: periods,
@@ -1680,13 +1604,11 @@ async function loadDraftCustomContributions() {
         }
       );
 
-
   if (periodError) {
 
     throw periodError;
 
   }
-
 
   const typeById =
     new Map(
@@ -1697,7 +1619,6 @@ async function loadDraftCustomContributions() {
         ]
       )
     );
-
 
   draftCustomContributions =
     (
@@ -1747,14 +1668,11 @@ async function loadDraftCustomContributions() {
         }
       );
 
-
   renderDraftCustomContributionList();
-
 
   return draftCustomContributions;
 
 }
-
 
 /* =========================================================
    DRAFT CUSTOM CONTRIBUTION DISPLAY
@@ -1771,13 +1689,11 @@ function renderDraftCustomContributionList() {
 
   }
 
-
   const canActivate =
     isGroupOwner ||
     CUSTOM_CONTRIBUTION_ACTIVATOR_ROLES.has(
       getCurrentMemberRole()
     );
-
 
   if (!draftCustomContributions.length) {
 
@@ -1791,10 +1707,8 @@ function renderDraftCustomContributionList() {
 
   }
 
-
   draftCustomContributionsCard.hidden =
     false;
-
 
   draftCustomContributionRows.innerHTML =
     draftCustomContributions
@@ -1841,7 +1755,6 @@ function renderDraftCustomContributionList() {
               item.description ||
               ""
             ).trim();
-
 
           return `
 
@@ -1952,7 +1865,6 @@ function renderDraftCustomContributionList() {
       )
       .join("");
 
-
   if (!canActivate) {
 
     const note =
@@ -1976,11 +1888,9 @@ function renderActiveCustomContributionList() {
     activeCustomContributionRows ||
     activeCustomContributionContainer;
 
-
   if (!container) {
     return;
   }
-
 
   if (!activeCustomContributions.length) {
 
@@ -2021,7 +1931,6 @@ function renderActiveCustomContributionList() {
     return;
 
   }
-
 
   if (
     activeCustomContributionRows
@@ -2070,7 +1979,6 @@ function renderActiveCustomContributionList() {
               getCustomContributionTypeId(
                 item
               );
-
 
             return `
 
@@ -2158,7 +2066,6 @@ function renderActiveCustomContributionList() {
 
   }
 
-
   container.innerHTML =
     activeCustomContributions
       .map(
@@ -2190,7 +2097,6 @@ function renderActiveCustomContributionList() {
               item.status ||
               ""
             ).toUpperCase();
-
 
           return `
 
@@ -2239,11 +2145,9 @@ function renderActiveCustomContributionList() {
 
 }
 
-
 /* =========================================================
    CUSTOM CONTRIBUTION IDENTIFIERS
 ========================================================= */
-
 
 function getCustomContributionTypeId(
   item
@@ -2256,7 +2160,6 @@ function getCustomContributionTypeId(
   );
 
 }
-
 
 function getCustomContributionSelectorValue(
   item
@@ -2274,7 +2177,6 @@ function getCustomContributionSelectorValue(
   return `custom:${typeId}`;
 
 }
-
 
 function findActiveCustomContribution(
   contributionTypeId
@@ -2294,11 +2196,9 @@ function findActiveCustomContribution(
 
 }
 
-
 /* =========================================================
    CONTRIBUTION TYPE SELECTOR
 ========================================================= */
-
 
 function renderContributionTypeOptions(
   preferredValue = null
@@ -2308,34 +2208,27 @@ function renderContributionTypeOptions(
     return;
   }
 
-
   const previousValue =
     preferredValue ||
     preferredCustomContributionValue ||
     typeSelect.value ||
     "monthly";
 
-
   typeSelect.innerHTML =
     "";
-
 
   const monthlyOption =
     document.createElement("option");
 
-
   monthlyOption.value =
     "monthly";
-
 
   monthlyOption.textContent =
     "Monthly Contribution";
 
-
   typeSelect.appendChild(
     monthlyOption
   );
-
 
   activeCustomContributions.forEach(
     item => {
@@ -2345,38 +2238,31 @@ function renderContributionTypeOptions(
           item
         );
 
-
       if (!contributionTypeId) {
         return;
       }
-
 
       const option =
         document.createElement(
           "option"
         );
 
-
       option.value =
         `custom:${contributionTypeId}`;
-
 
       const name =
         item.contribution_name ||
         item.name ||
         "Custom Contribution";
 
-
       const amount =
         number(
           item.amount
         );
 
-
       const dueDate =
         item.due_date ||
         null;
-
 
       const status =
         String(
@@ -2386,10 +2272,8 @@ function renderContributionTypeOptions(
           .trim()
           .toLowerCase();
 
-
       let label =
         name;
-
 
       if (
         amount > 0
@@ -2400,7 +2284,6 @@ function renderContributionTypeOptions(
 
       }
 
-
       if (dueDate) {
 
         label +=
@@ -2410,7 +2293,6 @@ function renderContributionTypeOptions(
 
       }
 
-
       if (status) {
 
         label +=
@@ -2418,10 +2300,8 @@ function renderContributionTypeOptions(
 
       }
 
-
       option.textContent =
         label;
-
 
       typeSelect.appendChild(
         option
@@ -2429,7 +2309,6 @@ function renderContributionTypeOptions(
 
     }
   );
-
 
   const validSelection =
     Array.from(
@@ -2439,7 +2318,6 @@ function renderContributionTypeOptions(
         option.value ===
         previousValue
     );
-
 
   if (validSelection) {
 
@@ -2454,7 +2332,6 @@ function renderContributionTypeOptions(
 
   }
 
-
   preferredCustomContributionValue =
     typeSelect.value.startsWith(
       "custom:"
@@ -2462,16 +2339,13 @@ function renderContributionTypeOptions(
       ? typeSelect.value
       : null;
 
-
   updateContributionAmountFromType();
 
 }
 
-
 /* =========================================================
    CUSTOM CONTRIBUTION REFRESH
 ========================================================= */
-
 
 async function refreshActiveCustomContributions(
   preferredValue = null
@@ -2484,9 +2358,7 @@ async function refreshActiveCustomContributions(
 
   }
 
-
   await loadActiveCustomContributions();
-
 
   renderContributionTypeOptions(
     preferredValue
@@ -2494,18 +2366,15 @@ async function refreshActiveCustomContributions(
 
 }
 
-
 /* =========================================================
    CUSTOM CONTRIBUTION AMOUNT
 ========================================================= */
-
 
 function updateContributionAmountFromType() {
 
   if (!typeSelect) {
     return;
   }
-
 
   const value =
     String(
@@ -2514,7 +2383,6 @@ function updateContributionAmountFromType() {
     )
       .trim()
       .toLowerCase();
-
 
   if (
     value.startsWith(
@@ -2527,12 +2395,10 @@ function updateContributionAmountFromType() {
         "custom:".length
       );
 
-
     const custom =
       findActiveCustomContribution(
         customTypeId
       );
-
 
     if (
       custom &&
@@ -2543,7 +2409,6 @@ function updateContributionAmountFromType() {
         number(
           custom.amount
         );
-
 
       if (
         amount > 0
@@ -2556,11 +2421,9 @@ function updateContributionAmountFromType() {
 
     }
 
-
     return;
 
   }
-
 
   if (
     amountInput &&
@@ -2574,11 +2437,9 @@ function updateContributionAmountFromType() {
 
 }
 
-
 /* =========================================================
    LOAD MEMBERS
 ========================================================= */
-
 
 async function loadMembers() {
 
@@ -2606,13 +2467,11 @@ async function loadMembers() {
         }
       );
 
-
   if (error) {
 
     throw error;
 
   }
-
 
   /*
    * Keep all active members available.
@@ -2631,11 +2490,9 @@ async function loadMembers() {
           "active"
       );
 
-
   if (!memberSelect) {
     return;
   }
-
 
   memberSelect.innerHTML = `
 
@@ -2645,7 +2502,6 @@ async function loadMembers() {
 
   `;
 
-
   members.forEach(
     member => {
 
@@ -2654,14 +2510,11 @@ async function loadMembers() {
           "option"
         );
 
-
       option.value =
         member.id;
 
-
       option.textContent =
         member.name;
-
 
       memberSelect.appendChild(
         option
@@ -2672,11 +2525,9 @@ async function loadMembers() {
 
 }
 
-
 /* =========================================================
    LOAD CONTRIBUTION GOALS
 ========================================================= */
-
 
 async function loadContributionGoals() {
 
@@ -2685,7 +2536,6 @@ async function loadContributionGoals() {
   if (!goalSelect) {
     return;
   }
-
 
   const {
     data,
@@ -2720,17 +2570,14 @@ async function loadContributionGoals() {
         }
       );
 
-
   if (error) {
 
     throw error;
 
   }
 
-
   contributionGoals =
     data || [];
-
 
   goalSelect.innerHTML = `
 
@@ -2740,7 +2587,6 @@ async function loadContributionGoals() {
 
   `;
 
-
   contributionGoals.forEach(
     goal => {
 
@@ -2749,10 +2595,8 @@ async function loadContributionGoals() {
           "option"
         );
 
-
       option.value =
         goal.id;
-
 
       option.textContent =
         goal.target_amount
@@ -2760,7 +2604,6 @@ async function loadContributionGoals() {
               goal.target_amount
             )}`
           : goal.goal_name;
-
 
       goalSelect.appendChild(
         option
@@ -2771,11 +2614,9 @@ async function loadContributionGoals() {
 
 }
 
-
 /* =========================================================
    LOAD CONTRIBUTIONS
 ========================================================= */
-
 
 async function loadContributions() {
 
@@ -2832,24 +2673,20 @@ async function loadContributions() {
         }
       );
 
-
   if (error) {
 
     throw error;
 
   }
 
-
   contributions =
     data || [];
 
 }
 
-
 /* =========================================================
    CANONICAL 2B STATUS
 ========================================================= */
-
 
 async function loadCanonicalMemberStatus(
   month = accountingMonth
@@ -2863,7 +2700,6 @@ async function loadCanonicalMemberStatus(
 
   }
 
-
   if (
     !/^\d{4}-\d{2}$/.test(
       String(month || "")
@@ -2875,7 +2711,6 @@ async function loadCanonicalMemberStatus(
     );
 
   }
-
 
   const {
     data,
@@ -2892,22 +2727,18 @@ async function loadCanonicalMemberStatus(
       }
     );
 
-
   if (error) {
 
     throw error;
 
   }
 
-
   canonicalMemberStatus =
     data || [];
-
 
   return canonicalMemberStatus;
 
 }
-
 
 function getCanonicalMemberStatus(
   memberId
@@ -2921,11 +2752,9 @@ function getCanonicalMemberStatus(
 
 }
 
-
 /* =========================================================
    MEMBER NAME
 ========================================================= */
-
 
 function getMemberName(memberId) {
 
@@ -2936,7 +2765,6 @@ function getMemberName(memberId) {
         String(memberId)
     );
 
-
   return (
     member?.name ||
     "Unknown member"
@@ -2944,11 +2772,9 @@ function getMemberName(memberId) {
 
 }
 
-
 /* =========================================================
    GOAL NAME
 ========================================================= */
-
 
 function getGoalName(goalId) {
 
@@ -2958,14 +2784,12 @@ function getGoalName(goalId) {
 
   }
 
-
   const goal =
     contributionGoals.find(
       item =>
         String(item.id) ===
         String(goalId)
     );
-
 
   return (
     goal?.goal_name ||
@@ -2974,11 +2798,9 @@ function getGoalName(goalId) {
 
 }
 
-
 /* =========================================================
    MEMBER PAYMENT EVIDENCE MESSAGE
 ========================================================= */
-
 
 function showMemberEvidenceMessage(
   message
@@ -2988,16 +2810,13 @@ function showMemberEvidenceMessage(
     return;
   }
 
-
   memberEvidenceMessage.textContent =
     message || "";
-
 
   memberEvidenceMessage.hidden =
     !message;
 
 }
-
 
 function clearMemberEvidenceMessage() {
 
@@ -3005,11 +2824,9 @@ function clearMemberEvidenceMessage() {
 
 }
 
-
 /* =========================================================
    MEMBER PAYMENT EVIDENCE PAYMENT METHOD
 ========================================================= */
-
 
 function memberEvidenceStatusLabel(
   status
@@ -3022,7 +2839,6 @@ function memberEvidenceStatusLabel(
       .trim()
       .toLowerCase();
 
-
   if (
     value ===
     MEMBER_EVIDENCE_STATUSES.VERIFIED
@@ -3031,7 +2847,6 @@ function memberEvidenceStatusLabel(
     return "VERIFIED";
 
   }
-
 
   if (
     value ===
@@ -3042,11 +2857,9 @@ function memberEvidenceStatusLabel(
 
   }
 
-
   return "PENDING";
 
 }
-
 
 function memberEvidenceStatusClass(
   status
@@ -3059,7 +2872,6 @@ function memberEvidenceStatusClass(
       .trim()
       .toLowerCase();
 
-
   if (
     value ===
     MEMBER_EVIDENCE_STATUSES.VERIFIED
@@ -3068,7 +2880,6 @@ function memberEvidenceStatusClass(
     return "cl-evidence-status-verified";
 
   }
-
 
   if (
     value ===
@@ -3079,23 +2890,19 @@ function memberEvidenceStatusClass(
 
   }
 
-
   return "cl-evidence-status-pending";
 
 }
 
-
 /* =========================================================
    RENDER MEMBER PAYMENT EVIDENCE
 ========================================================= */
-
 
 function renderMemberPaymentEvidence() {
 
   if (!memberPaymentEvidenceRows) {
     return;
   }
-
 
   if (!memberPaymentEvidence.length) {
 
@@ -3119,7 +2926,6 @@ function renderMemberPaymentEvidence() {
 
   }
 
-
   memberPaymentEvidenceRows.innerHTML =
     memberPaymentEvidence
       .map(
@@ -3130,28 +2936,23 @@ function renderMemberPaymentEvidence() {
               evidence.payment_method
             );
 
-
           const status =
             memberEvidenceStatusLabel(
               evidence.status
             );
-
 
           const statusClass =
             memberEvidenceStatusClass(
               evidence.status
             );
 
-
           const reference =
             evidence.mpesa_reference ||
             "—";
 
-
           const rejectionReason =
             evidence.rejection_reason ||
             "";
-
 
           return `
 
@@ -3246,16 +3047,13 @@ function renderMemberPaymentEvidence() {
 
 }
 
-
 /* =========================================================
    LOAD MEMBER PAYMENT EVIDENCE
 ========================================================= */
 
-
 async function loadMemberPaymentEvidence() {
 
   memberPaymentEvidence = [];
-
 
   if (
     !currentMember?.id ||
@@ -3268,7 +3066,6 @@ async function loadMemberPaymentEvidence() {
     return;
 
   }
-
 
   const {
     data,
@@ -3310,27 +3107,22 @@ async function loadMemberPaymentEvidence() {
         }
       );
 
-
   if (error) {
 
     throw error;
 
   }
 
-
   memberPaymentEvidence =
     data || [];
-
 
   renderMemberPaymentEvidence();
 
 }
 
-
 /* =========================================================
    CONFIGURE MEMBER EVIDENCE
 ========================================================= */
-
 
 function configureMemberPaymentEvidence() {
 
@@ -3340,20 +3132,16 @@ function configureMemberPaymentEvidence() {
     return;
   }
 
-
   const show =
     isOrdinaryMember();
 
-
   memberPaymentEvidenceCard.hidden =
     !show;
-
 
   memberPaymentEvidenceCard.classList.toggle(
     "cl-member-evidence-visible",
     show
   );
-
 
   if (
     recordContributionCard
@@ -3363,7 +3151,6 @@ function configureMemberPaymentEvidence() {
       !isAuthorizedRecorder();
 
   }
-
 
   if (
     show &&
@@ -3376,16 +3163,13 @@ function configureMemberPaymentEvidence() {
 
   }
 
-
   updateMemberEvidencePaymentMethod();
 
 }
 
-
 /* =========================================================
    SUBMIT MEMBER PAYMENT EVIDENCE
 ========================================================= */
-
 
 async function submitMemberPaymentEvidence(
   event
@@ -3396,7 +3180,6 @@ async function submitMemberPaymentEvidence(
   clearMemberEvidenceMessage();
   clearError();
 
-
   if (!isOrdinaryMember()) {
 
     showMemberEvidenceMessage(
@@ -3406,7 +3189,6 @@ async function submitMemberPaymentEvidence(
     return;
 
   }
-
 
   if (
     !currentMember?.id ||
@@ -3421,35 +3203,29 @@ async function submitMemberPaymentEvidence(
 
   }
 
-
   const amount =
     number(
       memberEvidenceAmount?.value
     );
 
-
   const paymentDate =
     memberEvidenceDate?.value ||
     "";
-
 
   const paymentMethod =
     normalizePaymentMethod(
       memberEvidenceMethod?.value
     );
 
-
   const mpesaReferenceValue =
     memberEvidenceMpesaReference?.value
       ?.trim() ||
     "";
 
-
   const evidenceText =
     memberEvidenceText?.value
       ?.trim() ||
     "";
-
 
   if (
     amount <= 0
@@ -3465,7 +3241,6 @@ async function submitMemberPaymentEvidence(
 
   }
 
-
   if (!paymentDate) {
 
     showMemberEvidenceMessage(
@@ -3478,7 +3253,6 @@ async function submitMemberPaymentEvidence(
 
   }
 
-
   if (!paymentMethod) {
 
     showMemberEvidenceMessage(
@@ -3488,7 +3262,6 @@ async function submitMemberPaymentEvidence(
     return;
 
   }
-
 
   if (
     paymentMethod ===
@@ -3506,7 +3279,6 @@ async function submitMemberPaymentEvidence(
 
   }
 
-
   if (!evidenceText) {
 
     showMemberEvidenceMessage(
@@ -3518,7 +3290,6 @@ async function submitMemberPaymentEvidence(
     return;
 
   }
-
 
   if (
     submitMemberPaymentEvidenceButton
@@ -3532,7 +3303,6 @@ async function submitMemberPaymentEvidence(
 
   }
 
-
   if (statusEl) {
 
     statusEl.hidden =
@@ -3542,7 +3312,6 @@ async function submitMemberPaymentEvidence(
       "Submitting payment evidence securely...";
 
   }
-
 
   try {
 
@@ -3589,16 +3358,13 @@ async function submitMemberPaymentEvidence(
 
         });
 
-
     if (error) {
 
       throw error;
 
     }
 
-
     memberPaymentEvidenceForm?.reset();
-
 
     if (memberEvidenceDate) {
 
@@ -3607,7 +3373,6 @@ async function submitMemberPaymentEvidence(
 
     }
 
-
     if (memberEvidenceMethod) {
 
       memberEvidenceMethod.value =
@@ -3615,17 +3380,13 @@ async function submitMemberPaymentEvidence(
 
     }
 
-
     updateMemberEvidencePaymentMethod();
 
-
     await loadMemberPaymentEvidence();
-
 
     showMemberEvidenceMessage(
       "Payment evidence submitted successfully. It is now pending verification."
     );
-
 
     if (statusEl) {
 
@@ -3661,11 +3422,9 @@ async function submitMemberPaymentEvidence(
 
 }
 
-
 /* =========================================================
    VERIFIER PAYMENT EVIDENCE
 ========================================================= */
-
 
 function showVerifierPaymentEvidenceMessage(
   message
@@ -3675,23 +3434,19 @@ function showVerifierPaymentEvidenceMessage(
     return;
   }
 
-
   verifierPaymentEvidenceMessage.textContent =
     message || "";
-
 
   verifierPaymentEvidenceMessage.hidden =
     !message;
 
 }
 
-
 function clearVerifierPaymentEvidenceMessage() {
 
   showVerifierPaymentEvidenceMessage("");
 
 }
-
 
 function configureVerifierPaymentEvidence() {
 
@@ -3701,14 +3456,11 @@ function configureVerifierPaymentEvidence() {
     return;
   }
 
-
   const show =
     isAuthorizedVerifier();
 
-
   verifierPaymentEvidenceCard.hidden =
     !show;
-
 
   if (!show) {
 
@@ -3719,7 +3471,6 @@ function configureVerifierPaymentEvidence() {
 
     clearVerifierPaymentEvidenceMessage();
 
-
     if (
       verifierPaymentEvidenceRows
     ) {
@@ -3728,7 +3479,6 @@ function configureVerifierPaymentEvidence() {
         "";
 
     }
-
 
     if (
       verifierPaymentEvidenceDetail
@@ -3746,11 +3496,9 @@ function configureVerifierPaymentEvidence() {
 
 }
 
-
 /* =========================================================
    RENDER VERIFIER EVIDENCE
 ========================================================= */
-
 
 function renderVerifierPaymentEvidence() {
 
@@ -3759,7 +3507,6 @@ function renderVerifierPaymentEvidence() {
   ) {
     return;
   }
-
 
   if (
     !verifierPaymentEvidence.length
@@ -3785,7 +3532,6 @@ function renderVerifierPaymentEvidence() {
 
   }
 
-
   verifierPaymentEvidenceRows.innerHTML =
     verifierPaymentEvidence
       .map(
@@ -3796,17 +3542,14 @@ function renderVerifierPaymentEvidence() {
               evidence.member_id
             );
 
-
           const method =
             normalizePaymentMethod(
               evidence.payment_method
             );
 
-
           const reference =
             evidence.mpesa_reference ||
             "—";
-
 
           return `
 
@@ -3899,11 +3642,9 @@ function renderVerifierPaymentEvidence() {
 
 }
 
-
 /* =========================================================
    VERIFIER DETAIL
 ========================================================= */
-
 
 function showVerifierPaymentEvidenceDetail(
   evidenceId
@@ -3915,14 +3656,12 @@ function showVerifierPaymentEvidenceDetail(
     return;
   }
 
-
   const evidence =
     verifierPaymentEvidence.find(
       item =>
         String(item.id) ===
         String(evidenceId)
     );
-
 
   if (!evidence) {
 
@@ -3939,27 +3678,22 @@ function showVerifierPaymentEvidenceDetail(
 
   }
 
-
   selectedVerifierEvidenceId =
     evidence.id;
-
 
   const memberName =
     getMemberName(
       evidence.member_id
     );
 
-
   const method =
     normalizePaymentMethod(
       evidence.payment_method
     );
 
-
   const reference =
     evidence.mpesa_reference ||
     "—";
-
 
   verifierPaymentEvidenceDetail.innerHTML = `
 
@@ -4089,17 +3823,14 @@ function showVerifierPaymentEvidenceDetail(
 
   `;
 
-
   verifierPaymentEvidenceDetail.hidden =
     false;
 
 }
 
-
 /* =========================================================
    LOAD VERIFIER EVIDENCE
 ========================================================= */
-
 
 async function loadVerifierPaymentEvidence() {
 
@@ -4107,7 +3838,6 @@ async function loadVerifierPaymentEvidence() {
 
   selectedVerifierEvidenceId =
     null;
-
 
   if (
     !groupId ||
@@ -4131,7 +3861,6 @@ async function loadVerifierPaymentEvidence() {
     return;
 
   }
-
 
   const {
     data,
@@ -4170,27 +3899,22 @@ async function loadVerifierPaymentEvidence() {
         }
       );
 
-
   if (error) {
 
     throw error;
 
   }
 
-
   verifierPaymentEvidence =
     data || [];
-
 
   renderVerifierPaymentEvidence();
 
 }
 
-
 /* =========================================================
    VERIFY PAYMENT EVIDENCE
 ========================================================= */
-
 
 async function verifyPaymentEvidence(
   evidenceId
@@ -4208,14 +3932,12 @@ async function verifyPaymentEvidence(
 
   }
 
-
   const evidence =
     verifierPaymentEvidence.find(
       item =>
         String(item.id) ===
         String(evidenceId)
     );
-
 
   if (!evidence) {
 
@@ -4227,7 +3949,6 @@ async function verifyPaymentEvidence(
 
   }
 
-
   const confirmed =
     window.confirm(
       `Verify ${getMemberName(
@@ -4238,15 +3959,12 @@ async function verifyPaymentEvidence(
       `This will pass the payment through the canonical accounting workflow.`
     );
 
-
   if (!confirmed) {
     return;
   }
 
-
   clearVerifierPaymentEvidenceMessage();
   clearError();
-
 
   try {
 
@@ -4259,7 +3977,6 @@ async function verifyPaymentEvidence(
         "Verifying payment evidence securely...";
 
     }
-
 
     const {
       data,
@@ -4279,26 +3996,14 @@ async function verifyPaymentEvidence(
       }
     );
 
-
     if (error) {
 
       throw error;
 
     }
 
-
-    console.log(
-      "CHAMA LIVE: Payment evidence verification completed",
-      {
-        evidenceId,
-        result: data
-      }
-    );
-
-
     selectedVerifierEvidenceId =
       null;
-
 
     if (
       verifierPaymentEvidenceDetail
@@ -4312,7 +4017,6 @@ async function verifyPaymentEvidence(
 
     }
 
-
     await Promise.all([
 
       loadVerifierPaymentEvidence(),
@@ -4325,7 +4029,6 @@ async function verifyPaymentEvidence(
 
     ]);
 
-
     if (
       isOrdinaryMember()
     ) {
@@ -4333,7 +4036,6 @@ async function verifyPaymentEvidence(
       await loadMemberPaymentEvidence();
 
     }
-
 
     renderLedger();
 
@@ -4343,11 +4045,9 @@ async function verifyPaymentEvidence(
 
     renderContributionGoals();
 
-
     showVerifierPaymentEvidenceMessage(
       "Payment verified successfully and passed through canonical accounting."
     );
-
 
     if (statusEl) {
 
@@ -4364,7 +4064,6 @@ async function verifyPaymentEvidence(
 
     showError(error);
 
-
     showVerifierPaymentEvidenceMessage(
       error?.message ||
       "Payment verification failed. The pending evidence remains available for review."
@@ -4374,11 +4073,9 @@ async function verifyPaymentEvidence(
 
 }
 
-
 /* =========================================================
    REJECT PAYMENT EVIDENCE
 ========================================================= */
-
 
 async function rejectPaymentEvidence(
   evidenceId
@@ -4396,14 +4093,12 @@ async function rejectPaymentEvidence(
 
   }
 
-
   const evidence =
     verifierPaymentEvidence.find(
       item =>
         String(item.id) ===
         String(evidenceId)
     );
-
 
   if (!evidence) {
 
@@ -4415,23 +4110,19 @@ async function rejectPaymentEvidence(
 
   }
 
-
   const reason =
     window.prompt(
       "Enter the reason for rejecting this payment evidence:"
     );
 
-
   if (reason === null) {
     return;
   }
-
 
   const rejectionReason =
     String(
       reason
     ).trim();
-
 
   if (!rejectionReason) {
 
@@ -4443,7 +4134,6 @@ async function rejectPaymentEvidence(
 
   }
 
-
   const confirmed =
     window.confirm(
       `Reject ${getMemberName(
@@ -4452,15 +4142,12 @@ async function rejectPaymentEvidence(
       `Reason: ${rejectionReason}`
     );
 
-
   if (!confirmed) {
     return;
   }
 
-
   clearVerifierPaymentEvidenceMessage();
   clearError();
-
 
   try {
 
@@ -4473,7 +4160,6 @@ async function rejectPaymentEvidence(
         "Rejecting payment evidence securely...";
 
     }
-
 
     const {
       data,
@@ -4493,26 +4179,14 @@ async function rejectPaymentEvidence(
       }
     );
 
-
     if (error) {
 
       throw error;
 
     }
 
-
-    console.log(
-      "CHAMA LIVE: Payment evidence rejection completed",
-      {
-        evidenceId,
-        result: data
-      }
-    );
-
-
     selectedVerifierEvidenceId =
       null;
-
 
     if (
       verifierPaymentEvidenceDetail
@@ -4526,9 +4200,7 @@ async function rejectPaymentEvidence(
 
     }
 
-
     await loadVerifierPaymentEvidence();
-
 
     if (
       isOrdinaryMember()
@@ -4538,11 +4210,9 @@ async function rejectPaymentEvidence(
 
     }
 
-
     showVerifierPaymentEvidenceMessage(
       "Payment evidence rejected successfully."
     );
-
 
     if (statusEl) {
 
@@ -4559,7 +4229,6 @@ async function rejectPaymentEvidence(
 
     showError(error);
 
-
     showVerifierPaymentEvidenceMessage(
       error?.message ||
       "Payment rejection failed. The pending evidence remains available for review."
@@ -4569,11 +4238,9 @@ async function rejectPaymentEvidence(
 
 }
 
-
 /* =========================================================
    VERIFIER EVENT DELEGATION
 ========================================================= */
-
 
 function handleVerifierPaymentEvidenceClick(
   event
@@ -4583,7 +4250,6 @@ function handleVerifierPaymentEvidenceClick(
     event.target.closest(
       "[data-verifier-evidence-id]"
     );
-
 
   if (reviewButton) {
 
@@ -4599,12 +4265,10 @@ function handleVerifierPaymentEvidenceClick(
 
   }
 
-
   const verifyButton =
     event.target.closest(
       "[data-verify-evidence-id]"
     );
-
 
   if (verifyButton) {
 
@@ -4620,12 +4284,10 @@ function handleVerifierPaymentEvidenceClick(
 
   }
 
-
   const rejectButton =
     event.target.closest(
       "[data-reject-evidence-id]"
     );
-
 
   if (rejectButton) {
 
@@ -4641,18 +4303,15 @@ function handleVerifierPaymentEvidenceClick(
 
   }
 
-
   const closeButton =
     event.target.closest(
       "[data-close-verifier-detail]"
     );
 
-
   if (closeButton) {
 
     selectedVerifierEvidenceId =
       null;
-
 
     if (
       verifierPaymentEvidenceDetail
@@ -4670,11 +4329,9 @@ function handleVerifierPaymentEvidenceClick(
 
 }
 
-
 /* =========================================================
    CONTRIBUTION TYPE LABEL
 ========================================================= */
-
 
 function contributionTypeLabel(item) {
 
@@ -4685,7 +4342,6 @@ function contributionTypeLabel(item) {
     )
       .trim()
       .toLowerCase();
-
 
   const labels = {
 
@@ -4715,7 +4371,6 @@ function contributionTypeLabel(item) {
 
   };
 
-
   return (
     labels[type] ||
     (
@@ -4728,11 +4383,9 @@ function contributionTypeLabel(item) {
 
 }
 
-
 /* =========================================================
    PAYMENT METHOD UI
 ========================================================= */
-
 
 function renderLedger() {
 
@@ -4806,7 +4459,6 @@ function renderLedger() {
    CANONICAL STATUS HELPERS
 ========================================================= */
 
-
 function canonicalStatusLabel(
   status
 ) {
@@ -4817,7 +4469,6 @@ function canonicalStatusLabel(
     )
       .trim()
       .toLowerCase();
-
 
   const labels = {
 
@@ -4835,7 +4486,6 @@ function canonicalStatusLabel(
 
   };
 
-
   return (
     labels[value] ||
     (
@@ -4846,7 +4496,6 @@ function canonicalStatusLabel(
   );
 
 }
-
 
 function canonicalStatusClass(
   status
@@ -4859,7 +4508,6 @@ function canonicalStatusClass(
       .trim()
       .toLowerCase();
 
-
   if (
     value === "paid"
   ) {
@@ -4867,7 +4515,6 @@ function canonicalStatusClass(
     return "cl-status-paid";
 
   }
-
 
   if (
     value === "partial"
@@ -4877,7 +4524,6 @@ function canonicalStatusClass(
 
   }
 
-
   if (
     value === "credit"
   ) {
@@ -4885,7 +4531,6 @@ function canonicalStatusClass(
     return "cl-status-credit";
 
   }
-
 
   if (
     value === "outstanding"
@@ -4895,11 +4540,9 @@ function canonicalStatusClass(
 
   }
 
-
   return "cl-status-neutral";
 
 }
-
 
 function canonicalProgress(
   account
@@ -4910,12 +4553,10 @@ function canonicalProgress(
       account?.monthly_due
     );
 
-
   const applied =
     number(
       account?.applied_this_month
     );
-
 
   if (
     due <= 0
@@ -4924,7 +4565,6 @@ function canonicalProgress(
     return 0;
 
   }
-
 
   return Math.min(
     Math.max(
@@ -4939,18 +4579,15 @@ function canonicalProgress(
 
 }
 
-
 /* =========================================================
    MONTHLY STATUS
 ========================================================= */
-
 
 function renderMemberStatus() {
 
   if (!memberStatusRows) {
     return;
   }
-
 
   if (!members.length) {
 
@@ -4974,7 +4611,6 @@ function renderMemberStatus() {
     return;
 
   }
-
 
   if (!canonicalMemberStatus.length) {
 
@@ -5005,7 +4641,6 @@ function renderMemberStatus() {
 
   }
 
-
   memberStatusRows.innerHTML =
     members
       .map(
@@ -5015,7 +4650,6 @@ function renderMemberStatus() {
             getCanonicalMemberStatus(
               member.id
             );
-
 
           if (!account) {
 
@@ -5075,60 +4709,50 @@ function renderMemberStatus() {
 
           }
 
-
           const monthlyDue =
             number(
               account.monthly_due
             );
-
 
           const previousArrears =
             number(
               account.previous_outstanding
             );
 
-
           const currentPaid =
             number(
               account.current_month_payment
             );
-
 
           const appliedThisMonth =
             number(
               account.applied_this_month
             );
 
-
           const carryForward =
             number(
               account.carry_forward
             );
-
 
           const outstanding =
             number(
               account.current_outstanding
             );
 
-
           const progress =
             canonicalProgress(
               account
             );
-
 
           const status =
             canonicalStatusLabel(
               account.status
             );
 
-
           const statusClass =
             canonicalStatusClass(
               account.status
             );
-
 
           return `
 
@@ -5291,11 +4915,9 @@ function renderMemberStatus() {
 
 }
 
-
 /* =========================================================
    SUMMARY
 ========================================================= */
-
 
 function renderSummary() {
 
@@ -5304,11 +4926,9 @@ function renderSummary() {
       "contributionSummary"
     );
 
-
   if (!container) {
     return;
   }
-
 
   const total =
     contributions.reduce(
@@ -5321,10 +4941,8 @@ function renderSummary() {
       0
     );
 
-
   const selectedMonth =
     accountingMonth;
-
 
   const monthlyTotal =
     contributions
@@ -5348,7 +4966,6 @@ function renderSummary() {
         0
       );
 
-
   const customTotal =
     contributions
       .filter(
@@ -5369,7 +4986,6 @@ function renderSummary() {
         0
       );
 
-
   const outstandingMembers =
     canonicalMemberStatus.filter(
       account =>
@@ -5377,7 +4993,6 @@ function renderSummary() {
           account.current_outstanding
         ) > 0
     ).length;
-
 
   container.innerHTML = `
 
@@ -5398,7 +5013,6 @@ function renderSummary() {
       </small>
 
     </div>
-
 
     <div class="cl-contribution-summary-card">
 
@@ -5422,7 +5036,6 @@ function renderSummary() {
 
     </div>
 
-
     <div class="cl-contribution-summary-card">
 
       <span>
@@ -5440,7 +5053,6 @@ function renderSummary() {
       </small>
 
     </div>
-
 
     <div class="cl-contribution-summary-card">
 
@@ -5466,18 +5078,15 @@ function renderSummary() {
 
 }
 
-
 /* =========================================================
    CONTRIBUTION GOALS
 ========================================================= */
-
 
 function renderContributionGoals() {
 
   if (!goalProgressContainer) {
     return;
   }
-
 
   if (!contributionGoals.length) {
 
@@ -5502,7 +5111,6 @@ function renderContributionGoals() {
 
   }
 
-
   goalProgressContainer.innerHTML =
     contributionGoals
       .map(
@@ -5512,7 +5120,6 @@ function renderContributionGoals() {
             number(
               goal.target_amount
             );
-
 
           /*
            * This is a display-only aggregation.
@@ -5536,7 +5143,6 @@ function renderContributionGoals() {
                 0
               );
 
-
           const percentage =
             target > 0
               ? Math.min(
@@ -5547,7 +5153,6 @@ function renderContributionGoals() {
                   100
                 )
               : 0;
-
 
           return `
 
@@ -5624,7 +5229,6 @@ function renderContributionGoals() {
 
 }
 
-
 /* =========================================================
    RECORD CONTRIBUTION
    CANONICAL 2B PATH
@@ -5635,7 +5239,6 @@ async function recordContribution(event) {
   event.preventDefault();
 
   clearError();
-
 
   if (!isAuthorizedRecorder()) {
 
@@ -5649,23 +5252,19 @@ async function recordContribution(event) {
 
   }
 
-
   const memberId =
     memberSelect?.value ||
     "";
-
 
   let amount =
     number(
       amountInput?.value
     );
 
-
   const contributionDate =
     normalizeContributionDate(
       dateInput?.value
     );
-
 
   const contributionType =
     String(
@@ -5675,29 +5274,24 @@ async function recordContribution(event) {
       .trim()
       .toLowerCase();
 
-
   const paymentMethod =
     normalizePaymentMethod(
       methodSelect?.value
     );
-
 
   const reference =
     mpesaReference?.value
       ?.trim() ||
     "";
 
-
   const normalNotes =
     notesInput?.value
       ?.trim() ||
     "";
 
-
   const goalId =
     goalSelect?.value ||
     null;
-
 
   if (!memberId) {
 
@@ -5710,7 +5304,6 @@ async function recordContribution(event) {
     return;
 
   }
-
 
   if (
     amount <= 0
@@ -5728,7 +5321,6 @@ async function recordContribution(event) {
 
   }
 
-
   if (!contributionDate) {
 
     showError(
@@ -5742,7 +5334,6 @@ async function recordContribution(event) {
     return;
 
   }
-
 
   if (!contributionType) {
 
@@ -5758,12 +5349,10 @@ async function recordContribution(event) {
 
   }
 
-
   const isCustomContribution =
     contributionType.startsWith(
       "custom:"
     );
-
 
   const customContributionTypeId =
     isCustomContribution
@@ -5771,7 +5360,6 @@ async function recordContribution(event) {
           "custom:".length
         )
       : null;
-
 
   if (
     isCustomContribution
@@ -5782,19 +5370,16 @@ async function recordContribution(event) {
         customContributionTypeId
       );
 
-
     if (!activeCustom) {
 
       await refreshActiveCustomContributions(
         contributionType
       );
 
-
       activeCustom =
         findActiveCustomContribution(
           customContributionTypeId
         );
-
 
       if (!activeCustom) {
 
@@ -5809,7 +5394,6 @@ async function recordContribution(event) {
       }
 
     }
-
 
     /*
      * The configured Custom amount is authoritative for
@@ -5836,7 +5420,6 @@ async function recordContribution(event) {
 
   }
 
-
   if (!paymentMethod) {
 
     showError(
@@ -5848,7 +5431,6 @@ async function recordContribution(event) {
     return;
 
   }
-
 
   if (
     paymentMethod ===
@@ -5868,7 +5450,6 @@ async function recordContribution(event) {
 
   }
 
-
   /*
    * contributionDate is now guaranteed to be an exact
    * PostgreSQL date-compatible YYYY-MM-DD value.
@@ -5878,7 +5459,6 @@ async function recordContribution(event) {
       0,
       7
     );
-
 
   if (
     !/^\d{4}-\d{2}$/.test(
@@ -5895,7 +5475,6 @@ async function recordContribution(event) {
     return;
 
   }
-
 
   /*
    * Monthly duplicate warning only.
@@ -5918,7 +5497,6 @@ async function recordContribution(event) {
           month
     );
 
-
   if (existing) {
 
     const proceed =
@@ -5934,13 +5512,11 @@ async function recordContribution(event) {
 
       );
 
-
     if (!proceed) {
       return;
     }
 
   }
-
 
   const finalNotes =
     String(
@@ -5948,9 +5524,7 @@ async function recordContribution(event) {
     ).trim() ||
     null;
 
-
   let idempotencyKey;
-
 
   try {
 
@@ -5966,7 +5540,6 @@ async function recordContribution(event) {
 
   }
 
-
   if (saveButton) {
 
     saveButton.disabled =
@@ -5976,7 +5549,6 @@ async function recordContribution(event) {
       "Saving...";
 
   }
-
 
   if (statusEl) {
 
@@ -5990,13 +5562,11 @@ async function recordContribution(event) {
 
   }
 
-
   try {
 
     let data;
 
     let error;
-
 
     /* =====================================================
        MONTHLY
@@ -6047,7 +5617,6 @@ async function recordContribution(event) {
 
     }
 
-
     /* =====================================================
        CUSTOM CONTRIBUTION
     ===================================================== */
@@ -6094,40 +5663,11 @@ async function recordContribution(event) {
 
     }
 
-
     if (error) {
 
       throw error;
 
     }
-
-
-    console.log(
-      "CHAMA LIVE: Atomic contribution RPC completed",
-      {
-        groupId,
-
-        memberId,
-
-        amount,
-
-        contributionType:
-          isCustomContribution
-            ? customContributionTypeId
-            : "monthly",
-
-        contributionDate,
-
-        paymentMethod,
-
-        idempotencyKey,
-
-        result:
-          data
-
-      }
-    );
-
 
     /* =====================================================
        REFRESH MONTHLY ACCOUNTING
@@ -6138,7 +5678,6 @@ async function recordContribution(event) {
       accountingMonth =
         month;
 
-
       if (
         accountingMonthSelect
       ) {
@@ -6148,18 +5687,15 @@ async function recordContribution(event) {
 
       }
 
-
       renderAccountingMonthLabel();
 
     }
-
 
     /* =====================================================
        REFRESH READ-ONLY STATE
     ===================================================== */
 
     await loadContributions();
-
 
     if (
       isCustomContribution
@@ -6168,11 +5704,9 @@ async function recordContribution(event) {
       preferredCustomContributionValue =
         `custom:${customContributionTypeId}`;
 
-
       await loadActiveCustomContributions();
 
     }
-
 
     renderContributionTypeOptions(
       isCustomContribution
@@ -6186,14 +5720,12 @@ async function recordContribution(event) {
 
     renderContributionGoals();
 
-
     /*
      * Reset ordinary form controls.
      *
      * The Custom definition itself is NOT removed.
      */
     form?.reset();
-
 
     if (dateInput) {
 
@@ -6202,14 +5734,12 @@ async function recordContribution(event) {
 
     }
 
-
     if (methodSelect) {
 
       methodSelect.value =
         PAYMENT_METHODS.MPESA;
 
     }
-
 
     if (goalSelect) {
 
@@ -6218,9 +5748,7 @@ async function recordContribution(event) {
 
     }
 
-
     updatePaymentMethod();
-
 
     /*
      * Restore amount based on selected contribution type.
@@ -6232,11 +5760,9 @@ async function recordContribution(event) {
       const customValue =
         `custom:${customContributionTypeId}`;
 
-
       renderContributionTypeOptions(
         customValue
       );
-
 
       if (typeSelect) {
 
@@ -6244,7 +5770,6 @@ async function recordContribution(event) {
           customValue;
 
       }
-
 
       updateContributionAmountFromType();
 
@@ -6258,10 +5783,8 @@ async function recordContribution(event) {
 
       }
 
-
       preferredCustomContributionValue =
         null;
-
 
       if (
         amountInput &&
@@ -6275,17 +5798,14 @@ async function recordContribution(event) {
 
     }
 
-
     resetContributionIdempotencyKey();
 
     clearError();
-
 
     if (statusEl) {
 
       statusEl.hidden =
         false;
-
 
       statusEl.textContent =
         isCustomContribution
@@ -6321,9 +5841,6 @@ async function recordContribution(event) {
 
 }
 
-
-
-
 /* =========================================================
    CUSTOM CONTRIBUTION EDITOR
 ========================================================= */
@@ -6337,14 +5854,11 @@ function showCustomContributionEditorMessage(
     return;
   }
 
-
   customContributionEditorMessage.hidden =
     false;
 
-
   customContributionEditorMessage.textContent =
     message;
-
 
   customContributionEditorMessage.className =
     "cl-evidence-message" +
@@ -6358,27 +5872,22 @@ function showCustomContributionEditorMessage(
 
 }
 
-
 function clearCustomContributionEditorMessage() {
 
   if (!customContributionEditorMessage) {
     return;
   }
 
-
   customContributionEditorMessage.hidden =
     true;
 
-
   customContributionEditorMessage.textContent =
     "";
-
 
   customContributionEditorMessage.className =
     "cl-evidence-message";
 
 }
-
 
 function syncCustomContributionFineControl() {
 
@@ -6389,18 +5898,14 @@ function syncCustomContributionFineControl() {
     return;
   }
 
-
   const enabled =
     customContributionApplyFine.checked;
-
 
   customContributionFineAmount.disabled =
     !enabled;
 
-
   customContributionFineAmount.required =
     enabled;
-
 
   if (
     customContributionFineWrap
@@ -6413,7 +5918,6 @@ function syncCustomContributionFineControl() {
 
   }
 
-
   if (!enabled) {
 
     customContributionFineAmount.value =
@@ -6423,11 +5927,9 @@ function syncCustomContributionFineControl() {
 
 }
 
-
 function resetCustomContributionEditor() {
 
   customContributionForm?.reset();
-
 
   if (
     customContributionGraceDays
@@ -6438,7 +5940,6 @@ function resetCustomContributionEditor() {
 
   }
 
-
   if (
     customContributionApplyFine
   ) {
@@ -6448,13 +5949,11 @@ function resetCustomContributionEditor() {
 
   }
 
-
   syncCustomContributionFineControl();
 
   clearCustomContributionEditorMessage();
 
 }
-
 
 function closeCustomContributionEditor() {
 
@@ -6467,20 +5966,16 @@ function closeCustomContributionEditor() {
 
   }
 
-
   resetCustomContributionEditor();
-
 
   const url =
     new URL(
       window.location.href
     );
 
-
   url.searchParams.delete(
     "new"
   );
-
 
   window.history.replaceState(
     {},
@@ -6490,7 +5985,6 @@ function closeCustomContributionEditor() {
 
 }
 
-
 function openCustomContributionEditor() {
 
   if (
@@ -6499,16 +5993,12 @@ function openCustomContributionEditor() {
     return;
   }
 
-
   customContributionEditorCard.hidden =
     false;
 
-
   resetCustomContributionEditor();
 
-
   customContributionName?.focus();
-
 
   customContributionEditorCard.scrollIntoView({
     behavior:
@@ -6520,7 +6010,6 @@ function openCustomContributionEditor() {
   });
 
 }
-
 
 /* =========================================================
    EXISTING CUSTOM CONTRIBUTION PREFLIGHT
@@ -6687,7 +6176,6 @@ async function preflightExistingCustomContribution() {
   };
 }
 
-
 /* =========================================================
    CREATE + ACTIVATE CUSTOM CONTRIBUTION
 ========================================================= */
@@ -6700,7 +6188,6 @@ async function saveCustomContributionDraft(
 
   clearCustomContributionEditorMessage();
 
-
   if (!groupId) {
 
     showCustomContributionEditorMessage(
@@ -6711,7 +6198,6 @@ async function saveCustomContributionDraft(
     return;
 
   }
-
 
   if (!isAuthorizedRecorder()) {
 
@@ -6724,42 +6210,34 @@ async function saveCustomContributionDraft(
 
   }
 
-
   const name =
     customContributionName?.value.trim() ||
     "";
-
 
   const amount =
     Number(
       customContributionAmount?.value
     );
 
-
   const frequency =
     customContributionCycle?.value ||
     "";
-
 
   const startDate =
     customContributionStartDate?.value ||
     "";
 
-
   const dueDate =
     customContributionDueDate?.value ||
     "";
-
 
   const closingDate =
     customContributionClosingDate?.value ||
     "";
 
-
   const description =
     customContributionDescription?.value.trim() ||
     "";
-
 
   const graceDays =
     Number(
@@ -6767,18 +6245,15 @@ async function saveCustomContributionDraft(
       0
     );
 
-
   const applyFine =
     Boolean(
       customContributionApplyFine?.checked
     );
 
-
   const fineAmount =
     Number(
       customContributionFineAmount?.value
     );
-
 
   if (!name) {
 
@@ -6790,7 +6265,6 @@ async function saveCustomContributionDraft(
     return;
 
   }
-
 
   if (
     !Number.isFinite(amount) ||
@@ -6805,7 +6279,6 @@ async function saveCustomContributionDraft(
     return;
 
   }
-
 
   if (
     ![
@@ -6828,7 +6301,6 @@ async function saveCustomContributionDraft(
 
   }
 
-
   if (
     !startDate ||
     !dueDate ||
@@ -6844,7 +6316,6 @@ async function saveCustomContributionDraft(
 
   }
 
-
   if (
     startDate > dueDate ||
     dueDate > closingDate
@@ -6859,7 +6330,6 @@ async function saveCustomContributionDraft(
 
   }
 
-
   if (
     !Number.isInteger(graceDays) ||
     graceDays < 0
@@ -6873,7 +6343,6 @@ async function saveCustomContributionDraft(
     return;
 
   }
-
 
   if (
     applyFine &&
@@ -6891,9 +6360,6 @@ async function saveCustomContributionDraft(
     return;
 
   }
-
-
-
 
   /*
    * PRE-CREATE GUARD
@@ -6923,7 +6389,6 @@ async function saveCustomContributionDraft(
 
   let requestId;
 
-
   try {
 
     requestId =
@@ -6941,7 +6406,6 @@ async function saveCustomContributionDraft(
 
   }
 
-
   if (
     saveCustomContribution
   ) {
@@ -6951,11 +6415,9 @@ async function saveCustomContributionDraft(
 
   }
 
-
   showCustomContributionEditorMessage(
     "Creating custom contribution…"
   );
-
 
   try {
 
@@ -7011,19 +6473,16 @@ async function saveCustomContributionDraft(
         }
       );
 
-
     if (error) {
 
       throw error;
 
     }
 
-
     const result =
       normalizeRpcResult(
         data
       );
-
 
     if (
       !result?.ok
@@ -7035,7 +6494,6 @@ async function saveCustomContributionDraft(
 
     }
 
-
     if (
       !result?.period_id
     ) {
@@ -7046,14 +6504,12 @@ async function saveCustomContributionDraft(
 
     }
 
-
     /* =====================================================
        ACTIVATE
     ===================================================== */
 
     const activationRequestId =
       safeUuid();
-
 
     /*
      * Activation is intentionally retried once with the SAME
@@ -7105,12 +6561,10 @@ async function saveCustomContributionDraft(
 
     }
 
-
     const activation =
       normalizeRpcResult(
         activationData
       );
-
 
     /*
      * Do not trust the RPC response alone for the UI.
@@ -7138,7 +6592,6 @@ async function saveCustomContributionDraft(
         )
         .single();
 
-
     if (
       verificationError
     ) {
@@ -7149,7 +6602,6 @@ async function saveCustomContributionDraft(
 
     }
 
-
     const verifiedStatus =
       String(
         verifiedPeriod?.status ||
@@ -7158,7 +6610,6 @@ async function saveCustomContributionDraft(
       )
         .trim()
         .toLowerCase();
-
 
     if (
       !ACTIVE_CUSTOM_PERIOD_STATUSES.has(
@@ -7174,7 +6625,6 @@ async function saveCustomContributionDraft(
 
     }
 
-
     /*
      * Prefer the verified backend type ID. This guarantees
      * that the selector and Active Contributions list point
@@ -7185,7 +6635,6 @@ async function saveCustomContributionDraft(
       activation?.contribution_type_id ||
       activation?.type_id ||
       null;
-
 
     /* =====================================================
        RESOLVE TYPE
@@ -7199,9 +6648,7 @@ async function saveCustomContributionDraft(
       activation.type_id ||
       null;
 
-
     await loadActiveCustomContributions();
-
 
     let createdActiveContribution =
       activeCustomContributions.find(
@@ -7210,13 +6657,11 @@ async function saveCustomContributionDraft(
           String(result.period_id)
       ) || null;
 
-
     let resolvedTypeId =
       createdContributionTypeId ||
       getCustomContributionTypeId(
         createdActiveContribution
       );
-
 
     if (
       !resolvedTypeId &&
@@ -7228,7 +6673,6 @@ async function saveCustomContributionDraft(
         null;
 
     }
-
 
     if (!resolvedTypeId) {
 
@@ -7245,14 +6689,11 @@ async function saveCustomContributionDraft(
 
     }
 
-
     const preferredCustomValue =
       `custom:${resolvedTypeId}`;
 
-
     preferredCustomContributionValue =
       preferredCustomValue;
-
 
     /* =====================================================
        REBUILD SELECTOR
@@ -7261,7 +6702,6 @@ async function saveCustomContributionDraft(
     renderContributionTypeOptions(
       preferredCustomValue
     );
-
 
     if (
       !findActiveCustomContribution(
@@ -7274,7 +6714,6 @@ async function saveCustomContributionDraft(
       );
 
     }
-
 
     /* =====================================================
        REFRESH DISPLAY DATA
@@ -7292,7 +6731,6 @@ async function saveCustomContributionDraft(
 
     renderContributionGoals();
 
-
     if (
       typeSelect
     ) {
@@ -7302,15 +6740,12 @@ async function saveCustomContributionDraft(
 
     }
 
-
     updateContributionAmountFromType();
-
 
     showCustomContributionEditorMessage(
       "Custom contribution saved and activated. It is now ongoing and available in the contribution-type list.",
       "success"
     );
-
 
     if (statusEl) {
 
@@ -7321,7 +6756,6 @@ async function saveCustomContributionDraft(
         "✓ Custom contribution is active and available for recording.";
 
     }
-
 
     /*
      * Close only after backend confirmation and selector
@@ -7344,7 +6778,6 @@ async function saveCustomContributionDraft(
       error
     );
 
-
     showCustomContributionEditorMessage(
       error?.message ||
         "Custom contribution could not be created.",
@@ -7366,9 +6799,6 @@ async function saveCustomContributionDraft(
   }
 
 }
-
-
-
 
 /* =========================================================
    ACTIVATE EXISTING CUSTOM CONTRIBUTION
@@ -7396,14 +6826,12 @@ async function activateExistingCustomContribution(
 
   }
 
-
   const period =
     draftCustomContributions.find(
       item =>
         String(item.id) ===
         String(periodId)
     );
-
 
   if (!period) {
 
@@ -7417,7 +6845,6 @@ async function activateExistingCustomContribution(
 
   }
 
-
   if (button) {
 
     button.disabled =
@@ -7427,7 +6854,6 @@ async function activateExistingCustomContribution(
       "Activating…";
 
   }
-
 
   let requestId;
 
@@ -7455,7 +6881,6 @@ async function activateExistingCustomContribution(
 
   }
 
-
   try {
 
     let activationData =
@@ -7463,7 +6888,6 @@ async function activateExistingCustomContribution(
 
     let activationError =
       null;
-
 
     /*
      * Retry once with the SAME request ID so a lost browser
@@ -7492,20 +6916,17 @@ async function activateExistingCustomContribution(
           }
         );
 
-
       activationData =
         response.data;
 
       activationError =
         response.error;
 
-
       if (!activationError) {
 
         break;
 
       }
-
 
       if (attempt === 2) {
 
@@ -7515,12 +6936,10 @@ async function activateExistingCustomContribution(
 
     }
 
-
     const activation =
       normalizeRpcResult(
         activationData
       );
-
 
     const {
       data:
@@ -7543,7 +6962,6 @@ async function activateExistingCustomContribution(
         )
         .single();
 
-
     if (verificationError) {
 
       throw new Error(
@@ -7551,7 +6969,6 @@ async function activateExistingCustomContribution(
       );
 
     }
-
 
     const verifiedStatus =
       String(
@@ -7561,7 +6978,6 @@ async function activateExistingCustomContribution(
       )
         .trim()
         .toLowerCase();
-
 
     if (
       !ACTIVE_CUSTOM_PERIOD_STATUSES.has(
@@ -7575,14 +6991,12 @@ async function activateExistingCustomContribution(
 
     }
 
-
     const resolvedTypeId =
       verifiedPeriod?.contribution_type_id ||
       activation?.contribution_type_id ||
       activation?.type_id ||
       period.contribution_type_id ||
       null;
-
 
     if (!resolvedTypeId) {
 
@@ -7592,11 +7006,9 @@ async function activateExistingCustomContribution(
 
     }
 
-
     preferredCustomContributionValue =
       "custom:" +
       resolvedTypeId;
-
 
     await Promise.all([
 
@@ -7607,7 +7019,6 @@ async function activateExistingCustomContribution(
       loadContributions()
 
     ]);
-
 
     renderContributionTypeOptions(
       preferredCustomContributionValue
@@ -7621,7 +7032,6 @@ async function activateExistingCustomContribution(
 
     renderContributionGoals();
 
-
     if (typeSelect) {
 
       typeSelect.value =
@@ -7629,9 +7039,7 @@ async function activateExistingCustomContribution(
 
     }
 
-
     updateContributionAmountFromType();
-
 
     showCustomContributionEditorMessage(
       (
@@ -7642,7 +7050,6 @@ async function activateExistingCustomContribution(
       " is now active and available for recording.",
       "success"
     );
-
 
     if (statusEl) {
 
@@ -7662,9 +7069,7 @@ async function activateExistingCustomContribution(
       error
     );
 
-
     showError(error);
-
 
     if (draftCustomContributionRows) {
 
@@ -7704,7 +7109,6 @@ async function activateExistingCustomContribution(
 
 }
 
-
 /* =========================================================
    DRAFT CUSTOM CONTRIBUTION CLICK HANDLER
 ========================================================= */
@@ -7718,18 +7122,15 @@ function handleDraftCustomContributionClick(
       "[data-activate-custom-contribution]"
     );
 
-
   if (!button) {
 
     return;
 
   }
 
-
   const periodId =
     button.dataset
       .activateCustomContribution;
-
 
   if (!periodId) {
 
@@ -7737,16 +7138,12 @@ function handleDraftCustomContributionClick(
 
   }
 
-
   void activateExistingCustomContribution(
     periodId,
     button
   );
 
 }
-
-
-
 
 /* =========================================================
    SELECT ACTIVE CUSTOM CONTRIBUTION
@@ -7760,10 +7157,8 @@ function selectActiveCustomContribution(
     return;
   }
 
-
   const selectorValue =
     `custom:${contributionTypeId}`;
-
 
   const optionExists =
     Array.from(
@@ -7773,7 +7168,6 @@ function selectActiveCustomContribution(
         option.value ===
         selectorValue
     );
-
 
   if (!optionExists) {
 
@@ -7792,7 +7186,6 @@ function selectActiveCustomContribution(
 
           }
 
-
           updateContributionAmountFromType();
 
         }
@@ -7805,17 +7198,13 @@ function selectActiveCustomContribution(
 
   }
 
-
   typeSelect.value =
     selectorValue;
-
 
   preferredCustomContributionValue =
     selectorValue;
 
-
   updateContributionAmountFromType();
-
 
   typeSelect.scrollIntoView({
     behavior:
@@ -7827,7 +7216,6 @@ function selectActiveCustomContribution(
   });
 
 }
-
 
 /* =========================================================
    ACTIVE CUSTOM CONTRIBUTION CLICK HANDLER
@@ -7842,28 +7230,23 @@ function handleActiveCustomContributionClick(
       "[data-select-custom-contribution]"
     );
 
-
   if (!button) {
     return;
   }
-
 
   const typeId =
     button.dataset
       .selectCustomContribution;
 
-
   if (!typeId) {
     return;
   }
-
 
   selectActiveCustomContribution(
     typeId
   );
 
 }
-
 
 /* =========================================================
    PAGE REFRESH
@@ -7883,7 +7266,6 @@ async function refreshContributions() {
 
 }
 
-
 /* =========================================================
    INITIALIZE
 ========================================================= */
@@ -7897,7 +7279,6 @@ export async function initContributions(
       options?.force
     );
 
-
   if (
     initialized &&
     !force
@@ -7907,10 +7288,8 @@ export async function initContributions(
 
   }
 
-
   initialized =
     true;
-
 
   try {
 
@@ -7919,7 +7298,6 @@ export async function initContributions(
     clearMemberEvidenceMessage();
 
     clearVerifierPaymentEvidenceMessage();
-
 
     /*
      * Resolve authenticated member through the existing
@@ -7934,11 +7312,9 @@ export async function initContributions(
     isGroupOwner =
       Boolean(applicationContext.isOwner);
 
-
     buildAccountingMonthOptions();
 
     renderAccountingMonthLabel();
-
 
     if (
       contributionIdempotencyKeyInput &&
@@ -7952,7 +7328,6 @@ export async function initContributions(
 
     }
 
-
     if (statusEl) {
 
       statusEl.hidden =
@@ -7963,10 +7338,8 @@ export async function initContributions(
 
     }
 
-
     groupId =
       await getGroupId();
-
 
     await Promise.all([
 
@@ -7988,7 +7361,6 @@ export async function initContributions(
       accountingMonth
     );
 
-
     /*
      * Configure role-dependent UI only after currentMember
      * has been resolved.
@@ -7997,13 +7369,11 @@ export async function initContributions(
 
     configureVerifierPaymentEvidence();
 
-
     renderContributionTypeOptions(
       preferredCustomContributionValue ||
       typeSelect?.value ||
       "monthly"
     );
-
 
     if (dateInput) {
 
@@ -8011,7 +7381,6 @@ export async function initContributions(
         todayString();
 
     }
-
 
     if (
       memberEvidenceDate &&
@@ -8023,14 +7392,12 @@ export async function initContributions(
 
     }
 
-
     if (methodSelect) {
 
       methodSelect.value =
         PAYMENT_METHODS.MPESA;
 
     }
-
 
     if (memberEvidenceMethod) {
 
@@ -8039,13 +7406,11 @@ export async function initContributions(
 
     }
 
-
     updatePaymentMethod();
 
     updateMemberEvidencePaymentMethod();
 
     updateContributionAmountFromType();
-
 
     if (
       amountInput &&
@@ -8064,7 +7429,6 @@ export async function initContributions(
 
     }
 
-
     if (
       isOrdinaryMember()
     ) {
@@ -8072,7 +7436,6 @@ export async function initContributions(
       await loadMemberPaymentEvidence();
 
     }
-
 
     if (
       isAuthorizedVerifier()
@@ -8082,7 +7445,6 @@ export async function initContributions(
 
     }
 
-
     renderAccountingMonthLabel();
     renderLedger();
 
@@ -8091,7 +7453,6 @@ export async function initContributions(
     renderSummary();
 
     renderContributionGoals();
-
 
     /*
      * Support ?new=custom.
@@ -8107,7 +7468,6 @@ export async function initContributions(
 
     }
 
-
     if (statusEl) {
 
       statusEl.textContent =
@@ -8117,28 +7477,7 @@ export async function initContributions(
 
     }
 
-
-    console.log(
-      "CHAMA LIVE: Contributions ready.",
-      {
-        groupId,
-
-        accountingMonth,
-
-        memberId:
-          currentMember?.id ||
-          null,
-
-        role:
-          getCurrentMemberRole(),
-
-        activeCustomContributions:
-          activeCustomContributions.length
-
-      }
-    );
-
-  }
+    }
   catch (error) {
 
     initialized =
@@ -8149,7 +7488,6 @@ export async function initContributions(
   }
 
 }
-
 
 /* =========================================================
    EVENTS
@@ -8216,14 +7554,12 @@ if (
     .clCustomFineBound =
     "true";
 
-
   customContributionApplyFine.addEventListener(
     "change",
     syncCustomContributionFineControl
   );
 
 }
-
 
 if (
   customContributionForm &&
@@ -8235,14 +7571,12 @@ if (
     .clCustomContributionBound =
     "true";
 
-
   customContributionForm.addEventListener(
     "submit",
     saveCustomContributionDraft
   );
 
 }
-
 
 if (
   cancelCustomContribution &&
@@ -8254,14 +7588,12 @@ if (
     .clCustomContributionCancelBound =
     "true";
 
-
   cancelCustomContribution.addEventListener(
     "click",
     closeCustomContributionEditor
   );
 
 }
-
 
 if (
   form &&
@@ -8272,14 +7604,12 @@ if (
     .clContributionBound =
     "true";
 
-
   form.addEventListener(
     "submit",
     recordContribution
   );
 
 }
-
 
 if (
   methodSelect &&
@@ -8290,14 +7620,12 @@ if (
     .clPaymentBound =
     "true";
 
-
   methodSelect.addEventListener(
     "change",
     updatePaymentMethod
   );
 
 }
-
 
 if (
   accountingMonthSelect &&
@@ -8309,14 +7637,12 @@ if (
     .clAccountingMonthBound =
     "true";
 
-
   accountingMonthSelect.addEventListener(
     "change",
     changeAccountingMonth
   );
 
 }
-
 
 if (
   memberPaymentEvidenceForm &&
@@ -8328,14 +7654,12 @@ if (
     .clMemberEvidenceBound =
     "true";
 
-
   memberPaymentEvidenceForm.addEventListener(
     "submit",
     submitMemberPaymentEvidence
   );
 
 }
-
 
 if (
   memberEvidenceMethod &&
@@ -8347,14 +7671,12 @@ if (
     .clMemberEvidencePaymentBound =
     "true";
 
-
   memberEvidenceMethod.addEventListener(
     "change",
     updateMemberEvidencePaymentMethod
   );
 
 }
-
 
 /* =========================================================
    CONTRIBUTION TYPE CHANGE
@@ -8370,7 +7692,6 @@ if (
     .clContributionTypeBound =
     "true";
 
-
   typeSelect.addEventListener(
     "change",
     () => {
@@ -8382,7 +7703,6 @@ if (
         )
         .trim()
         .toLowerCase();
-
 
       if (
         value.startsWith(
@@ -8401,14 +7721,12 @@ if (
 
       }
 
-
       updateContributionAmountFromType();
 
     }
   );
 
 }
-
 
 /* =========================================================
    VERIFIER EVENTS
@@ -8424,14 +7742,12 @@ if (
     .clVerifierEvidenceBound =
     "true";
 
-
   verifierPaymentEvidenceCard.addEventListener(
     "click",
     handleVerifierPaymentEvidenceClick
   );
 
 }
-
 
 /* =========================================================
    DRAFT CUSTOM CONTRIBUTION EVENTS
@@ -8447,14 +7763,12 @@ if (
     .clDraftCustomBound =
     "true";
 
-
   draftCustomContributionRows.addEventListener(
     "click",
     handleDraftCustomContributionClick
   );
 
 }
-
 
 /* =========================================================
    ACTIVE CUSTOM CONTRIBUTION EVENTS
@@ -8480,6 +7794,4 @@ if (
   );
 
 }
-
-
 
