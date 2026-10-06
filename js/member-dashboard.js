@@ -479,78 +479,376 @@ function renderMyContributionPosition(position) {
 
 
 async function loadMyActiveContributions() {
-  const container = byId("myActiveContributions");
-  if (!container || !groupId || !memberId) return;
+
+  const container =
+    byId(
+      "myActiveContributions"
+    );
+
+  if (
+    !container ||
+    !groupId ||
+    !memberId
+  ) {
+    return;
+  }
 
   container.replaceChildren();
 
+  let monthlyRow = null;
+  let customRows = [];
+
+  /*
+   * Monthly status comes from the canonical monthly accounting
+   * contract. This guarantees Monthly Contribution is always
+   * visible alongside active Custom Contributions.
+   */
   try {
-    const { data, error } = await supabase.rpc(
-      "get_member_active_contributions",
-      {
-        p_group_id: groupId,
-        p_member_id: memberId
-      }
-    );
 
-    if (error) throw error;
+    const {
+      data,
+      error
+    } =
+      await supabase.rpc(
+        "get_canonical_member_monthly_status",
+        {
+          p_group_id:
+            groupId,
 
-    const rows = data || [];
+          p_month:
+            currentMonthKey()
+        }
+      );
 
-    if (!rows.length) {
-      const empty = document.createElement("div");
-      empty.className = "member-list-item";
-      empty.textContent = "No active contribution types are currently assigned to you.";
-      container.appendChild(empty);
-      return;
+    if (error) {
+      throw error;
     }
 
-    rows.forEach(item => {
-      const card = document.createElement("div");
-      card.className = "member-list-item";
+    const rows =
+      Array.isArray(data)
+        ? data
+        : [];
 
-      const title = document.createElement("strong");
-      title.textContent = item.contribution_name || "Contribution";
+    const memberRow =
+      rows.find(
+        row =>
+          String(
+            row?.member_id
+          ) ===
+          String(
+            memberId
+          )
+      );
 
-      const status = document.createElement("span");
-      status.className =
-        String(item.status || "").toUpperCase() === "PAID"
-          ? "member-finance-status-value status-paid"
-          : "member-finance-status-value status-unknown";
-      status.textContent = item.status || "OUTSTANDING";
+    if (memberRow) {
 
-      const amounts = document.createElement("div");
-      amounts.className = "member-muted";
-      amounts.textContent =
-        "Due " + formatMoney(item.amount_due) +
-        " · Allocated " + formatMoney(item.amount_allocated) +
-        " · Outstanding " + formatMoney(item.outstanding_balance);
+      const status =
+        String(
+          memberRow.status ||
+          ""
+        )
+          .trim()
+          .toUpperCase();
 
-      const dates = document.createElement("div");
-      dates.className = "member-muted";
-      dates.textContent =
-        (item.frequency || "—") +
-        " · Due " + formatDate(item.due_date) +
-        " · Closing " + formatDate(item.closing_date);
+      monthlyRow = {
 
-      const rules = document.createElement("div");
-      rules.className = "member-muted";
-      rules.textContent = item.fine_enabled
-        ? "Grace " + Number(item.grace_period_value || 0) +
-          " day" + (Number(item.grace_period_value || 0) === 1 ? "" : "s") +
-          " · Fine " + formatMoney(item.fine_amount)
-        : "No fine rule";
+        key:
+          "monthly",
 
-      card.append(title, status, amounts, dates, rules);
-      container.appendChild(card);
-    });
-  } catch (error) {
-    console.warn("Active member contributions could not be loaded:", error);
-    const failed = document.createElement("div");
-    failed.className = "member-list-item";
-    failed.textContent = "Active contribution status could not be loaded.";
-    container.appendChild(failed);
+        contribution_name:
+          "Monthly Contribution",
+
+        type:
+          "Monthly",
+
+        frequency:
+          "Monthly",
+
+        amount_due:
+          numberValue(
+            memberRow.monthly_due
+          ),
+
+        amount_allocated:
+          numberValue(
+            memberRow.applied_this_month ??
+            memberRow.current_month_payment
+          ),
+
+        outstanding_balance:
+          numberValue(
+            memberRow.current_outstanding
+          ),
+
+        status:
+          status === "PAID"
+            ? "PAID"
+            : "OUTSTANDING",
+
+        due_date:
+          null,
+
+        closing_date:
+          null,
+
+        fine_enabled:
+          false,
+
+        grace_period_value:
+          0,
+
+        fine_amount:
+          0
+
+      };
+
+    }
+
   }
+  catch (error) {
+
+    console.warn(
+      "Monthly active contribution status could not be loaded:",
+      error
+    );
+
+  }
+
+
+  /*
+   * Custom active contribution status remains backend-owned.
+   * The existing RPC is read-only and returns the member's
+   * active contribution obligations/status.
+   */
+  try {
+
+    const {
+      data,
+      error
+    } =
+      await supabase.rpc(
+        "get_member_active_contributions",
+        {
+          p_group_id:
+            groupId,
+
+          p_member_id:
+            memberId
+        }
+      );
+
+    if (error) {
+      throw error;
+    }
+
+    customRows =
+      (
+        Array.isArray(data)
+          ? data
+          : []
+      )
+        .filter(
+          item =>
+            String(
+              item?.type ||
+              item?.contribution_type ||
+              ""
+            )
+              .trim()
+              .toLowerCase() !==
+            "monthly"
+        );
+
+  }
+  catch (error) {
+
+    console.warn(
+      "Active custom contributions could not be loaded:",
+      error
+    );
+
+  }
+
+
+  const rows = [
+    ...(monthlyRow
+      ? [monthlyRow]
+      : []),
+    ...customRows
+  ];
+
+  if (!rows.length) {
+
+    const empty =
+      document.createElement(
+        "div"
+      );
+
+    empty.className =
+      "member-list-item";
+
+    empty.textContent =
+      "No ongoing contributions are currently available.";
+
+    container.appendChild(
+      empty
+    );
+
+    return;
+
+  }
+
+  rows.forEach(
+    item => {
+
+      const card =
+        document.createElement(
+          "div"
+        );
+
+      card.className =
+        "member-list-item";
+
+      const title =
+        document.createElement(
+          "strong"
+        );
+
+      title.textContent =
+        item.contribution_name ||
+        item.name ||
+        "Contribution";
+
+      const status =
+        document.createElement(
+          "span"
+        );
+
+      const normalizedStatus =
+        String(
+          item.status ||
+          "OUTSTANDING"
+        )
+          .trim()
+          .toUpperCase();
+
+      status.className =
+        normalizedStatus ===
+        "PAID"
+          ? "member-finance-status-value status-paid"
+          : normalizedStatus ===
+              "PARTIAL"
+            ? "member-finance-status-value status-unknown"
+            : "member-finance-status-value status-arrears";
+
+      status.textContent =
+        normalizedStatus ===
+          "PARTIAL"
+          ? "PARTIAL"
+          : normalizedStatus ===
+              "PAID"
+            ? "PAID"
+            : "OUTSTANDING";
+
+      const amounts =
+        document.createElement(
+          "div"
+        );
+
+      amounts.className =
+        "member-muted";
+
+      amounts.textContent =
+        "Due " +
+        formatMoney(
+          item.amount_due
+        ) +
+        " · Allocated " +
+        formatMoney(
+          item.amount_allocated
+        ) +
+        " · Outstanding " +
+        formatMoney(
+          item.outstanding_balance
+        );
+
+      const dates =
+        document.createElement(
+          "div"
+        );
+
+      dates.className =
+        "member-muted";
+
+      dates.textContent =
+        (
+          item.frequency ||
+          (
+            String(
+              item.type ||
+              ""
+            )
+              .toLowerCase() ===
+            "monthly"
+              ? "Monthly"
+              : "—"
+          )
+        ) +
+        " · Due " +
+        formatDate(
+          item.due_date
+        ) +
+        " · Closing " +
+        formatDate(
+          item.closing_date
+        );
+
+      const rules =
+        document.createElement(
+          "div"
+        );
+
+      rules.className =
+        "member-muted";
+
+      rules.textContent =
+        item.fine_enabled
+          ? "Grace " +
+            Number(
+              item.grace_period_value ||
+              0
+            ) +
+            " day" +
+            (
+              Number(
+                item.grace_period_value ||
+                0
+              ) ===
+              1
+                ? ""
+                : "s"
+            ) +
+            " · Fine " +
+            formatMoney(
+              item.fine_amount
+            )
+          : "No fine rule";
+
+      card.append(
+        title,
+        status,
+        amounts,
+        dates,
+        rules
+      );
+
+      container.appendChild(
+        card
+      );
+
+    }
+  );
+
 }
 
 
