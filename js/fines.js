@@ -119,7 +119,22 @@ export async function initFines() {
 
   document
     .getElementById("refreshFines")
-    ?.addEventListener("click", loadFineLedgerUI);
+    ?.addEventListener(
+      "click",
+      async event => {
+        const button = event.currentTarget;
+
+        button.disabled = true;
+        button.textContent = "Refreshing…";
+
+        try {
+          await loadFineLedgerUI();
+        } finally {
+          button.disabled = false;
+          button.textContent = "Refresh";
+        }
+      }
+    );
 
   await loadFineLedgerUI();
 }
