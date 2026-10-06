@@ -54,6 +54,7 @@ const ACTIVITY_STATUSES = [
 
 const MANAGEMENT_ROLES = [
   "admin",
+  "administrator",
   "chairperson",
   "secretary"
 ];
@@ -479,13 +480,30 @@ async function loadContext() {
    MANAGEMENT ACCESS
    ========================================================= */
 
+function normalizeRole(role) {
+
+  if (role && typeof role === "object") {
+    role =
+      role.role ??
+      role.name ??
+      "";
+  }
+
+  return String(
+    role || ""
+  )
+    .trim()
+    .toLowerCase();
+
+}
+
+
 function canManage() {
 
   const role =
-    String(
-      state.currentMember?.role ||
-      ""
-    ).toLowerCase();
+    normalizeRole(
+      state.currentMember?.role
+    );
 
 
   return MANAGEMENT_ROLES.includes(
@@ -495,7 +513,7 @@ function canManage() {
 }
 
 
-/* =========================================================
+//* =========================================================
    MEMBERS
    ========================================================= */
 
