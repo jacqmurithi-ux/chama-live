@@ -1984,11 +1984,6 @@ export async function initContributions(
     );
 
 
-    await loadCanonicalMemberStatus(
-      accountingMonth
-    );
-
-
     if (dateInput) {
 
       dateInput.value =
@@ -2069,8 +2064,6 @@ export async function initContributions(
 
     renderAccountingMonthLabel();
     renderLedger();
-
-    renderMemberStatus();
 
     renderSummary();
 
