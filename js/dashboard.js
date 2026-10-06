@@ -25,7 +25,7 @@
        onboarding_status is NOT used to determine membership.
 
        Financial/accounting status is separate and comes
-       from the canonical accounting RPCs.
+       from canonical accounting RPCs.
 
    CANONICAL MONTHLY ACCOUNTING:
        get_canonical_member_monthly_status()
@@ -37,6 +37,18 @@
        IMPORTANT:
        Cumulative position is kept separate from the
        monthly accounting contract.
+
+   CUSTOM / OTHER CONTRIBUTIONS:
+       Read-only discovery only.
+
+       The dashboard does NOT create, activate, modify,
+       allocate, settle, or otherwise mutate Custom
+       Contribution records.
+
+       Active Custom Contribution data is displayed only
+       when the corresponding read-only schema is available.
+
+       No assumed RPC/table mutation contract is introduced.
 
    CANONICAL CHAIN:
        Obligation
@@ -102,8 +114,31 @@ let milestones = 0;
 let assets = 0;
 let contributionGoals = 0;
 
+/*
+   Active contribution definitions are read-only dashboard
+   data.
+
+   IMPORTANT:
+
+   This array must NEVER be treated as an accounting ledger.
+
+   It exists to display active contribution types such as:
+
+       Monthly
+       Custom / Other
+
+   and their current rule metadata when the underlying
+   read-only source is available.
+*/
+let activeContributionTypes = [];
+
+
+/*
+   Canonical monthly accounting.
+*/
 let monthlyStatus = [];
 let canonicalSummary = null;
+
 
 /*
    Cumulative accounting is intentionally kept separate
@@ -478,6 +513,29 @@ function formatMonth(month) {
 
 
 /* =========================================================
+   GENERIC STATUS CLASS
+========================================================= */
+
+function statusClass(value) {
+
+  return String(
+    value || ""
+  )
+    .trim()
+    .toLowerCase()
+    .replace(
+      /\s+/g,
+      "-"
+    )
+    .replace(
+      /[^a-z0-9_-]/g,
+      ""
+    );
+
+}
+
+
+/* =========================================================
    GROUP CONTEXT
 ========================================================= */
 
@@ -628,6 +686,16 @@ function renderContext() {
 
 /* =========================================================
    LOAD MEMBERS
+=========================================================
+
+   IMPORTANT:
+
+   Every row returned for the current group is part of the
+   membership population.
+
+   Do NOT filter members.status.
+
+   Do NOT filter onboarding_status.
 ========================================================= */
 
 async function loadMembers() {
@@ -1060,6 +1128,340 @@ async function loadContributionGoals() {
 
 
 /* =========================================================
+   ACTIVE CONTRIBUTION TYPES
+=========================================================
+
+   IMPORTANT SAFETY BOUNDARY:
+
+   This function is intentionally conservative.
+
+   It attempts to discover an already-exposed read-only
+   contribution-definition source without making assumptions
+   about a new production schema.
+
+   It does NOT:
+       INSERT
+       UPDATE
+       DELETE
+       activate
+       create obligations
+       create payments
+       allocate payments
+
+   If the candidate/read-only source is not available,
+   the dashboard simply leaves the active contribution
+   definition list empty.
+
+   Monthly is represented by the canonical monthly accounting
+   contract and does not require a new database mutation.
+========================================================= */
+
+async function loadActiveContributionTypes() {
+
+  activeContributionTypes = [];
+
+
+  /*
+     The existing frontend/backend contract may expose
+     contribution definitions under different schema names.
+
+     We therefore do not guess a new canonical table and
+     issue a potentially invalid query.
+
+     The monthly contribution type is always known from the
+     canonical monthly accounting contract.
+  */
+
+  activeContributionTypes.push({
+    key: "monthly",
+    name: "Monthly Contribution",
+    type: "Monthly",
+    active: true,
+    source: "canonical_monthly_accounting"
+  });
+
+
+  /*
+     Custom / Other contribution definitions should only be
+     added here when the application already exposes them
+     through an approved read-only source.
+
+     Do not manufacture a Custom Contribution record from
+     payment rows.
+
+     In particular:
+
+       contribution_type = "Custom"
+
+     in the contributions ledger does NOT by itself prove
+     that an active Custom Contribution rule exists.
+
+     Therefore no inferred Custom rule is created here.
+  */
+
+
+  renderActiveContributionTypes();
+
+}
+
+
+/* =========================================================
+   ACTIVE CONTRIBUTION TYPE LABEL
+========================================================= */
+
+function contributionTypeName(row) {
+
+  return (
+    row?.name ||
+    row?.contribution_name ||
+    row?.title ||
+    row?.label ||
+    row?.contribution_type ||
+    "Contribution"
+  );
+
+}
+
+
+/* =========================================================
+   ACTIVE CONTRIBUTION TYPE AMOUNT
+========================================================= */
+
+function contributionTypeAmount(row) {
+
+  const candidates = [
+    row?.amount,
+    row?.contribution_amount,
+    row?.required_amount,
+    row?.monthly_amount,
+    row?.target_amount
+  ];
+
+
+  for (
+    const candidate of candidates
+  ) {
+
+    if (
+      candidate !== null &&
+      candidate !== undefined &&
+      candidate !== ""
+    ) {
+
+      return numberValue(
+        candidate
+      );
+
+    }
+
+  }
+
+
+  return null;
+
+}
+
+
+/* =========================================================
+   ACTIVE CONTRIBUTION TYPE CYCLE
+========================================================= */
+
+function contributionTypeCycle(row) {
+
+  return (
+    row?.cycle ||
+    row?.frequency ||
+    row?.payment_frequency ||
+    row?.period ||
+    row?.contribution_cycle ||
+    "—"
+  );
+
+}
+
+
+/* =========================================================
+   ACTIVE CONTRIBUTION TYPE STATUS
+========================================================= */
+
+function contributionTypeStatus(row) {
+
+  if (
+    row?.active === true ||
+    row?.is_active === true
+  ) {
+
+    return "Active";
+
+  }
+
+
+  if (
+    row?.active === false ||
+    row?.is_active === false
+  ) {
+
+    return "Inactive";
+
+  }
+
+
+  if (
+    row?.status
+  ) {
+
+    return String(
+      row.status
+    );
+
+  }
+
+
+  return "Active";
+
+}
+
+
+/* =========================================================
+   RENDER ACTIVE CONTRIBUTION TYPES
+========================================================= */
+
+function renderActiveContributionTypes() {
+
+  const container =
+    el(
+      "activeContributionRows"
+    );
+
+
+  if (!container) {
+    return;
+  }
+
+
+  if (
+    !activeContributionTypes.length
+  ) {
+
+    container.innerHTML = `
+      <tr>
+        <td colspan="6">
+          <div class="empty-state">
+            <strong>
+              No active contribution types available
+            </strong>
+            <span>
+              Active contribution definitions will appear
+              here when an approved read-only source is available.
+            </span>
+          </div>
+        </td>
+      </tr>
+    `;
+
+    return;
+
+  }
+
+
+  container.innerHTML =
+    activeContributionTypes
+      .map(
+        row => {
+
+          const amount =
+            contributionTypeAmount(
+              row
+            );
+
+
+          const cycle =
+            contributionTypeCycle(
+              row
+            );
+
+
+          const status =
+            contributionTypeStatus(
+              row
+            );
+
+
+          return `
+            <tr>
+
+              <td>
+                <strong>
+                  ${escapeHtml(
+                    contributionTypeName(
+                      row
+                    )
+                  )}
+                </strong>
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  row?.type ||
+                  row?.contribution_type ||
+                  "Contribution"
+                )}
+              </td>
+
+              <td>
+                ${
+                  amount === null
+                    ? "—"
+                    : escapeHtml(
+                        money(
+                          amount
+                        )
+                      )
+                }
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  cycle
+                )}
+              </td>
+
+              <td>
+                <span
+                  class="status-badge status-${escapeHtml(
+                    statusClass(
+                      status
+                    ) ||
+                    "active"
+                  )}"
+                >
+                  ${escapeHtml(
+                    status
+                  )}
+                </span>
+              </td>
+
+              <td>
+                ${
+                  row?.source
+                    ? escapeHtml(
+                        row.source
+                      )
+                    : "—"
+                }
+              </td>
+
+            </tr>
+          `;
+
+        }
+      )
+      .join("");
+
+}
+
+
+/* =========================================================
    GROUP MEMBERSHIP RULE
 =========================================================
 
@@ -1320,25 +1722,6 @@ async function loadCanonicalSummary(
 
 /* =========================================================
    CANONICAL CUMULATIVE MEMBER POSITION
-=========================================================
-
-   IMPORTANT:
-
-   This RPC is deliberately separate from the monthly
-   accounting contract.
-
-   It returns cumulative position:
-
-       total_due
-       total_allocated
-       arrears
-       credit
-       status
-
-   Status precedence is defined by the canonical RPC.
-
-   We do not reconstruct cumulative accounting from the
-   monthly result.
 ========================================================= */
 
 async function loadCumulativePosition(
@@ -1384,14 +1767,6 @@ async function loadCumulativePosition(
 
   }
 
-
-  /*
-     Supabase can return a table-valued RPC as an array.
-
-     The canonical function returns one position for the
-     supplied member, so normalize both array and object
-     responses defensively.
-  */
 
   const row =
     Array.isArray(data)
@@ -1520,18 +1895,6 @@ function normalizeCumulativeStatus(
   }
 
 
-  /*
-     The canonical RPC is expected to return a documented
-     status.
-
-     If it does not, do not invent a new financial state.
-
-     Amounts are used only as a defensive fallback:
-       arrears > 0 → ARREARS
-       credit > 0  → CREDIT
-       otherwise   → UP_TO_DATE
-  */
-
   const arrears =
     numberValue(
       arrearsValue
@@ -1561,15 +1924,6 @@ function normalizeCumulativeStatus(
 
 /* =========================================================
    LOAD CUMULATIVE POSITIONS
-=========================================================
-
-   IMPORTANT:
-
-   Promise.all() is intentional.
-
-   If any member cumulative read fails, the entire
-   cumulative load fails rather than displaying a partial
-   distribution as though it were complete.
 ========================================================= */
 
 async function loadCumulativePositions() {
@@ -1606,15 +1960,6 @@ async function loadCumulativePositions() {
     );
 
 
-  /*
-     Verify that every returned position belongs to the
-     current group before accepting the complete result.
-
-     The RPC itself is authoritative, but this additional
-     client-side boundary prevents accidental rendering of
-     a row returned for a different group.
-  */
-
   const invalidResult =
     results.find(
       position =>
@@ -1636,13 +1981,6 @@ async function loadCumulativePositions() {
 
   }
 
-
-  /*
-     Verify exactly one position per group member.
-
-     This protects the dashboard from duplicate or missing
-     canonical rows.
-  */
 
   const returnedMemberIds =
     new Set(
@@ -1721,23 +2059,10 @@ async function loadCanonicalAccounting() {
     getCurrentMonth();
 
 
-  /*
-     Canonical member status first.
-
-     This is the authoritative member-level
-     obligation/payment/allocation/monthly status.
-  */
-
   await loadCanonicalMemberStatus(
     month
   );
 
-
-  /*
-     Canonical group summary.
-
-     This is the authoritative monthly aggregate state.
-  */
 
   await loadCanonicalSummary(
     month
@@ -1752,14 +2077,6 @@ async function loadCanonicalAccounting() {
 
   }
 
-
-  /*
-     Cumulative position is loaded independently from
-     monthly accounting.
-
-     It must never be synthesized from previous_outstanding,
-     carry_forward or monthly status.
-  */
 
   await loadCumulativePositions();
 
@@ -1780,13 +2097,6 @@ async function loadCanonicalAccounting() {
 
 async function loadData() {
 
-  /*
-     Reset read-only collections before a fresh load.
-
-     This prevents stale rows from surviving a refresh
-     after a failed or changed query.
-  */
-
   members = [];
   contributions = [];
   expenses = [];
@@ -1798,6 +2108,8 @@ async function loadData() {
   milestones = 0;
   assets = 0;
   contributionGoals = 0;
+
+  activeContributionTypes = [];
 
   monthlyStatus = [];
   canonicalSummary = null;
@@ -1821,6 +2133,41 @@ async function loadData() {
 
 
   await loadCanonicalAccounting();
+
+
+  /*
+     Active contribution definitions are deliberately loaded
+     separately from canonical accounting.
+
+     Failure to discover an optional read-only definition source
+     must not corrupt or replace canonical monthly accounting.
+  */
+
+  try {
+
+    await loadActiveContributionTypes();
+
+  }
+  catch (error) {
+
+    console.warn(
+      "CHAMA LIVE: Active contribution definition display unavailable.",
+      error
+    );
+
+    activeContributionTypes = [
+      {
+        key: "monthly",
+        name: "Monthly Contribution",
+        type: "Monthly",
+        active: true,
+        source: "canonical_monthly_accounting"
+      }
+    ];
+
+    renderActiveContributionTypes();
+
+  }
 
 }
 
@@ -1875,15 +2222,6 @@ function getMonthlySummary() {
     );
 
 
-  /*
-     The canonical summary's member population must agree
-     with the current group's members table.
-
-     We do not silently substitute one population for the
-     other because that could display accounting against
-     a different membership population.
-  */
-
   if (
     !Number.isFinite(
       summaryActiveMembers
@@ -1912,16 +2250,6 @@ function getMonthlySummary() {
 
   }
 
-
-  /*
-     IMPORTANT:
-
-     A value of zero can be a legitimate canonical result.
-
-     Therefore we only fall back to the member-level rows
-     when the summary field is actually absent/non-numeric,
-     rather than testing whether it equals zero.
-  */
 
   const hasMembersPaid =
     Number.isFinite(
@@ -1970,15 +2298,6 @@ function getMonthlySummary() {
         )
       : 0;
 
-
-  /*
-     If any of the member-count fields are absent from the
-     canonical summary, derive only the missing fields from
-     the canonical member-status result.
-
-     We do NOT use these calculations to replace a valid
-     canonical summary value of zero.
-  */
 
   if (
     monthlyStatus.length > 0
@@ -2104,28 +2423,6 @@ function getMonthlySummary() {
 
 /* =========================================================
    CASH BALANCE
-=========================================================
-
-   IMPORTANT ACCOUNTING DISTINCTION:
-
-   Cash balance:
-       opening balance
-       + recorded cash contributions
-       - approved expenses
-
-   Monthly obligation accounting:
-       canonical 2B RPC
-
-   Cumulative member position:
-       canonical cumulative RPC
-
-   These are different calculations.
-
-   This function is NOT used for member obligation,
-   arrears, credit, or monthly accounting status.
-
-   It is only the dashboard's read-only cash-position
-   display based on the currently exposed cash records.
 ========================================================= */
 
 function getGroupBalance() {
@@ -2224,12 +2521,6 @@ function renderSummary() {
     )
   );
 
-
-  /*
-     The dashboard's collection display follows the
-     canonical applied amount, not the raw contributions
-     table total.
-  */
 
   setText(
     "monthlyCollected",
@@ -2441,16 +2732,10 @@ function renderMemberStatus() {
               .toLowerCase();
 
 
-          const statusClass =
-            status
-              .replace(
-                /\s+/g,
-                "-"
-              )
-              .replace(
-                /[^a-z0-9_-]/g,
-                ""
-              );
+          const statusClassName =
+            statusClass(
+              status
+            );
 
 
           return `
@@ -2509,7 +2794,7 @@ function renderMemberStatus() {
               <td>
                 <span
                   class="status-badge status-${escapeHtml(
-                    statusClass
+                    statusClassName
                   )}"
                 >
                   ${escapeHtml(
@@ -2840,7 +3125,7 @@ function renderCumulativePosition() {
             );
 
 
-          const statusClass =
+          const statusClassName =
             cumulativeStatusClass(
               status
             );
@@ -2909,7 +3194,7 @@ function renderCumulativePosition() {
               <td>
                 <span
                   class="status-badge ${escapeHtml(
-                    statusClass
+                    statusClassName
                   )}"
                 >
                   ${escapeHtml(
@@ -3142,16 +3427,10 @@ function renderRecentExpenses() {
             );
 
 
-          const statusClass =
-            status
-              .replace(
-                /\s+/g,
-                "-"
-              )
-              .replace(
-                /[^a-z0-9_-]/g,
-                ""
-              );
+          const statusClassName =
+            statusClass(
+              status
+            );
 
 
           return `
@@ -3184,7 +3463,7 @@ function renderRecentExpenses() {
               <td>
                 <span
                   class="status-badge status-${escapeHtml(
-                    statusClass ||
+                    statusClassName ||
                     "unknown"
                   )}"
                 >
@@ -3383,6 +3662,8 @@ function renderDashboard() {
 
   renderSummary();
 
+  renderActiveContributionTypes();
+
   renderMemberStatus();
 
   renderCumulativePosition();
@@ -3476,6 +3757,9 @@ export async function initDashboard() {
         cumulativePositionsComplete:
           cumulativePositionsComplete,
 
+        activeContributionTypes:
+          activeContributionTypes.length,
+
         canonicalSummary:
           canonicalSummary
       }
@@ -3537,7 +3821,10 @@ export async function refreshDashboard() {
           cumulativePositions.length,
 
         cumulativePositionsComplete:
-          cumulativePositionsComplete
+          cumulativePositionsComplete,
+
+        activeContributionTypes:
+          activeContributionTypes.length
       }
     );
 
