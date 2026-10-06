@@ -84,6 +84,45 @@
       line-height: 1.15;
     }
 
+    .contributions-page-header {
+      position: relative;
+    }
+
+    .contributions-header-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin: 0 0 10px;
+    }
+
+    .contributions-header-actions .btn {
+      min-height: 42px;
+      padding: 9px 14px;
+      border-radius: 10px;
+      font: inherit;
+      font-size: 11px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .contributions-header-actions .btn-secondary {
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      color: #334155;
+    }
+
+    .contributions-header-actions .btn-secondary:hover {
+      background: #f1f5f9;
+    }
+
+    .contributions-header-actions .btn-secondary:active {
+      background: #e2e8f0;
+    }
+
+    .contributions-header-actions .btn:disabled {
+      opacity: .6;
+      cursor: not-allowed;
+    }
+
     .contributions-page-header p {
       max-width: 760px;
       margin: 0;
@@ -1047,6 +1086,11 @@
 
     @media (max-width: 900px) {
 
+      .contributions-header-actions {
+        justify-content: flex-start;
+      }
+
+
       #contributionSummary {
         grid-template-columns:
           repeat(2, minmax(0, 1fr));
@@ -1362,10 +1406,23 @@
         Contributions
       </h1>
 
+      <div class="contributions-header-actions">
+
+        <button
+          id="refreshContributions"
+          class="btn btn-secondary"
+          type="button"
+        >
+          Refresh
+        </button>
+
+      </div>
+
       <p class="muted">
-        Manage monthly and active custom contribution accounting,
-        member payment evidence and authorised verification
-        within the current group.
+        Record authorised member payments, create and activate ongoing
+        custom contributions, submit payment evidence and review
+        verification requests. All accounting changes are processed
+        through the canonical backend workflow.
       </p>
 
     </section>
