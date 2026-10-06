@@ -1015,6 +1015,78 @@ function normalizePaymentMethod(value) {
 }
 
 
+/*
+ * Keep the canonical recording form's M-Pesa reference field
+ * synchronized with the selected payment method. This is a
+ * presentation/validation helper only; canonical accounting
+ * remains backend-owned.
+ */
+function updatePaymentMethod() {
+
+  if (!methodSelect || !mpesaReferenceWrap) {
+    return;
+  }
+
+  const method =
+    normalizePaymentMethod(
+      methodSelect.value
+    );
+
+  const isMpesa =
+    method === PAYMENT_METHODS.MPESA;
+
+  mpesaReferenceWrap.hidden =
+    !isMpesa;
+
+  if (mpesaReference) {
+    mpesaReference.required =
+      isMpesa;
+
+    if (!isMpesa) {
+      mpesaReference.value = "";
+    }
+  }
+
+}
+
+
+/*
+ * Keep the member payment-evidence form's M-Pesa reference
+ * field synchronized with its selected payment method.
+ * Evidence remains pending until backend verification.
+ */
+function updateMemberEvidencePaymentMethod() {
+
+  if (
+    !memberEvidenceMethod ||
+    !memberEvidenceMpesaWrap
+  ) {
+    return;
+  }
+
+  const method =
+    normalizePaymentMethod(
+      memberEvidenceMethod.value
+    );
+
+  const isMpesa =
+    method === PAYMENT_METHODS.MPESA;
+
+  memberEvidenceMpesaWrap.hidden =
+    !isMpesa;
+
+  if (memberEvidenceMpesaReference) {
+    memberEvidenceMpesaReference.required =
+      isMpesa;
+
+    if (!isMpesa) {
+      memberEvidenceMpesaReference.value = "";
+    }
+  }
+
+}
+
+
 /* =========================================================
    IDEMPOTENCY
 ========================================================= */
