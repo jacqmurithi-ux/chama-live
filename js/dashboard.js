@@ -3968,6 +3968,64 @@ function renderOperationsSnapshot() {
 
 
 /* =========================================================
+   DASHBOARD ACTIONS
+========================================================= */
+
+function bindDashboardActions() {
+
+  const refreshButton =
+    el("refreshDashboard");
+
+  if (!refreshButton) {
+    return;
+  }
+
+  if (
+    refreshButton.dataset.dashboardActionBound ===
+    "true"
+  ) {
+    return;
+  }
+
+  refreshButton.dataset.dashboardActionBound =
+    "true";
+
+  refreshButton.addEventListener(
+    "click",
+    async () => {
+
+      if (refreshButton.disabled) {
+        return;
+      }
+
+      const originalText =
+        refreshButton.textContent;
+
+      refreshButton.disabled =
+        true;
+
+      refreshButton.textContent =
+        "Refreshing…";
+
+      try {
+        await refreshDashboard();
+      }
+      finally {
+        refreshButton.disabled =
+          false;
+
+        refreshButton.textContent =
+          originalText ||
+          "Refresh";
+      }
+
+    }
+  );
+
+}
+
+
+/* =========================================================
    RENDER DASHBOARD
 ========================================================= */
 
@@ -4024,6 +4082,8 @@ export async function initDashboard() {
   try {
 
     clearError();
+
+    bindDashboardActions();
 
     showStatus(
       "Loading dashboard..."
