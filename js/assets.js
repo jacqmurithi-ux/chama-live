@@ -65,14 +65,13 @@ const ASSET_CATEGORIES = [
 
 const ASSET_STATUSES = [
   "active",
-  "disposed",
-  "sold",
-  "lost",
-  "inactive"
+  "inactive",
+  "disposed"
 ];
 
 const MANAGEMENT_ROLES = [
   "admin",
+  "administrator",
   "chairperson",
   "treasurer"
 ];
@@ -171,7 +170,11 @@ function cacheElements() {
 ========================================================= */
 
 function normalizeRole(role) {
-  return String(role || "")
+  return String(
+    typeof role === "object" && role !== null
+      ? (role.role ?? role.name ?? "")
+      : role || ""
+  )
     .trim()
     .toLowerCase();
 }
@@ -467,10 +470,36 @@ async function loadAssets() {
       ? data
       : [];
 
+  populateCategoryFilter();
   renderKPIs();
   renderAssets();
 }
 
+
+
+
+function populateCategoryFilter() {
+  const select = elements.assetFilterCategory;
+  if (!select) return;
+
+  const categories = [...new Set([
+    ...ASSET_CATEGORIES,
+    ...state.assets
+      .map(asset => String(asset.category || "").trim().toLowerCase())
+      .filter(Boolean)
+  ])].sort();
+
+  const current = String(select.value || "");
+  select.innerHTML =
+    '<option value="">All categories</option>' +
+    categories.map(category =>
+      `<option value="${escapeHtml(category)}">${escapeHtml(titleCase(category))}</option>`
+    ).join("");
+
+  if (categories.includes(current)) {
+    select.value = current;
+  }
+}
 
 /* =========================================================
    KPIs
@@ -665,66 +694,31 @@ function renderAssets() {
 
         return `
           <tr>
-
             <td>
               <div class="asset-name">
                 ${escapeHtml(asset.asset_name || "Unnamed asset")}
               </div>
-
-              ${
-                asset.description
-                  ? `
-                    <div class="asset-description">
-                      ${escapeHtml(asset.description)}
-                    </div>
-                  `
-                  : ""
-              }
+              ${asset.description ? `
+                <div class="asset-description">
+                  ${escapeHtml(asset.description)}
+                </div>` : ""}
             </td>
-
+            <td>${escapeHtml(titleCase(asset.category))}</td>
             <td>
-              ${escapeHtml(
-                titleCase(asset.category)
-              )}
-            </td>
-
-            <td>
-              ${escapeHtml(
-                formatDate(asset.acquired_date)
-              )}
-            </td>
-
-            <td>
-              ${money(asset.acquisition_cost)}
-            </td>
-
-            <td>
-              ${money(asset.current_value)}
-            </td>
-
-            <td>
-              ${escapeHtml(
-                asset.location || "—"
-              )}
-            </td>
-
-            <td>
-              <span
-                class="asset-status ${escapeHtml(status)}"
-              >
-                ${escapeHtml(
-                  titleCase(status)
-                )}
+              <span class="asset-status ${escapeHtml(status)}">
+                ${escapeHtml(titleCase(status))}
               </span>
             </td>
-
+            <td>${escapeHtml(formatDate(asset.acquired_date))}</td>
+            <td>${escapeHtml(asset.location || "—")}</td>
+            <td>${money(asset.acquisition_cost)}</td>
+            <td>${money(asset.current_value)}</td>
             <td>
               <div class="asset-actions">
                 ${managementActions}
                 ${deleteAction}
               </div>
             </td>
-
           </tr>
         `;
       })
@@ -782,13 +776,9 @@ function readForm() {
       .trim()
       .toLowerCase();
 
-  if (
-    !ASSET_CATEGORIES.includes(
-      category
-    )
-  ) {
+  if (!category) {
     throw new Error(
-      "Please select a valid asset category."
+      "Asset category is required."
     );
   }
 
