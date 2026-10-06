@@ -8456,37 +8456,21 @@ if (
    ACTIVE CUSTOM CONTRIBUTION EVENTS
 ========================================================= */
 
+const activeCustomContributionEventTarget =
+  activeCustomContributionContainer ||
+  activeCustomContributionRows;
+
 if (
-  activeCustomContributionRows &&
-  !activeCustomContributionRows.dataset
+  activeCustomContributionEventTarget &&
+  !activeCustomContributionEventTarget.dataset
     .clActiveCustomBound
 ) {
 
-  activeCustomContributionRows.dataset
+  activeCustomContributionEventTarget.dataset
     .clActiveCustomBound =
     "true";
 
-
-  activeCustomContributionRows.addEventListener(
-    "click",
-    handleActiveCustomContributionClick
-  );
-
-}
-
-
-if (
-  activeCustomContributionContainer &&
-  !activeCustomContributionContainer.dataset
-    .clActiveCustomBound
-) {
-
-  activeCustomContributionContainer.dataset
-    .clActiveCustomBound =
-    "true";
-
-
-  activeCustomContributionContainer.addEventListener(
+  activeCustomContributionEventTarget.addEventListener(
     "click",
     handleActiveCustomContributionClick
   );
