@@ -273,7 +273,11 @@ const RECORDER_ROLES = new Set([
 
   "admin",
 
-  "chairperson"
+  "chairperson",
+
+  "treasurer",
+
+  "secretary"
 
 ]);
 
@@ -4561,9 +4565,11 @@ async function recordContribution(event) {
         false;
 
       statusEl.textContent =
-        `✓ Contribution recorded atomically. ${formatAccountingMonth(
-          accountingMonth
-        )} canonical accounting is current.`;
+        isCustomContribution
+          ? "✓ Custom contribution payment recorded atomically. The selected contribution status is current."
+          : `✓ Contribution recorded atomically. ${formatAccountingMonth(
+              accountingMonth
+            )} canonical accounting is current.`;
 
     }
 
