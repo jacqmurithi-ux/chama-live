@@ -5896,6 +5896,53 @@ function bindEvents() {
 
 
   /* -------------------------------------------------------
+     REFRESH MEMBERS
+     ------------------------------------------------------- */
+
+  const refreshButton =
+    byId("refreshMembers");
+
+  refreshButton?.addEventListener(
+    "click",
+    async () => {
+
+      if (refreshButton.disabled) {
+        return;
+      }
+
+      const originalText =
+        refreshButton.textContent;
+
+      refreshButton.disabled =
+        true;
+
+      refreshButton.textContent =
+        "Refreshing…";
+
+      try {
+        await refreshMembers();
+        showStatus("Member list refreshed.");
+      }
+      catch (error) {
+        showError(
+          error?.message ||
+          "Unable to refresh the member list."
+        );
+      }
+      finally {
+        refreshButton.disabled =
+          false;
+
+        refreshButton.textContent =
+          originalText ||
+          "Refresh";
+      }
+
+    }
+  );
+
+
+  /* -------------------------------------------------------
      ADD MEMBER
      ------------------------------------------------------- */
 
