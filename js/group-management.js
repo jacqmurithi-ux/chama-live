@@ -2296,6 +2296,11 @@ function bindEvents() {
                     elements.groupManagementStatus.className =
                         "management-status is-visible error";
                 }
+            } finally {
+                if (button) {
+                    button.disabled = false;
+                    button.textContent = "Save Group Settings";
+                }
             }
         }
     );
@@ -2330,6 +2335,11 @@ function bindEvents() {
                         "error"
                     );
                 }
+            } finally {
+                if (elements.saveMonthlyContribution) {
+                    elements.saveMonthlyContribution.disabled = false;
+                    elements.saveMonthlyContribution.textContent = "Save Monthly Contribution";
+                }
             }
         );
 
@@ -2362,6 +2372,11 @@ function bindEvents() {
                         "Custom contribution could not be saved.",
                         "error"
                     );
+                }
+            } finally {
+                if (elements.saveCustomContribution) {
+                    elements.saveCustomContribution.disabled = false;
+                    elements.saveCustomContribution.textContent = "Save & Activate";
                 }
             }
         );
