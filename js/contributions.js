@@ -314,6 +314,16 @@ const activeCustomContributionContainer =
     "activeCustomContributionContainer"
   );
 
+const draftCustomContributionsCard =
+  document.getElementById(
+    "draftCustomContributionsCard"
+  );
+
+const draftCustomContributionRows =
+  document.getElementById(
+    "draftCustomContributionRows"
+  );
+
 
 /* =========================================================
    STATE
@@ -328,6 +338,8 @@ let contributions = [];
 let contributionGoals = [];
 
 let activeCustomContributions = [];
+
+let draftCustomContributions = [];
 
 let canonicalMemberStatus = [];
 
@@ -392,6 +404,17 @@ const RECORDER_ROLES = new Set([
   "treasurer",
 
   "secretary"
+
+]);
+
+
+const CUSTOM_CONTRIBUTION_ACTIVATOR_ROLES = new Set([
+
+  "owner",
+
+  "admin",
+
+  "chairperson"
 
 ]);
 
@@ -1280,6 +1303,406 @@ async function loadActiveCustomContributions() {
 
 
   return activeCustomContributions;
+
+}
+
+
+/* =========================================================
+   DRAFT CUSTOM CONTRIBUTIONS
+========================================================= */
+
+async function loadDraftCustomContributions() {
+
+  draftCustomContributions = [];
+
+  if (!groupId) {
+
+    renderDraftCustomContributionList();
+
+    return [];
+
+  }
+
+
+  const {
+    data: contributionTypes,
+    error: contributionTypeError
+  } =
+    await supabase
+      .from("contribution_types")
+      .select(
+        "id,group_id,name,code"
+      )
+      .eq(
+        "group_id",
+        groupId
+      )
+      .eq(
+        "code",
+        "custom"
+      );
+
+
+  if (contributionTypeError) {
+
+    throw contributionTypeError;
+
+  }
+
+
+  const customTypes =
+    Array.isArray(
+      contributionTypes
+    )
+      ? contributionTypes
+      : [];
+
+
+  if (!customTypes.length) {
+
+    renderDraftCustomContributionList();
+
+    return [];
+
+  }
+
+
+  const customTypeIds =
+    customTypes.map(
+      type =>
+        type.id
+    );
+
+
+  const {
+    data: periods,
+    error: periodError
+  } =
+    await supabase
+      .from("contribution_periods")
+      .select(
+        [
+          "id",
+          "group_id",
+          "contribution_type_id",
+          "period_key",
+          "opening_date",
+          "due_date",
+          "closing_date",
+          "amount",
+          "frequency",
+          "status",
+          "description",
+          "fine_rule_id"
+        ].join(",")
+      )
+      .eq(
+        "group_id",
+        groupId
+      )
+      .in(
+        "contribution_type_id",
+        customTypeIds
+      )
+      .eq(
+        "status",
+        "draft"
+      )
+      .order(
+        "opening_date",
+        {
+          ascending: false
+        }
+      );
+
+
+  if (periodError) {
+
+    throw periodError;
+
+  }
+
+
+  const typeById =
+    new Map(
+      customTypes.map(
+        type => [
+          String(type.id),
+          type
+        ]
+      )
+    );
+
+
+  draftCustomContributions =
+    (
+      Array.isArray(periods)
+        ? periods
+        : []
+    )
+      .filter(
+        period =>
+          typeById.has(
+            String(
+              period.contribution_type_id
+            )
+          )
+      )
+      .map(
+        period => {
+
+          const type =
+            typeById.get(
+              String(
+                period.contribution_type_id
+              )
+            );
+
+          return {
+
+            ...period,
+
+            contributionTypeId:
+              period.contribution_type_id,
+
+            contribution_name:
+              type?.name ||
+              "Custom Contribution",
+
+            name:
+              type?.name ||
+              "Custom Contribution",
+
+            contribution_code:
+              type?.code ||
+              "custom"
+
+          };
+
+        }
+      );
+
+
+  renderDraftCustomContributionList();
+
+
+  return draftCustomContributions;
+
+}
+
+
+/* =========================================================
+   DRAFT CUSTOM CONTRIBUTION DISPLAY
+========================================================= */
+
+function renderDraftCustomContributionList() {
+
+  if (
+    !draftCustomContributionsCard ||
+    !draftCustomContributionRows
+  ) {
+
+    return;
+
+  }
+
+
+  const canActivate =
+    CUSTOM_CONTRIBUTION_ACTIVATOR_ROLES.has(
+      getCurrentMemberRole()
+    );
+
+
+  if (!draftCustomContributions.length) {
+
+    draftCustomContributionsCard.hidden =
+      true;
+
+    draftCustomContributionRows.innerHTML =
+      "";
+
+    return;
+
+  }
+
+
+  draftCustomContributionsCard.hidden =
+    false;
+
+
+  draftCustomContributionRows.innerHTML =
+    draftCustomContributions
+      .map(
+        item => {
+
+          const name =
+            item.contribution_name ||
+            item.name ||
+            "Custom Contribution";
+
+          const amount =
+            number(
+              item.amount
+            );
+
+          const frequency =
+            item.frequency ||
+            "—";
+
+          const openingDate =
+            item.opening_date
+              ? formatDate(
+                  item.opening_date
+                )
+              : "—";
+
+          const dueDate =
+            item.due_date
+              ? formatDate(
+                  item.due_date
+                )
+              : "—";
+
+          const closingDate =
+            item.closing_date
+              ? formatDate(
+                  item.closing_date
+                )
+              : "—";
+
+          const description =
+            String(
+              item.description ||
+              ""
+            ).trim();
+
+
+          return `
+
+            <div
+              class="cl-draft-contribution-card"
+            >
+
+              <div
+                class="cl-draft-contribution-main"
+              >
+
+                <div
+                  class="cl-draft-contribution-name"
+                >
+                  ${escapeHtml(name)}
+                </div>
+
+                <div
+                  class="cl-draft-contribution-meta"
+                >
+
+                  <span>
+                    <strong>Amount:</strong>
+                    ${escapeHtml(
+                      money(amount)
+                    )}
+                  </span>
+
+                  <span>
+                    <strong>Cycle:</strong>
+                    ${escapeHtml(
+                      frequency
+                    )}
+                  </span>
+
+                  <span>
+                    <strong>Start:</strong>
+                    ${escapeHtml(
+                      openingDate
+                    )}
+                  </span>
+
+                  <span>
+                    <strong>Due:</strong>
+                    ${escapeHtml(
+                      dueDate
+                    )}
+                  </span>
+
+                  <span>
+                    <strong>Closing:</strong>
+                    ${escapeHtml(
+                      closingDate
+                    )}
+                  </span>
+
+                </div>
+
+                ${
+                  description
+                    ? `
+                      <div
+                        class="cl-draft-contribution-description"
+                      >
+                        ${escapeHtml(
+                          description
+                        )}
+                      </div>
+                    `
+                    : ""
+                }
+
+              </div>
+
+              <div
+                class="cl-draft-contribution-actions"
+              >
+
+                <span
+                  class="cl-draft-status-badge"
+                >
+                  DRAFT
+                </span>
+
+                ${
+                  canActivate
+                    ? `
+                      <button
+                        type="button"
+                        class="cl-draft-activate-button"
+                        data-activate-custom-contribution="${escapeHtml(
+                          item.id
+                        )}"
+                      >
+                        Activate
+                      </button>
+                    `
+                    : ""
+                }
+
+              </div>
+
+            </div>
+
+          `;
+
+        }
+      )
+      .join("");
+
+
+  if (!canActivate) {
+
+    const note =
+      document.createElement("div");
+
+    note.className =
+      "cl-draft-contribution-empty";
+
+    note.textContent =
+      "Only the group owner, administrator or chairperson can activate a custom contribution.";
+
+    draftCustomContributionRows.appendChild(
+      note
+    );
+
+  }
 
 }
 
@@ -6735,6 +7158,389 @@ async function saveCustomContributionDraft(
 
 
 /* =========================================================
+   ACTIVATE EXISTING CUSTOM CONTRIBUTION
+========================================================= */
+
+async function activateExistingCustomContribution(
+  periodId,
+  button
+) {
+
+  if (
+    !CUSTOM_CONTRIBUTION_ACTIVATOR_ROLES.has(
+      getCurrentMemberRole()
+    )
+  ) {
+
+    showError(
+      new Error(
+        "You are not authorised to activate custom contributions."
+      )
+    );
+
+    return;
+
+  }
+
+
+  const period =
+    draftCustomContributions.find(
+      item =>
+        String(item.id) ===
+        String(periodId)
+    );
+
+
+  if (!period) {
+
+    showError(
+      new Error(
+        "The draft custom contribution could not be found. Please refresh the page."
+      )
+    );
+
+    return;
+
+  }
+
+
+  if (button) {
+
+    button.disabled =
+      true;
+
+    button.textContent =
+      "Activating…";
+
+  }
+
+
+  let requestId;
+
+  try {
+
+    requestId =
+      safeUuid();
+
+  }
+  catch (error) {
+
+    if (button) {
+
+      button.disabled =
+        false;
+
+      button.textContent =
+        "Activate";
+
+    }
+
+    showError(error);
+
+    return;
+
+  }
+
+
+  try {
+
+    let activationData =
+      null;
+
+    let activationError =
+      null;
+
+
+    /*
+     * Retry once with the SAME request ID so a lost browser
+     * response cannot accidentally create a second activation
+     * request. Replay behavior remains backend-owned.
+     */
+    for (
+      let attempt = 1;
+      attempt <= 2;
+      attempt += 1
+    ) {
+
+      const response =
+        await supabase.rpc(
+          "activate_custom_contribution",
+          {
+            p_group_id:
+              groupId,
+
+            p_period_id:
+              period.id,
+
+            p_request_id:
+              requestId
+
+          }
+        );
+
+
+      activationData =
+        response.data;
+
+      activationError =
+        response.error;
+
+
+      if (!activationError) {
+
+        break;
+
+      }
+
+
+      if (attempt === 2) {
+
+        throw activationError;
+
+      }
+
+    }
+
+
+    const activation =
+      normalizeRpcResult(
+        activationData
+      );
+
+
+    const {
+      data:
+        verifiedPeriod,
+      error:
+        verificationError
+    } =
+      await supabase
+        .from("contribution_periods")
+        .select(
+          "id,contribution_type_id,status"
+        )
+        .eq(
+          "id",
+          period.id
+        )
+        .eq(
+          "group_id",
+          groupId
+        )
+        .single();
+
+
+    if (verificationError) {
+
+      throw new Error(
+        "The contribution activation could not be verified. Please refresh and try again."
+      );
+
+    }
+
+
+    const verifiedStatus =
+      String(
+        verifiedPeriod?.status ||
+        activation?.status ||
+        ""
+      )
+        .trim()
+        .toLowerCase();
+
+
+    if (
+      !ACTIVE_CUSTOM_PERIOD_STATUSES.has(
+        verifiedStatus
+      )
+    ) {
+
+      throw new Error(
+        "The contribution is still a draft. It was not added to Active Contributions."
+      );
+
+    }
+
+
+    const resolvedTypeId =
+      verifiedPeriod?.contribution_type_id ||
+      activation?.contribution_type_id ||
+      activation?.type_id ||
+      period.contribution_type_id ||
+      null;
+
+
+    if (!resolvedTypeId) {
+
+      throw new Error(
+        "The contribution was activated, but its contribution type could not be resolved."
+      );
+
+    }
+
+
+    preferredCustomContributionValue =
+      "custom:" +
+      resolvedTypeId;
+
+
+    await Promise.all([
+
+      loadActiveCustomContributions(),
+
+      loadDraftCustomContributions(),
+
+      loadContributions(),
+
+      loadCanonicalMemberStatus(
+        accountingMonth
+      )
+
+    ]);
+
+
+    renderContributionTypeOptions(
+      preferredCustomContributionValue
+    );
+
+    renderActiveCustomContributionList();
+
+    renderDraftCustomContributionList();
+
+    renderLedger();
+
+    renderMemberStatus();
+
+    renderSummary();
+
+    renderContributionGoals();
+
+
+    if (typeSelect) {
+
+      typeSelect.value =
+        preferredCustomContributionValue;
+
+    }
+
+
+    updateContributionAmountFromType();
+
+
+    showCustomContributionEditorMessage(
+      (
+        period.contribution_name ||
+        period.name ||
+        "Custom contribution"
+      ) +
+      " is now active and available for recording.",
+      "success"
+    );
+
+
+    if (statusEl) {
+
+      statusEl.hidden =
+        false;
+
+      statusEl.textContent =
+        "✓ Custom contribution activated and added to Active Contributions.";
+
+    }
+
+  }
+  catch (error) {
+
+    console.error(
+      "Failed to activate existing custom contribution:",
+      error
+    );
+
+
+    showError(error);
+
+
+    if (draftCustomContributionRows) {
+
+      const message =
+        error?.message ||
+        "Custom contribution could not be activated.";
+
+      const notice =
+        document.createElement("div");
+
+      notice.className =
+        "cl-draft-contribution-empty";
+
+      notice.textContent =
+        message;
+
+      draftCustomContributionRows.prepend(
+        notice
+      );
+
+    }
+
+  }
+  finally {
+
+    if (button) {
+
+      button.disabled =
+        false;
+
+      button.textContent =
+        "Activate";
+
+    }
+
+  }
+
+}
+
+
+/* =========================================================
+   DRAFT CUSTOM CONTRIBUTION CLICK HANDLER
+========================================================= */
+
+function handleDraftCustomContributionClick(
+  event
+) {
+
+  const button =
+    event.target.closest(
+      "[data-activate-custom-contribution]"
+    );
+
+
+  if (!button) {
+
+    return;
+
+  }
+
+
+  const periodId =
+    button.dataset
+      .activateCustomContribution;
+
+
+  if (!periodId) {
+
+    return;
+
+  }
+
+
+  void activateExistingCustomContribution(
+    periodId,
+    button
+  );
+
+}
+
+
+/* =========================================================
    SELECT ACTIVE CUSTOM CONTRIBUTION
 ========================================================= */
 
@@ -6936,6 +7742,8 @@ export async function initContributions(
       loadMembers(),
 
       loadActiveCustomContributions(),
+
+      loadDraftCustomContributions(),
 
       loadContributions(),
 
@@ -7340,6 +8148,29 @@ if (
   verifierPaymentEvidenceCard.addEventListener(
     "click",
     handleVerifierPaymentEvidenceClick
+  );
+
+}
+
+
+/* =========================================================
+   DRAFT CUSTOM CONTRIBUTION EVENTS
+========================================================= */
+
+if (
+  draftCustomContributionRows &&
+  !draftCustomContributionRows.dataset
+    .clDraftCustomBound
+) {
+
+  draftCustomContributionRows.dataset
+    .clDraftCustomBound =
+    "true";
+
+
+  draftCustomContributionRows.addEventListener(
+    "click",
+    handleDraftCustomContributionClick
   );
 
 }
