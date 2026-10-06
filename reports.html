@@ -1312,6 +1312,61 @@
 
           </section>
 
+          <!-- CUSTOM CONTRIBUTION MEMBER STATUS -->
+
+          <section class="report-card">
+
+            <div class="section-title">
+              <div>
+                <h2>Custom Contribution Member Status</h2>
+                <p>
+                  See whether each member is paid, partial or outstanding
+                  for the selected active contribution. Status is derived
+                  from the canonical accounting records for the selected
+                  contribution. This report does not create or modify
+                  accounting records directly.
+                </p>
+              </div>
+            </div>
+
+            <div class="filter-grid">
+              <div class="filter-field">
+                <label for="customContributionMemberStatusSelect">Contribution</label>
+                <select id="customContributionMemberStatusSelect">
+                  <option value="all">Loading active contributions...</option>
+                </select>
+              </div>
+
+              <div class="filter-field">
+                <label>Viewing</label>
+                <div class="report-filter-value" id="customContributionMemberStatusViewing">—</div>
+              </div>
+            </div>
+
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Member</th>
+                    <th class="amount">Due</th>
+                    <th class="amount">Paid / Allocated</th>
+                    <th class="amount">Outstanding</th>
+                    <th>Due Date</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="customContributionMemberStatusRows">
+                  <tr>
+                    <td colspan="6" class="report-empty">
+                      Select an active contribution to view member status.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+          </section>
+
           <!-- CONTRIBUTION BREAKDOWN -->
 
           <section class="report-card">
