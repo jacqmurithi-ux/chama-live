@@ -136,6 +136,7 @@ let initialized = false;
 const MANAGEMENT_ROLES =
   new Set([
     "admin",
+    "administrator",
     "chairperson",
     "secretary",
     "treasurer"
@@ -280,6 +281,13 @@ function escapeHtml(value) {
 
 
 function normalize(value) {
+
+  if (value && typeof value === "object") {
+    value =
+      value.role ??
+      value.name ??
+      "";
+  }
 
   return String(value || "")
     .trim()
@@ -2137,33 +2145,11 @@ export const initSupportWelfare =
 
 
 /* =========================================================
-   AUTO BOOT
+   BOOT OWNERSHIP
+   ---------------------------------------------------------
+   admin-layout.js is the sole page bootloader.
+   This module exports initPage/initSupportWelfare only.
 ========================================================= */
-
-if (
-  document.readyState ===
-  "loading"
-) {
-
-  document.addEventListener(
-    "DOMContentLoaded",
-    () => {
-
-      initPage();
-
-    },
-    {
-      once: true
-    }
-  );
-
-}
-else {
-
-  initPage();
-
-}
-
 
 console.log(
   "CHAMA LIVE: support-welfare.js ready"
