@@ -24,11 +24,9 @@
    ---------------------------------------------------------
    PAGE CONTRACT
    ---------------------------------------------------------
-   The module resolves DOM elements defensively because the
-   Contributions page has evolved across versions.
-
-   No page auto-run is performed here.
-   admin-layout.js / page loader owns startup.
+   • Defensive DOM resolution.
+   • No page auto-run.
+   • admin-layout.js / page loader owns startup.
    ========================================================= */
 
 import { supabase } from "./supabase.js";
@@ -199,11 +197,10 @@ function notify(
       "info"
     );
 
-    existing.classList.add(
-      type
-    );
+    existing.classList.add(type);
 
     show(existing);
+
     return;
   }
 
@@ -300,14 +297,8 @@ function escapeHTML(value) {
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
-    .replaceAll(
-      '"',
-      "&quot;"
-    )
-    .replaceAll(
-      "'",
-      "&#039;"
-    );
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
 
@@ -429,21 +420,15 @@ function extractRows(result) {
     return result;
   }
 
-  if (
-    Array.isArray(result?.data)
-  ) {
+  if (Array.isArray(result?.data)) {
     return result.data;
   }
 
-  if (
-    Array.isArray(result?.rows)
-  ) {
+  if (Array.isArray(result?.rows)) {
     return result.rows;
   }
 
-  if (
-    Array.isArray(result?.results)
-  ) {
+  if (Array.isArray(result?.results)) {
     return result.results;
   }
 
@@ -489,8 +474,7 @@ function normaliseContributionType(row) {
     row.is_active !== undefined
       ? Boolean(row.is_active)
       : String(status)
-          .toLowerCase() ===
-        "active";
+          .toLowerCase() === "active";
 
   return {
     ...row,
@@ -560,11 +544,8 @@ async function loadContributionTypes() {
       const extracted =
         extractRows(result);
 
-      if (
-        Array.isArray(extracted)
-      ) {
-        rows =
-          extracted;
+      if (Array.isArray(extracted)) {
+        rows = extracted;
         break;
       }
     } catch (error) {
@@ -583,9 +564,7 @@ async function loadContributionTypes() {
 
   state.contributionTypes =
     rows
-      .map(
-        normaliseContributionType
-      )
+      .map(normaliseContributionType)
       .filter(Boolean);
 
   state.activeContributionTypes =
@@ -599,9 +578,7 @@ async function loadContributionTypes() {
   renderContributionTypeTable();
   renderActiveContributionDashboardCards();
 
-  return (
-    state.activeContributionTypes
-  );
+  return state.activeContributionTypes;
 }
 
 
@@ -640,9 +617,7 @@ function renderPaymentContributionTypes() {
     }
 
     const option =
-      document.createElement(
-        "option"
-      );
+      document.createElement("option");
 
     option.value =
       String(type.id);
@@ -665,9 +640,7 @@ function renderPaymentContributionTypes() {
     option.dataset.contributionTypeId =
       String(type.id);
 
-    select.appendChild(
-      option
-    );
+    select.appendChild(option);
   }
 
   if (
@@ -688,9 +661,7 @@ function renderPaymentContributionTypes() {
    MEMBERS
    ========================================================= */
 
-function getMemberDisplayName(
-  member
-) {
+function getMemberDisplayName(member) {
   return (
     member.full_name ||
     member.name ||
@@ -760,21 +731,15 @@ function renderMemberOptions() {
     }
 
     const option =
-      document.createElement(
-        "option"
-      );
+      document.createElement("option");
 
     option.value =
       String(id);
 
     option.textContent =
-      getMemberDisplayName(
-        member
-      );
+      getMemberDisplayName(member);
 
-    select.appendChild(
-      option
-    );
+    select.appendChild(option);
   }
 
   if (
@@ -820,6 +785,7 @@ function renderCustomContributionSummary() {
         No active contribution types.
       </div>
     `;
+
     return;
   }
 
@@ -833,12 +799,8 @@ function renderCustomContributionSummary() {
           );
 
         const amount =
-          Number.isFinite(
-            type.amount
-          )
-            ? formatKES(
-                type.amount
-              )
+          Number.isFinite(type.amount)
+            ? formatKES(type.amount)
             : "Amount varies";
 
         const frequency =
@@ -901,8 +863,7 @@ function renderCustomContributionSummary() {
    ========================================================= */
 
 function renderContributionTypeTable(
-  rows =
-    state.activeContributionTypes
+  rows = state.activeContributionTypes
 ) {
   const body =
     firstExisting(
@@ -920,11 +881,9 @@ function renderContributionTypeTable(
       body.closest("table");
 
     const colspan =
-      table
-        ?.querySelectorAll(
-          "thead th"
-        )
-        ?.length ||
+      table?.querySelectorAll(
+        "thead th"
+      )?.length ||
       5;
 
     body.innerHTML = `
@@ -942,12 +901,8 @@ function renderContributionTypeTable(
     rows
       .map(type => {
         const amount =
-          Number.isFinite(
-            type.amount
-          )
-            ? formatKES(
-                type.amount
-              )
+          Number.isFinite(type.amount)
+            ? formatKES(type.amount)
             : "Variable";
 
         return `
@@ -962,9 +917,7 @@ function renderContributionTypeTable(
             </td>
 
             <td>
-              ${escapeHTML(
-                amount
-              )}
+              ${escapeHTML(amount)}
             </td>
 
             <td>
@@ -1025,12 +978,8 @@ function renderActiveContributionDashboardCards() {
     state.activeContributionTypes
       .map(type => {
         const amount =
-          Number.isFinite(
-            type.amount
-          )
-            ? formatKES(
-                type.amount
-              )
+          Number.isFinite(type.amount)
+            ? formatKES(type.amount)
             : "Variable";
 
         return `
@@ -1258,18 +1207,14 @@ function resetContributionForm() {
    CANONICAL CONTRIBUTION RECORDING
    ========================================================= */
 
-async function recordContribution(
-  event
-) {
+async function recordContribution(event) {
   event?.preventDefault();
 
   if (state.submitting) {
     return;
   }
 
-  if (
-    !canManageContributions()
-  ) {
+  if (!canManageContributions()) {
     notify(
       "You are not authorised to record contributions.",
       "error"
@@ -1290,9 +1235,7 @@ async function recordContribution(
     return;
   }
 
-  if (
-    !values.contribution_type_id
-  ) {
+  if (!values.contribution_type_id) {
     notify(
       "Select the contribution type.",
       "error"
@@ -1308,8 +1251,7 @@ async function recordContribution(
     return;
   }
 
-  state.submitting =
-    true;
+  state.submitting = true;
 
   const submitButton =
     firstExisting(
@@ -1365,6 +1307,7 @@ async function recordContribution(
     await refreshContributionView();
 
     return result;
+
   } catch (error) {
     console.error(
       "Canonical contribution recording failed:",
@@ -1378,9 +1321,9 @@ async function recordContribution(
     );
 
     throw error;
+
   } finally {
-    state.submitting =
-      false;
+    state.submitting = false;
 
     disable(
       submitButton,
@@ -1412,8 +1355,7 @@ async function getMemberContributionPosition(
       contributionTypeId;
   }
 
-  let lastError =
-    null;
+  let lastError = null;
 
   const candidates = [
     "get_member_contribution_position",
@@ -1456,9 +1398,7 @@ async function getMemberContributionPosition(
    POSITION NORMALISATION
    ========================================================= */
 
-function normalisePosition(
-  position
-) {
+function normalisePosition(position) {
   if (!position) {
     return {
       required: 0,
@@ -1504,12 +1444,9 @@ function normalisePosition(
   const outstanding =
     outstandingValue !== undefined &&
     outstandingValue !== null
-      ? Number(
-          outstandingValue
-        )
+      ? Number(outstandingValue)
       : Math.max(
-          required -
-          allocated,
+          required - allocated,
           0
         );
 
@@ -1539,11 +1476,9 @@ function normalisePosition(
     } else if (
       allocated > 0
     ) {
-      status =
-        "partially_paid";
+      status = "partially_paid";
     } else {
-      status =
-        "outstanding";
+      status = "outstanding";
     }
   }
 
@@ -1563,9 +1498,7 @@ function normalisePosition(
    STATUS HELPERS
    ========================================================= */
 
-function statusLabel(
-  status
-) {
+function statusLabel(status) {
   switch (
     String(status || "")
       .trim()
@@ -1598,17 +1531,12 @@ function statusLabel(
     default:
       return status
         ? String(status)
-            .replaceAll(
-              "_",
-              " "
-            )
+            .replaceAll("_", " ")
         : "Recorded";
   }
 }
 
-function statusClass(
-  status
-) {
+function statusClass(status) {
   switch (
     String(status || "")
       .trim()
@@ -1657,9 +1585,7 @@ function renderMemberContributionStatus(
   }
 
   const normalised =
-    normalisePosition(
-      position
-    );
+    normalisePosition(position);
 
   container.innerHTML = `
     <span class="status-badge ${statusClass(
@@ -1809,6 +1735,7 @@ async function renderMemberContributionCards() {
           </div>
         </article>
       `);
+
     } catch (error) {
       console.error(
         "Member contribution position failed:",
@@ -1826,9 +1753,10 @@ async function renderMemberContributionCards() {
    CONTRIBUTION LEDGER
    =========================================================
 
-   IMPORTANT:
-   This is the ONLY declaration of
-   loadContributionLedger() in this file.
+   SINGLE DECLARATION.
+
+   This function must NOT be declared anywhere else in
+   this module.
    ========================================================= */
 
 async function loadContributionLedger() {
@@ -1866,17 +1794,15 @@ async function loadContributionLedger() {
       const rows =
         extractRows(result);
 
-      if (
-        Array.isArray(rows)
-      ) {
+      if (Array.isArray(rows)) {
         state.contributions =
           rows;
 
         break;
       }
+
     } catch (error) {
-      lastError =
-        error;
+      lastError = error;
     }
   }
 
@@ -1885,8 +1811,7 @@ async function loadContributionLedger() {
       state.contributions
     )
   ) {
-    state.contributions =
-      [];
+    state.contributions = [];
   }
 
   if (
@@ -1903,11 +1828,9 @@ async function loadContributionLedger() {
       container.closest("table");
 
     const colspan =
-      table
-        ?.querySelectorAll(
-          "thead th"
-        )
-        ?.length ||
+      table?.querySelectorAll(
+        "thead th"
+      )?.length ||
       7;
 
     container.innerHTML = `
@@ -1933,9 +1856,7 @@ async function loadContributionLedger() {
    LEDGER HELPERS
    ========================================================= */
 
-function getContributionMemberName(
-  row
-) {
+function getContributionMemberName(row) {
   return (
     row.member_name ||
     row.full_name ||
@@ -1950,9 +1871,7 @@ function getContributionMemberName(
   );
 }
 
-function getContributionTypeName(
-  row
-) {
+function getContributionTypeName(row) {
   return (
     row.contribution_type_name ||
     row.type_name ||
@@ -1963,9 +1882,7 @@ function getContributionTypeName(
   );
 }
 
-function getContributionStatus(
-  row
-) {
+function getContributionStatus(row) {
   const raw =
     row.status ||
     row.contribution_status ||
@@ -1978,9 +1895,7 @@ function getContributionStatus(
     .toLowerCase();
 }
 
-function renderContributionRow(
-  row
-) {
+function renderContributionRow(row) {
   const amount =
     row.amount ??
     row.payment_amount ??
@@ -2005,9 +1920,7 @@ function renderContributionRow(
     "—";
 
   const rawStatus =
-    getContributionStatus(
-      row
-    );
+    getContributionStatus(row);
 
   return `
     <tr
@@ -2019,17 +1932,13 @@ function renderContributionRow(
     >
       <td>
         ${escapeHTML(
-          getContributionMemberName(
-            row
-          )
+          getContributionMemberName(row)
         )}
       </td>
 
       <td>
         ${escapeHTML(
-          getContributionTypeName(
-            row
-          )
+          getContributionTypeName(row)
         )}
       </td>
 
@@ -2046,15 +1955,11 @@ function renderContributionRow(
       </td>
 
       <td>
-        ${escapeHTML(
-          method
-        )}
+        ${escapeHTML(method)}
       </td>
 
       <td>
-        ${escapeHTML(
-          reference
-        )}
+        ${escapeHTML(reference)}
       </td>
 
       <td>
@@ -2064,9 +1969,7 @@ function renderContributionRow(
           )}"
         >
           ${escapeHTML(
-            statusLabel(
-              rawStatus
-            )
+            statusLabel(rawStatus)
           )}
         </span>
       </td>
@@ -2074,9 +1977,7 @@ function renderContributionRow(
   `;
 }
 
-function renderContributionLedger(
-  rows
-) {
+function renderContributionLedger(rows) {
   const container =
     firstExisting(
       "#contributionsBody",
@@ -2094,16 +1995,12 @@ function renderContributionLedger(
     rows.length === 0
   ) {
     const table =
-      container.closest(
-        "table"
-      );
+      container.closest("table");
 
     const columnCount =
-      table
-        ?.querySelectorAll(
-          "thead th"
-        )
-        ?.length ||
+      table?.querySelectorAll(
+        "thead th"
+      )?.length ||
       7;
 
     container.innerHTML = `
@@ -2122,9 +2019,7 @@ function renderContributionLedger(
 
   container.innerHTML =
     rows
-      .map(
-        renderContributionRow
-      )
+      .map(renderContributionRow)
       .join("");
 }
 
@@ -2187,38 +2082,24 @@ function getCustomContributionFormValues() {
   };
 }
 
-function validateCustomContribution(
-  values
-) {
+function validateCustomContribution(values) {
   if (!values.name) {
-    return (
-      "Enter a name for the contribution."
-    );
+    return "Enter a name for the contribution.";
   }
 
-  if (
-    values.name.length < 2
-  ) {
-    return (
-      "Contribution name is too short."
-    );
+  if (values.name.length < 2) {
+    return "Contribution name is too short.";
   }
 
-  if (
-    values.name.length > 150
-  ) {
-    return (
-      "Contribution name is too long."
-    );
+  if (values.name.length > 150) {
+    return "Contribution name is too long.";
   }
 
   if (
     values.amount !== null &&
     values.amount <= 0
   ) {
-    return (
-      "Enter a valid contribution amount."
-    );
+    return "Enter a valid contribution amount.";
   }
 
   return null;
@@ -2229,17 +2110,14 @@ function validateCustomContribution(
    CUSTOM CONTRIBUTION CREATION RPC
    ========================================================= */
 
-async function createCustomContribution(
-  values
-) {
+async function createCustomContribution(values) {
   const rpcCandidates = [
     "create_custom_contribution",
     "create_group_custom_contribution",
     "create_contribution_type"
   ];
 
-  let lastError =
-    null;
+  let lastError = null;
 
   for (
     const rpcName
@@ -2265,9 +2143,9 @@ async function createCustomContribution(
             values.description
         }
       );
+
     } catch (error) {
-      lastError =
-        error;
+      lastError = error;
     }
   }
 
@@ -2284,18 +2162,14 @@ async function createCustomContribution(
    CREATE CUSTOM CONTRIBUTION
    ========================================================= */
 
-async function submitCustomContribution(
-  event
-) {
+async function submitCustomContribution(event) {
   event?.preventDefault();
 
   if (state.submitting) {
     return;
   }
 
-  if (
-    !canManageContributions()
-  ) {
+  if (!canManageContributions()) {
     notify(
       "You are not authorised to create contributions.",
       "error"
@@ -2309,9 +2183,7 @@ async function submitCustomContribution(
     getCustomContributionFormValues();
 
   const validation =
-    validateCustomContribution(
-      values
-    );
+    validateCustomContribution(values);
 
   if (validation) {
     notify(
@@ -2321,8 +2193,7 @@ async function submitCustomContribution(
     return;
   }
 
-  state.submitting =
-    true;
+  state.submitting = true;
 
   const submitButton =
     firstExisting(
@@ -2346,7 +2217,7 @@ async function submitCustomContribution(
     /*
      * Reload canonical definitions.
      * The active definition therefore comes from the
-     * backend, not temporary frontend state.
+     * backend rather than temporary frontend state.
      */
     await loadContributionTypes();
 
@@ -2370,13 +2241,10 @@ async function submitCustomContribution(
       "success"
     );
 
-    /*
-     * Refresh member status cards so a newly active
-     * contribution rule is immediately represented.
-     */
     await renderMemberContributionCards();
 
     return result;
+
   } catch (error) {
     console.error(
       "Custom Contribution creation failed:",
@@ -2390,9 +2258,9 @@ async function submitCustomContribution(
     );
 
     throw error;
+
   } finally {
-    state.submitting =
-      false;
+    state.submitting = false;
 
     disable(
       submitButton,
@@ -2414,9 +2282,7 @@ async function refreshActiveContributionTypes() {
   renderContributionTypeTable();
   renderActiveContributionDashboardCards();
 
-  return (
-    state.activeContributionTypes
-  );
+  return state.activeContributionTypes;
 }
 
 
@@ -2471,10 +2337,8 @@ function getEvidenceFormValues() {
 
   return {
     amount,
-    payment_date:
-      paymentDate,
-    payment_method:
-      paymentMethod,
+    payment_date: paymentDate,
+    payment_method: paymentMethod,
     reference,
     notes
   };
@@ -2485,9 +2349,7 @@ function getEvidenceFormValues() {
    MEMBER PAYMENT EVIDENCE SUBMISSION
    ========================================================= */
 
-async function submitPaymentEvidence(
-  event
-) {
+async function submitPaymentEvidence(event) {
   event?.preventDefault();
 
   if (state.submitting) {
@@ -2515,8 +2377,7 @@ async function submitPaymentEvidence(
     return;
   }
 
-  state.submitting =
-    true;
+  state.submitting = true;
 
   const submitButton =
     firstExisting(
@@ -2577,13 +2438,12 @@ async function submitPaymentEvidence(
       "success"
     );
 
-    if (
-      canVerifyEvidence()
-    ) {
+    if (canVerifyEvidence()) {
       await loadPaymentEvidence();
     }
 
     return result;
+
   } catch (error) {
     console.error(
       "Payment evidence submission failed:",
@@ -2597,9 +2457,9 @@ async function submitPaymentEvidence(
     );
 
     throw error;
+
   } finally {
-    state.submitting =
-      false;
+    state.submitting = false;
 
     disable(
       submitButton,
@@ -2623,15 +2483,12 @@ async function loadPaymentEvidence() {
       "[data-payment-evidence-body]"
     );
 
-  if (
-    !canVerifyEvidence()
-  ) {
+  if (!canVerifyEvidence()) {
     return [];
   }
 
   let result = null;
-  let lastError =
-    null;
+  let lastError = null;
 
   const candidates = [
     "get_member_payment_evidence",
@@ -2656,17 +2513,15 @@ async function loadPaymentEvidence() {
       const rows =
         extractRows(result);
 
-      if (
-        Array.isArray(rows)
-      ) {
+      if (Array.isArray(rows)) {
         state.paymentEvidence =
           rows;
 
         break;
       }
+
     } catch (error) {
-      lastError =
-        error;
+      lastError = error;
     }
   }
 
@@ -2675,8 +2530,7 @@ async function loadPaymentEvidence() {
       state.paymentEvidence
     )
   ) {
-    state.paymentEvidence =
-      [];
+    state.paymentEvidence = [];
   }
 
   if (
@@ -2722,9 +2576,7 @@ function evidenceStatus(row) {
     .toLowerCase();
 }
 
-function evidenceStatusLabel(
-  status
-) {
+function evidenceStatusLabel(status) {
   switch (status) {
     case "verified":
     case "approved":
@@ -2739,17 +2591,12 @@ function evidenceStatusLabel(
 
     default:
       return status
-        ? status.replaceAll(
-            "_",
-            " "
-          )
+        ? status.replaceAll("_", " ")
         : "Pending";
   }
 }
 
-function renderPaymentEvidence(
-  rows
-) {
+function renderPaymentEvidence(rows) {
   const container =
     firstExisting(
       "#paymentEvidenceBody",
@@ -2768,16 +2615,12 @@ function renderPaymentEvidence(
     rows.length === 0
   ) {
     const table =
-      container.closest(
-        "table"
-      );
+      container.closest("table");
 
     const colspan =
-      table
-        ?.querySelectorAll(
-          "thead th"
-        )
-        ?.length ||
+      table?.querySelectorAll(
+        "thead th"
+      )?.length ||
       8;
 
     container.innerHTML = `
@@ -2799,9 +2642,7 @@ function renderPaymentEvidence(
           row.evidence_id;
 
         const memberName =
-          getContributionMemberName(
-            row
-          );
+          getContributionMemberName(row);
 
         const amount =
           row.amount ??
@@ -2825,9 +2666,7 @@ function renderPaymentEvidence(
           "—";
 
         const status =
-          evidenceStatus(
-            row
-          );
+          evidenceStatus(row);
 
         const actions =
           canVerifyEvidence() &&
@@ -2859,9 +2698,7 @@ function renderPaymentEvidence(
             data-evidence-id="${escapeHTML(id)}"
           >
             <td>
-              ${escapeHTML(
-                memberName
-              )}
+              ${escapeHTML(memberName)}
             </td>
 
             <td>
@@ -2877,15 +2714,11 @@ function renderPaymentEvidence(
             </td>
 
             <td>
-              ${escapeHTML(
-                method
-              )}
+              ${escapeHTML(method)}
             </td>
 
             <td>
-              ${escapeHTML(
-                reference
-              )}
+              ${escapeHTML(reference)}
             </td>
 
             <td>
@@ -2893,9 +2726,7 @@ function renderPaymentEvidence(
                 class="status-badge status-${escapeHTML(status)}"
               >
                 ${escapeHTML(
-                  evidenceStatusLabel(
-                    status
-                  )
+                  evidenceStatusLabel(status)
                 )}
               </span>
             </td>
@@ -2914,9 +2745,7 @@ function renderPaymentEvidence(
    EVIDENCE LOOKUP
    ========================================================= */
 
-function findEvidence(
-  evidenceId
-) {
+function findEvidence(evidenceId) {
   return (
     state.paymentEvidence?.find(
       row =>
@@ -2935,12 +2764,8 @@ function findEvidence(
    VERIFY PAYMENT EVIDENCE
    ========================================================= */
 
-async function verifyPaymentEvidence(
-  evidenceId
-) {
-  if (
-    !canVerifyEvidence()
-  ) {
+async function verifyPaymentEvidence(evidenceId) {
+  if (!canVerifyEvidence()) {
     throw new Error(
       "You are not authorised to verify payment evidence."
     );
@@ -2970,9 +2795,7 @@ async function rejectPaymentEvidence(
   evidenceId,
   reason = null
 ) {
-  if (
-    !canVerifyEvidence()
-  ) {
+  if (!canVerifyEvidence()) {
     throw new Error(
       "You are not authorised to reject payment evidence."
     );
@@ -2989,8 +2812,7 @@ async function rejectPaymentEvidence(
     "reject_payment_evidence"
   ];
 
-  let lastError =
-    null;
+  let lastError = null;
 
   for (
     const rpcName
@@ -3007,9 +2829,9 @@ async function rejectPaymentEvidence(
             reason
         }
       );
+
     } catch (error) {
-      lastError =
-        error;
+      lastError = error;
     }
   }
 
@@ -3026,9 +2848,7 @@ async function rejectPaymentEvidence(
    EVIDENCE ACTION HANDLER
    ========================================================= */
 
-async function handleEvidenceAction(
-  event
-) {
+async function handleEvidenceAction(event) {
   const verifyButton =
     event.target.closest(
       "[data-verify-evidence]"
@@ -3057,9 +2877,7 @@ async function handleEvidenceAction(
   }
 
   const evidence =
-    findEvidence(
-      evidenceId
-    );
+    findEvidence(evidenceId);
 
   if (!evidence) {
     notify(
@@ -3143,8 +2961,7 @@ async function handleEvidenceAction(
     try {
       await rejectPaymentEvidence(
         evidenceId,
-        reason.trim() ||
-        null
+        reason.trim() || null
       );
 
       notify(
@@ -3180,9 +2997,7 @@ async function handleEvidenceAction(
    ACTIVE CONTRIBUTION CARD CLICK
    ========================================================= */
 
-function handleActiveContributionClick(
-  event
-) {
+function handleActiveContributionClick(event) {
   const card =
     event.target.closest(
       "[data-contribution-type-id]"
@@ -3212,15 +3027,12 @@ function handleActiveContributionClick(
   }
 
   const exists =
-    Array.from(
-      select.options
-    ).some(
-      option =>
-        String(
-          option.value
-        ) ===
-        String(typeId)
-    );
+    Array.from(select.options)
+      .some(
+        option =>
+          String(option.value) ===
+          String(typeId)
+      );
 
   if (!exists) {
     return;
@@ -3249,9 +3061,7 @@ function handleActiveContributionClick(
    MEMBER / TYPE CHANGE HANDLERS
    ========================================================= */
 
-function handleContributionTypeChange(
-  event
-) {
+function handleContributionTypeChange(event) {
   const typeId =
     event?.target?.value ||
     null;
@@ -3285,9 +3095,7 @@ function handleContributionTypeChange(
   }
 }
 
-function handleMemberChange(
-  event
-) {
+function handleMemberChange(event) {
   const memberId =
     event?.target?.value ||
     null;
@@ -3329,9 +3137,7 @@ async function refreshContributionView() {
 
   await loadContributionLedger();
 
-  if (
-    canVerifyEvidence()
-  ) {
+  if (canVerifyEvidence()) {
     await loadPaymentEvidence();
   }
 
@@ -3373,9 +3179,7 @@ function applyRoleBasedVisibility() {
     of managerSelectors
   ) {
     document
-      .querySelectorAll(
-        selector
-      )
+      .querySelectorAll(selector)
       .forEach(element => {
         if (managerAllowed) {
           show(element);
@@ -3390,9 +3194,7 @@ function applyRoleBasedVisibility() {
     of verificationSelectors
   ) {
     document
-      .querySelectorAll(
-        selector
-      )
+      .querySelectorAll(selector)
       .forEach(element => {
         if (verifierAllowed) {
           show(element);
@@ -3697,60 +3499,54 @@ function bindRefreshButtons() {
       ].join(",")
     );
 
-  buttons.forEach(
-    button => {
-      if (
-        button.dataset.bound
-      ) {
-        return;
-      }
-
-      button.addEventListener(
-        "click",
-        async () => {
-          if (state.loading) {
-            return;
-          }
-
-          try {
-            state.loading =
-              true;
-
-            disable(
-              button,
-              true
-            );
-
-            await refreshContributionView();
-
-          } catch (error) {
-            console.error(
-              "Contribution refresh failed:",
-              error
-            );
-
-            notify(
-              error?.message ||
-              "Unable to refresh contributions.",
-              "error"
-            );
-
-          } finally {
-            state.loading =
-              false;
-
-            disable(
-              button,
-              false
-            );
-          }
-        }
-      );
-
-      button.dataset.bound =
-        "true";
+  buttons.forEach(button => {
+    if (button.dataset.bound) {
+      return;
     }
-  );
+
+    button.addEventListener(
+      "click",
+      async () => {
+        if (state.loading) {
+          return;
+        }
+
+        try {
+          state.loading = true;
+
+          disable(
+            button,
+            true
+          );
+
+          await refreshContributionView();
+
+        } catch (error) {
+          console.error(
+            "Contribution refresh failed:",
+            error
+          );
+
+          notify(
+            error?.message ||
+            "Unable to refresh contributions.",
+            "error"
+          );
+
+        } finally {
+          state.loading = false;
+
+          disable(
+            button,
+            false
+          );
+        }
+      }
+    );
+
+    button.dataset.bound =
+      "true";
+  });
 }
 
 
@@ -3772,9 +3568,7 @@ function bindEvents() {
    PAGE LOADING STATE
    ========================================================= */
 
-function setPageLoading(
-  isLoading
-) {
+function setPageLoading(isLoading) {
   const loader =
     firstExisting(
       "#contributionsLoading",
@@ -3832,11 +3626,10 @@ async function loadInitialData() {
   renderContributionTypeTable();
   renderActiveContributionDashboardCards();
 
-  if (
-    canManageContributions()
-  ) {
+  if (canManageContributions()) {
     try {
       await loadMembers();
+
     } catch (error) {
       console.error(
         "Member list failed:",
@@ -3849,9 +3642,7 @@ async function loadInitialData() {
 
   await loadContributionLedger();
 
-  if (
-    canVerifyEvidence()
-  ) {
+  if (canVerifyEvidence()) {
     await loadPaymentEvidence();
   }
 
@@ -3889,14 +3680,11 @@ export async function initPage() {
     return;
   }
 
-  state.loading =
-    true;
+  state.loading = true;
 
   clearNotification();
 
-  setPageLoading(
-    true
-  );
+  setPageLoading(true);
 
   try {
     await loadInitialData();
@@ -3906,14 +3694,12 @@ export async function initPage() {
     renderAfterLoad();
 
     /*
-     * Keep the existing managed-member accounting refresh
-     * optional. Do not require data.ok === true.
+     * Optional managed-member accounting refresh.
      *
-     * This is a refresh/orchestration call only.
+     * Do not require data.ok === true.
+     * This is an orchestration/refresh call only.
      */
-    if (
-      canManageContributions()
-    ) {
+    if (canManageContributions()) {
       try {
         await callRPC(
           "refresh_my_managed_member_accounting",
@@ -3922,6 +3708,7 @@ export async function initPage() {
               state.group.id
           }
         );
+
       } catch (error) {
         console.warn(
           "Managed-member accounting refresh unavailable:",
@@ -3935,9 +3722,7 @@ export async function initPage() {
      */
     await renderMemberContributionCards();
 
-    setPageLoading(
-      false
-    );
+    setPageLoading(false);
 
     return {
       ok: true,
@@ -3952,9 +3737,7 @@ export async function initPage() {
       error
     );
 
-    setPageLoading(
-      false
-    );
+    setPageLoading(false);
 
     notify(
       error?.message ||
@@ -3968,8 +3751,7 @@ export async function initPage() {
     };
 
   } finally {
-    state.loading =
-      false;
+    state.loading = false;
   }
 }
 
@@ -3983,8 +3765,7 @@ export async function refreshPage() {
     return;
   }
 
-  state.loading =
-    true;
+  state.loading = true;
 
   try {
     await refreshContributionView();
@@ -4006,8 +3787,7 @@ export async function refreshPage() {
     return false;
 
   } finally {
-    state.loading =
-      false;
+    state.loading = false;
   }
 }
 
@@ -4087,7 +3867,6 @@ export {
        await initPage();
 
    ========================================================= */
-
 
 /* =========================================================
    END — CHAMA LIVE CONTRIBUTIONS
