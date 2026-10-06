@@ -1720,12 +1720,16 @@
               id="customContributionFineAmount"
               name="customContributionFineAmount"
               type="number"
-              min="0"
+              min="0.01"
               step="0.01"
               inputmode="decimal"
-              placeholder="0.00"
+              placeholder="e.g. 100"
               disabled
             >
+
+            <small class="cl-form-note">
+              Required when Apply fine is enabled. Fine amount must be greater than zero.
+            </small>
 
           </div>
 
