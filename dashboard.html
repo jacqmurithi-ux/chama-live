@@ -207,6 +207,49 @@
       margin-bottom: 22px;
     }
 
+    .dashboard-header-copy {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+    }
+
+    .dashboard-header-actions {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+
+    .dashboard-header .btn {
+      min-height: 40px;
+      padding: 8px 13px;
+      border: 1px solid #d0d5dd;
+      border-radius: 10px;
+      background: #ffffff;
+      color: #344054;
+      font: inherit;
+      font-size: 12px;
+      font-weight: 750;
+      cursor: pointer;
+      transition: background .18s ease, border-color .18s ease, transform .18s ease;
+    }
+
+    .dashboard-header .btn:hover {
+      background: #f8fafc;
+      border-color: #98a2b3;
+    }
+
+    .dashboard-header .btn:active {
+      transform: translateY(1px);
+    }
+
+    .dashboard-header .btn:disabled {
+      opacity: .55;
+      cursor: not-allowed;
+      transform: none;
+    }
+
     .dashboard-header h1 {
       margin: 0;
       color: var(--dashboard-text);
@@ -1031,6 +1074,19 @@
         display: none;
       }
 
+      .dashboard-header-copy {
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .dashboard-header-actions {
+        width: 100%;
+      }
+
+      .dashboard-header-actions .btn {
+        width: 100%;
+      }
+
       .topbar-actions .btn {
         min-height: 38px;
         padding: 7px 10px;
@@ -1355,18 +1411,33 @@
 
       <section class="dashboard-header">
 
-        <h1>
-          Group Dashboard
-        </h1>
+        <div class="dashboard-header-copy">
+          <div>
+            <h1>
+              Group Dashboard
+            </h1>
 
-        <p>
-          Welcome to
-          <strong data-group-name>
-            your group
-          </strong>.
-          Here is your group's current financial and
-          operational overview.
-        </p>
+            <p>
+              Welcome to
+              <strong data-group-name>
+                your group
+              </strong>.
+              See your group's financial position, member payment status,
+              ongoing contributions and key group activity in one place.
+            </p>
+          </div>
+
+          <div class="dashboard-header-actions">
+            <button
+              id="refreshDashboard"
+              class="btn btn-secondary"
+              type="button"
+              title="Reload the latest dashboard information"
+            >
+              Refresh
+            </button>
+          </div>
+        </div>
 
       </section>
 
@@ -1840,12 +1911,12 @@
         <div class="section-heading">
 
           <h2 id="memberPaymentsTitle">
-            Member payment status
+            Monthly member payment status
           </h2>
 
           <p>
-            Monthly member obligations and canonical allocation
-            status.
+            See who is up to date, partially paid or still has an
+            outstanding monthly obligation. Status comes from canonical accounting.
           </p>
 
         </div>
@@ -1937,14 +2008,13 @@
         <div class="section-heading">
 
           <h2 id="customContributionMemberStatusTitle">
-            Custom contribution member status
+            Custom contribution payment status
           </h2>
 
           <p>
-            Member-level status for active custom contribution
-            obligations. A member is shown as Paid, Outstanding
-            or Partial according to the canonical allocation
-            against that contribution.
+            See member-level payment status for each active custom
+            contribution. Paid, Partial and Outstanding reflect canonical
+            allocation against the obligation.
           </p>
 
         </div>
