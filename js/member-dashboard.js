@@ -478,6 +478,82 @@ function renderMyContributionPosition(position) {
 }
 
 
+async function loadMyActiveContributions() {
+  const container = byId("myActiveContributions");
+  if (!container || !groupId || !memberId) return;
+
+  container.replaceChildren();
+
+  try {
+    const { data, error } = await supabase.rpc(
+      "get_member_active_contributions",
+      {
+        p_group_id: groupId,
+        p_member_id: memberId
+      }
+    );
+
+    if (error) throw error;
+
+    const rows = data || [];
+
+    if (!rows.length) {
+      const empty = document.createElement("div");
+      empty.className = "member-list-item";
+      empty.textContent = "No active contribution types are currently assigned to you.";
+      container.appendChild(empty);
+      return;
+    }
+
+    rows.forEach(item => {
+      const card = document.createElement("div");
+      card.className = "member-list-item";
+
+      const title = document.createElement("strong");
+      title.textContent = item.contribution_name || "Contribution";
+
+      const status = document.createElement("span");
+      status.className =
+        String(item.status || "").toUpperCase() === "PAID"
+          ? "member-finance-status-value status-paid"
+          : "member-finance-status-value status-unknown";
+      status.textContent = item.status || "OUTSTANDING";
+
+      const amounts = document.createElement("div");
+      amounts.className = "member-muted";
+      amounts.textContent =
+        "Due " + money(item.amount_due) +
+        " · Allocated " + money(item.amount_allocated) +
+        " · Outstanding " + money(item.outstanding_balance);
+
+      const dates = document.createElement("div");
+      dates.className = "member-muted";
+      dates.textContent =
+        (item.frequency || "—") +
+        " · Due " + formatDate(item.due_date) +
+        " · Closing " + formatDate(item.closing_date);
+
+      const rules = document.createElement("div");
+      rules.className = "member-muted";
+      rules.textContent = item.fine_enabled
+        ? "Grace " + Number(item.grace_period_value || 0) +
+          " day" + (Number(item.grace_period_value || 0) === 1 ? "" : "s") +
+          " · Fine " + money(item.fine_amount)
+        : "No fine rule";
+
+      card.append(title, status, amounts, dates, rules);
+      container.appendChild(card);
+    });
+  } catch (error) {
+    console.warn("Active member contributions could not be loaded:", error);
+    const failed = document.createElement("div");
+    failed.className = "member-list-item";
+    failed.textContent = "Active contribution status could not be loaded.";
+    container.appendChild(failed);
+  }
+}
+
+
 async function loadMyContributionPosition() {
   const statusElement =
     byId(
@@ -1765,6 +1841,7 @@ async function loadDashboard() {
     const results =
       await Promise.allSettled([
         loadMyContributionPosition(),
+        loadMyActiveContributions(),
         loadMyContributionActivity(),
         loadGroupReadData(),
         loadGroupMonthlyAccountingSummary(),
