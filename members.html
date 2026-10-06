@@ -350,7 +350,8 @@
 
     .member-status-badge,
     .member-onboarding-badge,
-    .member-position-badge {
+    .member-position-badge,
+    .member-contribution-badge {
       display: inline-flex;
       align-items: center;
       gap: 5px;
@@ -387,6 +388,26 @@
     .member-onboarding-blocked {
       background: #fef3f2;
       color: #b42318;
+    }
+
+    .member-contribution-paid {
+      background: #ecfdf3;
+      color: #027a48;
+    }
+
+    .member-contribution-partial {
+      background: #fffaeb;
+      color: #b54708;
+    }
+
+    .member-contribution-outstanding {
+      background: #fef3f2;
+      color: #b42318;
+    }
+
+    .member-contribution-neutral {
+      background: #f2f4f7;
+      color: #475467;
     }
 
     /* =========================================================
@@ -537,6 +558,12 @@
       border-top: 1px solid #eaecf0;
     }
 
+    .member-modal-section:first-child {
+      margin-top: 0;
+      padding-top: 0;
+      border-top: 0;
+    }
+
     .member-modal-section h3 {
       margin: 0 0 5px;
       font-size: 16px;
@@ -548,6 +575,10 @@
       font-size: 13px;
     }
 
+    /* =========================================================
+       CONTRIBUTION RULES
+    ========================================================= */
+
     .member-rules-list {
       display: grid;
       gap: 10px;
@@ -556,8 +587,29 @@
     .member-rule-card {
       border: 1px solid #eaecf0;
       border-radius: 10px;
-      padding: 12px;
+      padding: 14px;
       background: #f9fafb;
+    }
+
+    .member-rule-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .member-rule-card-title {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 700;
+      color: #101828;
+    }
+
+    .member-rule-card-type {
+      margin-top: 3px;
+      color: #667085;
+      font-size: 12px;
     }
 
     .member-rule-grid {
@@ -567,12 +619,28 @@
       font-size: 13px;
     }
 
+    .member-rule-item {
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: #fff;
+      border: 1px solid #eaecf0;
+    }
+
     .member-rule-item strong {
       display: block;
       color: #667085;
       font-size: 11px;
       margin-bottom: 2px;
     }
+
+    .member-rule-item span {
+      color: #101828;
+      font-weight: 500;
+    }
+
+    /* =========================================================
+       CONTRIBUTION ACCOUNTING
+    ========================================================= */
 
     .member-accounting-grid {
       display: grid;
@@ -598,6 +666,57 @@
       font-size: 16px;
       color: #101828;
     }
+
+    /* =========================================================
+       MEMBER CONTRIBUTION STATUS
+    ========================================================= */
+
+    .member-contribution-status-panel {
+      margin-top: 14px;
+      border: 1px solid #eaecf0;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .member-contribution-status-header {
+      padding: 11px 13px;
+      background: #f9fafb;
+      border-bottom: 1px solid #eaecf0;
+      font-size: 13px;
+      font-weight: 600;
+      color: #344054;
+    }
+
+    .member-contribution-status-list {
+      display: grid;
+    }
+
+    .member-contribution-status-row {
+      display: grid;
+      grid-template-columns: minmax(150px, 1.5fr) repeat(4, minmax(80px, 1fr));
+      gap: 10px;
+      align-items: center;
+      padding: 11px 13px;
+      border-bottom: 1px solid #eaecf0;
+      font-size: 12px;
+    }
+
+    .member-contribution-status-row:last-child {
+      border-bottom: 0;
+    }
+
+    .member-contribution-status-name {
+      font-weight: 600;
+      color: #101828;
+    }
+
+    .member-contribution-status-value {
+      color: #475467;
+    }
+
+    /* =========================================================
+       MODAL FOOTER
+    ========================================================= */
 
     .member-modal-footer {
       display: flex;
@@ -627,6 +746,10 @@
 
       .member-accounting-grid {
         grid-template-columns: 1fr;
+      }
+
+      .member-contribution-status-row {
+        grid-template-columns: 1fr 1fr;
       }
     }
 
@@ -671,6 +794,14 @@
 
       .member-detail-grid {
         grid-template-columns: 1fr;
+      }
+
+      .member-rule-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .member-contribution-status-row {
+        grid-template-columns: 1fr 1fr;
       }
 
       .member-modal {
@@ -1256,9 +1387,10 @@
             <h3>Contribution Setup</h3>
 
             <p class="member-form-section-description">
-              Configure the member's initial contribution
-              obligation. Accounting records remain
-              backend-owned.
+              Configure the member's initial monthly contribution
+              obligation. Active custom contribution rules are
+              managed separately and remain visible in the
+              member's contribution rules and accounting status.
             </p>
 
           </div>
@@ -1335,9 +1467,11 @@
             id="memberContributionPreview"
             class="member-preview"
           >
-            Contribution obligation preview will appear here.
-            Final obligations are created and controlled by
-            the backend accounting workflow.
+            Monthly contribution obligation preview will appear
+            here. Active custom contribution rules, if any,
+            are displayed separately from the monthly rule.
+            Final obligations are created and controlled by the
+            backend accounting workflow.
           </div>
 
 
@@ -1592,6 +1726,10 @@
       </div>
 
 
+      <!-- ===================================================
+           MOBILE MEMBER CARDS
+      ==================================================== -->
+
       <div
         id="memberCards"
         class="member-cards"
@@ -1622,6 +1760,10 @@
   >
 
     <div class="member-modal-dialog">
+
+      <!-- ===================================================
+           MODAL HEADER
+      ==================================================== -->
 
       <header class="member-modal-header">
 
@@ -1877,9 +2019,10 @@
           </h3>
 
           <p class="member-modal-section-description">
-            Current contribution rules are displayed from
-            authoritative member contribution records.
-            This section is read-only.
+            All currently applicable contribution rules are
+            displayed here, including the monthly contribution
+            and any active custom contribution rules. Rules are
+            read-only on this page.
           </p>
 
           <div
@@ -1887,7 +2030,99 @@
             data-member-contribution-rules
             class="member-rules-list"
           >
-            Loading contribution rules...
+
+            <div class="member-rule-card">
+
+              <div class="member-rule-card-header">
+
+                <div>
+
+                  <h4 class="member-rule-card-title">
+                    Contribution Rules
+                  </h4>
+
+                  <div class="member-rule-card-type">
+                    Loading authoritative contribution rules...
+                  </div>
+
+                </div>
+
+                <span class="member-contribution-badge">
+                  Loading
+                </span>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </section>
+
+
+        <!-- =================================================
+             CONTRIBUTION STATUS BY TYPE
+        ================================================== -->
+
+        <section
+          class="member-modal-section"
+          aria-label="Contribution status by type"
+        >
+
+          <h3>
+            Contribution Status
+          </h3>
+
+          <p class="member-modal-section-description">
+            Each active contribution type is shown separately.
+            A member can therefore be Paid or Outstanding for
+            one contribution type without changing the status
+            of another contribution type.
+          </p>
+
+
+          <div class="member-contribution-status-panel">
+
+            <div class="member-contribution-status-header">
+
+              Active contribution obligations
+
+            </div>
+
+
+            <div
+              id="memberContributionStatusRows"
+              class="member-contribution-status-list"
+            >
+
+              <div class="member-contribution-status-row">
+
+                <div class="member-contribution-status-name">
+                  Loading...
+                </div>
+
+                <div class="member-contribution-status-value">
+                  Due: —
+                </div>
+
+                <div class="member-contribution-status-value">
+                  Paid: —
+                </div>
+
+                <div class="member-contribution-status-value">
+                  Outstanding: —
+                </div>
+
+                <div>
+                  <span class="member-contribution-badge member-contribution-neutral">
+                    —
+                  </span>
+                </div>
+
+              </div>
+
+            </div>
+
           </div>
 
         </section>
@@ -2000,6 +2235,10 @@
 
       </div>
 
+
+      <!-- ===================================================
+           MODAL FOOTER
+      ==================================================== -->
 
       <footer class="member-modal-footer">
 
