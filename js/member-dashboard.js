@@ -522,9 +522,9 @@ async function loadMyActiveContributions() {
       const amounts = document.createElement("div");
       amounts.className = "member-muted";
       amounts.textContent =
-        "Due " + money(item.amount_due) +
-        " · Allocated " + money(item.amount_allocated) +
-        " · Outstanding " + money(item.outstanding_balance);
+        "Due " + formatMoney(item.amount_due) +
+        " · Allocated " + formatMoney(item.amount_allocated) +
+        " · Outstanding " + formatMoney(item.outstanding_balance);
 
       const dates = document.createElement("div");
       dates.className = "member-muted";
@@ -538,7 +538,7 @@ async function loadMyActiveContributions() {
       rules.textContent = item.fine_enabled
         ? "Grace " + Number(item.grace_period_value || 0) +
           " day" + (Number(item.grace_period_value || 0) === 1 ? "" : "s") +
-          " · Fine " + money(item.fine_amount)
+          " · Fine " + formatMoney(item.fine_amount)
         : "No fine rule";
 
       card.append(title, status, amounts, dates, rules);
