@@ -986,286 +986,92 @@ async function saveCustomContribution(event) {
     event?.preventDefault();
 
     if (!currentGroup?.id) {
-        throw new Error(
-            "No active group is available."
-        );
+        throw new Error("No active group is available.");
     }
-
     if (!canEditContributionSettings) {
-        throw new Error(
-            "You do not have permission to manage contribution settings."
-        );
+        throw new Error("You do not have permission to manage contribution settings.");
     }
 
-    const name =
-        elements.customContributionName
-            ?.value
-            ?.trim();
+    const name = elements.customContributionName?.value?.trim();
+    const description = elements.customContributionDescription?.value?.trim() || "";
+    const amount = Number(elements.customContributionAmount?.value || 0);
+    const frequency = elements.customContributionCycle?.value || "one_time";
+    const startDate = elements.customContributionStartDate?.value;
+    const dueDate = elements.customContributionDueDate?.value;
+    const closingDate = elements.customContributionEndDate?.value;
+    const graceDays = getGraceDays("custom");
+    const applyFine = isFineEnabled("custom");
+    const fineAmount = Number(elements.customFineAmount?.value || 0);
 
-    const description =
-        elements.customContributionDescription
-            ?.value
-            ?.trim() ||
-        "";
-
-    const amount =
-        Number(
-            elements.customContributionAmount
-                ?.value ||
-            0
-        );
-
-    const frequency =
-        elements.customContributionCycle
-            ?.value ||
-        "one_time";
-
-    const startDate =
-        elements.customContributionStartDate
-            ?.value;
-
-    const dueDate =
-        elements.customContributionDueDate
-            ?.value;
-
-    const closingDate =
-        elements.customContributionEndDate
-            ?.value;
-
-    const graceDays =
-        getGraceDays("custom");
-
-    const applyFine =
-        isFineEnabled("custom");
-
-    const fineAmount =
-        Number(
-            elements.customFineAmount?.value ||
-            0
-        );
-
-    if (!name) {
-        throw new Error(
-            "Contribution name is required."
-        );
+    if (!name) throw new Error("Contribution name is required.");
+    if (!Number.isFinite(amount) || amount <= 0) throw new Error("Amount due must be greater than zero.");
+    if (!["one_time","weekly","monthly","quarterly","annual"].includes(frequency)) throw new Error("Invalid contribution cycle.");
+    if (!startDate || !dueDate || !closingDate) throw new Error("Start date, due date, and closing date are required.");
+    if (startDate > dueDate || dueDate > closingDate) throw new Error("Dates must follow Start ≤ Due ≤ Closing.");
+    validateContributionRuleUI("custom");
+    if (applyFine && (!Number.isFinite(fineAmount) || fineAmount <= 0)) {
+        throw new Error("Fine amount must be greater than zero when a fine is enabled.");
     }
 
-    if (
-        !Number.isFinite(amount) ||
-        amount <= 0
-    ) {
-        throw new Error(
-            "Amount due must be greater than zero."
-        );
-    }
+    const requestId = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : null;
+    if (!requestId) throw new Error("Secure request ID generation is unavailable in this browser.");
 
-    if (
-        ![
-            "one_time",
-            "weekly",
-            "monthly",
-            "quarterly",
-            "annual"
-        ].includes(frequency)
-    ) {
-        throw new Error(
-            "Invalid contribution cycle."
-        );
-    }
+    const saveButton = elements.customContributionForm?.querySelector('button[type="submit"]');
+    if (saveButton) saveButton.disabled = true;
 
-    if (
-        !startDate ||
-        !dueDate ||
-        !closingDate
-    ) {
-        throw new Error(
-            "Start date, due date, and closing date are required."
-        );
-    }
-
-    if (
-        startDate > dueDate ||
-        dueDate > closingDate
-    ) {
-        throw new Error(
-            "Dates must follow Start ≤ Due ≤ Closing."
-        );
-    }
-
-    validateContributionRuleUI(
-        "custom"
-    );
-
-    if (
-        applyFine &&
-        (
-            !Number.isFinite(fineAmount) ||
-            fineAmount <= 0
-        )
-    ) {
-        throw new Error(
-            "Fine amount must be greater than zero when a fine is enabled."
-        );
-    }
-
-    const requestId =
-        typeof crypto !== "undefined" &&
-        typeof crypto.randomUUID === "function"
-            ? crypto.randomUUID()
-            : null;
-
-    if (!requestId) {
-        throw new Error(
-            "Secure request ID generation is unavailable in this browser."
-        );
-    }
-
-    const saveButton =
-        elements.customContributionForm
-            ?.querySelector(
-                'button[type="submit"]'
-            );
-
-    if (saveButton) {
-        saveButton.disabled = true;
-    }
-
-    showContributionStatus(
-        "Creating custom contribution draft…",
-        "info"
-    );
+    showContributionStatus("Saving custom contribution…", "info");
 
     try {
-        const {
-            data,
-            error
-        } =
-            await groupManagementApi.rpc(
-                "create_custom_contribution",
-                {
-                    p_group_id:
-                        currentGroup.id,
-
-                    p_name:
-                        name,
-
-                    p_description:
-                        description,
-
-                    p_amount:
-                        amount,
-
-                    p_frequency:
-                        frequency,
-
-                    p_start_date:
-                        startDate,
-
-                    p_due_date:
-                        dueDate,
-
-                    p_closing_date:
-                        closingDate,
-
-                    p_grace_period_value:
-                        graceDays,
-
-                    p_apply_fine:
-                        applyFine,
-
-                    p_fine_amount:
-                        applyFine
-                            ? fineAmount
-                            : null,
-
-                    p_request_id:
-                        requestId
-                }
-            );
-
-        if (error) {
-            throw error;
-        }
-
-        const result =
-            Array.isArray(data)
-                ? data[0] || null
-                : data || null;
-
-        if (!result?.ok) {
-            throw new Error(
-                "The backend did not return a successful custom contribution result."
-            );
-        }
-
-        const frequencyLabels = {
-            one_time: "One-time",
-            weekly: "Weekly",
-            monthly: "Monthly",
-            quarterly: "Quarterly",
-            annual: "Annual"
-        };
-
-        customContributionDrafts.push({
-            name,
-            amount,
-            startDate,
-            dueDate,
-            endDate: closingDate,
-            frequency,
-            frequencyLabel:
-                frequencyLabels[frequency] ||
-                frequency,
-            description,
-            graceDays,
-            fineEnabled:
-                applyFine,
-            fineAmount:
-                applyFine
-                    ? fineAmount
-                    : 0,
-            contributionTypeId:
-                result.contribution_type_id,
-            periodId:
-                result.period_id,
-            fineRuleId:
-                result.fine_rule_id,
-            periodKey:
-                result.period_key,
-            status:
-                result.status ||
-                "draft",
-            replayed:
-                Boolean(result.replayed)
+        const { data, error } = await groupManagementApi.rpc("create_custom_contribution", {
+            p_group_id: currentGroup.id,
+            p_name: name,
+            p_description: description,
+            p_amount: amount,
+            p_frequency: frequency,
+            p_start_date: startDate,
+            p_due_date: dueDate,
+            p_closing_date: closingDate,
+            p_grace_period_value: graceDays,
+            p_apply_fine: applyFine,
+            p_fine_amount: applyFine ? fineAmount : null,
+            p_request_id: requestId
         });
+        if (error) throw error;
 
-        renderCustomContributionDrafts();
+        const created = Array.isArray(data) ? data[0] || null : data || null;
+        if (!created?.ok) throw new Error("The backend did not return a successful custom contribution result.");
+
+        const activationRequestId = crypto.randomUUID();
+        const activation = await groupManagementApi.rpc("activate_custom_contribution", {
+            p_group_id: currentGroup.id,
+            p_period_id: created.period_id,
+            p_request_id: activationRequestId
+        });
+        if (activation.error) throw activation.error;
+
+        const activated = Array.isArray(activation.data) ? activation.data[0] || null : activation.data || null;
+        if (!activated?.ok || !["open","due","grace"].includes(String(activated.status || "").toLowerCase())) {
+            throw new Error("The custom contribution was saved but could not be activated.");
+        }
+
+        await loadCustomContributions();
 
         showContributionStatus(
-            result.replayed
-                ? "Custom contribution request replayed safely. The existing draft was returned."
-                : "Custom contribution draft created successfully. Activation and accounting remain locked.",
+            activated.replayed
+                ? "Custom contribution activation was replayed safely."
+                : "Custom contribution saved and activated. It is now ongoing.",
             "success"
         );
 
         resetCustomContributionForm();
-
-        if (
-            elements.customContributionEditor
-        ) {
-            elements.customContributionEditor.hidden =
-                true;
-        }
-
-        return result;
+        if (elements.customContributionEditor) elements.customContributionEditor.hidden = true;
+        return activated;
     } finally {
-        if (saveButton) {
-            saveButton.disabled =
-                !canEditContributionSettings;
-        }
+        if (saveButton) saveButton.disabled = !canEditContributionSettings;
     }
 }
-
 
 async function saveContributionSettings(event) {
     return saveMonthlyContribution(
@@ -1430,110 +1236,87 @@ function syncFineControls(prefix) {
 
 
 function renderCustomContributionDrafts() {
-    if (!elements.customContributionsList) {
-        return;
-    }
+    if (!elements.customContributionsList) return;
 
     elements.customContributionsList.replaceChildren();
 
     if (!customContributionDrafts.length) {
-        const empty =
-            document.createElement(
-                "div"
-            );
-
-        empty.className =
-            "custom-contribution-empty";
-
-        empty.textContent =
-            "No custom contribution drafts have been created yet.";
-
-        elements.customContributionsList.appendChild(
-            empty
-        );
-
+        const empty = document.createElement("div");
+        empty.className = "custom-contribution-empty";
+        empty.textContent = "No active custom contributions have been configured.";
+        elements.customContributionsList.appendChild(empty);
         return;
     }
 
-    customContributionDrafts.forEach(
-        (item) => {
-            const card =
-                document.createElement(
-                    "div"
-                );
+    customContributionDrafts.forEach((item) => {
+        const card = document.createElement("div");
+        card.className = "custom-contribution-summary";
 
-            card.className =
-                "custom-contribution-summary";
+        const title = document.createElement("strong");
+        title.textContent = item.name;
 
-            const title =
-                document.createElement(
-                    "strong"
-                );
+        const meta = document.createElement("div");
+        meta.className = "custom-contribution-summary-meta";
+        meta.textContent =
+            "KSh " + Number(item.amount || 0).toLocaleString() +
+            " · " + item.startDate + " to " + item.endDate +
+            " · " + (item.frequencyLabel || item.frequency);
 
-            title.textContent =
-                item.name;
+        const status = document.createElement("div");
+        status.className = "custom-contribution-summary-meta";
+        status.textContent = "ONGOING · Due " + item.dueDate + " · Closing " + item.endDate;
 
-            const meta =
-                document.createElement(
-                    "div"
-                );
+        const rules = document.createElement("div");
+        rules.className = "custom-contribution-summary-meta";
+        rules.textContent = item.fineEnabled
+            ? "Grace period: " + item.graceDays + " day" + (Number(item.graceDays) === 1 ? "" : "s") +
+              " · Fine: KSh " + Number(item.fineAmount || 0).toLocaleString()
+            : "Grace period: " + item.graceDays + " day" + (Number(item.graceDays) === 1 ? "" : "s") + " · No fine";
 
-            meta.className =
-                "custom-contribution-summary-meta";
-
-            meta.textContent =
-                "KSh " +
-                item.amount.toLocaleString() +
-                " · " +
-                item.startDate +
-                " to " +
-                item.endDate +
-                " · " +
-                item.frequencyLabel;
-
-            const rules =
-                document.createElement(
-                    "div"
-                );
-
-            rules.className =
-                "custom-contribution-summary-meta";
-
-            rules.textContent =
-                item.fineEnabled
-                    ? "Grace period: " +
-                        item.graceDays +
-                        " day" +
-                        (
-                            item.graceDays === 1
-                                ? ""
-                                : "s"
-                        ) +
-                        " · Fine: KSh " +
-                        item.fineAmount.toLocaleString()
-                    : "Grace period: " +
-                        item.graceDays +
-                        " day" +
-                        (
-                            item.graceDays === 1
-                                ? ""
-                                : "s"
-                        ) +
-                        " · No fine";
-
-            card.append(
-                title,
-                meta,
-                rules
-            );
-
-            elements.customContributionsList.appendChild(
-                card
-            );
-        }
-    );
+        card.append(title, meta, status, rules);
+        elements.customContributionsList.appendChild(card);
+    });
 }
 
+async function loadCustomContributions() {
+    if (!currentGroup?.id) return;
+
+    const { data, error } = await groupManagementApi.rpc(
+        "get_group_active_contributions",
+        { p_group_id: currentGroup.id }
+    );
+    if (error) throw error;
+
+    const frequencyLabels = {
+        one_time: "One-time",
+        weekly: "Weekly",
+        monthly: "Monthly",
+        quarterly: "Quarterly",
+        annual: "Annual"
+    };
+
+    customContributionDrafts = (data || []).map((item) => ({
+        name: item.contribution_name,
+        amount: Number(item.amount || 0),
+        startDate: item.opening_date,
+        dueDate: item.due_date,
+        endDate: item.closing_date,
+        frequency: item.frequency,
+        frequencyLabel: frequencyLabels[item.frequency] || item.frequency,
+        description: item.description || "",
+        graceDays: Number(item.grace_period_value || 0),
+        fineEnabled: Boolean(item.fine_enabled),
+        fineAmount: Number(item.fine_amount || 0),
+        contributionTypeId: item.contribution_type_id,
+        periodId: item.period_id,
+        fineRuleId: item.fine_rule_id,
+        periodKey: item.period_key,
+        status: item.status,
+        replayed: false
+    }));
+
+    renderCustomContributionDrafts();
+}
 
 function resetCustomContributionForm() {
     [
@@ -2134,6 +1917,12 @@ async function initializeGroupManagement() {
                         "subscription",
                     loader:
                         loadSubscription
+                },
+                {
+                    section:
+                        "active custom contributions",
+                    loader:
+                        loadCustomContributions
                 }
             ];
 
