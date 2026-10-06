@@ -233,39 +233,6 @@
     }
 
     /* =====================================================
-       OVERVIEW
-       ===================================================== */
-
-    .overview-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px;
-    }
-
-    .overview-item {
-      padding: 14px;
-      border: 1px solid var(--gm-border-soft);
-      border-radius: 10px;
-      background: #fafafa;
-    }
-
-    .overview-label {
-      margin-bottom: 5px;
-      color: var(--gm-muted);
-      font-size: 0.75rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-
-    .overview-value {
-      color: var(--gm-text);
-      font-size: 0.95rem;
-      font-weight: 650;
-      word-break: break-word;
-    }
-
-    /* =====================================================
        FORMS
        ===================================================== */
 
@@ -330,18 +297,6 @@
     .form-field textarea:disabled {
       background: #f3f4f6;
       color: #9ca3af;
-    }
-
-    .readonly-value {
-      width: 100%;
-      min-height: 42px;
-      padding: 9px 11px;
-      border: 1px solid var(--gm-border-soft);
-      border-radius: 9px;
-      background: #f9fafb;
-      color: var(--gm-text);
-      display: flex;
-      align-items: center;
     }
 
     .form-actions {
@@ -492,36 +447,6 @@
     }
 
     /* =====================================================
-       CONTRIBUTION CALENDAR
-       ===================================================== */
-
-    .calendar-summary {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 10px;
-      margin-bottom: 18px;
-    }
-
-    .calendar-summary-item {
-      padding: 13px;
-      border: 1px solid var(--gm-border-soft);
-      border-radius: 10px;
-      background: #fafafa;
-    }
-
-    .calendar-summary-label {
-      color: var(--gm-muted);
-      font-size: 0.73rem;
-      font-weight: 600;
-    }
-
-    .calendar-summary-value {
-      margin-top: 4px;
-      font-size: 0.94rem;
-      font-weight: 700;
-    }
-
-    /* =====================================================
        CONTRIBUTION SETTINGS
        ===================================================== */
 
@@ -601,20 +526,6 @@
       font-size: 0.8rem;
     }
 
-    .custom-contribution-list {
-      display: grid;
-      gap: 10px;
-      margin-top: 16px;
-    }
-
-    .custom-contribution-empty {
-      padding: 12px;
-      border: 1px dashed #d1d5db;
-      border-radius: 9px;
-      color: var(--gm-muted);
-      font-size: 0.82rem;
-    }
-
     .backend-pending-note {
       margin-top: 10px;
       color: var(--gm-muted);
@@ -622,26 +533,46 @@
     }
 
     /* =====================================================
-       CONTRIBUTION SETTINGS — CUSTOM CONTRIBUTIONS
+       CUSTOM CONTRIBUTIONS
        ===================================================== */
-    .contribution-settings-card { grid-column: 1 / -1; }
-    .contribution-block { padding: 16px; border: 1px solid var(--gm-border-soft); border-radius: 12px; background: #fff; }
-    .contribution-block + .contribution-block { margin-top: 16px; }
-    .contribution-block-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
-    .contribution-block-header h3 { margin: 0; font-size: 1rem; font-weight: 700; }
-    .contribution-block-header p { margin: 4px 0 0; color: var(--gm-muted); font-size: 0.8rem; }
-    .rules-panel { margin-top: 18px; padding: 16px; border: 1px solid var(--gm-border); border-radius: 10px; background: #fafafa; }
-    .rules-panel h4 { margin: 0 0 12px; font-size: 0.9rem; }
-    .rules-divider { height: 1px; margin: 0 0 15px; background: var(--gm-border); }
-    .radio-row, .checkbox-row { display: flex; align-items: center; gap: 9px; min-height: 38px; }
-    .radio-row input, .checkbox-row input { width: auto; min-height: auto; margin: 0; }
-    .fine-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 10px; }
-    .custom-contributions-list { display: grid; gap: 12px; margin-top: 16px; }
-    .custom-contribution-empty { padding: 16px; border: 1px dashed var(--gm-border); border-radius: 10px; color: var(--gm-muted); background: #fafafa; font-size: 0.85rem; }
-    .custom-contribution-summary { padding: 14px; border: 1px solid var(--gm-border-soft); border-radius: 10px; background: #fafafa; }
-    .custom-contribution-summary strong { display: block; margin-bottom: 4px; }
-    .custom-contribution-summary-meta { color: var(--gm-muted); font-size: 0.8rem; }
-    .custom-contribution-draft { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--gm-border-soft); }
+
+    .custom-contribution-list {
+      display: grid;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .custom-contribution-empty {
+      padding: 16px;
+      border: 1px dashed var(--gm-border);
+      border-radius: 10px;
+      color: var(--gm-muted);
+      background: #fafafa;
+      font-size: 0.85rem;
+    }
+
+    .custom-contribution-summary {
+      padding: 14px;
+      border: 1px solid var(--gm-border-soft);
+      border-radius: 10px;
+      background: #fafafa;
+    }
+
+    .custom-contribution-summary strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .custom-contribution-summary-meta {
+      color: var(--gm-muted);
+      font-size: 0.8rem;
+    }
+
+    .custom-contribution-draft {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--gm-border-soft);
+    }
 
     /* =====================================================
        RESPONSIVE
@@ -683,12 +614,6 @@
         grid-template-columns: 1fr;
       }
 
-      .account-panel {
-        align-items: flex-start;
-        flex-direction: column;
-      }
-
-
       .form-actions {
         align-items: stretch;
         flex-direction: column;
@@ -698,6 +623,10 @@
       .form-actions a {
         width: 100%;
         text-align: center;
+      }
+
+      .rules-grid {
+        grid-template-columns: 1fr;
       }
     }
   </style>
@@ -721,6 +650,7 @@
       </p>
     </header>
 
+
     <!-- ===================================================
          GLOBAL STATUS
          =================================================== -->
@@ -732,6 +662,7 @@
       aria-live="polite"
       aria-atomic="true"
     ></div>
+
 
     <!-- ===================================================
          LOADING
@@ -747,6 +678,7 @@
       <span>Please wait while your group context is loaded.</span>
     </div>
 
+
     <!-- ===================================================
          INITIALIZATION ERROR
          =================================================== -->
@@ -760,6 +692,7 @@
       hidden
     ></div>
 
+
     <!-- ===================================================
          PERMISSION MESSAGE
          =================================================== -->
@@ -770,6 +703,7 @@
       role="alert"
       aria-live="assertive"
     ></div>
+
 
     <!-- ===================================================
          MANAGEMENT CONTENT
@@ -782,13 +716,6 @@
     >
 
       <!-- =================================================
-           GROUP OVERVIEW
-           ================================================= -->
-
-      
-
-
-      <!-- =================================================
            GROUP INFORMATION
            ================================================= -->
 
@@ -796,6 +723,7 @@
         class="management-card"
         aria-labelledby="groupInformationHeading"
       >
+
         <div class="management-card-header">
 
           <h2 id="groupInformationHeading">
@@ -807,6 +735,7 @@
           </p>
 
         </div>
+
 
         <div class="management-card-body">
 
@@ -846,6 +775,7 @@
                   name="groupCategory"
                   required
                 >
+
                   <option value="">
                     Select group type
                   </option>
@@ -861,6 +791,7 @@
                   <option value="other">
                     Other
                   </option>
+
                 </select>
 
               </div>
@@ -907,6 +838,8 @@
 
               </div>
 
+            </div>
+
 
             <div class="form-actions">
 
@@ -923,11 +856,12 @@
           </form>
 
         </div>
+
       </section>
 
 
       <!-- =================================================
-           LEADERSHIP SETUP — ONE COPY ONLY
+           LEADERSHIP
            ================================================= -->
 
       <section
@@ -961,9 +895,6 @@
           </div>
 
 
-          
-
-
           <div
             id="leadershipList"
             class="leadership-list"
@@ -991,41 +922,117 @@
         class="management-card full-width"
         aria-labelledby="contributionSettingsHeading"
       >
+
         <div class="management-card-header">
-          <h2 id="contributionSettingsHeading">Contributions</h2>
+
+          <h2 id="contributionSettingsHeading">
+            Contributions
+          </h2>
+
           <p>
             Configure the normal monthly contribution and create named custom
             contributions using the same obligation, payment, and allocation model.
           </p>
+
         </div>
+
 
         <div class="management-card-body contribution-stack">
 
-          <!-- MONTHLY CONTRIBUTION -->
-          <form id="monthlyContributionForm" class="contribution-panel" autocomplete="off">
+          <!-- ===============================================
+               MONTHLY CONTRIBUTION
+               =============================================== -->
+
+          <form
+            id="monthlyContributionForm"
+            class="contribution-panel"
+            autocomplete="off"
+          >
+
             <div class="contribution-panel-header">
+
               <div>
-                <h3>Monthly Contribution</h3>
-                <p>The group's normal recurring contribution.</p>
+
+                <h3>
+                  Monthly Contribution
+                </h3>
+
+                <p>
+                  The group's normal recurring contribution.
+                </p>
+
               </div>
-              <span class="status-badge info">Monthly</span>
+
+              <span class="status-badge info">
+                Monthly
+              </span>
+
             </div>
 
+
             <div class="form-grid">
-              <div class="form-field">
-                <label for="monthlyContribution">Amount</label>
-                <input id="monthlyContribution" name="monthlyContribution" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" required>
-              </div>
+
+              <!-- AMOUNT -->
 
               <div class="form-field">
-                <label for="monthlyStartDate">Start date</label>
-                <input id="monthlyStartDate" name="monthlyStartDate" type="date">
+
+                <label for="monthlyContribution">
+                  Amount
+                </label>
+
+                <input
+                  id="monthlyContribution"
+                  name="monthlyContribution"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  inputmode="decimal"
+                  placeholder="0.00"
+                  required
+                >
+
               </div>
 
+
+              <!-- START DATE -->
+
               <div class="form-field">
-                <label for="openingDay">Opening day</label>
-                <select id="openingDay" name="openingDay" required>
-                  <option value="">Select opening day</option>
+
+                <label for="monthlyStartDate">
+                  Start date
+                </label>
+
+                <input
+                  id="monthlyStartDate"
+                  name="monthlyStartDate"
+                  type="date"
+                >
+
+                <div class="field-help">
+                  Informational only until the monthly cycle activation contract is approved.
+                </div>
+
+              </div>
+
+
+              <!-- OPENING DAY -->
+
+              <div class="form-field">
+
+                <label for="openingDay">
+                  Opening day
+                </label>
+
+                <select
+                  id="openingDay"
+                  name="openingDay"
+                  required
+                >
+
+                  <option value="">
+                    Select opening day
+                  </option>
+
                   <option value="1">1</option>
                   <option value="2">2</option>
                   <option value="3">3</option>
@@ -1054,140 +1061,532 @@
                   <option value="26">26</option>
                   <option value="27">27</option>
                   <option value="28">28</option>
+
                 </select>
-                <div class="field-help">Monthly opening day is limited to 1–28 for deterministic month handling.</div>
+
+                <div class="field-help">
+                  Monthly opening day is limited to 1–28 for deterministic month handling.
+                </div>
+
               </div>
+
             </div>
+
+
+            <!-- =============================================
+                 CONTRIBUTION RULES
+                 ============================================= -->
 
             <div class="rules-box">
-              <h4>Contribution Rules &amp; Fines</h4>
+
+              <h4>
+                Contribution Rules &amp; Fines
+              </h4>
+
+
               <div class="rules-grid">
+
                 <div class="form-field">
-                  <label>Grace period</label>
-                  <label class="radio-row"><input type="radio" name="monthlyGraceMode" value="none" checked> No grace period</label>
-                  <label class="radio-row"><input type="radio" name="monthlyGraceMode" value="days"> Grace period</label>
-                  <input id="monthlyGraceDays" type="number" min="0" max="365" step="1" placeholder="0 or more days" disabled>
+
+                  <label>
+                    Grace period
+                  </label>
+
+                  <label class="radio-row">
+
+                    <input
+                      type="radio"
+                      name="monthlyGraceMode"
+                      value="none"
+                      checked
+                    >
+
+                    No grace period
+
+                  </label>
+
+
+                  <label class="radio-row">
+
+                    <input
+                      type="radio"
+                      name="monthlyGraceMode"
+                      value="days"
+                    >
+
+                    Grace period
+
+                  </label>
+
+
+                  <input
+                    id="monthlyGraceDays"
+                    type="number"
+                    min="0"
+                    max="365"
+                    step="1"
+                    placeholder="0 or more days"
+                    disabled
+                  >
+
                 </div>
+
+
                 <div class="form-field">
-                  <label>Apply fine</label>
-                  <label class="radio-row"><input type="radio" name="monthlyFineMode" value="no" checked> No</label>
-                  <label class="radio-row"><input type="radio" name="monthlyFineMode" value="yes"> Yes</label>
-                  <label for="monthlyFineAmount">Fine amount</label>
-                  <input id="monthlyFineAmount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" disabled>
+
+                  <label>
+                    Apply fine
+                  </label>
+
+
+                  <label class="radio-row">
+
+                    <input
+                      type="radio"
+                      name="monthlyFineMode"
+                      value="no"
+                      checked
+                    >
+
+                    No
+
+                  </label>
+
+
+                  <label class="radio-row">
+
+                    <input
+                      type="radio"
+                      name="monthlyFineMode"
+                      value="yes"
+                    >
+
+                    Yes
+
+                  </label>
+
+
+                  <label for="monthlyFineAmount">
+                    Fine amount
+                  </label>
+
+                  <input
+                    id="monthlyFineAmount"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    inputmode="decimal"
+                    placeholder="0.00"
+                    disabled
+                  >
+
                 </div>
+
               </div>
-              <div id="monthlyRuleSummary" class="rule-summary">No grace period. No fine applies.</div>
+
+
+              <div
+                id="monthlyRuleSummary"
+                class="rule-summary"
+              >
+                No grace period. No fine applies.
+              </div>
+
             </div>
+
+
+            <!-- =============================================
+                 SAVE
+                 ============================================= -->
 
             <div class="form-actions">
-              <button id="saveMonthlyContribution" type="submit" class="primary-button">Save Monthly Contribution</button>
+
+              <button
+                id="saveMonthlyContribution"
+                type="submit"
+                class="primary-button"
+              >
+                Save Monthly Contribution
+              </button>
+
             </div>
-            <div class="backend-pending-note">Rule/fine persistence will be connected only after the backend contribution-type/rule contract gate. This UI does not write rule data.</div>
+
+
+            <div class="backend-pending-note">
+
+              Rule/fine persistence will be connected only after the
+              backend contribution-type/rule contract gate.
+              This UI does not write rule data.
+
+            </div>
+
           </form>
 
-          <!-- CUSTOM CONTRIBUTION -->
+
+          <!-- ===============================================
+               CUSTOM CONTRIBUTIONS
+               =============================================== -->
+
           <div class="contribution-panel">
+
             <div class="contribution-panel-header">
+
               <div>
-                <h3>Custom Contributions</h3>
-                <p>Create a named contribution as a draft. Activation and accounting remain locked.</p>
+
+                <h3>
+                  Custom Contributions
+                </h3>
+
+                <p>
+                  Create a named contribution as a draft.
+                  Activation and accounting remain locked.
+                </p>
+
               </div>
-              <button id="newCustomContributionButton" type="button" class="secondary-button">+ New Custom Contribution</button>
+
+
+              <button
+                id="newCustomContributionButton"
+                type="button"
+                class="secondary-button"
+              >
+                + New Custom Contribution
+              </button>
+
             </div>
 
-            <div id="customContributionEditor" hidden>
-            <form id="customContributionForm" autocomplete="off">
-              <div class="form-grid">
-                <div class="form-field full-width">
-                  <label for="customContributionName">Contribution name</label>
-                  <input id="customContributionName" type="text" maxlength="150" placeholder="e.g. School Fund" required>
-                </div>
-                <div class="form-field">
-                  <label for="customContributionAmount">Amount due</label>
-                  <input id="customContributionAmount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" required>
-                </div>
-                <div class="form-field">
-                  <label for="customContributionCycle">Cycle</label>
-                  <select id="customContributionCycle" required>
-                    <option value="one_time">One-time</option>
-                    <option value="weekly">Weekly</option>
-                    <option value="monthly">Monthly</option>
-                    <option value="quarterly">Quarterly</option>
-                    <option value="annual">Annual</option>
-                  </select>
-                </div>
-                <div class="form-field">
-                  <label for="customContributionStartDate">Start date</label>
-                  <input id="customContributionStartDate" type="date" required>
-                </div>
-                <div class="form-field">
-                  <label for="customContributionDueDate">Due date</label>
-                  <input id="customContributionDueDate" type="date" required>
-                  <div class="field-help">The date the contribution becomes due. It must fall between the start and closing dates.</div>
-                </div>
-                <div class="form-field">
-                  <label for="customContributionEndDate">Closing date</label>
-                  <input id="customContributionEndDate" type="date" required>
-                </div>
-                <div class="form-field full-width">
-                  <label for="customContributionDescription">Description</label>
-                  <textarea id="customContributionDescription" maxlength="500" placeholder="Optional description"></textarea>
-                </div>
-              </div>
 
-              <div class="rules-box">
-                <h4>Contribution Rules &amp; Fines</h4>
-                <div class="rules-grid">
-                  <div class="form-field">
-                    <label>Grace period</label>
-                    <label class="radio-row"><input type="radio" name="customGraceMode" value="none" checked> No grace period</label>
-                    <label class="radio-row"><input type="radio" name="customGraceMode" value="days"> Grace period</label>
-                    <input id="customGraceDays" type="number" min="0" max="365" step="1" placeholder="0 or more days" disabled>
+            <!-- CUSTOM CONTRIBUTION EDITOR -->
+
+            <div
+              id="customContributionEditor"
+              hidden
+            >
+
+              <form
+                id="customContributionForm"
+                autocomplete="off"
+              >
+
+                <div class="form-grid">
+
+                  <div class="form-field full-width">
+
+                    <label for="customContributionName">
+                      Contribution name
+                    </label>
+
+                    <input
+                      id="customContributionName"
+                      type="text"
+                      maxlength="150"
+                      placeholder="e.g. School Fund"
+                      required
+                    >
+
                   </div>
+
+
                   <div class="form-field">
-                    <label>Apply fine</label>
-                    <label class="radio-row"><input type="radio" name="customFineMode" value="no" checked> No</label>
-                    <label class="radio-row"><input type="radio" name="customFineMode" value="yes"> Yes</label>
-                    <label for="customFineAmount">Fine amount</label>
-                    <input id="customFineAmount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" disabled>
+
+                    <label for="customContributionAmount">
+                      Amount due
+                    </label>
+
+                    <input
+                      id="customContributionAmount"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      inputmode="decimal"
+                      placeholder="0.00"
+                      required
+                    >
+
                   </div>
+
+
+                  <div class="form-field">
+
+                    <label for="customContributionCycle">
+                      Cycle
+                    </label>
+
+                    <select
+                      id="customContributionCycle"
+                      required
+                    >
+
+                      <option value="one_time">
+                        One-time
+                      </option>
+
+                      <option value="weekly">
+                        Weekly
+                      </option>
+
+                      <option value="monthly">
+                        Monthly
+                      </option>
+
+                      <option value="quarterly">
+                        Quarterly
+                      </option>
+
+                      <option value="annual">
+                        Annual
+                      </option>
+
+                    </select>
+
+                  </div>
+
+
+                  <div class="form-field">
+
+                    <label for="customContributionStartDate">
+                      Start date
+                    </label>
+
+                    <input
+                      id="customContributionStartDate"
+                      type="date"
+                      required
+                    >
+
+                  </div>
+
+
+                  <div class="form-field">
+
+                    <label for="customContributionDueDate">
+                      Due date
+                    </label>
+
+                    <input
+                      id="customContributionDueDate"
+                      type="date"
+                      required
+                    >
+
+                    <div class="field-help">
+                      The date the contribution becomes due.
+                      It must fall between the start and closing dates.
+                    </div>
+
+                  </div>
+
+
+                  <div class="form-field">
+
+                    <label for="customContributionEndDate">
+                      Closing date
+                    </label>
+
+                    <input
+                      id="customContributionEndDate"
+                      type="date"
+                      required
+                    >
+
+                  </div>
+
+
+                  <div class="form-field full-width">
+
+                    <label for="customContributionDescription">
+                      Description
+                    </label>
+
+                    <textarea
+                      id="customContributionDescription"
+                      maxlength="500"
+                      placeholder="Optional description"
+                    ></textarea>
+
+                  </div>
+
                 </div>
-                <div id="customRuleSummary" class="rule-summary">No grace period. No fine applies.</div>
-              </div>
 
-              <div class="form-actions">
-                <button id="saveCustomContribution" type="submit" class="primary-button">Save Draft</button>
-                <button id="cancelCustomContribution" type="button" class="secondary-button">Cancel</button>
-              </div>
-              <div class="backend-pending-note">Saving creates a backend-owned <strong>draft</strong> contribution definition only. Activation, member obligations, payments, allocations, and accounting remain locked.</div>
-            </form>
+
+                <!-- CUSTOM RULES -->
+
+                <div class="rules-box">
+
+                  <h4>
+                    Contribution Rules &amp; Fines
+                  </h4>
+
+
+                  <div class="rules-grid">
+
+                    <div class="form-field">
+
+                      <label>
+                        Grace period
+                      </label>
+
+
+                      <label class="radio-row">
+
+                        <input
+                          type="radio"
+                          name="customGraceMode"
+                          value="none"
+                          checked
+                        >
+
+                        No grace period
+
+                      </label>
+
+
+                      <label class="radio-row">
+
+                        <input
+                          type="radio"
+                          name="customGraceMode"
+                          value="days"
+                        >
+
+                        Grace period
+
+                      </label>
+
+
+                      <input
+                        id="customGraceDays"
+                        type="number"
+                        min="0"
+                        max="365"
+                        step="1"
+                        placeholder="0 or more days"
+                        disabled
+                      >
+
+                    </div>
+
+
+                    <div class="form-field">
+
+                      <label>
+                        Apply fine
+                      </label>
+
+
+                      <label class="radio-row">
+
+                        <input
+                          type="radio"
+                          name="customFineMode"
+                          value="no"
+                          checked
+                        >
+
+                        No
+
+                      </label>
+
+
+                      <label class="radio-row">
+
+                        <input
+                          type="radio"
+                          name="customFineMode"
+                          value="yes"
+                        >
+
+                        Yes
+
+                      </label>
+
+
+                      <label for="customFineAmount">
+                        Fine amount
+                      </label>
+
+                      <input
+                        id="customFineAmount"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        inputmode="decimal"
+                        placeholder="0.00"
+                        disabled
+                      >
+
+                    </div>
+
+                  </div>
+
+
+                  <div
+                    id="customRuleSummary"
+                    class="rule-summary"
+                  >
+                    No grace period. No fine applies.
+                  </div>
+
+                </div>
+
+
+                <!-- CUSTOM ACTIONS -->
+
+                <div class="form-actions">
+
+                  <button
+                    id="saveCustomContribution"
+                    type="submit"
+                    class="primary-button"
+                  >
+                    Save Draft
+                  </button>
+
+
+                  <button
+                    id="cancelCustomContribution"
+                    type="button"
+                    class="secondary-button"
+                  >
+                    Cancel
+                  </button>
+
+                </div>
+
+
+                <div class="backend-pending-note">
+
+                  Saving creates a backend-owned
+                  <strong>draft</strong> contribution definition only.
+                  Activation, member obligations, payments, allocations,
+                  and accounting remain locked.
+
+                </div>
+
+              </form>
+
             </div>
 
-            <div id="customContributionsList" class="custom-contribution-list" aria-live="polite">
-              <div class="custom-contribution-empty">No custom contributions configured in this UI session.</div>
+
+            <!-- CUSTOM LIST -->
+
+            <div
+              id="customContributionsList"
+              class="custom-contribution-list"
+              aria-live="polite"
+            >
+
+              <div class="custom-contribution-empty">
+                No custom contributions configured in this UI session.
+              </div>
+
             </div>
+
           </div>
 
         </div>
+
       </section>
-
-      <!-- =================================================
-           MONTHLY CONTRIBUTION CYCLE — ONE COPY ONLY
-           ================================================= -->
-
-
-      <!-- =================================================
-           PAYMENT COLLECTION
-           ================================================= -->
-
-      
-
-
-      <!-- =================================================
-           ACCOUNT
-           ================================================= -->
-
-      
 
 
       <!-- =================================================
@@ -1214,11 +1613,16 @@
 
         <div class="management-card-body">
 
-          <a class="secondary-button" href="billing.html" style="text-decoration:none;">View Billing →</a>
+          <a
+            class="secondary-button"
+            href="billing.html"
+            style="text-decoration:none;"
+          >
+            View Billing →
+          </a>
 
 
           <div class="subscription-grid">
-
 
             <div class="subscription-item">
 
@@ -1283,19 +1687,11 @@
 
             </div>
 
-
           </div>
 
         </div>
 
       </section>
-
-
-      <!-- =================================================
-           GROUP CONTEXT
-           ================================================= -->
-
-      
 
     </div>
 
@@ -1304,10 +1700,6 @@
 
   <!-- =====================================================
        PAGE BOOT
-
-       admin-layout.js remains the sole shell/page boot owner.
-       Do not separately import or auto-run group-management.js
-       here.
        ===================================================== -->
 
   <noscript>
@@ -1323,8 +1715,8 @@
         font-family:system-ui,sans-serif;
       "
     >
-      CHAMA LIVE Group Management requires JavaScript to load and manage
-      your group securely.
+      CHAMA LIVE Group Management requires JavaScript to load and
+      manage your group securely.
     </div>
 
   </noscript>
@@ -1337,9 +1729,8 @@
     /*
      * admin-layout.js remains the SINGLE page-shell boot owner.
      *
-     * This wrapper does not initialize group-management.js directly.
-     * It only prevents an import/boot failure from leaving the page
-     * permanently displaying "Loading group management...".
+     * group-management.js must not be independently imported or
+     * auto-run from this HTML file.
      */
 
     try {
