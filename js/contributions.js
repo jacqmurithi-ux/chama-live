@@ -6496,6 +6496,172 @@ function openCustomContributionEditor() {
 
 
 /* =========================================================
+   EXISTING CUSTOM CONTRIBUTION PREFLIGHT
+========================================================= */
+
+async function preflightExistingCustomContribution() {
+
+  if (!groupId) return null;
+
+  const {
+    data: contributionTypes,
+    error: contributionTypeError
+  } = await supabase
+    .from("contribution_types")
+    .select("id,group_id,name,code")
+    .eq("group_id", groupId)
+    .eq("code", "custom")
+    .limit(1);
+
+  if (contributionTypeError) throw contributionTypeError;
+
+  const customType =
+    Array.isArray(contributionTypes)
+      ? contributionTypes[0]
+      : null;
+
+  if (!customType?.id) return null;
+
+  const {
+    data: periods,
+    error: periodError
+  } = await supabase
+    .from("contribution_periods")
+    .select([
+      "id",
+      "group_id",
+      "contribution_type_id",
+      "period_key",
+      "opening_date",
+      "due_date",
+      "closing_date",
+      "amount",
+      "frequency",
+      "status",
+      "description",
+      "fine_rule_id"
+    ].join(","))
+    .eq("group_id", groupId)
+    .eq("contribution_type_id", customType.id)
+    .in("status", [
+      "draft",
+      ...Array.from(ACTIVE_CUSTOM_PERIOD_STATUSES)
+    ])
+    .order("opening_date", { ascending: false });
+
+  if (periodError) throw periodError;
+
+  const existingPeriods =
+    Array.isArray(periods) ? periods : [];
+
+  const draft =
+    existingPeriods.find(
+      period =>
+        String(period.status || "").trim().toLowerCase() === "draft"
+    ) || null;
+
+  if (draft) {
+
+    await loadDraftCustomContributions();
+
+    const refreshedDraft =
+      draftCustomContributions.find(
+        item => String(item.id) === String(draft.id)
+      ) || draft;
+
+    showCustomContributionEditorMessage(
+      (customType.name || "Custom contribution") +
+        " already exists as a draft. Activate the existing contribution below instead of creating another one.",
+      "success"
+    );
+
+    if (draftCustomContributionsCard) {
+      draftCustomContributionsCard.hidden = false;
+      draftCustomContributionsCard.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+    }
+
+    const activateButton =
+      Array.from(
+        draftCustomContributionRows?.querySelectorAll(
+          "[data-activate-custom-contribution]"
+        ) || []
+      ).find(
+        button =>
+          String(button.dataset.activateCustomContribution || "") ===
+          String(refreshedDraft.id)
+      );
+
+    if (activateButton) activateButton.focus();
+
+    return {
+      type: "draft",
+      period: refreshedDraft,
+      contributionType: customType
+    };
+  }
+
+  const activePeriod =
+    existingPeriods.find(
+      period =>
+        ACTIVE_CUSTOM_PERIOD_STATUSES.has(
+          String(period.status || "").trim().toLowerCase()
+        )
+    ) || null;
+
+  if (activePeriod) {
+
+    await loadActiveCustomContributions();
+
+    const selectorValue = "custom:" + customType.id;
+
+    preferredCustomContributionValue = selectorValue;
+
+    renderContributionTypeOptions(selectorValue);
+
+    if (typeSelect) {
+      typeSelect.value = selectorValue;
+    }
+
+    updateContributionAmountFromType();
+
+    showCustomContributionEditorMessage(
+      (customType.name || "Custom contribution") +
+        " is already active. It has been selected for recording; no duplicate contribution was created.",
+      "success"
+    );
+
+    if (activeCustomContributionContainer) {
+      activeCustomContributionContainer.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+    }
+
+    return {
+      type: "active",
+      period: activePeriod,
+      contributionType: customType
+    };
+  }
+
+  showCustomContributionEditorMessage(
+    (customType.name || "Custom contribution") +
+      " already exists for this group, but no draft or active period was found. Please refresh the page before creating anything else.",
+    "error"
+  );
+
+  return {
+    type: "existing_without_usable_period",
+    period: null,
+    contributionType: customType
+  };
+}
+
+
+/* =========================================================
    CREATE + ACTIVATE CUSTOM CONTRIBUTION
 ========================================================= */
 
@@ -6699,6 +6865,34 @@ async function saveCustomContributionDraft(
 
   }
 
+
+
+
+  /*
+   * PRE-CREATE GUARD
+   *
+   * Resolve the existing custom type before calling
+   * create_custom_contribution(). The backend currently
+   * permits one code = "custom" type per group.
+   */
+  let existingCustomContribution;
+
+  try {
+    existingCustomContribution =
+      await preflightExistingCustomContribution();
+  }
+  catch (error) {
+    showCustomContributionEditorMessage(
+      error?.message ||
+        "The existing custom contribution could not be checked.",
+      "error"
+    );
+    return;
+  }
+
+  if (existingCustomContribution) {
+    return;
+  }
 
   let requestId;
 
