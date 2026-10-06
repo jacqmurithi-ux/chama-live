@@ -67,6 +67,7 @@ const ADMIN_ROLES = new Set([
   "chairperson",
   "secretary",
   "treasurer",
+  "administrator",
   "vice chairperson",
   "vice secretary"
 ]);
@@ -1813,10 +1814,25 @@ export async function boot() {
       }
     );
 
+    let message =
+      error?.message ||
+      "Unable to load the Admin Portal.";
+
+    /*
+     * Browser fetch failures often surface only as
+     * "Failed to fetch". Give the user a useful next
+     * step without hiding the original diagnostic.
+     */
+    if (
+      String(message).trim().toLowerCase() ===
+      "failed to fetch"
+    ) {
+      message =
+        "CHAMA LIVE could not reach the authentication service. Check your internet connection and try again. If the problem continues, refresh the page before signing in again.";
+    }
 
     showBootError(
-      error?.message ||
-        "Unable to load the Admin Portal.",
+      message,
       stage
     );
 
