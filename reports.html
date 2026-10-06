@@ -219,6 +219,12 @@
       filter: brightness(.97);
     }
 
+    .report-button:disabled {
+      opacity: .6;
+      cursor: not-allowed;
+      filter: none;
+    }
+
     .report-button.primary {
       background: var(--report-primary);
       color: #fff;
@@ -229,13 +235,13 @@
       color: #fff;
     }
 
-    .report-button.dark {
-      background: #111827;
+    .report-button.info {
+      background: #2563eb;
       color: #fff;
     }
 
-    .report-button.purple {
-      background: var(--report-purple);
+    .report-button.secondary-export {
+      background: #475569;
       color: #fff;
     }
 
@@ -740,9 +746,9 @@
             <h1>Reports</h1>
 
             <p>
-              CHAMA LIVE reporting centre — analyse contributions, member accounting,
-              monthly outstanding balances, cumulative arrears, cumulative credit,
-              expenses, cash flow and meetings from one place.
+              Use this page to generate read-only reports for contributions, member accounting,
+              outstanding balances, arrears, credit, expenses and meetings. Choose your
+              report and filters, then generate or export the result.
             </p>
 
             <div class="hero-meta">
@@ -1108,7 +1114,7 @@
 
               <button
                 id="printReport"
-                class="report-button dark"
+                class="report-button info"
                 type="button">
                 Print
               </button>
@@ -1122,7 +1128,7 @@
 
               <button
                 id="excelButton"
-                class="report-button purple"
+                class="report-button secondary-export"
                 type="button">
                 Excel
               </button>
