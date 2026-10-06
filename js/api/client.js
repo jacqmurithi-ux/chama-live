@@ -31,6 +31,22 @@ const SAFE_DB_MESSAGES = new Map([
   ["CONTRIBUTION_TYPE_NOT_IN_GROUP", "The selected contribution type does not belong to this group."],
   ["CONTRIBUTION_TYPE_NOT_SUPPORTED", "The selected contribution type is not supported for member creation."],
   ["CONTRIBUTION_RULE_OVERLAP", "The contribution plan overlaps an existing contribution rule."],
+  ["CONTRIBUTION_TYPE_NOT_SUPPORTED", "The selected contribution type is not supported for member creation."],
+  ["CONTRIBUTION_TYPE_NOT_IN_GROUP", "The selected contribution type does not belong to this group."],
+  ["CONTRIBUTION_EFFECTIVE_DATE_RANGE_INVALID", "The contribution effective date range is invalid."],
+  ["FIRST_PERIOD_RULE_NOT_SUPPORTED", "The selected first-period contribution rule is not supported."],
+  ["CONTRIBUTION_RULE_STATUS_INVALID", "The contribution rule status is not valid."],
+  ["ENDED_RULE_REQUIRES_EFFECTIVE_TO", "An ended contribution rule requires an end date."],
+  ["CONTRIBUTION_FREQUENCY_NOT_SUPPORTED", "Only monthly contribution plans are supported for member creation."],
+  ["AUTHENTICATION_REQUIRED", "You must be signed in to complete this action."],
+  ["ACTIVE_GROUP_MEMBER_REQUIRED", "Your account must be an active group member to complete this action."],
+  ["MEMBER_MANAGEMENT_NOT_AUTHORIZED", "Only an authorised group manager can add members."],
+  ["MEMBER_NUMBER_ALREADY_EXISTS", "That member number is already in use in this group."],
+  ["MEMBERSHIP_NUMBER_ALREADY_EXISTS", "That membership number is already in use in this group."],
+  ["ACTUAL_POSITION_INVALID", "The selected actual group position is not valid."],
+  ["ACTUAL_POSITION_NAME_REQUIRED", "A position name is required when Actual Position is Other."],
+  ["ACTUAL_POSITION_EFFECTIVE_DATE_INVALID", "The actual position effective date is invalid."],
+  ["ACTUAL_POSITION_EFFECTIVE_DATE_BEFORE_JOIN_DATE", "The actual position effective date cannot be before the join date."],
 ]);
 
 function safeError(error, scope) {
