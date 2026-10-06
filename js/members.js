@@ -1449,6 +1449,9 @@ function ensureContributionUI() {
     .contributionPreviewBound =
     "true";
 
+  amount.setAttribute("min", "0.01");
+  amount.setAttribute("step", "0.01");
+
   amount.addEventListener(
     "input",
     () => {
@@ -2044,10 +2047,10 @@ function validateForm(values) {
     !Number.isFinite(
       values.contribution_amount
     ) ||
-    values.contribution_amount < 0
+    values.contribution_amount <= 0
   ) {
     return (
-      "Monthly contribution must be zero or greater."
+      "Monthly contribution must be greater than zero."
     );
   }
 
