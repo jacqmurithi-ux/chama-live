@@ -2,26 +2,32 @@
    CHAMA LIVE — CONTRIBUTIONS
    CANONICAL 2B ACCOUNTING VERSION
 
-   MEMBER PAYMENT EVIDENCE INTEGRATION
+   MEMBER PAYMENT EVIDENCE
    CUSTOM CONTRIBUTION INTEGRATION
    ---------------------------------------------------------------
-   ACCOUNTING BOUNDARIES
+   FRONTEND / ACCOUNTING BOUNDARY
    ---------------------------------------------------------------
-   • Ordinary members submit payment evidence only.
-   • Evidence is inserted by the backend workflow.
-   • Evidence remains pending until authorised verification.
-   • Verified payments are recorded through:
-       cl_2b_record_contribution()
+   • Frontend is presentation/orchestration only.
    • Frontend NEVER directly inserts/updates:
        contributions
        contribution_allocations
        contribution_obligations
+   • Ordinary members submit payment evidence.
+   • Authorised users verify/reject payment evidence.
+   • Verified payment accounting is handled by:
+       cl_2b_record_contribution()
    • Custom contribution definitions are created through RPC.
    • Active contribution definitions remain visible after creation.
-   • Active contribution types are available for recording payments.
-   • Member status is derived from canonical accounting RPCs.
-   • No automatic page execution.
+   • Active contribution types appear in the payment selector.
+   • Member contribution status shows Paid / Outstanding.
+   • No automatic execution.
    • initPage() is the page entry point.
+   • Non-critical RPC failures must NOT produce a white screen.
+================================================================ */
+
+
+/* ================================================================
+   IMPORTS
 ================================================================ */
 
 import { supabase } from "./supabase.js";
@@ -31,6 +37,7 @@ import {
   getMyMember,
   getMyGroup
 } from "./auth.js";
+
 
 /* ================================================================
    STATE
@@ -56,6 +63,7 @@ const state = {
   submitting: false
 };
 
+
 /* ================================================================
    DOM HELPERS
 ================================================================ */
@@ -63,22 +71,39 @@ const state = {
 function $(selector, root = document) {
   try {
     return root.querySelector(selector);
-  } catch {
+  } catch (error) {
+    console.warn(
+      "Invalid selector:",
+      selector,
+      error
+    );
+
     return null;
   }
 }
 
+
 function $all(selector, root = document) {
   try {
-    return Array.from(root.querySelectorAll(selector));
-  } catch {
+    return Array.from(
+      root.querySelectorAll(selector)
+    );
+  } catch (error) {
+    console.warn(
+      "Invalid selector:",
+      selector,
+      error
+    );
+
     return [];
   }
 }
 
+
 function byId(id) {
   return document.getElementById(id);
 }
+
 
 function firstExisting(...selectors) {
   for (const selector of selectors) {
@@ -92,7 +117,11 @@ function firstExisting(...selectors) {
   return null;
 }
 
-function setText(elementOrSelector, value) {
+
+function setText(
+  elementOrSelector,
+  value
+) {
   const element =
     typeof elementOrSelector === "string"
       ? $(elementOrSelector)
@@ -109,7 +138,11 @@ function setText(elementOrSelector, value) {
       : String(value);
 }
 
-function setHTML(elementOrSelector, value) {
+
+function setHTML(
+  elementOrSelector,
+  value
+) {
   const element =
     typeof elementOrSelector === "string"
       ? $(elementOrSelector)
@@ -126,6 +159,7 @@ function setHTML(elementOrSelector, value) {
       : String(value);
 }
 
+
 function show(elementOrSelector) {
   const element =
     typeof elementOrSelector === "string"
@@ -137,8 +171,14 @@ function show(elementOrSelector) {
   }
 
   element.hidden = false;
-  element.style.display = "";
+
+  if (
+    element.style.display === "none"
+  ) {
+    element.style.display = "";
+  }
 }
+
 
 function hide(elementOrSelector) {
   const element =
@@ -154,7 +194,11 @@ function hide(elementOrSelector) {
   element.style.display = "none";
 }
 
-function disable(elementOrSelector, value = true) {
+
+function disable(
+  elementOrSelector,
+  value = true
+) {
   const element =
     typeof elementOrSelector === "string"
       ? $(elementOrSelector)
@@ -164,25 +208,35 @@ function disable(elementOrSelector, value = true) {
     return;
   }
 
-  element.disabled = Boolean(value);
+  element.disabled =
+    Boolean(value);
 }
+
 
 /* ================================================================
    NOTIFICATIONS
 ================================================================ */
 
-function notify(message, type = "info") {
-  const containers = [
-    "#contributionNotification",
-    "#contributionsNotification",
-    "#notification",
-    "[data-contribution-notification]"
-  ];
-
+function notify(
+  message,
+  type = "info"
+) {
   const element =
-    firstExisting(...containers);
+    firstExisting(
+      "#contributionNotification",
+      "#contributionsNotification",
+      "#notification",
+      "[data-contribution-notification]"
+    );
 
   if (!element) {
+    console[type === "error"
+      ? "error"
+      : "log"](
+      "CHAMA LIVE Contributions:",
+      message
+    );
+
     return;
   }
 
@@ -192,7 +246,9 @@ function notify(message, type = "info") {
       ? ""
       : String(message);
 
-  element.dataset.type = type;
+  element.dataset.type =
+    type;
+
   element.classList.remove(
     "success",
     "error",
@@ -204,6 +260,7 @@ function notify(message, type = "info") {
 
   show(element);
 }
+
 
 function clearNotification() {
   const element =
@@ -219,6 +276,7 @@ function clearNotification() {
   }
 
   element.textContent = "";
+
   element.classList.remove(
     "success",
     "error",
@@ -228,6 +286,7 @@ function clearNotification() {
 
   hide(element);
 }
+
 
 /* ================================================================
    FORMATTERS
@@ -241,14 +300,18 @@ function formatKES(value) {
     return "KSh 0";
   }
 
-  return `KSh ${amount.toLocaleString(
-    "en-KE",
-    {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2
-    }
-  )}`;
+  return (
+    "KSh " +
+    amount.toLocaleString(
+      "en-KE",
+      {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+      }
+    )
+  );
 }
+
 
 function formatDate(value) {
   if (!value) {
@@ -276,6 +339,7 @@ function formatDate(value) {
   );
 }
 
+
 function normaliseAmount(value) {
   const amount =
     Number(value);
@@ -285,6 +349,11 @@ function normaliseAmount(value) {
     : 0;
 }
 
+
+/*
+ * Compatibility-safe HTML escaping.
+ * Do not use String.prototype.replaceAll().
+ */
 function escapeHTML(value) {
   return String(
     value === null ||
@@ -292,15 +361,43 @@ function escapeHTML(value) {
       ? ""
       : value
   )
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
+
 /* ================================================================
-   ROLES
+   ERROR HELPERS
+================================================================ */
+
+function errorMessage(
+  error,
+  fallback
+) {
+  if (
+    error &&
+    typeof error.message === "string" &&
+    error.message.trim()
+  ) {
+    return error.message;
+  }
+
+  if (
+    typeof error === "string" &&
+    error.trim()
+  ) {
+    return error;
+  }
+
+  return fallback;
+}
+
+
+/* ================================================================
+   ROLE HELPERS
 ================================================================ */
 
 function normaliseRole(role) {
@@ -309,8 +406,9 @@ function normaliseRole(role) {
   )
     .trim()
     .toLowerCase()
-    .replaceAll(" ", "_");
+    .replace(/[\s-]+/g, "_");
 }
+
 
 function getMemberRole() {
   return normaliseRole(
@@ -321,6 +419,7 @@ function getMemberRole() {
   );
 }
 
+
 function canManageContributions() {
   return [
     "owner",
@@ -329,10 +428,11 @@ function canManageContributions() {
     "chairperson",
     "secretary",
     "treasurer"
-  ].includes(
+  ].indexOf(
     getMemberRole()
-  );
+  ) !== -1;
 }
+
 
 function canVerifyEvidence() {
   return [
@@ -341,10 +441,11 @@ function canVerifyEvidence() {
     "chairperson",
     "secretary",
     "treasurer"
-  ].includes(
+  ].indexOf(
     getMemberRole()
-  );
+  ) !== -1;
 }
+
 
 /* ================================================================
    RPC WRAPPER
@@ -370,6 +471,7 @@ async function callRPC(
   return data;
 }
 
+
 /* ================================================================
    AUTH / GROUP CONTEXT
 ================================================================ */
@@ -384,7 +486,8 @@ async function loadContext() {
     );
   }
 
-  state.user = user;
+  state.user =
+    user;
 
   const member =
     await getMyMember();
@@ -395,7 +498,8 @@ async function loadContext() {
     );
   }
 
-  state.member = member;
+  state.member =
+    member;
 
   const group =
     await getMyGroup();
@@ -406,7 +510,8 @@ async function loadContext() {
     );
   }
 
-  state.group = group;
+  state.group =
+    group;
 
   return {
     user,
@@ -415,8 +520,9 @@ async function loadContext() {
   };
 }
 
+
 /* ================================================================
-   GENERIC RPC RESULT EXTRACTION
+   RPC RESULT EXTRACTION
 ================================================================ */
 
 function extractRows(result) {
@@ -456,6 +562,7 @@ function extractRows(result) {
   return [];
 }
 
+
 /* ================================================================
    CONTRIBUTION TYPE NORMALISATION
 ================================================================ */
@@ -491,25 +598,44 @@ function normaliseContributionType(row) {
       row.monthly_amount
     );
 
-  const active =
-    row.is_active !== undefined
-      ? Boolean(row.is_active)
-      : String(
-          row.status || "active"
-        ).toLowerCase() === "active";
+  let active;
+
+  if (
+    row.is_active !== undefined &&
+    row.is_active !== null
+  ) {
+    active =
+      Boolean(row.is_active);
+  } else {
+    active =
+      String(
+        row.status || "active"
+      )
+        .trim()
+        .toLowerCase() ===
+      "active";
+  }
 
   return {
     ...row,
 
     id,
-    name: String(name),
+
+    name:
+      String(name),
+
     amount,
 
     status:
       row.status ??
-      (active ? "active" : "inactive"),
+      (
+        active
+          ? "active"
+          : "inactive"
+      ),
 
-    is_active: active,
+    is_active:
+      active,
 
     frequency:
       row.frequency ??
@@ -527,61 +653,13 @@ function normaliseContributionType(row) {
   };
 }
 
+
 /* ================================================================
-   LOAD ACTIVE CONTRIBUTION TYPES
+   LOAD CONTRIBUTION TYPES
 ================================================================ */
 
 async function loadContributionTypes() {
   if (!state.group?.id) {
-    throw new Error(
-      "Group context is not available."
-    );
-  }
-
-  let result = null;
-  let rows = null;
-  let lastError = null;
-
-  /*
-   * Read canonical active contribution definitions.
-   *
-   * These fallbacks are READ-only compatibility paths.
-   * No accounting table is accessed directly.
-   */
-
-  const candidates = [
-    "get_active_contribution_types",
-    "get_group_contribution_types",
-    "get_contribution_types"
-  ];
-
-  for (const rpcName of candidates) {
-    try {
-      result =
-        await callRPC(
-          rpcName,
-          {
-            p_group_id:
-              state.group.id
-          }
-        );
-
-      const extracted =
-        extractRows(result);
-
-      if (
-        Array.isArray(extracted)
-      ) {
-        rows = extracted;
-        break;
-      }
-
-    } catch (error) {
-      lastError = error;
-    }
-  }
-
-  if (!Array.isArray(rows)) {
     state.contributionTypes = [];
     state.activeContributionTypes = [];
 
@@ -590,32 +668,94 @@ async function loadContributionTypes() {
     renderContributionTypeTable();
     renderActiveContributionDashboardCards();
 
-    throw (
-      lastError ||
-      new Error(
-        "Unable to load active contribution types."
-      )
-    );
+    return [];
   }
 
-  const normalised =
-    rows
+  let successfulRows = null;
+  let lastError = null;
+
+  const candidates = [
+    "get_active_contribution_types",
+    "get_group_contribution_types",
+    "get_contribution_types"
+  ];
+
+  for (
+    const rpcName of candidates
+  ) {
+    try {
+      const result =
+        await callRPC(
+          rpcName,
+          {
+            p_group_id:
+              state.group.id
+          }
+        );
+
+      const rows =
+        extractRows(result);
+
+      if (
+        Array.isArray(rows)
+      ) {
+        successfulRows =
+          rows;
+
+        break;
+      }
+
+    } catch (error) {
+      lastError =
+        error;
+    }
+  }
+
+  /*
+   * Do not throw here.
+   *
+   * Contribution definitions are important, but
+   * failure to read them must not white-screen
+   * the entire page.
+   */
+  if (
+    !Array.isArray(
+      successfulRows
+    )
+  ) {
+    state.contributionTypes = [];
+    state.activeContributionTypes = [];
+
+    renderPaymentContributionTypes();
+    renderCustomContributionSummary();
+    renderContributionTypeTable();
+    renderActiveContributionDashboardCards();
+
+    console.warn(
+      "Unable to load contribution types:",
+      lastError
+    );
+
+    return [];
+  }
+
+  state.contributionTypes =
+    successfulRows
       .map(
         normaliseContributionType
       )
       .filter(Boolean);
 
-  state.contributionTypes =
-    normalised;
-
   state.activeContributionTypes =
-    normalised.filter(
-      item =>
-        item.is_active !== false &&
+    state.contributionTypes.filter(
+      type =>
+        type.is_active !== false &&
         String(
-          item.status || "active"
-        ).toLowerCase() !==
-          "inactive"
+          type.status || "active"
+        )
+          .trim()
+          .toLowerCase() !==
+        "inactive"
     );
 
   renderPaymentContributionTypes();
@@ -625,6 +765,7 @@ async function loadContributionTypes() {
 
   return state.activeContributionTypes;
 }
+
 
 /* ================================================================
    PAYMENT CONTRIBUTION TYPE SELECT
@@ -640,14 +781,17 @@ function renderPaymentContributionTypes() {
 
   const selects =
     selectors
-      .map(selector => $(selector))
+      .map(
+        selector =>
+          $(selector)
+      )
       .filter(Boolean);
 
   if (!selects.length) {
     return;
   }
 
-  for (const select of selects) {
+  selects.forEach(select => {
     const currentValue =
       select.value;
 
@@ -655,7 +799,9 @@ function renderPaymentContributionTypes() {
       document.createDocumentFragment();
 
     const placeholder =
-      document.createElement("option");
+      document.createElement(
+        "option"
+      );
 
     placeholder.value = "";
     placeholder.textContent =
@@ -665,29 +811,33 @@ function renderPaymentContributionTypes() {
       placeholder
     );
 
-    for (
-      const type
-      of state.activeContributionTypes
-    ) {
-      const option =
-        document.createElement("option");
+    state.activeContributionTypes
+      .forEach(type => {
+        const option =
+          document.createElement(
+            "option"
+          );
 
-      option.value =
-        String(type.id);
+        option.value =
+          String(type.id);
 
-      option.textContent =
-        `${type.name} — ${formatKES(type.amount)}`;
+        option.textContent =
+          type.amount > 0
+            ? `${type.name} — ${formatKES(type.amount)}`
+            : type.name;
 
-      option.dataset.amount =
-        String(type.amount);
+        option.dataset.amount =
+          String(type.amount);
 
-      option.dataset.frequency =
-        String(type.frequency || "");
+        option.dataset.frequency =
+          String(
+            type.frequency || ""
+          );
 
-      fragment.appendChild(
-        option
-      );
-    }
+        fragment.appendChild(
+          option
+        );
+      });
 
     select.replaceChildren(
       fragment
@@ -704,14 +854,17 @@ function renderPaymentContributionTypes() {
       select.value =
         currentValue;
     }
-  }
+  });
 }
+
 
 /* ================================================================
    MEMBERS
 ================================================================ */
 
-function getMemberDisplayName(member) {
+function getMemberDisplayName(
+  member
+) {
   if (!member) {
     return "Member";
   }
@@ -734,56 +887,54 @@ function getMemberDisplayName(member) {
   );
 }
 
+
 async function loadMembers() {
-  if (!state.group?.id) {
+  if (
+    !state.group?.id ||
+    !canManageContributions()
+  ) {
+    state.members = [];
+    renderMemberOptions();
+
     return [];
   }
 
-  let result = null;
-  let lastError = null;
+  try {
+    const result =
+      await callRPC(
+        "get_group_members",
+        {
+          p_group_id:
+            state.group.id
+        }
+      );
 
-  const candidates = [
-    "get_group_members"
-  ];
+    const rows =
+      extractRows(result);
 
-  for (const rpcName of candidates) {
-    try {
-      result =
-        await callRPC(
-          rpcName,
-          {
-            p_group_id:
-              state.group.id
-          }
-        );
+    state.members =
+      Array.isArray(rows)
+        ? rows
+        : [];
 
-      const rows =
-        extractRows(result);
+    renderMemberOptions();
 
-      if (
-        Array.isArray(rows)
-      ) {
-        state.members =
-          rows;
-        renderMemberOptions();
+    return state.members;
 
-        return rows;
-      }
+  } catch (error) {
+    state.members = [];
 
-    } catch (error) {
-      lastError = error;
-    }
+    renderMemberOptions();
+
+    console.warn(
+      "Unable to load group members:",
+      error
+    );
+
+    return [];
   }
-
-  state.members = [];
-  renderMemberOptions();
-
-  if (lastError) {
-    throw lastError;
-  }
-
-  return [];
 }
+
 
 function renderMemberOptions() {
   const selectors = [
@@ -795,10 +946,13 @@ function renderMemberOptions() {
 
   const selects =
     selectors
-      .map(selector => $(selector))
+      .map(
+        selector =>
+          $(selector)
+      )
       .filter(Boolean);
 
-  for (const select of selects) {
+  selects.forEach(select => {
     const currentValue =
       select.value;
 
@@ -806,7 +960,9 @@ function renderMemberOptions() {
       document.createDocumentFragment();
 
     const placeholder =
-      document.createElement("option");
+      document.createElement(
+        "option"
+      );
 
     placeholder.value = "";
     placeholder.textContent =
@@ -816,20 +972,19 @@ function renderMemberOptions() {
       placeholder
     );
 
-    for (
-      const member
-      of state.members
-    ) {
+    state.members.forEach(member => {
       const id =
         member.id ??
         member.member_id;
 
       if (!id) {
-        continue;
+        return;
       }
 
       const option =
-        document.createElement("option");
+        document.createElement(
+          "option"
+        );
 
       option.value =
         String(id);
@@ -842,7 +997,7 @@ function renderMemberOptions() {
       fragment.appendChild(
         option
       );
-    }
+    });
 
     select.replaceChildren(
       fragment
@@ -862,24 +1017,21 @@ function renderMemberOptions() {
       select.value =
         currentValue;
     }
-  }
+  });
 }
+
 
 /* ================================================================
    ACTIVE CONTRIBUTION SUMMARY
 ================================================================ */
 
 function renderCustomContributionSummary() {
-  const containers = [
-    "#activeContributions",
-    "#activeContributionTypes",
-    "#customContributions",
-    "[data-active-contributions]"
-  ];
-
   const container =
     firstExisting(
-      ...containers
+      "#activeContributions",
+      "#activeContributionTypes",
+      "#customContributions",
+      "[data-active-contributions]"
     );
 
   if (!container) {
@@ -925,7 +1077,8 @@ function renderCustomContributionSummary() {
 
           <div class="contribution-card-frequency">
             ${escapeHTML(
-              type.frequency || "ongoing"
+              type.frequency ||
+              "ongoing"
             )}
           </div>
 
@@ -933,7 +1086,9 @@ function renderCustomContributionSummary() {
             type.description
               ? `
                 <p class="contribution-card-description">
-                  ${escapeHTML(type.description)}
+                  ${escapeHTML(
+                    type.description
+                  )}
                 </p>
               `
               : ""
@@ -943,6 +1098,7 @@ function renderCustomContributionSummary() {
       .join("")
   );
 }
+
 
 /* ================================================================
    ACTIVE CONTRIBUTION TABLE
@@ -995,13 +1151,15 @@ function renderContributionTypeTable() {
 
           <td>
             ${escapeHTML(
-              type.frequency || "—"
+              type.frequency ||
+              "—"
             )}
           </td>
 
           <td>
             ${escapeHTML(
-              type.description || "—"
+              type.description ||
+              "—"
             )}
           </td>
 
@@ -1016,8 +1174,9 @@ function renderContributionTypeTable() {
   );
 }
 
+
 /* ================================================================
-   ADMIN DASHBOARD ACTIVE CONTRIBUTION CARDS
+   ADMIN ACTIVE CONTRIBUTIONS
 ================================================================ */
 
 function renderActiveContributionDashboardCards() {
@@ -1072,7 +1231,8 @@ function renderActiveContributionDashboardCards() {
 
           <small>
             ${escapeHTML(
-              type.frequency || "ongoing"
+              type.frequency ||
+              "ongoing"
             )}
           </small>
         </div>
@@ -1080,6 +1240,7 @@ function renderActiveContributionDashboardCards() {
       .join("")
   );
 }
+
 
 /* ================================================================
    SELECTED CONTRIBUTION TYPE
@@ -1103,9 +1264,11 @@ function getSelectedContributionType() {
       type =>
         String(type.id) ===
         String(select.value)
-    ) || null
+    ) ||
+    null
   );
 }
+
 
 function applyContributionTypeDefaults() {
   const type =
@@ -1121,25 +1284,28 @@ function applyContributionTypeDefaults() {
     "#paymentAmount"
   ];
 
-  for (
-    const selector
-    of amountInputs
-  ) {
-    const input = $(selector);
+  amountInputs.forEach(
+    selector => {
+      const input =
+        $(selector);
 
-    if (
-      input &&
-      (!input.value ||
-       Number(input.value) === 0)
-    ) {
-      input.value =
-        type.amount || "";
+      if (
+        input &&
+        (
+          !input.value ||
+          Number(input.value) === 0
+        )
+      ) {
+        input.value =
+          type.amount || "";
+      }
     }
-  }
+  );
 }
 
+
 /* ================================================================
-   CONTRIBUTION FORM VALUES
+   CONTRIBUTION FORM
 ================================================================ */
 
 function getContributionFormValues() {
@@ -1228,6 +1394,7 @@ function getContributionFormValues() {
   };
 }
 
+
 function resetContributionForm() {
   const form =
     firstExisting(
@@ -1239,17 +1406,30 @@ function resetContributionForm() {
     form.reset();
   }
 
+  state.selectedMemberId =
+    null;
+
+  state.selectedContributionTypeId =
+    null;
+
   setDefaultDates();
 }
+
 
 /* ================================================================
    CANONICAL CONTRIBUTION RECORDING
 ================================================================ */
 
-async function recordContribution(event) {
-  event?.preventDefault();
+async function recordContribution(
+  event
+) {
+  if (event) {
+    event.preventDefault();
+  }
 
-  if (!canManageContributions()) {
+  if (
+    !canManageContributions()
+  ) {
     notify(
       "You do not have permission to record contributions.",
       "error"
@@ -1262,7 +1442,8 @@ async function recordContribution(event) {
 
   if (state.submitting) {
     return {
-      ok: false
+      ok: false,
+      busy: true
     };
   }
 
@@ -1292,7 +1473,9 @@ async function recordContribution(event) {
   }
 
   if (
-    !Number.isFinite(values.amount) ||
+    !Number.isFinite(
+      values.amount
+    ) ||
     values.amount <= 0
   ) {
     notify(
@@ -1316,11 +1499,14 @@ async function recordContribution(event) {
     };
   }
 
-  state.submitting = true;
+  state.submitting =
+    true;
 
-  const submitButtons = $all(
-    "#recordContributionForm button[type='submit'], #contributionForm button[type='submit']"
-  );
+  const submitButtons =
+    $all(
+      "#recordContributionForm button[type='submit'], " +
+      "#contributionForm button[type='submit']"
+    );
 
   submitButtons.forEach(
     button =>
@@ -1329,9 +1515,9 @@ async function recordContribution(event) {
 
   try {
     /*
-     * IMPORTANT:
-     * This is the only accounting write path used
-     * by the frontend.
+     * CANONICAL ACCOUNTING WRITE.
+     *
+     * No direct insert/update into accounting tables.
      */
     const result =
       await callRPC(
@@ -1370,13 +1556,12 @@ async function recordContribution(event) {
 
     resetContributionForm();
 
+    /*
+     * Refresh display only.
+     */
     await loadContributionLedger();
 
-    if (
-      state.member?.id
-    ) {
-      await renderMemberContributionCards();
-    }
+    await renderMemberContributionCards();
 
     return {
       ok: true,
@@ -1390,8 +1575,10 @@ async function recordContribution(event) {
     );
 
     notify(
-      error?.message ||
-      "Unable to record the contribution.",
+      errorMessage(
+        error,
+        "Unable to record the contribution."
+      ),
       "error"
     );
 
@@ -1401,7 +1588,8 @@ async function recordContribution(event) {
     };
 
   } finally {
-    state.submitting = false;
+    state.submitting =
+      false;
 
     submitButtons.forEach(
       button =>
@@ -1409,6 +1597,7 @@ async function recordContribution(event) {
     );
   }
 }
+
 
 /* ================================================================
    MEMBER CONTRIBUTION POSITION
@@ -1425,8 +1614,8 @@ async function getMemberContributionPosition(
     return null;
   }
 
-  let result = null;
-  let lastError = null;
+  let lastError =
+    null;
 
   const candidates = [
     "get_member_contribution_position",
@@ -1434,11 +1623,10 @@ async function getMemberContributionPosition(
   ];
 
   for (
-    const rpcName
-    of candidates
+    const rpcName of candidates
   ) {
     try {
-      result =
+      const result =
         await callRPC(
           rpcName,
           {
@@ -1454,7 +1642,7 @@ async function getMemberContributionPosition(
         extractRows(result);
 
       if (
-        rows.length
+        rows.length > 0
       ) {
         return normalisePosition(
           rows[0]
@@ -1471,50 +1659,56 @@ async function getMemberContributionPosition(
         );
       }
 
-      return normalisePosition(
-        {}
-      );
+      return normalisePosition({});
 
     } catch (error) {
-      lastError = error;
+      lastError =
+        error;
     }
   }
 
-  if (lastError) {
-    throw lastError;
-  }
+  console.warn(
+    "Unable to load member contribution position:",
+    lastError
+  );
 
   return null;
 }
 
-function normalisePosition(row) {
+
+function normalisePosition(
+  row
+) {
+  row =
+    row || {};
+
   const required =
     normaliseAmount(
-      row?.required ??
-      row?.required_amount ??
-      row?.amount_due ??
-      row?.obligation_amount
+      row.required ??
+      row.required_amount ??
+      row.amount_due ??
+      row.obligation_amount
     );
 
   const paid =
     normaliseAmount(
-      row?.paid ??
-      row?.paid_amount ??
-      row?.total_paid ??
-      row?.allocated
+      row.paid ??
+      row.paid_amount ??
+      row.total_paid ??
+      row.allocated
     );
 
   const allocated =
     normaliseAmount(
-      row?.allocated ??
-      row?.allocated_amount ??
+      row.allocated ??
+      row.allocated_amount ??
       paid
     );
 
   const outstandingRaw =
-    row?.outstanding ??
-    row?.outstanding_amount ??
-    row?.balance;
+    row.outstanding ??
+    row.outstanding_amount ??
+    row.balance;
 
   const outstanding =
     outstandingRaw !== undefined &&
@@ -1523,27 +1717,34 @@ function normalisePosition(row) {
           outstandingRaw
         )
       : Math.max(
-          required - allocated,
+          required -
+          allocated,
           0
         );
 
   const unapplied =
     normaliseAmount(
-      row?.unapplied ??
-      row?.unapplied_amount ??
-      row?.credit
+      row.unapplied ??
+      row.unapplied_amount ??
+      row.credit
     );
 
   let status =
-    row?.status ??
-    row?.payment_status ??
+    row.status ??
+    row.payment_status ??
     null;
 
   if (!status) {
     if (required <= 0) {
       status = "not_due";
-    } else if (outstanding <= 0) {
+    } else if (
+      outstanding <= 0
+    ) {
       status = "paid";
+    } else if (
+      allocated > 0
+    ) {
+      status = "partial";
     } else {
       status = "outstanding";
     }
@@ -1565,11 +1766,14 @@ function normalisePosition(row) {
   };
 }
 
+
 /* ================================================================
    STATUS HELPERS
 ================================================================ */
 
-function statusLabel(status) {
+function statusLabel(
+  status
+) {
   const value =
     String(
       status || ""
@@ -1601,15 +1805,16 @@ function statusLabel(status) {
       return "Rejected";
 
     default:
-      return (
-        status
-          ? String(status)
-          : "Outstanding"
-      );
+      return status
+        ? String(status)
+        : "Outstanding";
   }
 }
 
-function statusClass(status) {
+
+function statusClass(
+  status
+) {
   const value =
     String(
       status || ""
@@ -1621,7 +1826,7 @@ function statusClass(status) {
     [
       "paid",
       "settled"
-    ].includes(value)
+    ].indexOf(value) !== -1
   ) {
     return "paid";
   }
@@ -1630,23 +1835,23 @@ function statusClass(status) {
     [
       "partial",
       "partially_paid"
-    ].includes(value)
+    ].indexOf(value) !== -1
   ) {
     return "partial";
   }
 
   if (
-    [
-      "pending"
-    ].includes(value)
+    ["pending"].indexOf(
+      value
+    ) !== -1
   ) {
     return "pending";
   }
 
   if (
-    [
-      "rejected"
-    ].includes(value)
+    ["rejected"].indexOf(
+      value
+    ) !== -1
   ) {
     return "rejected";
   }
@@ -1654,79 +1859,10 @@ function statusClass(status) {
   return "outstanding";
 }
 
+
 /* ================================================================
-   MEMBER CONTRIBUTION STATUS
+   MEMBER CONTRIBUTION CARDS
 ================================================================ */
-
-function renderMemberContributionStatus(
-  container,
-  type,
-  position
-) {
-  if (!container) {
-    return;
-  }
-
-  const status =
-    position?.status ||
-    "outstanding";
-
-  const outstanding =
-    normaliseAmount(
-      position?.outstanding
-    );
-
-  const allocated =
-    normaliseAmount(
-      position?.allocated
-    );
-
-  setHTML(
-    container,
-    `
-      <div class="member-contribution-status">
-        <div class="member-contribution-status-header">
-          <strong>
-            ${escapeHTML(type.name)}
-          </strong>
-
-          <span
-            class="status ${escapeHTML(
-              statusClass(status)
-            )}"
-          >
-            ${escapeHTML(
-              statusLabel(status)
-            )}
-          </span>
-        </div>
-
-        <div class="member-contribution-status-values">
-          <div>
-            <small>Required</small>
-            <strong>
-              ${formatKES(type.amount)}
-            </strong>
-          </div>
-
-          <div>
-            <small>Paid</small>
-            <strong>
-              ${formatKES(allocated)}
-            </strong>
-          </div>
-
-          <div>
-            <small>Outstanding</small>
-            <strong>
-              ${formatKES(outstanding)}
-            </strong>
-          </div>
-        </div>
-      </div>
-    `
-  );
-}
 
 async function loadMemberContributionStatus(
   memberId = state.member?.id
@@ -1737,6 +1873,11 @@ async function loadMemberContributionStatus(
 
   const positions = [];
 
+  /*
+   * Continue through all active contribution rules.
+   * One failed status RPC must not destroy the
+   * remaining cards.
+   */
   for (
     const type
     of state.activeContributionTypes
@@ -1750,14 +1891,15 @@ async function loadMemberContributionStatus(
 
       positions.push({
         type,
+
         position:
           position ||
           normalisePosition({})
       });
 
     } catch (error) {
-      console.error(
-        "Contribution status load failed:",
+      console.warn(
+        "Contribution status failed:",
         {
           memberId,
           contributionTypeId:
@@ -1768,6 +1910,7 @@ async function loadMemberContributionStatus(
 
       positions.push({
         type,
+
         position:
           normalisePosition({})
       });
@@ -1777,9 +1920,6 @@ async function loadMemberContributionStatus(
   return positions;
 }
 
-/* ================================================================
-   MEMBER CONTRIBUTION CARDS
-================================================================ */
 
 async function renderMemberContributionCards() {
   const container =
@@ -1825,19 +1965,23 @@ async function renderMemberContributionCards() {
     return [];
   }
 
-  setHTML(
-    container,
-    `
-      <div class="loading-state">
-        Loading contribution status…
-      </div>
-    `
-  );
-
   const positions =
     await loadMemberContributionStatus(
       memberId
     );
+
+  if (!positions.length) {
+    setHTML(
+      container,
+      `
+        <div class="empty-state">
+          No contribution status available.
+        </div>
+      `
+    );
+
+    return [];
+  }
 
   setHTML(
     container,
@@ -1849,6 +1993,7 @@ async function renderMemberContributionCards() {
             data-contribution-type-id="${escapeHTML(type.id)}"
           >
             <div class="member-contribution-card-header">
+
               <div>
                 <h3>
                   ${escapeHTML(type.name)}
@@ -1856,7 +2001,8 @@ async function renderMemberContributionCards() {
 
                 <small>
                   ${escapeHTML(
-                    type.frequency || "ongoing"
+                    type.frequency ||
+                    "ongoing"
                   )}
                 </small>
               </div>
@@ -1874,11 +2020,14 @@ async function renderMemberContributionCards() {
                   )
                 )}
               </span>
+
             </div>
 
             <div class="member-contribution-card-values">
+
               <div>
                 <small>Required</small>
+
                 <strong>
                   ${formatKES(
                     type.amount
@@ -1888,6 +2037,7 @@ async function renderMemberContributionCards() {
 
               <div>
                 <small>Paid</small>
+
                 <strong>
                   ${formatKES(
                     position.allocated
@@ -1897,12 +2047,14 @@ async function renderMemberContributionCards() {
 
               <div>
                 <small>Outstanding</small>
+
                 <strong>
                   ${formatKES(
                     position.outstanding
                   )}
                 </strong>
               </div>
+
             </div>
 
             ${
@@ -1916,6 +2068,7 @@ async function renderMemberContributionCards() {
                 `
                 : ""
             }
+
           </article>
         `
       )
@@ -1925,8 +2078,12 @@ async function renderMemberContributionCards() {
   return positions;
 }
 
+
 /* ================================================================
    CONTRIBUTION LEDGER
+   ---------------------------------------------------------------
+   IMPORTANT:
+   There is exactly ONE declaration of this function.
 ================================================================ */
 
 async function loadContributionLedger() {
@@ -1938,28 +2095,35 @@ async function loadContributionLedger() {
       "[data-contributions-body]"
     );
 
-  if (!state.group?.id) {
-    state.contributions = [];
+  /*
+   * Always start from a clean state for a new refresh.
+   * This prevents stale accounting data from remaining
+   * visible after an unsuccessful read.
+   */
+  state.contributions = [];
 
+  if (!state.group?.id) {
     renderContributionLedger(
-      state.contributions
+      []
     );
 
     return [];
   }
 
-  let successfulRows = null;
-  let lastError = null;
+  let successfulRows =
+    null;
 
-  const rpcCandidates = [
+  let lastError =
+    null;
+
+  const candidates = [
     "get_group_contribution_ledger",
     "get_contribution_ledger",
     "get_contributions"
   ];
 
   for (
-    const rpcName
-    of rpcCandidates
+    const rpcName of candidates
   ) {
     try {
       const result =
@@ -1984,38 +2148,52 @@ async function loadContributionLedger() {
       }
 
     } catch (error) {
-      lastError = error;
+      lastError =
+        error;
     }
   }
 
-  /*
-   * IMPORTANT:
-   * Do not retain stale ledger rows when a refresh
-   * fails. A failed refresh must never make old
-   * accounting data look current.
-   */
   if (
-    Array.isArray(successfulRows)
+    Array.isArray(
+      successfulRows
+    )
   ) {
     state.contributions =
       successfulRows;
+
   } else {
     state.contributions = [];
 
-    if (
-      container &&
+    console.warn(
+      "Unable to load contribution ledger:",
       lastError
-    ) {
-      setHTML(
-        container,
-        `
-          <tr>
-            <td colspan="8">
-              Unable to load contribution records.
-            </td>
-          </tr>
-        `
-      );
+    );
+
+    if (container) {
+      if (
+        container.tagName ===
+        "TBODY"
+      ) {
+        setHTML(
+          container,
+          `
+            <tr>
+              <td colspan="8">
+                Contribution records are temporarily unavailable.
+              </td>
+            </tr>
+          `
+        );
+      } else {
+        setHTML(
+          container,
+          `
+            <div class="empty-state">
+              Contribution records are temporarily unavailable.
+            </div>
+          `
+        );
+      }
     }
   }
 
@@ -2026,7 +2204,10 @@ async function loadContributionLedger() {
   return state.contributions;
 }
 
-function getContributionMemberName(row) {
+
+function getContributionMemberName(
+  row
+) {
   return (
     row?.member_name ||
     row?.full_name ||
@@ -2036,7 +2217,10 @@ function getContributionMemberName(row) {
   );
 }
 
-function getContributionTypeName(row) {
+
+function getContributionTypeName(
+  row
+) {
   return (
     row?.contribution_type_name ||
     row?.type_name ||
@@ -2047,7 +2231,10 @@ function getContributionTypeName(row) {
   );
 }
 
-function getContributionStatus(row) {
+
+function getContributionStatus(
+  row
+) {
   return (
     row?.status ||
     row?.payment_status ||
@@ -2056,32 +2243,39 @@ function getContributionStatus(row) {
   );
 }
 
-function renderContributionRow(row) {
+
+function renderContributionRow(
+  row
+) {
+  row =
+    row || {};
+
   const amount =
     normaliseAmount(
-      row?.amount ??
-      row?.contribution_amount
+      row.amount ??
+      row.contribution_amount
     );
 
   const date =
-    row?.contribution_date ??
-    row?.payment_date ??
-    row?.date ??
-    row?.created_at;
+    row.contribution_date ??
+    row.payment_date ??
+    row.date ??
+    row.created_at;
 
   const paymentMethod =
-    row?.payment_method ??
-    row?.method ??
+    row.payment_method ??
+    row.method ??
     "—";
 
   const reference =
-    row?.reference ??
-    row?.payment_reference ??
-    row?.mpesa_reference ??
+    row.reference ??
+    row.payment_reference ??
+    row.mpesa_reference ??
     "—";
 
   return `
     <tr>
+
       <td>
         ${escapeHTML(
           formatDate(date)
@@ -2129,9 +2323,11 @@ function renderContributionRow(row) {
           )}
         </span>
       </td>
+
     </tr>
   `;
 }
+
 
 function renderContributionLedger(
   rows
@@ -2152,11 +2348,10 @@ function renderContributionLedger(
     !Array.isArray(rows) ||
     !rows.length
   ) {
-    const isTableBody =
+    if (
       container.tagName ===
-      "TBODY";
-
-    if (isTableBody) {
+      "TBODY"
+    ) {
       setHTML(
         container,
         `
@@ -2190,6 +2385,7 @@ function renderContributionLedger(
       .join("")
   );
 }
+
 
 /* ================================================================
    CUSTOM CONTRIBUTION FORM
@@ -2244,6 +2440,7 @@ function getCustomContributionFormValues() {
   };
 }
 
+
 function validateCustomContribution(
   values
 ) {
@@ -2273,6 +2470,7 @@ function validateCustomContribution(
   };
 }
 
+
 /* ================================================================
    CREATE CUSTOM CONTRIBUTION
 ================================================================ */
@@ -2286,7 +2484,8 @@ async function createCustomContribution(
     );
   }
 
-  let lastError = null;
+  let lastError =
+    null;
 
   const candidates = [
     "create_custom_contribution",
@@ -2295,8 +2494,7 @@ async function createCustomContribution(
   ];
 
   for (
-    const rpcName
-    of candidates
+    const rpcName of candidates
   ) {
     try {
       return await callRPC(
@@ -2321,7 +2519,8 @@ async function createCustomContribution(
       );
 
     } catch (error) {
-      lastError = error;
+      lastError =
+        error;
     }
   }
 
@@ -2333,12 +2532,17 @@ async function createCustomContribution(
   );
 }
 
+
 async function submitCustomContribution(
   event
 ) {
-  event?.preventDefault();
+  if (event) {
+    event.preventDefault();
+  }
 
-  if (!canManageContributions()) {
+  if (
+    !canManageContributions()
+  ) {
     notify(
       "You do not have permission to create contributions.",
       "error"
@@ -2372,9 +2576,11 @@ async function submitCustomContribution(
     );
 
     /*
-     * Reload the canonical contribution
-     * definitions so the new contribution remains
-     * visible and immediately becomes selectable.
+     * Reload canonical definitions.
+     *
+     * This is what keeps the new contribution visible
+     * as an active contribution and makes it available
+     * in the payment selector.
      */
     await loadContributionTypes();
 
@@ -2384,7 +2590,9 @@ async function submitCustomContribution(
         "#custom-contribution-form"
       );
 
-    form?.reset();
+    if (form) {
+      form.reset();
+    }
 
     notify(
       "Custom Contribution created and activated.",
@@ -2404,8 +2612,10 @@ async function submitCustomContribution(
     );
 
     notify(
-      error?.message ||
-      "Unable to create the custom contribution.",
+      errorMessage(
+        error,
+        "Unable to create the custom contribution."
+      ),
       "error"
     );
 
@@ -2416,8 +2626,9 @@ async function submitCustomContribution(
   }
 }
 
+
 /* ================================================================
-   REFRESH ACTIVE CONTRIBUTION TYPES
+   REFRESH ACTIVE CONTRIBUTIONS
 ================================================================ */
 
 async function refreshActiveContributionTypes() {
@@ -2428,6 +2639,7 @@ async function refreshActiveContributionTypes() {
 
   return result;
 }
+
 
 /* ================================================================
    MEMBER PAYMENT EVIDENCE
@@ -2498,10 +2710,13 @@ function getEvidenceFormValues() {
   };
 }
 
+
 async function submitPaymentEvidence(
   event
 ) {
-  event?.preventDefault();
+  if (event) {
+    event.preventDefault();
+  }
 
   if (!state.member?.id) {
     notify(
@@ -2579,7 +2794,9 @@ async function submitPaymentEvidence(
         "#evidenceForm"
       );
 
-    form?.reset();
+    if (form) {
+      form.reset();
+    }
 
     setDefaultDates();
 
@@ -2606,8 +2823,10 @@ async function submitPaymentEvidence(
     );
 
     notify(
-      error?.message ||
-      "Unable to submit payment evidence.",
+      errorMessage(
+        error,
+        "Unable to submit payment evidence."
+      ),
       "error"
     );
 
@@ -2617,6 +2836,7 @@ async function submitPaymentEvidence(
     };
   }
 }
+
 
 /* ================================================================
    PAYMENT EVIDENCE QUEUE
@@ -2630,14 +2850,17 @@ async function loadPaymentEvidence() {
     state.paymentEvidence = [];
 
     renderPaymentEvidence(
-      state.paymentEvidence
+      []
     );
 
     return [];
   }
 
-  let successfulRows = null;
-  let lastError = null;
+  let successfulRows =
+    null;
+
+  let lastError =
+    null;
 
   const candidates = [
     "get_member_payment_evidence",
@@ -2646,8 +2869,7 @@ async function loadPaymentEvidence() {
   ];
 
   for (
-    const rpcName
-    of candidates
+    const rpcName of candidates
   ) {
     try {
       const result =
@@ -2672,38 +2894,41 @@ async function loadPaymentEvidence() {
       }
 
     } catch (error) {
-      lastError = error;
+      lastError =
+        error;
     }
   }
 
+  /*
+   * Clear stale evidence when the refresh fails.
+   */
   if (
-    Array.isArray(successfulRows)
+    Array.isArray(
+      successfulRows
+    )
   ) {
     state.paymentEvidence =
       successfulRows;
   } else {
-    /*
-     * Never leave stale evidence visible after
-     * an unsuccessful refresh.
-     */
     state.paymentEvidence = [];
+
+    console.warn(
+      "Unable to load payment evidence:",
+      lastError
+    );
   }
 
   renderPaymentEvidence(
     state.paymentEvidence
   );
 
-  if (
-    lastError &&
-    !Array.isArray(successfulRows)
-  ) {
-    throw lastError;
-  }
-
   return state.paymentEvidence;
 }
 
-function evidenceStatus(row) {
+
+function evidenceStatus(
+  row
+) {
   return String(
     row?.status ||
     row?.verification_status ||
@@ -2713,7 +2938,10 @@ function evidenceStatus(row) {
     .toLowerCase();
 }
 
-function evidenceStatusLabel(row) {
+
+function evidenceStatusLabel(
+  row
+) {
   const status =
     evidenceStatus(row);
 
@@ -2732,6 +2960,11 @@ function evidenceStatusLabel(row) {
       return status;
   }
 }
+
+
+/* ================================================================
+   RENDER PAYMENT EVIDENCE
+================================================================ */
 
 function renderPaymentEvidence(
   rows
@@ -2753,11 +2986,10 @@ function renderPaymentEvidence(
     !Array.isArray(rows) ||
     !rows.length
   ) {
-    const isTableBody =
+    if (
       container.tagName ===
-      "TBODY";
-
-    if (isTableBody) {
+      "TBODY"
+    ) {
       setHTML(
         container,
         `
@@ -2814,6 +3046,7 @@ function renderPaymentEvidence(
               evidenceId || ""
             )}"
           >
+
             <td>
               ${escapeHTML(
                 memberName
@@ -2832,13 +3065,15 @@ function renderPaymentEvidence(
 
             <td>
               ${escapeHTML(
-                row?.payment_method || "—"
+                row?.payment_method ||
+                "—"
               )}
             </td>
 
             <td>
               ${escapeHTML(
-                row?.reference || "—"
+                row?.reference ||
+                "—"
               )}
             </td>
 
@@ -2883,6 +3118,7 @@ function renderPaymentEvidence(
                   : "—"
               }
             </td>
+
           </tr>
         `;
       })
@@ -2890,8 +3126,9 @@ function renderPaymentEvidence(
   );
 }
 
+
 /* ================================================================
-   FIND PAYMENT EVIDENCE
+   FIND EVIDENCE
 ================================================================ */
 
 function findEvidence(
@@ -2906,6 +3143,7 @@ function findEvidence(
       String(evidenceId)
   );
 }
+
 
 /* ================================================================
    VERIFY PAYMENT EVIDENCE
@@ -2938,9 +3176,9 @@ async function verifyPaymentEvidence(
 
   try {
     /*
-     * Verification is a backend workflow.
-     * The frontend does not insert/update
-     * contributions or allocation tables.
+     * Backend verification workflow.
+     *
+     * The frontend does not write accounting tables.
      */
     const result =
       await callRPC(
@@ -2957,6 +3195,7 @@ async function verifyPaymentEvidence(
     );
 
     await loadPaymentEvidence();
+
     await loadContributionLedger();
 
     await renderMemberContributionCards();
@@ -2973,8 +3212,10 @@ async function verifyPaymentEvidence(
     );
 
     notify(
-      error?.message ||
-      "Unable to verify payment evidence.",
+      errorMessage(
+        error,
+        "Unable to verify payment evidence."
+      ),
       "error"
     );
 
@@ -2984,6 +3225,7 @@ async function verifyPaymentEvidence(
     };
   }
 }
+
 
 /* ================================================================
    REJECT PAYMENT EVIDENCE
@@ -3015,7 +3257,8 @@ async function rejectPaymentEvidence(
     };
   }
 
-  let lastError = null;
+  let lastError =
+    null;
 
   const candidates = [
     "reject_member_payment_evidence",
@@ -3023,8 +3266,7 @@ async function rejectPaymentEvidence(
   ];
 
   for (
-    const rpcName
-    of candidates
+    const rpcName of candidates
   ) {
     try {
       const result =
@@ -3052,7 +3294,8 @@ async function rejectPaymentEvidence(
       };
 
     } catch (error) {
-      lastError = error;
+      lastError =
+        error;
     }
   }
 
@@ -3062,8 +3305,10 @@ async function rejectPaymentEvidence(
   );
 
   notify(
-    lastError?.message ||
-    "Unable to reject payment evidence.",
+    errorMessage(
+      lastError,
+      "Unable to reject payment evidence."
+    ),
     "error"
   );
 
@@ -3073,6 +3318,7 @@ async function rejectPaymentEvidence(
   };
 }
 
+
 /* ================================================================
    EVIDENCE ACTION HANDLER
 ================================================================ */
@@ -3080,8 +3326,19 @@ async function rejectPaymentEvidence(
 async function handleEvidenceAction(
   event
 ) {
+  const target =
+    event.target;
+
+  if (
+    !target ||
+    typeof target.closest !==
+      "function"
+  ) {
+    return;
+  }
+
   const button =
-    event.target.closest(
+    target.closest(
       "[data-evidence-action]"
     );
 
@@ -3104,16 +3361,22 @@ async function handleEvidenceAction(
       evidenceId
     );
 
-  if (action === "verify") {
+  if (
+    action === "verify"
+  ) {
     const confirmed =
       window.confirm(
-        `Verify payment of ${formatKES(
+        "Verify payment of " +
+        formatKES(
           evidence?.amount
-        )} for ${
+        ) +
+        " for " +
+        (
           evidence?.member_name ||
           evidence?.full_name ||
           "this member"
-        }?`
+        ) +
+        "?"
       );
 
     if (!confirmed) {
@@ -3127,7 +3390,9 @@ async function handleEvidenceAction(
     return;
   }
 
-  if (action === "reject") {
+  if (
+    action === "reject"
+  ) {
     const confirmed =
       window.confirm(
         "Reject this payment evidence?"
@@ -3144,11 +3409,13 @@ async function handleEvidenceAction(
 
     await rejectPaymentEvidence(
       evidenceId,
-      reason?.trim() ||
-      null
+      reason
+        ? reason.trim()
+        : null
     );
   }
 }
+
 
 /* ================================================================
    ACTIVE CONTRIBUTION CLICK
@@ -3157,8 +3424,19 @@ async function handleEvidenceAction(
 function handleActiveContributionClick(
   event
 ) {
+  const target =
+    event.target;
+
+  if (
+    !target ||
+    typeof target.closest !==
+      "function"
+  ) {
+    return;
+  }
+
   const card =
-    event.target.closest(
+    target.closest(
       "[data-contribution-type-id]"
     );
 
@@ -3190,14 +3468,21 @@ function handleActiveContributionClick(
 
     applyContributionTypeDefaults();
 
-    select.dispatchEvent(
-      new Event(
-        "change",
-        {
-          bubbles: true
-        }
-      )
-    );
+    try {
+      select.dispatchEvent(
+        new Event(
+          "change",
+          {
+            bubbles: true
+          }
+        )
+      );
+    } catch (error) {
+      console.warn(
+        "Unable to dispatch contribution type change:",
+        error
+      );
+    }
   }
 
   const form =
@@ -3208,11 +3493,18 @@ function handleActiveContributionClick(
       "#contributionForm"
     );
 
-  form?.scrollIntoView({
-    behavior: "smooth",
-    block: "start"
-  });
+  if (
+    form &&
+    typeof form.scrollIntoView ===
+      "function"
+  ) {
+    form.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+  }
 }
+
 
 /* ================================================================
    CHANGE HANDLERS
@@ -3222,25 +3514,33 @@ function handleContributionTypeChange(
   event
 ) {
   state.selectedContributionTypeId =
-    event.target.value ||
+    event?.target?.value ||
     null;
 
   applyContributionTypeDefaults();
 }
 
+
 function handleMemberChange(
   event
 ) {
   state.selectedMemberId =
-    event.target.value ||
+    event?.target?.value ||
     null;
 }
+
 
 /* ================================================================
    REFRESH CONTRIBUTION VIEW
 ================================================================ */
 
 async function refreshContributionView() {
+  /*
+   * Each loader is internally failure-safe.
+   * Therefore one unavailable RPC cannot white-screen
+   * the page.
+   */
+
   await loadContributionTypes();
 
   if (
@@ -3259,8 +3559,11 @@ async function refreshContributionView() {
 
   await renderMemberContributionCards();
 
+  renderAfterLoad();
+
   return getContributionState();
 }
+
 
 /* ================================================================
    ROLE-BASED VISIBILITY
@@ -3291,39 +3594,36 @@ function applyRoleVisibility() {
   const verifier =
     canVerifyEvidence();
 
-  for (
-    const selector
-    of managerSelectors
-  ) {
-    $all(selector).forEach(
-      element => {
-        if (manager) {
-          show(element);
-        } else {
-          hide(element);
+  managerSelectors.forEach(
+    selector => {
+      $all(selector).forEach(
+        element => {
+          if (manager) {
+            show(element);
+          } else {
+            hide(element);
+          }
         }
-      }
-    );
-  }
+      );
+    }
+  );
 
-  for (
-    const selector
-    of verifierSelectors
-  ) {
-    $all(selector).forEach(
-      element => {
-        if (verifier) {
-          show(element);
-        } else {
-          hide(element);
+  verifierSelectors.forEach(
+    selector => {
+      $all(selector).forEach(
+        element => {
+          if (verifier) {
+            show(element);
+          } else {
+            hide(element);
+          }
         }
-      }
-    );
-  }
+      );
+    }
+  );
 
   /*
-   * Ordinary member evidence submission remains
-   * available to authenticated members.
+   * Authenticated members can submit evidence.
    */
   const evidenceForms = [
     "#memberPaymentEvidenceForm",
@@ -3332,27 +3632,40 @@ function applyRoleVisibility() {
     "[data-member-evidence-form]"
   ];
 
-  for (
-    const selector
-    of evidenceForms
-  ) {
-    $all(selector).forEach(
-      element => {
-        show(element);
-      }
-    );
-  }
+  evidenceForms.forEach(
+    selector => {
+      $all(selector).forEach(
+        element =>
+          show(element)
+      );
+    }
+  );
 }
+
 
 /* ================================================================
    DEFAULT DATES
 ================================================================ */
 
 function setDefaultDates() {
+  const now =
+    new Date();
+
+  const year =
+    now.getFullYear();
+
+  const month =
+    String(
+      now.getMonth() + 1
+    ).padStart(2, "0");
+
+  const day =
+    String(
+      now.getDate()
+    ).padStart(2, "0");
+
   const today =
-    new Date()
-      .toISOString()
-      .slice(0, 10);
+    `${year}-${month}-${day}`;
 
   const selectors = [
     "#contributionDate",
@@ -3364,35 +3677,38 @@ function setDefaultDates() {
     "#evidence_date"
   ];
 
-  for (
-    const selector
-    of selectors
-  ) {
-    const input =
-      $(selector);
+  selectors.forEach(
+    selector => {
+      const input =
+        $(selector);
 
-    if (
-      input &&
-      !input.value
-    ) {
-      input.value =
-        today;
+      if (
+        input &&
+        !input.value
+      ) {
+        input.value =
+          today;
+      }
     }
-  }
+  );
 }
+
 
 /* ================================================================
    EVENT BINDING
 ================================================================ */
 
-let eventsBound = false;
+let eventsBound =
+  false;
+
 
 function bindEvents() {
   if (eventsBound) {
     return;
   }
 
-  eventsBound = true;
+  eventsBound =
+    true;
 
   const contributionForm =
     firstExisting(
@@ -3400,10 +3716,12 @@ function bindEvents() {
       "#contributionForm"
     );
 
-  contributionForm?.addEventListener(
-    "submit",
-    recordContribution
-  );
+  if (contributionForm) {
+    contributionForm.addEventListener(
+      "submit",
+      recordContribution
+    );
+  }
 
   const evidenceForm =
     firstExisting(
@@ -3412,10 +3730,12 @@ function bindEvents() {
       "#evidenceForm"
     );
 
-  evidenceForm?.addEventListener(
-    "submit",
-    submitPaymentEvidence
-  );
+  if (evidenceForm) {
+    evidenceForm.addEventListener(
+      "submit",
+      submitPaymentEvidence
+    );
+  }
 
   const customForm =
     firstExisting(
@@ -3423,10 +3743,12 @@ function bindEvents() {
       "#custom-contribution-form"
     );
 
-  customForm?.addEventListener(
-    "submit",
-    submitCustomContribution
-  );
+  if (customForm) {
+    customForm.addEventListener(
+      "submit",
+      submitCustomContribution
+    );
+  }
 
   const evidenceContainer =
     firstExisting(
@@ -3437,10 +3759,12 @@ function bindEvents() {
       "[data-payment-evidence]"
     );
 
-  evidenceContainer?.addEventListener(
-    "click",
-    handleEvidenceAction
-  );
+  if (evidenceContainer) {
+    evidenceContainer.addEventListener(
+      "click",
+      handleEvidenceAction
+    );
+  }
 
   const activeContainers = [
     "#activeContributions",
@@ -3453,18 +3777,19 @@ function bindEvents() {
     "[data-admin-active-contributions]"
   ];
 
-  for (
-    const selector
-    of activeContainers
-  ) {
-    const container =
-      $(selector);
+  activeContainers.forEach(
+    selector => {
+      const container =
+        $(selector);
 
-    container?.addEventListener(
-      "click",
-      handleActiveContributionClick
-    );
-  }
+      if (container) {
+        container.addEventListener(
+          "click",
+          handleActiveContributionClick
+        );
+      }
+    }
+  );
 
   const typeSelectors = [
     "#contributionType",
@@ -3473,15 +3798,19 @@ function bindEvents() {
     "#paymentContributionType"
   ];
 
-  for (
-    const selector
-    of typeSelectors
-  ) {
-    $(selector)?.addEventListener(
-      "change",
-      handleContributionTypeChange
-    );
-  }
+  typeSelectors.forEach(
+    selector => {
+      const element =
+        $(selector);
+
+      if (element) {
+        element.addEventListener(
+          "change",
+          handleContributionTypeChange
+        );
+      }
+    }
+  );
 
   const memberSelectors = [
     "#memberSelect",
@@ -3490,19 +3819,24 @@ function bindEvents() {
     "#recordContributionMember"
   ];
 
-  for (
-    const selector
-    of memberSelectors
-  ) {
-    $(selector)?.addEventListener(
-      "change",
-      handleMemberChange
-    );
-  }
+  memberSelectors.forEach(
+    selector => {
+      const element =
+        $(selector);
 
-  const refreshButtons = $all(
-    "[data-refresh-contributions], #refreshContributions"
+      if (element) {
+        element.addEventListener(
+          "change",
+          handleMemberChange
+        );
+      }
+    }
   );
+
+  const refreshButtons =
+    $all(
+      "[data-refresh-contributions], #refreshContributions"
+    );
 
   refreshButtons.forEach(
     button => {
@@ -3510,6 +3844,11 @@ function bindEvents() {
         "click",
         async event => {
           event.preventDefault();
+
+          disable(
+            button,
+            true
+          );
 
           try {
             await refreshContributionView();
@@ -3520,15 +3859,26 @@ function bindEvents() {
             );
 
           } catch (error) {
+            /*
+             * Final safety net.
+             */
             console.error(
               "Contribution refresh failed:",
               error
             );
 
             notify(
-              error?.message ||
-              "Unable to refresh contributions.",
+              errorMessage(
+                error,
+                "Unable to refresh contributions."
+              ),
               "error"
+            );
+
+          } finally {
+            disable(
+              button,
+              false
             );
           }
         }
@@ -3537,8 +3887,9 @@ function bindEvents() {
   );
 }
 
+
 /* ================================================================
-   PAGE LOADING STATE
+   PAGE LOADING
 ================================================================ */
 
 function setPageLoading(
@@ -3566,7 +3917,6 @@ function setPageLoading(
   const page =
     firstExisting(
       "#contributionsPage",
-      "main",
       "[data-contributions-page]"
     );
 
@@ -3576,13 +3926,31 @@ function setPageLoading(
         ? "true"
         : "false";
   }
+
+  /*
+   * IMPORTANT:
+   * We deliberately do not hide <main> or the page
+   * content while RPCs are running.
+   *
+   * This prevents a failed optional RPC from leaving
+   * the user with a blank/white page.
+   */
 }
 
+
 /* ================================================================
-   INITIAL DATA LOAD
+   INITIAL DATA
 ================================================================ */
 
 async function loadInitialData() {
+  /*
+   * Context is the only critical dependency.
+   *
+   * If authentication/group context fails, initPage()
+   * reports the failure.
+   *
+   * Everything after context is best-effort.
+   */
   await loadContext();
 
   applyRoleVisibility();
@@ -3608,28 +3976,40 @@ async function loadInitialData() {
   return getContributionState();
 }
 
+
 /* ================================================================
    FINAL RENDER
 ================================================================ */
 
 function renderAfterLoad() {
+  /*
+   * Every renderer is defensive and safe to call even
+   * when the corresponding HTML element is absent.
+   */
   renderPaymentContributionTypes();
+
   renderCustomContributionSummary();
+
   renderContributionTypeTable();
+
   renderActiveContributionDashboardCards();
+
   renderContributionLedger(
     state.contributions
   );
+
   renderPaymentEvidence(
     state.paymentEvidence
   );
 
   applyRoleVisibility();
+
   setDefaultDates();
 }
 
+
 /* ================================================================
-   PAGE INITIALISATION
+   INIT PAGE
 ================================================================ */
 
 export async function initPage() {
@@ -3641,24 +4021,68 @@ export async function initPage() {
   }
 
   clearNotification();
-  setPageLoading(true);
+
+  /*
+   * Set the loading flag without blanking the page.
+   */
+  setPageLoading(
+    true
+  );
 
   try {
-    const data =
-      await loadInitialData();
+    /*
+     * Critical:
+     * authentication/group context only.
+     */
+    await loadContext();
 
+    /*
+     * Render role visibility immediately.
+     */
+    applyRoleVisibility();
+
+    /*
+     * Bind UI before asynchronous optional loads.
+     */
     bindEvents();
+
+    /*
+     * Render safe initial state.
+     */
     renderAfterLoad();
 
     /*
-     * Manager accounting refresh:
+     * Best-effort data loading.
      *
-     * The refresh RPC is allowed to return its own
-     * canonical result shape. The frontend must NOT
-     * require data.ok === true.
+     * Each function handles its own errors.
+     */
+    await loadContributionTypes();
+
+    if (
+      canManageContributions()
+    ) {
+      await loadMembers();
+    }
+
+    await loadContributionLedger();
+
+    if (
+      canVerifyEvidence()
+    ) {
+      await loadPaymentEvidence();
+    }
+
+    await renderMemberContributionCards();
+
+    /*
+     * Manager accounting refresh.
      *
-     * Its purpose here is to refresh backend-managed
-     * member accounting before the display is refreshed.
+     * IMPORTANT:
+     * Do NOT require data.ok === true.
+     *
+     * The refresh result belongs to the backend and
+     * its result shape must not be used as a frontend
+     * success gate.
      */
     if (
       canManageContributions()
@@ -3672,13 +4096,14 @@ export async function initPage() {
           }
         );
 
+        /*
+         * Refresh the display after backend refresh.
+         */
         await renderMemberContributionCards();
 
       } catch (error) {
         /*
-         * Do not make an otherwise usable page fail
-         * solely because this optional refresh could
-         * not execute.
+         * This is intentionally non-fatal.
          */
         console.warn(
           "Managed member accounting refresh unavailable:",
@@ -3687,22 +4112,47 @@ export async function initPage() {
       }
     }
 
+    /*
+     * Final safe render.
+     */
+    renderAfterLoad();
+
     return {
       ok: true,
-      data
+      data:
+        getContributionState()
     };
 
   } catch (error) {
+    /*
+     * Only critical context failure reaches here.
+     */
     console.error(
       "CHAMA LIVE Contributions initialisation failed:",
       error
     );
 
     notify(
-      error?.message ||
-      "Unable to load contributions.",
+      errorMessage(
+        error,
+        "Unable to load contributions."
+      ),
       "error"
     );
+
+    /*
+     * Even on failure, render the shell/state that
+     * is available instead of leaving the page blank.
+     */
+    try {
+      bindEvents();
+      renderAfterLoad();
+    } catch (renderError) {
+      console.error(
+        "Contribution fallback render failed:",
+        renderError
+      );
+    }
 
     return {
       ok: false,
@@ -3710,9 +4160,15 @@ export async function initPage() {
     };
 
   } finally {
-    setPageLoading(false);
+    /*
+     * Always release the loading state.
+     */
+    setPageLoading(
+      false
+    );
   }
 }
+
 
 /* ================================================================
    EXPLICIT PAGE REFRESH
@@ -3739,8 +4195,10 @@ export async function refreshPage() {
     );
 
     notify(
-      error?.message ||
-      "Unable to refresh contributions.",
+      errorMessage(
+        error,
+        "Unable to refresh contributions."
+      ),
       "error"
     );
 
@@ -3750,6 +4208,7 @@ export async function refreshPage() {
     };
   }
 }
+
 
 /* ================================================================
    STATE ACCESS
@@ -3781,6 +4240,7 @@ export function getContributionState() {
   };
 }
 
+
 /* ================================================================
    NAMED EXPORTS
 ================================================================ */
@@ -3805,17 +4265,15 @@ export {
   refreshActiveContributionTypes
 };
 
+
 /* ================================================================
    NO AUTO-RUN
-   ---------------------------------------------------------------
-   The page loader must call:
+================================================================ */
 
-       import("./js/contributions.js")
-         .then(module => module.initPage())
-
-   Do NOT add:
+/*
+   DO NOT ADD:
 
        initPage();
 
-   here.
-================================================================ */
+   The HTML/page loader must explicitly call initPage().
+*/
