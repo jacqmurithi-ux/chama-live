@@ -56,6 +56,7 @@ let payments = [];
 
 const ADMIN_ROLES = new Set([
   "admin",
+  "administrator",
   "chairperson",
   "secretary",
   "treasurer"
@@ -1334,6 +1335,8 @@ async function loadBilling() {
 ========================================================= */
 
 export async function initBilling() {
+
+  clearMessages();
 
   try {
 
