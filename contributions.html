@@ -29,8 +29,7 @@
     /* =====================================================
        CHAMA LIVE — CONTRIBUTIONS
        CANONICAL 2B ACCOUNTING SURFACE
-       LIGHT / MOBILE-FIRST ADMIN SURFACE
-    ====================================================== */
+       ===================================================== */
 
     html,
     body {
@@ -61,9 +60,10 @@
 
     /* =====================================================
        PAGE HEADER
-    ====================================================== */
+       ===================================================== */
 
     .contributions-page-header {
+      position: relative;
       width: 100%;
       max-width: 1500px;
       margin: 0 auto 20px;
@@ -84,8 +84,10 @@
       line-height: 1.15;
     }
 
-    .contributions-page-header {
-      position: relative;
+    .contributions-page-header p {
+      max-width: 760px;
+      margin: 0;
+      line-height: 1.55;
     }
 
     .contributions-header-actions {
@@ -123,16 +125,10 @@
       cursor: not-allowed;
     }
 
-    .contributions-page-header p {
-      max-width: 760px;
-      margin: 0;
-      line-height: 1.55;
-    }
-
 
     /* =====================================================
        SUMMARY
-    ====================================================== */
+       ===================================================== */
 
     #contributionSummary {
       display: grid;
@@ -180,7 +176,7 @@
 
     /* =====================================================
        STATUS / ERROR
-    ====================================================== */
+       ===================================================== */
 
     #status {
       width: 100%;
@@ -200,8 +196,8 @@
 
 
     /* =====================================================
-       GENERAL FORM SURFACES
-    ====================================================== */
+       FORMS
+       ===================================================== */
 
     #contributionForm,
     #customContributionForm,
@@ -276,7 +272,7 @@
 
     /* =====================================================
        CUSTOM CONTRIBUTION EDITOR
-    ====================================================== */
+       ===================================================== */
 
     #customContributionEditorCard {
       width: 100%;
@@ -298,7 +294,8 @@
       grid-column: 1 / -1;
     }
 
-    .cl-custom-editor-note {
+    .cl-custom-editor-note,
+    .cl-canonical-note {
       margin: 0 0 15px;
       padding: 11px 13px;
       border: 1px solid #ccfbf1;
@@ -309,7 +306,8 @@
       line-height: 1.5;
     }
 
-    .cl-custom-editor-note strong {
+    .cl-custom-editor-note strong,
+    .cl-canonical-note strong {
       color: #0f766e;
     }
 
@@ -334,8 +332,87 @@
 
 
     /* =====================================================
+       ACTIVE CONTRIBUTIONS
+       ===================================================== */
+
+    #activeContributions,
+    #activeContributionTypes,
+    #adminActiveContributions,
+    #dashboardActiveContributions,
+    #customContributions {
+      width: 100%;
+      max-width: 100%;
+    }
+
+    .cl-active-contribution-card {
+      width: 100%;
+      margin-bottom: 9px;
+      padding: 13px;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      background: #ffffff;
+    }
+
+    .cl-active-contribution-card:last-child {
+      margin-bottom: 0;
+    }
+
+    .cl-active-contribution-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .cl-active-contribution-name {
+      color: #0f172a;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .cl-active-contribution-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 12px;
+      margin-top: 5px;
+      color: #64748b;
+      font-size: 9px;
+      line-height: 1.4;
+    }
+
+    .cl-active-contribution-description {
+      margin-top: 6px;
+      color: #64748b;
+      font-size: 9px;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+    }
+
+    .cl-active-contribution-status {
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #ecfdf5;
+      color: #047857;
+      font-size: 9px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .cl-active-contribution-empty {
+      padding: 18px;
+      text-align: center;
+      color: #64748b;
+      font-size: 10px;
+    }
+
+
+    /* =====================================================
        DRAFT CUSTOM CONTRIBUTIONS
-    ====================================================== */
+       ===================================================== */
 
     #draftCustomContributionsCard {
       width: 100%;
@@ -381,10 +458,6 @@
       color: #64748b;
       font-size: 9px;
       line-height: 1.4;
-    }
-
-    .cl-draft-contribution-meta strong {
-      color: #334155;
     }
 
     .cl-draft-contribution-description {
@@ -443,7 +516,7 @@
 
     /* =====================================================
        PAYMENT EVIDENCE
-    ====================================================== */
+       ===================================================== */
 
     #memberPaymentEvidenceCard {
       display: none;
@@ -497,9 +570,12 @@
 
     /* =====================================================
        EVIDENCE STATUS
-    ====================================================== */
+       ===================================================== */
 
-    .cl-evidence-status-badge {
+    .cl-evidence-status-badge,
+    .cl-type-badge,
+    .cl-payment-badge,
+    .cl-status-badge {
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -549,7 +625,7 @@
 
     /* =====================================================
        VERIFIER
-    ====================================================== */
+       ===================================================== */
 
     #verifierPaymentEvidenceCard {
       width: 100%;
@@ -665,28 +741,8 @@
 
 
     /* =====================================================
-       CANONICAL RECORDING NOTE
-    ====================================================== */
-
-    .cl-canonical-note {
-      margin: 0 0 15px;
-      padding: 11px 13px;
-      border: 1px solid #ccfbf1;
-      border-radius: 10px;
-      background: #f0fdfa;
-      color: #115e59;
-      font-size: 10px;
-      line-height: 1.5;
-    }
-
-    .cl-canonical-note strong {
-      color: #0f766e;
-    }
-
-
-    /* =====================================================
-       RECORD CONTRIBUTION TYPE INFO
-    ====================================================== */
+       SELECTED CONTRIBUTION
+       ===================================================== */
 
     .cl-selected-contribution-info {
       display: none;
@@ -717,8 +773,8 @@
 
 
     /* =====================================================
-       SAVE
-    ====================================================== */
+       FORM / BUTTONS
+       ===================================================== */
 
     #saveContribution {
       width: 100%;
@@ -727,11 +783,6 @@
       border-radius: 10px;
       font-weight: 800;
     }
-
-
-    /* =====================================================
-       FORM NOTE
-    ====================================================== */
 
     .cl-form-note {
       display: block;
@@ -743,8 +794,8 @@
 
 
     /* =====================================================
-       TABLE SYSTEM
-    ====================================================== */
+       TABLES
+       ===================================================== */
 
     .table-wrapper {
       width: 100%;
@@ -773,7 +824,7 @@
 
     /* =====================================================
        ACCOUNTING MONTH
-    ====================================================== */
+       ===================================================== */
 
     .cl-accounting-month-control {
       display: grid;
@@ -811,13 +862,6 @@
       font-weight: 700;
     }
 
-    .cl-accounting-month-control select:focus {
-      outline: none;
-      border-color: #14b8a6;
-      box-shadow:
-        0 0 0 3px rgba(20, 184, 166, .10);
-    }
-
     .cl-accounting-month-viewing {
       align-self: center;
       color: #475569;
@@ -838,7 +882,7 @@
 
     /* =====================================================
        MONTHLY STATUS
-    ====================================================== */
+       ===================================================== */
 
     #memberStatusRows td {
       vertical-align: middle;
@@ -853,18 +897,14 @@
       font-weight: 700;
     }
 
-    .cl-arrears {
+    .cl-arrears,
+    .cl-outstanding-amount {
       color: #be123c;
-      font-weight: 750;
+      font-weight: 800;
     }
 
     .cl-carry-forward {
       color: #047857;
-      font-weight: 800;
-    }
-
-    .cl-outstanding-amount {
-      color: #be123c;
       font-weight: 800;
     }
 
@@ -875,22 +915,7 @@
 
     /* =====================================================
        STATUS BADGES
-    ====================================================== */
-
-    .cl-type-badge,
-    .cl-payment-badge,
-    .cl-status-badge {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: fit-content;
-      max-width: 100%;
-      padding: 4px 8px;
-      border-radius: 999px;
-      font-size: 9px;
-      font-weight: 800;
-      white-space: nowrap;
-    }
+       ===================================================== */
 
     .cl-type-badge {
       border: 1px solid #ccfbf1;
@@ -932,7 +957,7 @@
 
     /* =====================================================
        PAYMENT PROGRESS
-    ====================================================== */
+       ===================================================== */
 
     .cl-paid-cell {
       min-width: 100px;
@@ -961,8 +986,8 @@
 
 
     /* =====================================================
-       HISTORY
-    ====================================================== */
+       HISTORY / DETAILS
+       ===================================================== */
 
     .cl-sub-detail {
       display: block;
@@ -988,7 +1013,7 @@
 
     /* =====================================================
        GOALS
-    ====================================================== */
+       ===================================================== */
 
     .cl-goal-card {
       width: 100%;
@@ -1081,8 +1106,8 @@
 
 
     /* =====================================================
-       TABLET
-    ====================================================== */
+       MOBILE
+       ===================================================== */
 
     @media (max-width: 900px) {
 
@@ -1090,29 +1115,18 @@
         justify-content: flex-start;
       }
 
-
       #contributionSummary {
         grid-template-columns:
           repeat(2, minmax(0, 1fr));
       }
 
-      .cl-accounting-month-control,
-      .cl-custom-status-filter {
-        grid-template-columns:
-          repeat(2, minmax(0, 1fr));
-      }
-
-      .cl-custom-editor-grid {
+      .cl-accounting-month-control {
         grid-template-columns:
           repeat(2, minmax(0, 1fr));
       }
 
     }
 
-
-    /* =====================================================
-       MOBILE
-    ====================================================== */
 
     @media (max-width: 650px) {
 
@@ -1143,17 +1157,13 @@
         text-overflow: ellipsis;
       }
 
-      .cl-accounting-month-control,
-      .cl-custom-status-filter {
+      .cl-accounting-month-control {
         grid-template-columns: 1fr;
         gap: 8px;
         padding: 11px;
       }
 
-      .cl-accounting-month-viewing {
-        grid-column: auto;
-      }
-
+      .cl-accounting-month-viewing,
       .cl-accounting-month-note {
         grid-column: auto;
       }
@@ -1179,10 +1189,23 @@
         flex: 1 1 auto;
       }
 
+      .cl-draft-contribution-card {
+        align-items: flex-start;
+        flex-direction: column;
+      }
 
-      /* -----------------------------------------------
+      .cl-draft-contribution-actions {
+        width: 100%;
+      }
+
+      .cl-draft-activate-button {
+        width: 100%;
+      }
+
+
+      /* ================================================
          MOBILE TABLE CARDS
-      ------------------------------------------------ */
+         ================================================ */
 
       .table-wrapper {
         overflow: visible;
@@ -1264,10 +1287,6 @@
     }
 
 
-    /* =====================================================
-       SMALL PHONES
-    ====================================================== */
-
     @media (max-width: 390px) {
 
       #contributionSummary {
@@ -1303,10 +1322,6 @@
     }
 
 
-    /* =====================================================
-       REDUCED MOTION
-    ====================================================== */
-
     @media (prefers-reduced-motion: reduce) {
 
       *,
@@ -1328,8 +1343,7 @@
 
   <!-- =====================================================
        ADMIN PORTAL TOPBAR
-       Navigation is injected by admin-layout.js
-  ====================================================== -->
+       ===================================================== -->
 
   <header class="topbar">
 
@@ -1374,7 +1388,7 @@
 
     <!-- ===================================================
          STATUS
-    ==================================================== -->
+         ==================================================== -->
 
     <div
       id="status"
@@ -1382,7 +1396,6 @@
       hidden
       aria-live="polite"
     ></div>
-
 
     <div
       id="error"
@@ -1394,7 +1407,7 @@
 
     <!-- ===================================================
          PAGE HEADER
-    ==================================================== -->
+         ==================================================== -->
 
     <section class="contributions-page-header">
 
@@ -1419,37 +1432,74 @@
       </div>
 
       <p class="muted">
-        Record authorised member payments, create and activate ongoing
-        custom contributions, submit payment evidence and review
-        verification requests. All accounting changes are processed
-        through the canonical backend workflow.
+        Record authorised member payments, create and activate
+        ongoing custom contributions, submit payment evidence
+        and review verification requests. All accounting changes
+        are processed through the canonical backend workflow.
       </p>
 
     </section>
 
 
     <!-- ===================================================
-         CONTRIBUTION SUMMARY
-    ==================================================== -->
+         SUMMARY
+         ==================================================== -->
 
     <section
       id="contributionSummary"
       aria-label="Contribution summary"
+    ></section>
+
+
+    <!-- ===================================================
+         ACTIVE CONTRIBUTIONS
+         ==================================================== -->
+
+    <section
+      id="activeContributionsCard"
+      class="card"
     >
 
-      <!-- Populated by js/contributions.js -->
+      <div class="card-header">
+
+        <div>
+
+          <h2>
+            Active Contributions
+          </h2>
+
+          <p class="muted">
+            Ongoing contribution types currently available
+            for member tracking and authorised payment recording.
+          </p>
+
+        </div>
+
+      </div>
+
+      <div
+        id="activeContributions"
+        data-active-contributions
+      >
+
+        <div class="cl-active-contribution-empty">
+          Loading active contributions...
+        </div>
+
+      </div>
 
     </section>
 
 
     <!-- ===================================================
          CUSTOM CONTRIBUTION EDITOR
-    ==================================================== -->
+         ==================================================== -->
 
     <section
       id="customContributionEditorCard"
       class="card"
       hidden
+      data-manager-only
     >
 
       <div class="card-header">
@@ -1461,21 +1511,21 @@
           </h2>
 
           <p class="muted">
-            Create and activate an ongoing contribution definition
-            for member tracking and authorised recording.
+            Create and activate an ongoing contribution
+            definition for member tracking and authorised recording.
           </p>
 
         </div>
 
       </div>
 
-
       <div class="cl-custom-editor-note">
+
         <strong>Active contribution:</strong>
         after activation, this contribution remains ongoing and
         available in the contribution-type selector when recording payments.
-      </div>
 
+      </div>
 
       <div
         id="customContributionEditorMessage"
@@ -1483,7 +1533,6 @@
         hidden
         aria-live="polite"
       ></div>
-
 
       <form
         id="customContributionForm"
@@ -1654,15 +1703,15 @@
 
           <div class="form-group">
 
-            <label>
-              <input
-                id="customContributionApplyFine"
-                name="customContributionApplyFine"
-                type="checkbox"
-              >
-
+            <label for="customContributionApplyFine">
               Apply fine
             </label>
+
+            <input
+              id="customContributionApplyFine"
+              name="customContributionApplyFine"
+              type="checkbox"
+            >
 
           </div>
 
@@ -1688,7 +1737,8 @@
             >
 
             <small class="cl-form-note">
-              Required when Apply fine is enabled. Fine amount must be greater than zero.
+              Required when Apply fine is enabled.
+              Fine amount must be greater than zero.
             </small>
 
           </div>
@@ -1728,12 +1778,13 @@
 
     <!-- ===================================================
          DRAFT CUSTOM CONTRIBUTIONS
-    ==================================================== -->
+         ==================================================== -->
 
     <section
       id="draftCustomContributionsCard"
       class="card"
       hidden
+      data-manager-only
     >
 
       <div class="card-header">
@@ -1745,8 +1796,8 @@
           </h2>
 
           <p class="muted">
-            Custom contributions saved as drafts are shown here until
-            an authorised group manager activates them.
+            Custom contributions saved as drafts are shown here
+            until an authorised group manager activates them.
           </p>
 
         </div>
@@ -1772,11 +1823,12 @@
 
     <!-- ===================================================
          MEMBER PAYMENT EVIDENCE
-    ==================================================== -->
+         ==================================================== -->
 
     <section
       id="memberPaymentEvidenceCard"
       class="card"
+      data-member-evidence
     >
 
       <div class="card-header">
@@ -1794,7 +1846,6 @@
         </div>
 
       </div>
-
 
       <p class="cl-evidence-intro">
 
@@ -2001,12 +2052,13 @@
 
     <!-- ===================================================
          VERIFIER PAYMENT EVIDENCE
-    ==================================================== -->
+         ==================================================== -->
 
     <section
       id="verifierPaymentEvidenceCard"
       class="card"
       hidden
+      data-verification-only
     >
 
       <div class="card-header">
@@ -2091,11 +2143,12 @@
     <!-- ===================================================
          RECORD CONTRIBUTION
          CANONICAL 2B PRIVILEGED PATH
-    ==================================================== -->
+         ==================================================== -->
 
     <section
       id="recordContributionCard"
       class="card"
+      data-manager-only
     >
 
       <div class="card-header">
@@ -2206,15 +2259,6 @@
               Monthly Contribution
             </option>
 
-            <!--
-              contributions.js appends active custom contribution
-              definitions here.
-
-              The value must identify the canonical contribution
-              definition / type expected by the authorised
-              accounting workflow.
-            -->
-
           </select>
 
           <small class="cl-form-note">
@@ -2228,10 +2272,6 @@
         </div>
 
 
-        <!-- =================================================
-             SELECTED CONTRIBUTION INFORMATION
-        ================================================== -->
-
         <div
           id="selectedContributionInfo"
           class="cl-selected-contribution-info"
@@ -2244,18 +2284,12 @@
 
           <span id="selectedContributionInfoDetails">
             Canonical monthly contribution accounting.
-
           </span>
 
         </div>
 
 
-        <!--
-          Compatibility target retained for contributions.js.
-          The canonical recording form does not expose
-          arbitrary writable contribution categories.
-        -->
-
+        <!-- Compatibility target -->
         <div
           id="otherContributionTypeWrap"
           class="form-group cl-other-type-wrap"
@@ -2272,16 +2306,7 @@
             type="text"
             maxlength="120"
             autocomplete="off"
-            placeholder="e.g. Birthday contribution"
           >
-
-          <small class="muted">
-
-            Select an active contribution type above.
-            Custom types are posted only to their own
-            canonical obligations.
-
-          </small>
 
         </div>
 
@@ -2340,11 +2365,6 @@
 
         </div>
 
-
-        <!--
-          Idempotency remains part of the canonical
-          contribution recording contract.
-        -->
 
         <input
           id="contributionIdempotencyKey"
@@ -2411,7 +2431,7 @@
 
     <!-- ===================================================
          MONTHLY EXPECTED
-    ==================================================== -->
+         ==================================================== -->
 
     <section class="card">
 
@@ -2431,7 +2451,6 @@
 
       </div>
 
-
       <p class="muted">
 
         Expected monthly contribution:
@@ -2447,7 +2466,7 @@
 
     <!-- ===================================================
          MONTHLY STATUS
-    ==================================================== -->
+         ==================================================== -->
 
     <section class="card">
 
@@ -2496,7 +2515,7 @@
           Viewing:
 
           <strong id="selectedAccountingMonthLabel">
-            September 2026
+            Loading...
           </strong>
 
         </div>
@@ -2551,7 +2570,7 @@
 
     <!-- ===================================================
          CONTRIBUTION GOALS
-    ==================================================== -->
+         ==================================================== -->
 
     <section class="card">
 
@@ -2585,7 +2604,7 @@
 
     <!-- ===================================================
          CONTRIBUTION HISTORY
-    ==================================================== -->
+         ==================================================== -->
 
     <section class="card">
 
@@ -2598,8 +2617,7 @@
           </h2>
 
           <p class="muted">
-            Recent canonical contribution records for this
-            group.
+            Recent canonical contribution records for this group.
           </p>
 
         </div>
@@ -2646,8 +2664,32 @@
 
 
     <!-- ===================================================
+         PAGE LOADING
+         ==================================================== -->
+
+    <div
+      id="contributionsLoading"
+      data-contributions-loading
+      hidden
+      aria-live="polite"
+    >
+      Loading Contributions...
+    </div>
+
+
+    <!-- ===================================================
+         PAGE CONTENT MARKER
+         ==================================================== -->
+
+    <div
+      id="contributionsContent"
+      data-contributions-content
+    ></div>
+
+
+    <!-- ===================================================
          SCOPE NOTE
-    ==================================================== -->
+         ==================================================== -->
 
     <section class="card">
 
@@ -2669,7 +2711,7 @@
   <!-- =====================================================
        ADMIN PORTAL BOOT
        Sole page boot owner
-  ====================================================== -->
+       ===================================================== -->
 
   <script type="module">
 
