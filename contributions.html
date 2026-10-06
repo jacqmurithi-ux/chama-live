@@ -12,7 +12,7 @@
 
   <meta
     name="description"
-    content="CHAMA LIVE — Canonical contribution accounting and payment evidence"
+    content="CHAMA LIVE — Canonical contribution accounting, active contribution management and payment evidence"
   >
 
   <title>
@@ -85,7 +85,7 @@
     }
 
     .contributions-page-header p {
-      max-width: 700px;
+      max-width: 760px;
       margin: 0;
       line-height: 1.55;
     }
@@ -165,12 +165,14 @@
     ====================================================== */
 
     #contributionForm,
+    #customContributionForm,
     #memberPaymentEvidenceForm {
       width: 100%;
       max-width: 100%;
     }
 
     #contributionForm .form-group,
+    #customContributionForm .form-group,
     #memberPaymentEvidenceForm .form-group {
       width: 100%;
       min-width: 0;
@@ -178,6 +180,7 @@
     }
 
     #contributionForm label,
+    #customContributionForm label,
     #memberPaymentEvidenceForm label {
       display: block;
       margin-bottom: 5px;
@@ -189,6 +192,9 @@
     #contributionForm input,
     #contributionForm select,
     #contributionForm textarea,
+    #customContributionForm input,
+    #customContributionForm select,
+    #customContributionForm textarea,
     #memberPaymentEvidenceForm input,
     #memberPaymentEvidenceForm select,
     #memberPaymentEvidenceForm textarea {
@@ -207,6 +213,7 @@
     }
 
     #contributionForm textarea,
+    #customContributionForm textarea,
     #memberPaymentEvidenceForm textarea {
       min-height: 90px;
       resize: vertical;
@@ -215,6 +222,9 @@
     #contributionForm input:focus,
     #contributionForm select:focus,
     #contributionForm textarea:focus,
+    #customContributionForm input:focus,
+    #customContributionForm select:focus,
+    #customContributionForm textarea:focus,
     #memberPaymentEvidenceForm input:focus,
     #memberPaymentEvidenceForm select:focus,
     #memberPaymentEvidenceForm textarea:focus {
@@ -222,6 +232,267 @@
       border-color: #14b8a6;
       box-shadow:
         0 0 0 3px rgba(20, 184, 166, .10);
+    }
+
+
+    /* =====================================================
+       CUSTOM CONTRIBUTION EDITOR
+    ====================================================== */
+
+    #customContributionEditorCard {
+      width: 100%;
+      max-width: 100%;
+    }
+
+    #customContributionEditorCard[hidden] {
+      display: none;
+    }
+
+    .cl-custom-editor-grid {
+      display: grid;
+      grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .cl-custom-editor-full {
+      grid-column: 1 / -1;
+    }
+
+    .cl-custom-editor-note {
+      margin: 0 0 15px;
+      padding: 11px 13px;
+      border: 1px solid #ccfbf1;
+      border-radius: 10px;
+      background: #f0fdfa;
+      color: #115e59;
+      font-size: 10px;
+      line-height: 1.5;
+    }
+
+    .cl-custom-editor-note strong {
+      color: #0f766e;
+    }
+
+    .cl-custom-fine-wrap {
+      display: none;
+    }
+
+    .cl-custom-fine-wrap.cl-visible {
+      display: block;
+    }
+
+    .cl-custom-editor-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .cl-custom-editor-actions button {
+      min-height: 44px;
+    }
+
+
+    /* =====================================================
+       ACTIVE CONTRIBUTIONS
+    ====================================================== */
+
+    #activeContributionsCard {
+      width: 100%;
+      max-width: 100%;
+    }
+
+    .cl-active-contributions-intro {
+      margin: 0 0 14px;
+      color: #64748b;
+      font-size: 11px;
+      line-height: 1.55;
+    }
+
+    #activeContributionRows td {
+      vertical-align: middle;
+    }
+
+    .cl-active-contribution-name {
+      color: #0f172a;
+      font-weight: 800;
+    }
+
+    .cl-active-contribution-description {
+      display: block;
+      max-width: 260px;
+      margin-top: 3px;
+      color: #64748b;
+      font-size: 9px;
+      line-height: 1.4;
+      overflow-wrap: anywhere;
+    }
+
+    .cl-cycle-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: fit-content;
+      max-width: 100%;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #f0fdfa;
+      color: #0f766e;
+      border: 1px solid #ccfbf1;
+      font-size: 9px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .cl-active-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: fit-content;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #ecfdf5;
+      color: #047857;
+      font-size: 9px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .cl-fine-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: fit-content;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #fffbeb;
+      color: #92400e;
+      font-size: 9px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .cl-active-contribution-empty {
+      padding: 20px;
+      text-align: center;
+      color: #64748b;
+      font-size: 10px;
+    }
+
+
+    /* =====================================================
+       CUSTOM MEMBER STATUS
+    ====================================================== */
+
+    #customContributionStatusCard {
+      width: 100%;
+      max-width: 100%;
+    }
+
+    .cl-custom-status-intro {
+      margin: 0 0 14px;
+      color: #64748b;
+      font-size: 11px;
+      line-height: 1.55;
+    }
+
+    .cl-custom-status-filter {
+      display: grid;
+      grid-template-columns:
+        minmax(190px, 280px)
+        minmax(180px, 1fr);
+      align-items: end;
+      gap: 10px;
+      margin: 0 0 16px;
+      padding: 12px;
+      border: 1px solid #ccfbf1;
+      border-radius: 12px;
+      background: #f0fdfa;
+    }
+
+    .cl-custom-status-filter label {
+      display: block;
+      margin-bottom: 5px;
+      color: #0f172a;
+      font-size: 10px;
+      font-weight: 800;
+    }
+
+    .cl-custom-status-filter select {
+      display: block;
+      width: 100%;
+      min-height: 42px;
+      padding: 8px 10px;
+      border: 1px solid #99f6e4;
+      border-radius: 9px;
+      background: #ffffff;
+      color: #0f172a;
+      font: inherit;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .cl-custom-status-viewing {
+      align-self: center;
+      color: #475569;
+      font-size: 10px;
+    }
+
+    .cl-custom-status-viewing strong {
+      color: #0f766e;
+    }
+
+    .cl-custom-member-cell strong {
+      color: #0f172a;
+    }
+
+    .cl-custom-paid {
+      color: #047857;
+      font-weight: 800;
+    }
+
+    .cl-custom-due {
+      color: #0f172a;
+      font-weight: 750;
+    }
+
+    .cl-custom-outstanding {
+      color: #be123c;
+      font-weight: 800;
+    }
+
+    .cl-custom-status-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: fit-content;
+      max-width: 100%;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 9px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .cl-custom-status-paid {
+      background: #ecfdf5;
+      color: #047857;
+    }
+
+    .cl-custom-status-partial {
+      background: #fffbeb;
+      color: #b45309;
+    }
+
+    .cl-custom-status-outstanding {
+      background: #fff1f2;
+      color: #be123c;
+    }
+
+    .cl-custom-status-neutral {
+      background: #f1f5f9;
+      color: #475569;
     }
 
 
@@ -465,6 +736,38 @@
 
     .cl-canonical-note strong {
       color: #0f766e;
+    }
+
+
+    /* =====================================================
+       RECORD CONTRIBUTION TYPE INFO
+    ====================================================== */
+
+    .cl-selected-contribution-info {
+      display: none;
+      margin: -3px 0 13px;
+      padding: 10px 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      background: #f8fafc;
+    }
+
+    .cl-selected-contribution-info.cl-visible {
+      display: block;
+    }
+
+    .cl-selected-contribution-info strong {
+      display: block;
+      color: #0f172a;
+      font-size: 11px;
+    }
+
+    .cl-selected-contribution-info span {
+      display: block;
+      margin-top: 3px;
+      color: #64748b;
+      font-size: 9px;
+      line-height: 1.4;
     }
 
 
@@ -843,7 +1146,13 @@
           repeat(2, minmax(0, 1fr));
       }
 
-      .cl-accounting-month-control {
+      .cl-accounting-month-control,
+      .cl-custom-status-filter {
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
+      }
+
+      .cl-custom-editor-grid {
         grid-template-columns:
           repeat(2, minmax(0, 1fr));
       }
@@ -884,7 +1193,8 @@
         text-overflow: ellipsis;
       }
 
-      .cl-accounting-month-control {
+      .cl-accounting-month-control,
+      .cl-custom-status-filter {
         grid-template-columns: 1fr;
         gap: 8px;
         padding: 11px;
@@ -895,6 +1205,14 @@
       }
 
       .cl-accounting-month-note {
+        grid-column: auto;
+      }
+
+      .cl-custom-editor-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .cl-custom-editor-full {
         grid-column: auto;
       }
 
@@ -971,13 +1289,15 @@
         text-transform: uppercase;
       }
 
-      .cl-member-cell {
+      .cl-member-cell,
+      .cl-custom-member-cell {
         grid-column: 1 / -1;
       }
 
       .cl-sub-detail,
       .cl-note-text,
-      .cl-evidence-reason {
+      .cl-evidence-reason,
+      .cl-active-contribution-description {
         max-width: 100%;
       }
 
@@ -1137,7 +1457,7 @@
       </h1>
 
       <p class="muted">
-        Manage canonical monthly contribution accounting,
+        Manage monthly and active custom contribution accounting,
         member payment evidence and authorised verification
         within the current group.
       </p>
@@ -1162,84 +1482,471 @@
     <!-- ===================================================
          CUSTOM CONTRIBUTION EDITOR
     ==================================================== -->
+
     <section
       id="customContributionEditorCard"
       class="card"
       hidden
     >
+
       <div class="card-header">
+
         <div>
-          <h2>New Custom Contribution</h2>
-          <p class="muted">Create a contribution definition and activate it for ongoing member tracking.</p>
+
+          <h2>
+            New Custom Contribution
+          </h2>
+
+          <p class="muted">
+            Create and activate an ongoing contribution definition
+            for member tracking and authorised recording.
+          </p>
+
         </div>
+
       </div>
 
-      <div id="customContributionEditorMessage" class="cl-evidence-message" hidden aria-live="polite"></div>
 
-      <form id="customContributionForm" novalidate>
-        <div class="form-group">
-          <label for="customContributionName">Contribution name</label>
-          <input id="customContributionName" type="text" maxlength="150" placeholder="e.g. School Fund" required>
+      <div class="cl-custom-editor-note">
+
+        <strong>Active contribution:</strong>
+        after activation, this contribution remains visible in the
+        Active Contributions section and becomes available alongside
+        Monthly Contribution when recording a member payment.
+
+      </div>
+
+
+      <div
+        id="customContributionEditorMessage"
+        class="cl-evidence-message"
+        hidden
+        aria-live="polite"
+      ></div>
+
+
+      <form
+        id="customContributionForm"
+        novalidate
+      >
+
+        <div class="cl-custom-editor-grid">
+
+
+          <div class="form-group">
+
+            <label for="customContributionName">
+              Contribution name
+            </label>
+
+            <input
+              id="customContributionName"
+              name="customContributionName"
+              type="text"
+              maxlength="150"
+              placeholder="e.g. School Fund"
+              autocomplete="off"
+              required
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label for="customContributionAmount">
+              Amount due
+            </label>
+
+            <input
+              id="customContributionAmount"
+              name="customContributionAmount"
+              type="number"
+              min="0"
+              step="0.01"
+              inputmode="decimal"
+              placeholder="0.00"
+              required
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label for="customContributionCycle">
+              Cycle
+            </label>
+
+            <select
+              id="customContributionCycle"
+              name="customContributionCycle"
+              required
+            >
+
+              <option value="one_time">
+                One-time
+              </option>
+
+              <option value="weekly">
+                Weekly
+              </option>
+
+              <option value="monthly">
+                Monthly
+              </option>
+
+              <option value="quarterly">
+                Quarterly
+              </option>
+
+              <option value="annual">
+                Annual
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label for="customContributionStartDate">
+              Start date
+            </label>
+
+            <input
+              id="customContributionStartDate"
+              name="customContributionStartDate"
+              type="date"
+              required
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label for="customContributionDueDate">
+              Due date
+            </label>
+
+            <input
+              id="customContributionDueDate"
+              name="customContributionDueDate"
+              type="date"
+              required
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label for="customContributionClosingDate">
+              Closing date
+            </label>
+
+            <input
+              id="customContributionClosingDate"
+              name="customContributionClosingDate"
+              type="date"
+              required
+            >
+
+          </div>
+
+
+          <div class="form-group cl-custom-editor-full">
+
+            <label for="customContributionDescription">
+              Description
+            </label>
+
+            <textarea
+              id="customContributionDescription"
+              name="customContributionDescription"
+              maxlength="500"
+              placeholder="Optional description"
+            ></textarea>
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label for="customContributionGraceDays">
+              Grace period (days)
+            </label>
+
+            <input
+              id="customContributionGraceDays"
+              name="customContributionGraceDays"
+              type="number"
+              min="0"
+              step="1"
+              value="0"
+              inputmode="numeric"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label>
+              <input
+                id="customContributionApplyFine"
+                name="customContributionApplyFine"
+                type="checkbox"
+              >
+
+              Apply fine
+            </label>
+
+          </div>
+
+
+          <div
+            id="customContributionFineWrap"
+            class="form-group cl-custom-fine-wrap"
+          >
+
+            <label for="customContributionFineAmount">
+              Fine amount
+            </label>
+
+            <input
+              id="customContributionFineAmount"
+              name="customContributionFineAmount"
+              type="number"
+              min="0"
+              step="0.01"
+              inputmode="decimal"
+              placeholder="0.00"
+              disabled
+            >
+
+          </div>
+
+
+          <div class="cl-custom-editor-full">
+
+            <div class="cl-custom-editor-actions">
+
+              <button
+                id="saveCustomContribution"
+                type="submit"
+                class="btn btn-primary"
+              >
+                Save &amp; Activate
+              </button>
+
+              <button
+                id="cancelCustomContribution"
+                type="button"
+                class="btn btn-secondary"
+              >
+                Cancel
+              </button>
+
+            </div>
+
+          </div>
+
+
         </div>
 
-        <div class="form-group">
-          <label for="customContributionAmount">Amount due</label>
-          <input id="customContributionAmount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" required>
-        </div>
-
-        <div class="form-group">
-          <label for="customContributionCycle">Cycle</label>
-          <select id="customContributionCycle" required>
-            <option value="one_time">One-time</option>
-            <option value="weekly">Weekly</option>
-            <option value="monthly">Monthly</option>
-            <option value="quarterly">Quarterly</option>
-            <option value="annual">Annual</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label for="customContributionStartDate">Start date</label>
-          <input id="customContributionStartDate" type="date" required>
-        </div>
-
-        <div class="form-group">
-          <label for="customContributionDueDate">Due date</label>
-          <input id="customContributionDueDate" type="date" required>
-        </div>
-
-        <div class="form-group">
-          <label for="customContributionClosingDate">Closing date</label>
-          <input id="customContributionClosingDate" type="date" required>
-        </div>
-
-        <div class="form-group">
-          <label for="customContributionDescription">Description</label>
-          <textarea id="customContributionDescription" maxlength="500" placeholder="Optional description"></textarea>
-        </div>
-
-        <div class="form-group">
-          <label for="customContributionGraceDays">Grace period (days)</label>
-          <input id="customContributionGraceDays" type="number" min="0" step="1" value="0" inputmode="numeric">
-        </div>
-
-        <div class="form-group">
-          <label>
-            <input id="customContributionApplyFine" type="checkbox">
-            Apply fine
-          </label>
-        </div>
-
-        <div class="form-group">
-          <label for="customContributionFineAmount">Fine amount</label>
-          <input id="customContributionFineAmount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" disabled>
-        </div>
-
-        <div class="form-actions">
-          <button id="saveCustomContribution" type="submit" class="btn btn-primary">Save & Activate</button>
-          <button id="cancelCustomContribution" type="button" class="btn btn-secondary">Cancel</button>
-        </div>
       </form>
+
+    </section>
+
+
+    <!-- ===================================================
+         ACTIVE CONTRIBUTIONS
+    ==================================================== -->
+
+    <section
+      id="activeContributionsCard"
+      class="card"
+    >
+
+      <div class="card-header">
+
+        <div>
+
+          <h2>
+            Active Contributions
+          </h2>
+
+          <p class="muted">
+            Ongoing contribution definitions currently available
+            for member tracking and authorised payment recording.
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <p class="cl-active-contributions-intro">
+
+        Monthly Contribution is the canonical monthly contribution.
+        Custom contributions remain active here after creation and
+        can be selected when recording a payment.
+
+      </p>
+
+
+      <div class="table-wrapper">
+
+        <table>
+
+          <thead>
+
+            <tr>
+              <th>Contribution</th>
+              <th>Amount Due</th>
+              <th>Cycle</th>
+              <th>Start</th>
+              <th>Due Date</th>
+              <th>Closing</th>
+              <th>Fine</th>
+              <th>Status</th>
+            </tr>
+
+          </thead>
+
+          <tbody id="activeContributionRows">
+
+            <tr>
+
+              <td
+                colspan="8"
+                class="cl-active-contribution-empty"
+              >
+                Loading active contributions...
+
+              </td>
+
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+
+    <!-- ===================================================
+         CUSTOM CONTRIBUTION MEMBER STATUS
+    ==================================================== -->
+
+    <section
+      id="customContributionStatusCard"
+      class="card"
+    >
+
+      <div class="card-header">
+
+        <div>
+
+          <h2>
+            Custom Contribution Member Status
+          </h2>
+
+          <p class="muted">
+            See whether each member is paid, partial or outstanding
+            for the selected active contribution.
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <p class="cl-custom-status-intro">
+
+        Status is derived from the canonical accounting records for
+        the selected contribution. The page does not create or
+        modify accounting records directly.
+
+      </p>
+
+
+      <div class="cl-custom-status-filter">
+
+        <div>
+
+          <label for="customContributionStatusType">
+            Contribution
+          </label>
+
+          <select
+            id="customContributionStatusType"
+            aria-label="Custom contribution"
+          >
+
+            <option value="">
+              Loading active contributions...
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <div class="cl-custom-status-viewing">
+
+          Viewing:
+
+          <strong id="selectedCustomContributionStatusLabel">
+            —
+          </strong>
+
+        </div>
+
+      </div>
+
+
+      <div class="table-wrapper">
+
+        <table>
+
+          <thead>
+
+            <tr>
+              <th>Member</th>
+              <th>Amount Due</th>
+              <th>Paid</th>
+              <th>Outstanding</th>
+              <th>Status</th>
+            </tr>
+
+          </thead>
+
+          <tbody id="customContributionStatusRows">
+
+            <tr>
+
+              <td
+                colspan="5"
+                class="cl-active-contribution-empty"
+              >
+                Select an active contribution to view member status.
+
+              </td>
+
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
     </section>
 
 
@@ -1270,10 +1977,12 @@
 
 
       <p class="cl-evidence-intro">
+
         Ordinary members submit payment evidence only.
         A submission remains pending until an authorised
         group verifier reviews it. Submission does not
         directly create a contribution record.
+
       </p>
 
 
@@ -1499,9 +2208,11 @@
 
 
       <p class="cl-verifier-intro">
+
         This review surface is intended for authorised
         group finance roles. Backend authorisation and
         row-level security remain authoritative.
+
       </p>
 
 
@@ -1572,12 +2283,12 @@
         <div>
 
           <h2>
-            Record Monthly Contribution
+            Record Contribution
           </h2>
 
           <p class="muted">
-            Record a canonical monthly contribution for a
-            group member.
+            Record a canonical payment against the selected
+            contribution type for a group member.
           </p>
 
         </div>
@@ -1588,10 +2299,11 @@
       <div class="cl-canonical-note">
 
         <strong>Canonical accounting:</strong>
-        this recording surface is for authorised
-        monthly contribution recording. The accounting
-        backend remains responsible for canonical
-        allocation and member monthly status.
+        this recording surface does not directly insert into
+        contribution or allocation tables. The authorised
+        accounting workflow remains responsible for validating
+        the selected contribution type, eligible obligation,
+        allocation and member status.
 
       </div>
 
@@ -1674,12 +2386,46 @@
               Monthly Contribution
             </option>
 
+            <!--
+              contributions.js appends active custom contribution
+              definitions here.
+
+              The value must identify the canonical contribution
+              definition / type expected by the authorised
+              accounting workflow.
+            -->
+
           </select>
 
           <small class="cl-form-note">
-            Monthly and active custom contributions are available here.
-            Each selected type is posted to its own canonical accounting workflow.
+
+            Monthly Contribution and active custom contributions
+            are available here. Selecting a custom contribution
+            does not convert it into a monthly payment.
+
           </small>
+
+        </div>
+
+
+        <!-- =================================================
+             SELECTED CONTRIBUTION INFORMATION
+        ================================================== -->
+
+        <div
+          id="selectedContributionInfo"
+          class="cl-selected-contribution-info"
+          aria-live="polite"
+        >
+
+          <strong id="selectedContributionInfoName">
+            Monthly Contribution
+          </strong>
+
+          <span id="selectedContributionInfoDetails">
+            Canonical monthly contribution accounting.
+
+          </span>
 
         </div>
 
@@ -1687,7 +2433,7 @@
         <!--
           Compatibility target retained for contributions.js.
           The canonical recording form does not expose
-          non-monthly categories as writable options.
+          arbitrary writable contribution categories.
         -->
 
         <div
@@ -1710,8 +2456,11 @@
           >
 
           <small class="muted">
-            Select an active contribution type above. Custom types are
-            posted only to their own obligations.
+
+            Select an active contribution type above.
+            Custom types are posted only to their own
+            canonical obligations.
+
           </small>
 
         </div>
@@ -1862,6 +2611,7 @@
 
       </div>
 
+
       <p class="muted">
 
         Expected monthly contribution:
@@ -1933,8 +2683,10 @@
 
 
         <small class="muted cl-accounting-month-note">
+
           Changing the month refreshes the canonical
           member accounting returned for that month.
+
         </small>
 
       </div>
@@ -2080,10 +2832,12 @@
     <section class="card">
 
       <p class="muted">
+
         All contribution and payment-evidence views are
         scoped to the currently authenticated group.
-        Backend authorisation and database controls remain
-        authoritative.
+        Backend authorisation, canonical accounting workflows
+        and database controls remain authoritative.
+
       </p>
 
     </section>
