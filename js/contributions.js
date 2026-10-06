@@ -5622,21 +5622,6 @@ function renderContributionGoals() {
 
 
 /* =========================================================
-   ACCOUNTING MONTH CHANGE
-========================================================= */
-
-tivate a custom contribution.";
-
-    draftCustomContributionRows.appendChild(
-      note
-    );
-
-  }
-
-}
-
-
-/* =========================================================
    RECORD CONTRIBUTION
    CANONICAL 2B PATH
 ========================================================= */
