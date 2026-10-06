@@ -600,3 +600,178 @@ revoke all on function public.get_member_active_contributions(uuid,uuid) from pu
 grant execute on function public.get_member_active_contributions(uuid,uuid) to authenticated;
 revoke all on function public.record_custom_contribution_payment(uuid,uuid,uuid,numeric,date,text,text,text,uuid) from public;
 grant execute on function public.record_custom_contribution_payment(uuid,uuid,uuid,numeric,date,text,text,text,uuid) to authenticated;
+
+
+-- Candidate extension: generate and activate the next recurring period.
+create table if not exists private.custom_contribution_period_requests (
+  request_id uuid primary key,
+  group_id uuid not null references public.groups(id) on delete cascade,
+  contribution_type_id uuid not null,
+  source_period_id uuid not null,
+  result jsonb,
+  created_at timestamptz not null default now(),
+  completed_at timestamptz
+);
+
+create or replace function public.generate_next_custom_contribution_period(
+  p_group_id uuid,
+  p_contribution_type_id uuid,
+  p_request_id uuid
+) returns jsonb
+language plpgsql
+security definer
+set search_path to ''
+as $function$
+declare
+  v_auth uuid := auth.uid();
+  v_actor uuid;
+  v_source public.contribution_periods%rowtype;
+  v_next_open date;
+  v_next_due date;
+  v_next_close date;
+  v_period_id uuid;
+  v_period_key text;
+  v_result jsonb;
+  v_existing jsonb;
+  v_frequency text;
+  v_step interval;
+  v_close_span integer;
+  v_due_span integer;
+begin
+  if v_auth is null then raise exception 'AUTHENTICATION_REQUIRED' using errcode='42501'; end if;
+  if not exists(select 1 from public.groups g where g.id=p_group_id and g.owner_user_id=v_auth)
+     and not public.cl_user_has_role(p_group_id,array['chairperson']::text[])
+  then raise exception 'CUSTOM_CONTRIBUTION_NOT_AUTHORIZED' using errcode='42501'; end if;
+
+  select m.id into v_actor
+  from public.members m
+  where m.group_id=p_group_id
+    and (m.user_id=v_auth or m.auth_user_id=v_auth)
+    and lower(coalesce(m.status,'active'))='active'
+    and lower(coalesce(m.onboarding_status,'active'))='active'
+  order by m.id limit 1;
+  if v_actor is null then raise exception 'ACTIVE_GROUP_MEMBER_REQUIRED' using errcode='42501'; end if;
+
+  perform pg_advisory_xact_lock(hashtextextended(
+    'chama-live:custom-next-period:'||p_request_id::text,0));
+
+  select result into v_existing
+  from private.custom_contribution_period_requests
+  where request_id=p_request_id
+  for update;
+  if v_existing is not null then
+    return jsonb_set(v_existing,'{replayed}','true'::jsonb,true);
+  end if;
+
+  select * into v_source
+  from public.contribution_periods
+  where group_id=p_group_id
+    and contribution_type_id=p_contribution_type_id
+    and status in ('open','due','grace','closed')
+  order by closing_date desc,created_at desc,id desc
+  limit 1
+  for update;
+
+  if not found then raise exception 'SOURCE_CUSTOM_CONTRIBUTION_PERIOD_NOT_FOUND' using errcode='22023'; end if;
+
+  v_frequency:=lower(v_source.frequency);
+  if v_frequency='weekly' then v_step:=interval '7 days';
+  elsif v_frequency='monthly' then v_step:=interval '1 month';
+  elsif v_frequency='quarterly' then v_step:=interval '3 months';
+  elsif v_frequency='annual' then v_step:=interval '1 year';
+  else raise exception 'NON_RECURRING_CUSTOM_CONTRIBUTION' using errcode='22023';
+  end if;
+
+  v_close_span:=v_source.closing_date-v_source.opening_date;
+  v_due_span:=v_source.due_date-v_source.opening_date;
+  v_next_open:=v_source.opening_date+v_step;
+  v_next_due:=v_next_open+v_due_span;
+  v_next_close:=v_next_open+v_close_span;
+
+  if exists(
+    select 1 from public.contribution_periods cp
+    where cp.group_id=p_group_id
+      and cp.contribution_type_id=p_contribution_type_id
+      and cp.opening_date=v_next_open
+      and cp.due_date=v_next_due
+      and cp.closing_date=v_next_close
+  ) then
+    select jsonb_build_object(
+      'ok',true,'operation','generate_next','replayed',false,
+      'existing',true,'contribution_type_id',p_contribution_type_id,
+      'period_id',cp.id,'status',cp.status
+    ) into v_result
+    from public.contribution_periods cp
+    where cp.group_id=p_group_id and cp.contribution_type_id=p_contribution_type_id
+      and cp.opening_date=v_next_open and cp.due_date=v_next_due
+      and cp.closing_date=v_next_close
+    limit 1;
+    insert into private.custom_contribution_period_requests(request_id,group_id,contribution_type_id,source_period_id,result,completed_at)
+    values(p_request_id,p_group_id,p_contribution_type_id,v_source.id,v_result,now());
+    return v_result;
+  end if;
+
+  v_period_key:='custom:v1:'||p_contribution_type_id::text||':'||
+    to_char(v_next_open,'YYYY-MM-DD')||':'||to_char(v_next_due,'YYYY-MM-DD')||':'||
+    to_char(v_next_close,'YYYY-MM-DD');
+
+  insert into public.contribution_periods(
+    group_id,contribution_type_id,frequency,period_key,opening_date,closing_date,
+    due_date,status,created_by,name,description,amount,fine_rule_id
+  ) values(
+    p_group_id,p_contribution_type_id,v_source.frequency,v_period_key,v_next_open,
+    v_next_close,v_next_due,'open',v_actor,v_source.name,v_source.description,
+    v_source.amount,v_source.fine_rule_id
+  ) returning id into v_period_id;
+
+  perform public.cl_2b_accounting_lock_range(
+    p_group_id,date_trunc('month',v_next_open)::date,date_trunc('month',v_next_close)::date);
+
+  insert into public.member_contribution_rules(
+    group_id,member_id,contribution_type_id,amount,frequency,effective_from,effective_to,
+    first_period_rule,status,created_by
+  )
+  select m.group_id,m.id,p_contribution_type_id,v_source.amount,v_source.frequency,
+         v_next_open,v_next_close,'full_period','active',v_actor
+  from public.members m
+  where m.group_id=p_group_id
+    and lower(coalesce(m.status,'active'))='active'
+    and lower(coalesce(m.onboarding_status,'active'))='active'
+    and not exists(
+      select 1 from public.member_contribution_rules r
+      where r.group_id=m.group_id and r.member_id=m.id
+        and r.contribution_type_id=p_contribution_type_id
+        and r.effective_from=v_next_open and r.effective_to=v_next_close);
+
+  insert into public.contribution_obligations(
+    group_id,member_id,contribution_type_id,rule_id,obligation_month,due_amount,
+    period_id,economic_month
+  )
+  select r.group_id,r.member_id,r.contribution_type_id,r.id,v_next_due,r.amount,
+         v_period_id,v_next_due
+  from public.member_contribution_rules r
+  where r.group_id=p_group_id and r.contribution_type_id=p_contribution_type_id
+    and r.effective_from=v_next_open and r.effective_to=v_next_close
+    and r.status='active'
+    and not exists(
+      select 1 from public.contribution_obligations o
+      where o.group_id=r.group_id and o.member_id=r.member_id
+        and o.contribution_type_id=r.contribution_type_id
+        and o.obligation_month=v_next_due and o.component_kind='PARENT');
+
+  v_result:=jsonb_build_object(
+    'ok',true,'operation','generate_next','replayed',false,
+    'existing',false,'contribution_type_id',p_contribution_type_id,
+    'source_period_id',v_source.id,'period_id',v_period_id,'status','open',
+    'opening_date',v_next_open,'due_date',v_next_due,'closing_date',v_next_close);
+
+  insert into private.custom_contribution_period_requests(
+    request_id,group_id,contribution_type_id,source_period_id,result,completed_at)
+  values(p_request_id,p_group_id,p_contribution_type_id,v_source.id,v_result,now());
+
+  return v_result;
+end;
+$function$;
+
+revoke all on function public.generate_next_custom_contribution_period(uuid,uuid,uuid) from public;
+grant execute on function public.generate_next_custom_contribution_period(uuid,uuid,uuid) to authenticated;
