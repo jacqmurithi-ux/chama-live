@@ -1252,17 +1252,7 @@ function bindEvents() {
             return;
         }
 
-        if (!elements.customContributionEditor) {
-            showContributionStatus(
-                "Custom contribution editor is unavailable.",
-                "error"
-            );
-            return;
-        }
-
-        resetCustomContributionForm();
-        elements.customContributionEditor.hidden = false;
-        elements.customContributionName?.focus();
+        window.location.href = "contributions.html?new=custom";
     });
 
     elements.cancelCustomContribution?.addEventListener("click", () => {
