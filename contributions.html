@@ -385,6 +385,114 @@
        CUSTOM MEMBER STATUS
     ====================================================== */
 
+    /* =====================================================
+       DRAFT CUSTOM CONTRIBUTIONS
+    ====================================================== */
+
+    #draftCustomContributionsCard {
+      width: 100%;
+      max-width: 100%;
+    }
+
+    .cl-draft-contributions-intro {
+      margin: 0 0 14px;
+      color: #64748b;
+      font-size: 11px;
+      line-height: 1.55;
+    }
+
+    .cl-draft-contribution-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 13px;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      background: #ffffff;
+    }
+
+    .cl-draft-contribution-card + .cl-draft-contribution-card {
+      margin-top: 9px;
+    }
+
+    .cl-draft-contribution-main {
+      min-width: 0;
+    }
+
+    .cl-draft-contribution-name {
+      color: #0f172a;
+      font-weight: 800;
+    }
+
+    .cl-draft-contribution-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 12px;
+      margin-top: 5px;
+      color: #64748b;
+      font-size: 9px;
+      line-height: 1.4;
+    }
+
+    .cl-draft-contribution-meta strong {
+      color: #334155;
+    }
+
+    .cl-draft-contribution-description {
+      margin-top: 5px;
+      color: #64748b;
+      font-size: 9px;
+      line-height: 1.4;
+      overflow-wrap: anywhere;
+    }
+
+    .cl-draft-contribution-actions {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .cl-draft-activate-button {
+      min-height: 40px;
+      padding: 8px 13px;
+      border: 0;
+      border-radius: 9px;
+      background: #0f766e;
+      color: #ffffff;
+      font: inherit;
+      font-size: 10px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .cl-draft-activate-button:disabled {
+      opacity: .6;
+      cursor: not-allowed;
+    }
+
+    .cl-draft-status-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #f1f5f9;
+      color: #475569;
+      font-size: 9px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .cl-draft-contribution-empty {
+      padding: 18px;
+      text-align: center;
+      color: #64748b;
+      font-size: 10px;
+    }
+
+
     #customContributionStatusCard {
       width: 100%;
       max-width: 100%;
@@ -1847,6 +1955,50 @@
     <!-- ===================================================
          CUSTOM CONTRIBUTION MEMBER STATUS
     ==================================================== -->
+
+    <!-- ===================================================
+         DRAFT CUSTOM CONTRIBUTIONS
+    ==================================================== -->
+
+    <section
+      id="draftCustomContributionsCard"
+      class="card"
+      hidden
+    >
+
+      <div class="card-header">
+
+        <div>
+
+          <h2>
+            Draft Custom Contributions
+          </h2>
+
+          <p class="muted">
+            Custom contributions saved as drafts are shown here until
+            an authorised group manager activates them.
+          </p>
+
+        </div>
+
+      </div>
+
+      <p class="cl-draft-contributions-intro">
+        Activating a draft does not create a second contribution.
+        It uses the existing contribution period and the canonical
+        activation process.
+      </p>
+
+      <div id="draftCustomContributionRows">
+
+        <div class="cl-draft-contribution-empty">
+          Loading draft custom contributions...
+        </div>
+
+      </div>
+
+    </section>
+
 
     <section
       id="customContributionStatusCard"
