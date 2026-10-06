@@ -2133,6 +2133,11 @@ function renderClosingStatus() {
 
 async function calculateMonth() {
 
+  if (calculateButton) {
+    calculateButton.disabled = true;
+    calculateButton.textContent = "Calculating...";
+  }
+
   try {
 
     clearError();
@@ -2211,6 +2216,15 @@ async function calculateMonth() {
   catch (error) {
 
     showError(error);
+
+  }
+
+  finally {
+
+    if (calculateButton) {
+      calculateButton.disabled = false;
+      calculateButton.textContent = "Calculate";
+    }
 
   }
 
