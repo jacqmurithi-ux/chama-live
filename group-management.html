@@ -574,6 +574,86 @@
       border-top: 1px solid var(--gm-border-soft);
     }
 
+    .custom-contribution-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .custom-contribution-status {
+      display: inline-flex;
+      align-items: center;
+      min-height: 26px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .custom-contribution-status.active {
+      background: var(--gm-success-bg);
+      color: var(--gm-success);
+    }
+
+    .custom-contribution-status.draft {
+      background: var(--gm-warning-bg);
+      color: var(--gm-warning);
+    }
+
+    .custom-contribution-status.closed {
+      background: #f3f4f6;
+      color: #4b5563;
+    }
+
+    /* =====================================================
+       SUBSCRIPTION
+       ===================================================== */
+
+    .subscription-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .subscription-item {
+      padding: 12px;
+      border: 1px solid var(--gm-border-soft);
+      border-radius: 10px;
+      background: #fafafa;
+    }
+
+    .subscription-label {
+      color: var(--gm-muted);
+      font-size: 0.75rem;
+    }
+
+    .subscription-value {
+      margin-top: 4px;
+      font-weight: 700;
+    }
+
+    /* =====================================================
+       PERMISSION MESSAGE
+       ===================================================== */
+
+    .permission-message {
+      display: none;
+      margin-bottom: 18px;
+      padding: 12px 14px;
+      border: 1px solid #fde68a;
+      border-radius: 10px;
+      background: var(--gm-warning-bg);
+      color: var(--gm-warning);
+      font-size: 0.85rem;
+    }
+
+    .permission-message.is-visible {
+      display: block;
+    }
+
     /* =====================================================
        RESPONSIVE
        ===================================================== */
@@ -628,6 +708,18 @@
       .rules-grid {
         grid-template-columns: 1fr;
       }
+
+      .subscription-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .custom-contribution-actions {
+        flex-direction: column;
+      }
+
+      .custom-contribution-actions button {
+        width: 100%;
+      }
     }
   </style>
 </head>
@@ -641,13 +733,17 @@
          =================================================== -->
 
     <header class="management-hero">
-      <h1>Group Management</h1>
+
+      <h1>
+        Group Management
+      </h1>
 
       <p>
         Manage your group's basic information, leadership, contribution
         settings, programs, payment configuration, subscription, and
         access context from one place.
       </p>
+
     </header>
 
 
@@ -674,8 +770,15 @@
       data-admin-loading
       aria-live="polite"
     >
-      <strong>Loading group management...</strong>
-      <span>Please wait while your group context is loaded.</span>
+
+      <strong>
+        Loading group management...
+      </strong>
+
+      <span>
+        Please wait while your group context is loaded.
+      </span>
+
     </div>
 
 
@@ -1214,9 +1317,8 @@
 
             <div class="backend-pending-note">
 
-              Rule/fine persistence will be connected only after the
-              backend contribution-type/rule contract gate.
-              This UI does not write rule data.
+              Rule and fine persistence remains backend-controlled.
+              This UI does not write contribution rule or accounting tables directly.
 
             </div>
 
@@ -1238,8 +1340,9 @@
                 </h3>
 
                 <p>
-                  Create a named contribution as a draft.
-                  Activation and accounting remain locked.
+                  Create a named contribution and activate its current period.
+                  Activation creates the member rules and obligations required
+                  for ongoing contribution tracking.
                 </p>
 
               </div>
@@ -1539,7 +1642,7 @@
                     type="submit"
                     class="primary-button"
                   >
-                    Save & Activate
+                    Save &amp; Activate
                   </button>
 
 
@@ -1556,9 +1659,10 @@
 
                 <div class="backend-pending-note">
 
-                  Saving creates a backend-owned contribution definition and activates
-                  the current contribution period for ongoing member tracking,
-                  obligations, and canonical payments.
+                  Saving creates the contribution definition through the approved
+                  backend RPC. Activation is also performed by the approved backend
+                  activation RPC, which creates the member rules and obligations.
+                  The frontend does not write accounting tables directly.
 
                 </div>
 
@@ -1726,10 +1830,22 @@
     import { boot } from "./js/admin-layout.js";
 
     /*
+     * =========================================================
+     * CHAMA LIVE — GROUP MANAGEMENT BOOT CONTRACT
+     * =========================================================
+     *
      * admin-layout.js remains the SINGLE page-shell boot owner.
      *
-     * group-management.js must not be independently imported or
-     * auto-run from this HTML file.
+     * group-management.js must:
+     *
+     *   - NOT auto-run from this HTML file
+     *   - NOT create its own page boot
+     *   - NOT create a second authentication flow
+     *   - NOT directly mutate accounting tables
+     *   - NOT call get_group_active_contributions()
+     *
+     * Group Management functionality is loaded by admin-layout.js.
+     * =========================================================
      */
 
     try {
