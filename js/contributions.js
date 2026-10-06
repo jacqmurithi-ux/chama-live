@@ -4648,6 +4648,13 @@ export async function initContributions() {
     groupId =
       await getGroupId();
 
+    if (
+      new URLSearchParams(window.location.search).get("new") ===
+      "custom"
+    ) {
+      openCustomContributionEditor();
+    }
+
 
     await Promise.all([
 
@@ -4802,8 +4809,382 @@ export async function initContributions() {
 
 
 /* =========================================================
+   CUSTOM CONTRIBUTION EDITOR
+========================================================= */
+
+const customContributionEditorCard =
+  document.getElementById("customContributionEditorCard");
+
+const customContributionForm =
+  document.getElementById("customContributionForm");
+
+const customContributionEditorMessage =
+  document.getElementById("customContributionEditorMessage");
+
+const customContributionName =
+  document.getElementById("customContributionName");
+
+const customContributionAmount =
+  document.getElementById("customContributionAmount");
+
+const customContributionCycle =
+  document.getElementById("customContributionCycle");
+
+const customContributionStartDate =
+  document.getElementById("customContributionStartDate");
+
+const customContributionDueDate =
+  document.getElementById("customContributionDueDate");
+
+const customContributionClosingDate =
+  document.getElementById("customContributionClosingDate");
+
+const customContributionDescription =
+  document.getElementById("customContributionDescription");
+
+const customContributionGraceDays =
+  document.getElementById("customContributionGraceDays");
+
+const customContributionApplyFine =
+  document.getElementById("customContributionApplyFine");
+
+const customContributionFineAmount =
+  document.getElementById("customContributionFineAmount");
+
+const saveCustomContribution =
+  document.getElementById("saveCustomContribution");
+
+const cancelCustomContribution =
+  document.getElementById("cancelCustomContribution");
+
+
+function showCustomContributionEditorMessage(message, type = "info") {
+
+  if (!customContributionEditorMessage) {
+    return;
+  }
+
+  customContributionEditorMessage.hidden = false;
+  customContributionEditorMessage.textContent = message;
+  customContributionEditorMessage.className =
+    "cl-evidence-message" +
+    (type === "error" ? " error" : type === "success" ? " success" : "");
+
+}
+
+
+function clearCustomContributionEditorMessage() {
+
+  if (!customContributionEditorMessage) {
+    return;
+  }
+
+  customContributionEditorMessage.hidden = true;
+  customContributionEditorMessage.textContent = "";
+  customContributionEditorMessage.className = "cl-evidence-message";
+
+}
+
+
+function syncCustomContributionFineControl() {
+
+  if (!customContributionApplyFine || !customContributionFineAmount) {
+    return;
+  }
+
+  customContributionFineAmount.disabled =
+    !customContributionApplyFine.checked;
+
+  if (!customContributionApplyFine.checked) {
+    customContributionFineAmount.value = "";
+  }
+
+}
+
+
+function resetCustomContributionEditor() {
+
+  customContributionForm?.reset();
+
+  if (customContributionGraceDays) {
+    customContributionGraceDays.value = "0";
+  }
+
+  if (customContributionApplyFine) {
+    customContributionApplyFine.checked = false;
+  }
+
+  syncCustomContributionFineControl();
+  clearCustomContributionEditorMessage();
+
+}
+
+
+function closeCustomContributionEditor() {
+
+  if (customContributionEditorCard) {
+    customContributionEditorCard.hidden = true;
+  }
+
+  resetCustomContributionEditor();
+
+  const url = new URL(window.location.href);
+  url.searchParams.delete("new");
+  window.history.replaceState({}, "", url.toString());
+
+}
+
+
+function openCustomContributionEditor() {
+
+  if (!customContributionEditorCard) {
+    return;
+  }
+
+  customContributionEditorCard.hidden = false;
+  resetCustomContributionEditor();
+  customContributionName?.focus();
+
+  customContributionEditorCard.scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
+
+}
+
+
+async function saveCustomContributionDraft(event) {
+
+  event.preventDefault();
+
+  if (!groupId) {
+    showCustomContributionEditorMessage(
+      "The current group could not be determined.",
+      "error"
+    );
+    return;
+  }
+
+  const name =
+    customContributionName?.value.trim() || "";
+
+  const amount =
+    Number(customContributionAmount?.value);
+
+  const frequency =
+    customContributionCycle?.value || "";
+
+  const startDate =
+    customContributionStartDate?.value || "";
+
+  const dueDate =
+    customContributionDueDate?.value || "";
+
+  const closingDate =
+    customContributionClosingDate?.value || "";
+
+  const description =
+    customContributionDescription?.value.trim() || "";
+
+  const graceDays =
+    Number(customContributionGraceDays?.value || 0);
+
+  const applyFine =
+    Boolean(customContributionApplyFine?.checked);
+
+  const fineAmount =
+    Number(customContributionFineAmount?.value);
+
+  if (!name) {
+    showCustomContributionEditorMessage("Contribution name is required.", "error");
+    return;
+  }
+
+  if (!Number.isFinite(amount) || amount <= 0) {
+    showCustomContributionEditorMessage("Amount due must be greater than zero.", "error");
+    return;
+  }
+
+  if (!["one_time", "weekly", "monthly", "quarterly", "annual"].includes(frequency)) {
+    showCustomContributionEditorMessage("Invalid contribution cycle.", "error");
+    return;
+  }
+
+  if (!startDate || !dueDate || !closingDate) {
+    showCustomContributionEditorMessage("Start date, due date, and closing date are required.", "error");
+    return;
+  }
+
+  if (startDate > dueDate || dueDate > closingDate) {
+    showCustomContributionEditorMessage(
+      "Dates must follow Start ≤ Due ≤ Closing.",
+      "error"
+    );
+    return;
+  }
+
+  if (!Number.isInteger(graceDays) || graceDays < 0) {
+    showCustomContributionEditorMessage(
+      "Grace period must be a whole number of days.",
+      "error"
+    );
+    return;
+  }
+
+  if (applyFine && (!Number.isFinite(fineAmount) || fineAmount <= 0)) {
+    showCustomContributionEditorMessage(
+      "Fine amount must be greater than zero when a fine is enabled.",
+      "error"
+    );
+    return;
+  }
+
+  const requestId =
+    typeof crypto !== "undefined" &&
+    typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : null;
+
+  if (!requestId) {
+    showCustomContributionEditorMessage(
+      "Secure request ID generation is unavailable in this browser.",
+      "error"
+    );
+    return;
+  }
+
+  if (saveCustomContribution) {
+    saveCustomContribution.disabled = true;
+  }
+
+  showCustomContributionEditorMessage(
+    "Creating custom contribution draft…"
+  );
+
+  try {
+
+    const { data, error } =
+      await supabase.rpc(
+        "create_custom_contribution",
+        {
+          p_group_id: groupId,
+          p_name: name,
+          p_description: description,
+          p_amount: amount,
+          p_frequency: frequency,
+          p_start_date: startDate,
+          p_due_date: dueDate,
+          p_closing_date: closingDate,
+          p_grace_period_value: graceDays,
+          p_apply_fine: applyFine,
+          p_fine_amount: applyFine ? fineAmount : null,
+          p_request_id: requestId
+        }
+      );
+
+    if (error) {
+      throw error;
+    }
+
+    const result =
+      Array.isArray(data)
+        ? data[0] || null
+        : data || null;
+
+    if (!result?.ok) {
+      throw new Error(
+        "The backend did not return a successful custom contribution result."
+      );
+    }
+
+    showCustomContributionEditorMessage(
+      result.replayed
+        ? "The existing custom contribution draft was returned safely."
+        : "Custom contribution draft created successfully.",
+      "success"
+    );
+
+    setTimeout(() => {
+      closeCustomContributionEditor();
+      void initContributions();
+    }, 700);
+
+  }
+  catch (error) {
+
+    console.error(
+      "Failed to create custom contribution draft:",
+      error
+    );
+
+    showCustomContributionEditorMessage(
+      error?.message ||
+        "Custom contribution draft could not be created.",
+      "error"
+    );
+
+  }
+  finally {
+
+    if (saveCustomContribution) {
+      saveCustomContribution.disabled = false;
+    }
+
+  }
+
+}
+
+
+/* =========================================================
    EVENTS
 ========================================================= */
+
+if (
+  customContributionApplyFine &&
+  !customContributionApplyFine.dataset.clCustomFineBound
+) {
+
+  customContributionApplyFine.dataset.clCustomFineBound = "true";
+
+  customContributionApplyFine.addEventListener(
+    "change",
+    syncCustomContributionFineControl
+  );
+
+}
+
+
+if (
+  customContributionForm &&
+  !customContributionForm.dataset.clCustomContributionBound
+) {
+
+  customContributionForm.dataset.clCustomContributionBound = "true";
+
+  customContributionForm.addEventListener(
+    "submit",
+    saveCustomContributionDraft
+  );
+
+}
+
+
+if (
+  cancelCustomContribution &&
+  !cancelCustomContribution.dataset.clCustomContributionCancelBound
+) {
+
+  cancelCustomContribution.dataset.clCustomContributionCancelBound = "true";
+
+  cancelCustomContribution.addEventListener(
+    "click",
+    closeCustomContributionEditor
+  );
+
+}
+
+
+
 
 if (
   form &&
