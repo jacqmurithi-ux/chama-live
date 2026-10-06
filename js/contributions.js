@@ -1179,7 +1179,6 @@ async function loadActiveCustomContributions() {
           "frequency",
           "status",
           "description",
-          "grace_period_value",
           "fine_rule_id"
         ].join(",")
       )
