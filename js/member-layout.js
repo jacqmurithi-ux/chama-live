@@ -102,7 +102,7 @@ const PAGE_SCRIPTS = {
 
   "member-profile.html": {
     path: "./member-profile.js",
-    initializer: "initMemberProfile"
+    initializer: "initMemberAccounting"
   }
 };
 
@@ -1217,9 +1217,20 @@ export async function boot() {
 
     hideLayoutLoading();
 
-    showLayoutError(
+    let message =
       error?.message ||
-      "Unable to load the member portal."
+      "Unable to load the member portal.";
+
+    if (
+      String(message).trim().toLowerCase() ===
+      "failed to fetch"
+    ) {
+      message =
+        "CHAMA LIVE could not reach the authentication service. Check your internet connection and try again. If the problem continues, refresh the page before signing in again.";
+    }
+
+    showLayoutError(
+      message
     );
 
   } finally {
