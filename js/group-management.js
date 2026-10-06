@@ -1399,9 +1399,22 @@ function syncFineControls(prefix) {
             : elements.monthlyFineAmount;
 
     if (amount) {
+        const editable =
+            enabled &&
+            canEditContributionSettings;
+
         amount.disabled =
-            !enabled ||
-            !canEditContributionSettings;
+            !editable;
+
+        amount.required =
+            enabled;
+
+        amount.setAttribute(
+            "aria-required",
+            enabled
+                ? "true"
+                : "false"
+        );
 
         if (!enabled) {
             amount.value =
@@ -1745,7 +1758,6 @@ async function loadCustomContributions() {
                     "frequency",
                     "status",
                     "description",
-                    "grace_period_value",
                     "fine_rule_id"
                 ].join(",")
             )
@@ -1767,6 +1779,55 @@ async function loadCustomContributions() {
     if (periodError) {
         throw periodError;
     }
+
+    const fineRuleIds =
+        Array.from(
+            new Set(
+                (periods || [])
+                    .map(
+                        (period) =>
+                            period.fine_rule_id
+                    )
+                    .filter(Boolean)
+            )
+        );
+
+    let fineRules = [];
+
+    if (fineRuleIds.length) {
+        const {
+            data,
+            error
+        } =
+            await supabase
+                .from("fine_rules")
+                .select(
+                    "id,calculation_method,fixed_amount,percentage_rate,minimum_amount,maximum_amount,grace_period_value,grace_period_unit"
+                )
+                .in(
+                    "id",
+                    fineRuleIds
+                );
+
+        if (error) {
+            throw error;
+        }
+
+        fineRules =
+            Array.isArray(data)
+                ? data
+                : [];
+    }
+
+    const fineRuleById =
+        new Map(
+            fineRules.map(
+                (rule) => [
+                    String(rule.id),
+                    rule
+                ]
+            )
+        );
 
     const typeById =
         new Map(
@@ -1841,15 +1902,18 @@ async function loadCustomContributions() {
 
                         graceDays:
                             Number(
-                                period.grace_period_value ||
+                                fineRuleById.get(
+                                    String(
+                                        period.fine_rule_id || ""
+                                    )
+                                )?.grace_period_value ||
                                 0
                             ),
 
                         /*
-                         * Fine status remains derived from the
-                         * existing period/fine-rule contract.
-                         *
-                         * We do not invent a new fine column.
+                         * Fine configuration is read from the
+                         * canonical fine_rules row referenced by
+                         * contribution_periods.fine_rule_id.
                          */
                         fineEnabled:
                             Boolean(
@@ -1857,7 +1921,14 @@ async function loadCustomContributions() {
                             ),
 
                         fineAmount:
-                            0,
+                            Number(
+                                fineRuleById.get(
+                                    String(
+                                        period.fine_rule_id || ""
+                                    )
+                                )?.fixed_amount ||
+                                0
+                            ),
 
                         contributionTypeId:
                             period.contribution_type_id,
