@@ -161,7 +161,7 @@ BEGIN
     auth.uid(),
     now()
   )
-  ON CONFLICT (group_id)
+  ON CONFLICT ON CONSTRAINT group_contribution_settings_pkey
   DO UPDATE SET
     monthly_opening_day = EXCLUDED.monthly_opening_day,
     updated_by = EXCLUDED.updated_by,
