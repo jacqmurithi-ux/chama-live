@@ -209,6 +209,9 @@ function refreshDomReferences() {
     elements.customContributionEditor =
         document.getElementById("customContributionEditor");
 
+    elements.customContributionDueDate =
+        document.getElementById("customContributionDueDate");
+
     elements.cancelCustomContribution =
         document.getElementById("cancelCustomContribution");
 }
