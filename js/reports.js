@@ -126,6 +126,15 @@ let currentReportType = "executive";
  */
 let activeQuickFilter = "all";
 
+/*
+ * Active custom contribution reporting.
+ * Definitions are read from contribution_types / contribution_periods.
+ * Member status is read from the existing canonical RPC.
+ */
+let activeCustomContributions = [];
+let customMemberStatusRows = [];
+let selectedCustomContributionId = "all";
+
 /* =========================================================
    DOM HELPERS
 ========================================================= */
@@ -1240,6 +1249,186 @@ async function loadCumulativePositions() {
     true;
 
   return cumulativePositions;
+}
+
+/* =========================================================
+   ACTIVE CUSTOM CONTRIBUTION MEMBER STATUS
+========================================================= */
+
+async function loadActiveCustomContributionStatus() {
+  activeCustomContributions = [];
+  customMemberStatusRows = [];
+  selectedCustomContributionId = "all";
+
+  if (!currentGroup?.id) return;
+
+  const { data: typeData, error: typeError } = await supabase
+    .from("contribution_types")
+    .select("id,group_id,name,code")
+    .eq("group_id", currentGroup.id)
+    .eq("code", "custom");
+
+  if (typeError) throw typeError;
+
+  const customTypes = Array.isArray(typeData) ? typeData : [];
+  if (!customTypes.length) {
+    renderCustomMemberStatusSelector();
+    renderCustomMemberStatus();
+    return;
+  }
+
+  const typeIds = customTypes.map(type => type.id);
+  const { data: periodData, error: periodError } = await supabase
+    .from("contribution_periods")
+    .select("id,group_id,contribution_type_id,opening_date,due_date,closing_date,amount,frequency,status,fine_rule_id")
+    .eq("group_id", currentGroup.id)
+    .in("contribution_type_id", typeIds)
+    .in("status", ["open", "due", "grace"])
+    .order("opening_date", { ascending: false });
+
+  if (periodError) throw periodError;
+
+  const typeById = new Map(customTypes.map(type => [String(type.id), type]));
+
+  activeCustomContributions = (Array.isArray(periodData) ? periodData : [])
+    .map(period => {
+      const type = typeById.get(String(period.contribution_type_id));
+      return {
+        id: period.id,
+        typeId: period.contribution_type_id,
+        name: type?.name || "Custom contribution",
+        amount: Number(period.amount || 0),
+        frequency: period.frequency || "",
+        openingDate: period.opening_date,
+        dueDate: period.due_date,
+        closingDate: period.closing_date,
+        status: period.status
+      };
+    });
+
+  if (!activeCustomContributions.length) {
+    renderCustomMemberStatusSelector();
+    renderCustomMemberStatus();
+    return;
+  }
+
+  const results = await Promise.all(
+    activeMembers().map(async member => {
+      const { data, error } = await supabase.rpc(
+        "get_member_active_contributions",
+        { p_group_id: currentGroup.id, p_member_id: member.id }
+      );
+
+      if (error) throw error;
+
+      const rows = Array.isArray(data) ? data : [];
+      return rows
+        .filter(row => String(row?.type || row?.contribution_type || "").trim().toLowerCase() !== "monthly")
+        .map(row => ({
+          memberId: member.id,
+          memberName: member.name || member.member_number || "Member",
+          ...row
+        }));
+    })
+  );
+
+  customMemberStatusRows = results.flat();
+  renderCustomMemberStatusSelector();
+  renderCustomMemberStatus();
+}
+
+function customContributionMatches(row, selected) {
+  if (!selected) return false;
+
+  const identifiers = [row?.period_id, row?.contribution_period_id, row?.id].filter(Boolean);
+  if (identifiers.some(value => String(value) === String(selected.id))) return true;
+
+  const typeIdentifiers = [row?.contribution_type_id, row?.type_id].filter(Boolean);
+  if (typeIdentifiers.some(value => String(value) === String(selected.typeId))) return true;
+
+  const names = [row?.contribution_name, row?.name].filter(Boolean)
+    .map(value => String(value).trim().toLowerCase());
+  return names.includes(String(selected.name).trim().toLowerCase());
+}
+
+function customStatusLabel(value) {
+  const status = String(value || "").trim().toUpperCase();
+  if (status === "PAID") return "PAID";
+  if (status === "PARTIAL") return "PARTIAL";
+  return "OUTSTANDING";
+}
+
+function customStatusClass(value) {
+  const status = customStatusLabel(value);
+  if (status === "PAID") return "status-paid";
+  if (status === "PARTIAL") return "status-warning";
+  return "status-outstanding";
+}
+
+function renderCustomMemberStatusSelector() {
+  const select = $("customContributionMemberStatusSelect");
+  if (!select) return;
+
+  select.innerHTML =
+    '<option value="all">Select an active contribution</option>' +
+    activeCustomContributions.map(item =>
+      '<option value="' + escapeHtml(String(item.id)) + '">' +
+      escapeHtml(item.name) + ' · KSh ' +
+      escapeHtml(Number(item.amount || 0).toLocaleString("en-KE")) +
+      ' · ' + escapeHtml(item.frequency || "—") +
+      '</option>'
+    ).join("");
+
+  select.value = selectedCustomContributionId === "all"
+    ? "all"
+    : String(selectedCustomContributionId);
+  setText("customContributionMemberStatusViewing", "—");
+}
+
+function renderCustomMemberStatus() {
+  const body = $("customContributionMemberStatusRows");
+  if (!body) return;
+
+  const selected = activeCustomContributions.find(item =>
+    String(item.id) === String(selectedCustomContributionId)
+  );
+
+  if (!selected) {
+    body.innerHTML =
+      '<tr><td colspan="6" class="report-empty">' +
+      'Select an active contribution to view member status.' +
+      '</td></tr>';
+    return;
+  }
+
+  setText("customContributionMemberStatusViewing", selected.name);
+
+  const rows = customMemberStatusRows.filter(row =>
+    customContributionMatches(row, selected)
+  );
+
+  if (!rows.length) {
+    body.innerHTML =
+      '<tr><td colspan="6" class="report-empty">' +
+      'No canonical member status is available for this contribution.' +
+      '</td></tr>';
+    return;
+  }
+
+  body.innerHTML = rows
+    .sort((a, b) => String(a.memberName).localeCompare(String(b.memberName)))
+    .map(row =>
+      '<tr>' +
+      '<td><strong>' + escapeHtml(row.memberName) + '</strong></td>' +
+      '<td class="amount">' + escapeHtml(money(row.amount_due)) + '</td>' +
+      '<td class="amount">' + escapeHtml(money(row.amount_allocated ?? row.current_paid)) + '</td>' +
+      '<td class="amount">' + escapeHtml(money(row.outstanding_balance)) + '</td>' +
+      '<td>' + escapeHtml(formatDate(row.due_date)) + '</td>' +
+      '<td><span class="status-badge ' + customStatusClass(row.status) + '">' +
+      escapeHtml(customStatusLabel(row.status)) +
+      '</span></td>' +
+      '</tr>'
+    ).join("");
 }
 
 /* =========================================================
@@ -4129,6 +4318,17 @@ function printReport() {
 ========================================================= */
 
 function bindEvents() {
+  $("customContributionMemberStatusSelect")
+    ?.addEventListener(
+      "change",
+      event => {
+        selectedCustomContributionId =
+          event.target.value || "all";
+
+        renderCustomMemberStatus();
+      }
+    );
+
   $("applyFilters")
     ?.addEventListener(
       "click",
@@ -4293,6 +4493,8 @@ export async function initPage() {
       loadExpenses(),
       loadMeetings()
     ]);
+
+    await loadActiveCustomContributionStatus();
 
     await generateReport();
 
