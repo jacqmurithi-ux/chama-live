@@ -1675,7 +1675,7 @@ async function loadCustomContributions() {
         await supabase
             .from("contribution_types")
             .select(
-                "id,group_id,name,code,status,description"
+                "id,group_id,name,code"
             )
             .eq(
                 "group_id",
