@@ -216,6 +216,8 @@ let contributions = [];
 
 let contributionGoals = [];
 
+let activeCustomContributions = [];
+
 let canonicalMemberStatus = [];
 
 let memberPaymentEvidence = [];
@@ -2563,6 +2565,43 @@ async function loadGroup() {
 
 
 /* =========================================================
+   LOAD ACTIVE CUSTOM CONTRIBUTIONS
+========================================================= */
+
+async function loadActiveCustomContributions() {
+  activeCustomContributions = [];
+
+  if (!groupId || !typeSelect) return;
+
+  const { data, error } = await supabase.rpc(
+    "get_group_active_contributions",
+    { p_group_id: groupId }
+  );
+  if (error) throw error;
+
+  activeCustomContributions = (data || [])
+    .filter(item => String(item.contribution_code || "").toLowerCase() !== "monthly")
+    .map(item => ({ ...item, contributionTypeId: item.contribution_type_id }));
+
+  typeSelect.innerHTML = "";
+
+  const monthlyOption = document.createElement("option");
+  monthlyOption.value = "monthly";
+  monthlyOption.textContent = "Monthly Contribution";
+  typeSelect.appendChild(monthlyOption);
+
+  activeCustomContributions.forEach(item => {
+    const option = document.createElement("option");
+    option.value = "custom:" + item.contribution_type_id;
+    option.textContent =
+      item.contribution_name + " — " + money(item.amount) +
+      " due " + formatDate(item.due_date);
+    typeSelect.appendChild(option);
+  });
+}
+
+
+/* =========================================================
    LOAD MEMBERS
 ========================================================= */
 
@@ -4184,23 +4223,26 @@ async function recordContribution(event) {
   }
 
 
-  /*
-   * Canonical 2B recording through this page is
-   * deliberately restricted to Monthly Contribution.
-   */
+  const isCustomContribution =
+    contributionType.startsWith("custom:");
+
+  const customContributionTypeId =
+    isCustomContribution
+      ? contributionType.slice("custom:".length)
+      : null;
+
   if (
-    contributionType !==
-    "monthly"
+    isCustomContribution &&
+    !activeCustomContributions.some(
+      item =>
+        String(item.contribution_type_id) ===
+        String(customContributionTypeId)
+    )
   ) {
-
     showError(
-      new Error(
-        "Only Monthly contributions can be recorded through the canonical 2B accounting workflow."
-      )
+      new Error("The selected custom contribution is no longer active.")
     );
-
     return;
-
   }
 
 
@@ -4268,24 +4310,12 @@ async function recordContribution(event) {
    */
 
   const existing =
+    !isCustomContribution &&
     contributions.some(
       item =>
-
-        String(
-          item.member_id
-        ) ===
-        String(memberId) &&
-
-        String(
-          item.contribution_type ||
-          ""
-        ).toLowerCase() ===
-        "monthly" &&
-
-        getContributionMonth(
-          item
-        ) ===
-        month
+        String(item.member_id) === String(memberId) &&
+        String(item.contribution_type || "").toLowerCase() === "monthly" &&
+        getContributionMonth(item) === month
     );
 
 
@@ -4371,45 +4401,47 @@ async function recordContribution(event) {
      * cl_2b_record_contribution() database RPC.
      */
 
-    const {
-      data,
-      error
-    } =
-      await supabase.rpc(
+    let data;
+    let error;
+
+    if (isCustomContribution) {
+      ({
+        data,
+        error
+      } = await supabase.rpc(
+        "record_custom_contribution_payment",
+        {
+          p_group_id: groupId,
+          p_member_id: memberId,
+          p_contribution_type_id: customContributionTypeId,
+          p_amount: amount,
+          p_contribution_date: contributionDate,
+          p_payment_method: paymentMethod,
+          p_reference: reference || null,
+          p_notes: finalNotes,
+          p_request_id: idempotencyKey
+        }
+      ));
+    } else {
+      ({
+        data,
+        error
+      } = await supabase.rpc(
         "cl_2b_record_contribution",
         {
-          p_group_id:
-            groupId,
-
-          p_member_id:
-            memberId,
-
-          p_amount:
-            amount,
-
-          p_contribution_type:
-            "monthly",
-
-          p_contribution_date:
-            contributionDate,
-
-          p_payment_method:
-            paymentMethod,
-
-          p_reference:
-            reference ||
-            null,
-
-          p_notes:
-            finalNotes,
-
-          p_goal_id:
-            goalId,
-
-          p_idempotency_key:
-            idempotencyKey
+          p_group_id: groupId,
+          p_member_id: memberId,
+          p_amount: amount,
+          p_contribution_type: "monthly",
+          p_contribution_date: contributionDate,
+          p_payment_method: paymentMethod,
+          p_reference: reference || null,
+          p_notes: finalNotes,
+          p_goal_id: goalId,
+          p_idempotency_key: idempotencyKey
         }
-      );
+      ));
+    }
 
 
     if (error) {
@@ -4426,7 +4458,9 @@ async function recordContribution(event) {
         memberId,
         amount,
         contributionType:
-          "monthly",
+          isCustomContribution
+            ? customContributionTypeId
+            : "monthly",
         contributionDate,
         paymentMethod,
         idempotencyKey,
@@ -4435,31 +4469,19 @@ async function recordContribution(event) {
     );
 
 
-    accountingMonth =
-      month;
+    if (!isCustomContribution) {
+      accountingMonth = month;
 
+      if (accountingMonthSelect) {
+        accountingMonthSelect.value = accountingMonth;
+      }
 
-    if (
-      accountingMonthSelect
-    ) {
+      renderAccountingMonthLabel();
 
-      accountingMonthSelect.value =
-        accountingMonth;
-
+      await loadCanonicalMemberStatus(accountingMonth);
     }
 
-    renderAccountingMonthLabel();
-
-
-    await Promise.all([
-
-      loadCanonicalMemberStatus(
-        accountingMonth
-      ),
-
-      loadContributions()
-
-    ]);
+    await loadContributions();
 
 
     renderLedger();
@@ -4661,6 +4683,8 @@ export async function initContributions() {
       loadGroup(),
 
       loadMembers(),
+
+      loadActiveCustomContributions(),
 
       loadContributions(),
 
@@ -5097,10 +5121,44 @@ async function saveCustomContributionDraft(event) {
       );
     }
 
+    if (!result?.ok || !result.period_id) {
+      throw new Error("The backend did not return a valid custom contribution result.");
+    }
+
+    const activationRequestId =
+      typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : null;
+    if (!activationRequestId) {
+      throw new Error("Secure activation request ID generation is unavailable in this browser.");
+    }
+
+    const {
+      data: activationData,
+      error: activationError
+    } = await supabase.rpc(
+      "activate_custom_contribution",
+      {
+        p_group_id: groupId,
+        p_period_id: result.period_id,
+        p_request_id: activationRequestId
+      }
+    );
+    if (activationError) throw activationError;
+
+    const activation =
+      Array.isArray(activationData)
+        ? activationData[0] || null
+        : activationData || null;
+
+    if (!activation?.ok || !["open","due","grace"].includes(String(activation.status || "").toLowerCase())) {
+      throw new Error("The custom contribution was saved but could not be activated.");
+    }
+
     showCustomContributionEditorMessage(
-      result.replayed
-        ? "The existing custom contribution draft was returned safely."
-        : "Custom contribution draft created successfully.",
+      activation.replayed
+        ? "Custom contribution activation was replayed safely."
+        : "Custom contribution saved and activated. It is now ongoing.",
       "success"
     );
 
