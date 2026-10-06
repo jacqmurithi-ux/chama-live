@@ -4,6 +4,7 @@
 
 import { getMyApplicationContext } from "./auth.js";
 import { groupManagementApi } from "./api/group-management.js";
+import { supabase } from "./supabase.js";
 
 
 /* ================================================================
@@ -13,6 +14,20 @@ import { groupManagementApi } from "./api/group-management.js";
 const STANDARD_GROUP_TYPES = new Map([
     ["chama", "Chama"],
     ["cbo", "CBO"]
+]);
+
+const CUSTOM_CONTRIBUTION_FREQUENCIES = new Set([
+    "one_time",
+    "weekly",
+    "monthly",
+    "quarterly",
+    "annual"
+]);
+
+const ACTIVE_CUSTOM_PERIOD_STATUSES = new Set([
+    "open",
+    "due",
+    "grace"
 ]);
 
 
@@ -194,10 +209,6 @@ function refreshDomReferences() {
     elements.leadershipList =
         document.getElementById("leadershipList");
 
-    /*
-     * Canonical monthly configuration field:
-     * openingDay
-     */
     elements.openingDay =
         document.getElementById("openingDay");
 
@@ -377,9 +388,6 @@ function setGroupCategoryValue(category) {
 
 
 function syncGroupCategoryOtherVisibility() {
-    /*
-     * HTML uses "otherGroupTypeField".
-     */
     const wrapper =
         document.getElementById(
             "otherGroupTypeField"
@@ -407,11 +415,6 @@ function renderContributionCycleSummary() {
     const amount =
         currentGroup?.monthly_contribution;
 
-    /*
-     * The configured day is the MONTHLY OPENING DAY.
-     * The backend is responsible for deriving the corresponding
-     * closing boundary/date.
-     */
     const openingDay =
         contributionSettings?.monthly_opening_day;
 
@@ -862,10 +865,6 @@ async function loadContributionSettings() {
             ? data[0] || null
             : data || null;
 
-    /*
-     * Canonical backend response:
-     * monthly_opening_day
-     */
     if (
         elements.openingDay &&
         contributionSettings
@@ -900,10 +899,6 @@ async function saveMonthlyContribution(event) {
             0
         );
 
-    /*
-     * Canonical frontend field:
-     * openingDay
-     */
     const rawOpeningDay =
         elements.openingDay?.value?.trim();
 
@@ -919,10 +914,6 @@ async function saveMonthlyContribution(event) {
         );
     }
 
-    /*
-     * Opening day is intentionally limited to 1–28
-     * for deterministic month-boundary handling.
-     */
     if (
         !rawOpeningDay ||
         !Number.isInteger(openingDay) ||
@@ -938,14 +929,6 @@ async function saveMonthlyContribution(event) {
         "monthly"
     );
 
-    /*
-     * Candidate backend contract:
-     *
-     * p_monthly_contribution
-     * p_monthly_opening_day
-     *
-     * No monthly_closing_day is sent.
-     */
     const settingsResult =
         await groupManagementApi.rpc(
             "update_group_contribution_settings",
@@ -982,78 +965,259 @@ async function saveMonthlyContribution(event) {
 }
 
 
+/* ================================================================
+   CREATE CUSTOM CONTRIBUTION
+================================================================ */
+
 async function saveCustomContribution(event) {
     event?.preventDefault();
 
     if (!currentGroup?.id) {
-        throw new Error("No active group is available.");
+        throw new Error(
+            "No active group is available."
+        );
     }
+
     if (!canEditContributionSettings) {
-        throw new Error("You do not have permission to manage contribution settings.");
+        throw new Error(
+            "You do not have permission to manage contribution settings."
+        );
     }
 
-    const name = elements.customContributionName?.value?.trim();
-    const description = elements.customContributionDescription?.value?.trim() || "";
-    const amount = Number(elements.customContributionAmount?.value || 0);
-    const frequency = elements.customContributionCycle?.value || "one_time";
-    const startDate = elements.customContributionStartDate?.value;
-    const dueDate = elements.customContributionDueDate?.value;
-    const closingDate = elements.customContributionEndDate?.value;
-    const graceDays = getGraceDays("custom");
-    const applyFine = isFineEnabled("custom");
-    const fineAmount = Number(elements.customFineAmount?.value || 0);
+    const name =
+        elements.customContributionName?.value?.trim();
 
-    if (!name) throw new Error("Contribution name is required.");
-    if (!Number.isFinite(amount) || amount <= 0) throw new Error("Amount due must be greater than zero.");
-    if (!["one_time","weekly","monthly","quarterly","annual"].includes(frequency)) throw new Error("Invalid contribution cycle.");
-    if (!startDate || !dueDate || !closingDate) throw new Error("Start date, due date, and closing date are required.");
-    if (startDate > dueDate || dueDate > closingDate) throw new Error("Dates must follow Start ≤ Due ≤ Closing.");
-    validateContributionRuleUI("custom");
-    if (applyFine && (!Number.isFinite(fineAmount) || fineAmount <= 0)) {
-        throw new Error("Fine amount must be greater than zero when a fine is enabled.");
+    const description =
+        elements.customContributionDescription
+            ?.value?.trim() ||
+        "";
+
+    const amount =
+        Number(
+            elements.customContributionAmount?.value ||
+            0
+        );
+
+    const frequency =
+        elements.customContributionCycle?.value ||
+        "one_time";
+
+    const startDate =
+        elements.customContributionStartDate?.value;
+
+    const dueDate =
+        elements.customContributionDueDate?.value;
+
+    const closingDate =
+        elements.customContributionEndDate?.value;
+
+    const graceDays =
+        getGraceDays("custom");
+
+    const applyFine =
+        isFineEnabled("custom");
+
+    const fineAmount =
+        Number(
+            elements.customFineAmount?.value ||
+            0
+        );
+
+    if (!name) {
+        throw new Error(
+            "Contribution name is required."
+        );
     }
 
-    const requestId = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-        ? crypto.randomUUID()
-        : null;
-    if (!requestId) throw new Error("Secure request ID generation is unavailable in this browser.");
+    if (
+        !Number.isFinite(amount) ||
+        amount <= 0
+    ) {
+        throw new Error(
+            "Amount due must be greater than zero."
+        );
+    }
 
-    const saveButton = elements.customContributionForm?.querySelector('button[type="submit"]');
-    if (saveButton) saveButton.disabled = true;
+    if (
+        !CUSTOM_CONTRIBUTION_FREQUENCIES.has(
+            frequency
+        )
+    ) {
+        throw new Error(
+            "Invalid contribution cycle."
+        );
+    }
 
-    showContributionStatus("Saving custom contribution…", "info");
+    if (
+        !startDate ||
+        !dueDate ||
+        !closingDate
+    ) {
+        throw new Error(
+            "Start date, due date, and closing date are required."
+        );
+    }
+
+    if (
+        startDate > dueDate ||
+        dueDate > closingDate
+    ) {
+        throw new Error(
+            "Dates must follow Start ≤ Due ≤ Closing."
+        );
+    }
+
+    validateContributionRuleUI(
+        "custom"
+    );
+
+    if (
+        applyFine &&
+        (
+            !Number.isFinite(fineAmount) ||
+            fineAmount <= 0
+        )
+    ) {
+        throw new Error(
+            "Fine amount must be greater than zero when a fine is enabled."
+        );
+    }
+
+    const requestId =
+        typeof crypto !== "undefined" &&
+        typeof crypto.randomUUID === "function"
+            ? crypto.randomUUID()
+            : null;
+
+    if (!requestId) {
+        throw new Error(
+            "Secure request ID generation is unavailable in this browser."
+        );
+    }
+
+    const saveButton =
+        elements.customContributionForm
+            ?.querySelector(
+                'button[type="submit"]'
+            );
+
+    if (saveButton) {
+        saveButton.disabled = true;
+    }
+
+    showContributionStatus(
+        "Saving custom contribution…",
+        "info"
+    );
 
     try {
-        const { data, error } = await groupManagementApi.rpc("create_custom_contribution", {
-            p_group_id: currentGroup.id,
-            p_name: name,
-            p_description: description,
-            p_amount: amount,
-            p_frequency: frequency,
-            p_start_date: startDate,
-            p_due_date: dueDate,
-            p_closing_date: closingDate,
-            p_grace_period_value: graceDays,
-            p_apply_fine: applyFine,
-            p_fine_amount: applyFine ? fineAmount : null,
-            p_request_id: requestId
-        });
-        if (error) throw error;
+        const {
+            data,
+            error
+        } =
+            await groupManagementApi.rpc(
+                "create_custom_contribution",
+                {
+                    p_group_id:
+                        currentGroup.id,
 
-        const created = Array.isArray(data) ? data[0] || null : data || null;
-        if (!created?.ok) throw new Error("The backend did not return a successful custom contribution result.");
+                    p_name:
+                        name,
 
-        const activationRequestId = crypto.randomUUID();
-        const activation = await groupManagementApi.rpc("activate_custom_contribution", {
-            p_group_id: currentGroup.id,
-            p_period_id: created.period_id,
-            p_request_id: activationRequestId
-        });
-        if (activation.error) throw activation.error;
+                    p_description:
+                        description,
 
-        const activated = Array.isArray(activation.data) ? activation.data[0] || null : activation.data || null;
-        if (!activated?.ok || !["open","due","grace"].includes(String(activated.status || "").toLowerCase())) {
-            throw new Error("The custom contribution was saved but could not be activated.");
+                    p_amount:
+                        amount,
+
+                    p_frequency:
+                        frequency,
+
+                    p_start_date:
+                        startDate,
+
+                    p_due_date:
+                        dueDate,
+
+                    p_closing_date:
+                        closingDate,
+
+                    p_grace_period_value:
+                        graceDays,
+
+                    p_apply_fine:
+                        applyFine,
+
+                    p_fine_amount:
+                        applyFine
+                            ? fineAmount
+                            : null,
+
+                    p_request_id:
+                        requestId
+                }
+            );
+
+        if (error) {
+            throw error;
+        }
+
+        const created =
+            Array.isArray(data)
+                ? data[0] || null
+                : data || null;
+
+        if (!created?.ok) {
+            throw new Error(
+                "The backend did not return a successful custom contribution result."
+            );
+        }
+
+        /*
+         * Creation intentionally remains followed by the
+         * canonical activation RPC so that a saved contribution
+         * becomes an ongoing contribution immediately.
+         */
+        const activationRequestId =
+            crypto.randomUUID();
+
+        const activation =
+            await groupManagementApi.rpc(
+                "activate_custom_contribution",
+                {
+                    p_group_id:
+                        currentGroup.id,
+
+                    p_period_id:
+                        created.period_id,
+
+                    p_request_id:
+                        activationRequestId
+                }
+            );
+
+        if (activation.error) {
+            throw activation.error;
+        }
+
+        const activated =
+            Array.isArray(
+                activation.data
+            )
+                ? activation.data[0] || null
+                : activation.data || null;
+
+        if (
+            !activated?.ok ||
+            !ACTIVE_CUSTOM_PERIOD_STATUSES.has(
+                normalizeLower(
+                    activated.status
+                )
+            )
+        ) {
+            throw new Error(
+                "The custom contribution was saved but could not be activated."
+            );
         }
 
         await loadCustomContributions();
@@ -1066,12 +1230,24 @@ async function saveCustomContribution(event) {
         );
 
         resetCustomContributionForm();
-        if (elements.customContributionEditor) elements.customContributionEditor.hidden = true;
+
+        if (
+            elements.customContributionEditor
+        ) {
+            elements.customContributionEditor.hidden =
+                true;
+        }
+
         return activated;
+
     } finally {
-        if (saveButton) saveButton.disabled = !canEditContributionSettings;
+        if (saveButton) {
+            saveButton.disabled =
+                !canEditContributionSettings;
+        }
     }
 }
+
 
 async function saveContributionSettings(event) {
     return saveMonthlyContribution(
@@ -1182,7 +1358,8 @@ function syncGracePeriodControls(prefix) {
 
     if (days) {
         days.disabled =
-            !enabled;
+            !enabled ||
+            !canEditContributionSettings;
 
         if (!enabled) {
             days.value =
@@ -1223,7 +1400,8 @@ function syncFineControls(prefix) {
 
     if (amount) {
         amount.disabled =
-            !enabled;
+            !enabled ||
+            !canEditContributionSettings;
 
         if (!enabled) {
             amount.value =
@@ -1235,59 +1413,12 @@ function syncFineControls(prefix) {
 }
 
 
-function renderCustomContributionDrafts() {
-    if (!elements.customContributionsList) return;
+/* ================================================================
+   CUSTOM CONTRIBUTION RENDERING
+================================================================ */
 
-    elements.customContributionsList.replaceChildren();
-
-    if (!customContributionDrafts.length) {
-        const empty = document.createElement("div");
-        empty.className = "custom-contribution-empty";
-        empty.textContent = "No active custom contributions have been configured.";
-        elements.customContributionsList.appendChild(empty);
-        return;
-    }
-
-    customContributionDrafts.forEach((item) => {
-        const card = document.createElement("div");
-        card.className = "custom-contribution-summary";
-
-        const title = document.createElement("strong");
-        title.textContent = item.name;
-
-        const meta = document.createElement("div");
-        meta.className = "custom-contribution-summary-meta";
-        meta.textContent =
-            "KSh " + Number(item.amount || 0).toLocaleString() +
-            " · " + item.startDate + " to " + item.endDate +
-            " · " + (item.frequencyLabel || item.frequency);
-
-        const status = document.createElement("div");
-        status.className = "custom-contribution-summary-meta";
-        status.textContent = "ONGOING · Due " + item.dueDate + " · Closing " + item.endDate;
-
-        const rules = document.createElement("div");
-        rules.className = "custom-contribution-summary-meta";
-        rules.textContent = item.fineEnabled
-            ? "Grace period: " + item.graceDays + " day" + (Number(item.graceDays) === 1 ? "" : "s") +
-              " · Fine: KSh " + Number(item.fineAmount || 0).toLocaleString()
-            : "Grace period: " + item.graceDays + " day" + (Number(item.graceDays) === 1 ? "" : "s") + " · No fine";
-
-        card.append(title, meta, status, rules);
-        elements.customContributionsList.appendChild(card);
-    });
-}
-
-async function loadCustomContributions() {
-    if (!currentGroup?.id) return;
-
-    const { data, error } = await groupManagementApi.rpc(
-        "get_group_active_contributions",
-        { p_group_id: currentGroup.id }
-    );
-    if (error) throw error;
-
-    const frequencyLabels = {
+function formatFrequency(frequency) {
+    const labels = {
         one_time: "One-time",
         weekly: "Weekly",
         monthly: "Monthly",
@@ -1295,28 +1426,468 @@ async function loadCustomContributions() {
         annual: "Annual"
     };
 
-    customContributionDrafts = (data || []).map((item) => ({
-        name: item.contribution_name,
-        amount: Number(item.amount || 0),
-        startDate: item.opening_date,
-        dueDate: item.due_date,
-        endDate: item.closing_date,
-        frequency: item.frequency,
-        frequencyLabel: frequencyLabels[item.frequency] || item.frequency,
-        description: item.description || "",
-        graceDays: Number(item.grace_period_value || 0),
-        fineEnabled: Boolean(item.fine_enabled),
-        fineAmount: Number(item.fine_amount || 0),
-        contributionTypeId: item.contribution_type_id,
-        periodId: item.period_id,
-        fineRuleId: item.fine_rule_id,
-        periodKey: item.period_key,
-        status: item.status,
-        replayed: false
-    }));
+    return (
+        labels[frequency] ||
+        String(frequency || "")
+            .replaceAll("_", " ")
+    );
+}
+
+
+function formatStatus(status) {
+    return String(status || "")
+        .trim()
+        .toUpperCase();
+}
+
+
+function renderCustomContributionDrafts() {
+    if (
+        !elements.customContributionsList
+    ) {
+        return;
+    }
+
+    elements.customContributionsList
+        .replaceChildren();
+
+    if (
+        !customContributionDrafts.length
+    ) {
+        const empty =
+            document.createElement("div");
+
+        empty.className =
+            "custom-contribution-empty";
+
+        empty.textContent =
+            "No active custom contributions have been configured.";
+
+        elements.customContributionsList
+            .appendChild(empty);
+
+        return;
+    }
+
+    customContributionDrafts.forEach(
+        (item) => {
+            const card =
+                document.createElement("div");
+
+            card.className =
+                "custom-contribution-summary";
+
+            card.dataset.periodId =
+                item.periodId || "";
+
+            const title =
+                document.createElement("strong");
+
+            title.textContent =
+                item.name ||
+                "Custom contribution";
+
+            const meta =
+                document.createElement("div");
+
+            meta.className =
+                "custom-contribution-summary-meta";
+
+            meta.textContent =
+                "KSh " +
+                Number(
+                    item.amount || 0
+                ).toLocaleString(
+                    "en-KE"
+                ) +
+                " · " +
+                (
+                    item.startDate ||
+                    "—"
+                ) +
+                " to " +
+                (
+                    item.endDate ||
+                    "—"
+                ) +
+                " · " +
+                formatFrequency(
+                    item.frequency
+                );
+
+            const status =
+                document.createElement("div");
+
+            status.className =
+                "custom-contribution-summary-meta";
+
+            const normalizedStatus =
+                normalizeLower(
+                    item.status
+                );
+
+            if (
+                ACTIVE_CUSTOM_PERIOD_STATUSES.has(
+                    normalizedStatus
+                )
+            ) {
+                status.textContent =
+                    formatStatus(
+                        item.status
+                    ) +
+                    " · Due " +
+                    (
+                        item.dueDate ||
+                        "—"
+                    ) +
+                    " · Closing " +
+                    (
+                        item.endDate ||
+                        "—"
+                    );
+            } else if (
+                normalizedStatus ===
+                "draft"
+            ) {
+                status.textContent =
+                    "DRAFT · Ready for activation";
+            } else {
+                status.textContent =
+                    formatStatus(
+                        item.status
+                    );
+            }
+
+            const rules =
+                document.createElement("div");
+
+            rules.className =
+                "custom-contribution-summary-meta";
+
+            rules.textContent =
+                item.fineEnabled
+                    ? "Grace period: " +
+                        Number(
+                            item.graceDays || 0
+                        ) +
+                        " day" +
+                        (
+                            Number(
+                                item.graceDays || 0
+                            ) === 1
+                                ? ""
+                                : "s"
+                        ) +
+                        " · Fine: KSh " +
+                        Number(
+                            item.fineAmount || 0
+                        ).toLocaleString(
+                            "en-KE"
+                        )
+                    : "Grace period: " +
+                        Number(
+                            item.graceDays || 0
+                        ) +
+                        " day" +
+                        (
+                            Number(
+                                item.graceDays || 0
+                            ) === 1
+                                ? ""
+                                : "s"
+                        ) +
+                        " · No fine";
+
+            const description =
+                document.createElement("div");
+
+            description.className =
+                "custom-contribution-summary-meta";
+
+            description.textContent =
+                item.description ||
+                "";
+
+            card.append(
+                title,
+                meta,
+                status,
+                rules
+            );
+
+            if (
+                item.description
+            ) {
+                card.append(
+                    description
+                );
+            }
+
+            elements.customContributionsList
+                .appendChild(card);
+        }
+    );
+}
+
+
+/* ================================================================
+   CUSTOM CONTRIBUTIONS — FRONTEND READ PATH
+================================================================ */
+
+/*
+ * IMPORTANT:
+ *
+ * The production database does NOT expose:
+ *
+ *     get_group_active_contributions(p_group_id)
+ *
+ * Therefore this function deliberately does NOT call that RPC.
+ *
+ * The authenticated Supabase client reads:
+ *
+ *     contribution_types
+ *             +
+ *     contribution_periods
+ *
+ * and filters them to the current group and custom contribution
+ * type. Accounting mutation remains exclusively RPC-owned.
+ */
+async function loadCustomContributions() {
+    if (!currentGroup?.id) {
+        return;
+    }
+
+    /*
+     * ------------------------------------------------------------
+     * STEP 1 — READ CUSTOM CONTRIBUTION TYPES
+     * ------------------------------------------------------------
+     *
+     * Custom contribution types use:
+     *
+     *     code = "custom"
+     *
+     * We do not create, update, or delete anything here.
+     */
+    const {
+        data: contributionTypes,
+        error: contributionTypeError
+    } =
+        await supabase
+            .from("contribution_types")
+            .select(
+                "id,group_id,name,code,status,description"
+            )
+            .eq(
+                "group_id",
+                currentGroup.id
+            )
+            .eq(
+                "code",
+                "custom"
+            );
+
+    if (contributionTypeError) {
+        throw contributionTypeError;
+    }
+
+    const customTypes =
+        Array.isArray(
+            contributionTypes
+        )
+            ? contributionTypes
+            : [];
+
+    if (!customTypes.length) {
+        customContributionDrafts = [];
+
+        renderCustomContributionDrafts();
+
+        return;
+    }
+
+    const customTypeIds =
+        customTypes.map(
+            (type) =>
+                type.id
+        );
+
+    /*
+     * ------------------------------------------------------------
+     * STEP 2 — READ THE PERIODS BELONGING TO THOSE TYPES
+     * ------------------------------------------------------------
+     *
+     * This is still a read-only authenticated request.
+     *
+     * The backend activation RPC remains responsible for:
+     *
+     * - member rules
+     * - obligations
+     * - locks
+     * - replay safety
+     * - period activation
+     */
+    const {
+        data: periods,
+        error: periodError
+    } =
+        await supabase
+            .from("contribution_periods")
+            .select(
+                [
+                    "id",
+                    "group_id",
+                    "contribution_type_id",
+                    "period_key",
+                    "opening_date",
+                    "due_date",
+                    "closing_date",
+                    "amount",
+                    "frequency",
+                    "status",
+                    "description",
+                    "grace_period_value",
+                    "fine_rule_id"
+                ].join(",")
+            )
+            .eq(
+                "group_id",
+                currentGroup.id
+            )
+            .in(
+                "contribution_type_id",
+                customTypeIds
+            )
+            .order(
+                "opening_date",
+                {
+                    ascending: false
+                }
+            );
+
+    if (periodError) {
+        throw periodError;
+    }
+
+    const typeById =
+        new Map(
+            customTypes.map(
+                (type) => [
+                    type.id,
+                    type
+                ]
+            )
+        );
+
+    /*
+     * ------------------------------------------------------------
+     * STEP 3 — NORMALIZE THE FRONTEND VIEW MODEL
+     * ------------------------------------------------------------
+     */
+    customContributionDrafts =
+        (
+            Array.isArray(periods)
+                ? periods
+                : []
+        )
+            .filter(
+                (period) =>
+                    typeById.has(
+                        period.contribution_type_id
+                    )
+            )
+            .map(
+                (period) => {
+                    const type =
+                        typeById.get(
+                            period.contribution_type_id
+                        );
+
+                    const normalizedStatus =
+                        normalizeLower(
+                            period.status
+                        );
+
+                    return {
+                        name:
+                            type?.name ||
+                            "Custom contribution",
+
+                        amount:
+                            Number(
+                                period.amount || 0
+                            ),
+
+                        startDate:
+                            period.opening_date,
+
+                        dueDate:
+                            period.due_date,
+
+                        endDate:
+                            period.closing_date,
+
+                        frequency:
+                            period.frequency,
+
+                        frequencyLabel:
+                            formatFrequency(
+                                period.frequency
+                            ),
+
+                        description:
+                            period.description ||
+                            type?.description ||
+                            "",
+
+                        graceDays:
+                            Number(
+                                period.grace_period_value ||
+                                0
+                            ),
+
+                        /*
+                         * Fine status remains derived from the
+                         * existing period/fine-rule contract.
+                         *
+                         * We do not invent a new fine column.
+                         */
+                        fineEnabled:
+                            Boolean(
+                                period.fine_rule_id
+                            ),
+
+                        fineAmount:
+                            0,
+
+                        contributionTypeId:
+                            period.contribution_type_id,
+
+                        periodId:
+                            period.id,
+
+                        fineRuleId:
+                            period.fine_rule_id,
+
+                        periodKey:
+                            period.period_key,
+
+                        status:
+                            normalizedStatus ||
+                            period.status,
+
+                        replayed:
+                            false
+                    };
+                }
+            );
 
     renderCustomContributionDrafts();
 }
+
+
+/* ================================================================
+   CUSTOM CONTRIBUTION FORM RESET
+================================================================ */
 
 function resetCustomContributionForm() {
     [
@@ -1369,6 +1940,11 @@ function resetCustomContributionForm() {
                     radio.value === "no";
             }
         );
+
+    if (elements.customFineAmount) {
+        elements.customFineAmount.value =
+            "";
+    }
 
     syncGracePeriodControls(
         "custom"
@@ -1427,7 +2003,9 @@ async function loadSubscription() {
         elements.subscriptionAmount.textContent =
             subscription?.amount !== null &&
             subscription?.amount !== undefined
-                ? String(subscription.amount)
+                ? String(
+                    subscription.amount
+                )
                 : "—";
     }
 }
@@ -1614,7 +2192,9 @@ function bindEvents() {
                     error
                 );
 
-                if (elements.groupManagementStatus) {
+                if (
+                    elements.groupManagementStatus
+                ) {
                     elements.groupManagementStatus.textContent =
                         error?.message ||
                         "Group information could not be saved.";
@@ -1628,7 +2208,7 @@ function bindEvents() {
 
 
     /* ------------------------------------------------------------
-       CONTRIBUTION SETTINGS — CANONICAL EVENT PATH
+       MONTHLY CONTRIBUTION
     ------------------------------------------------------------ */
 
     elements.monthlyContributionForm
@@ -1654,6 +2234,10 @@ function bindEvents() {
             }
         );
 
+
+    /* ------------------------------------------------------------
+       CUSTOM CONTRIBUTION
+    ------------------------------------------------------------ */
 
     elements.customContributionForm
         ?.addEventListener(
@@ -1828,17 +2412,6 @@ function bindEvents() {
         );
 
 
-    renderCustomContributionDrafts();
-
-    syncContributionRuleUI(
-        "monthly"
-    );
-
-    syncContributionRuleUI(
-        "custom"
-    );
-
-
     /* ------------------------------------------------------------
        CATEGORY OTHER
     ------------------------------------------------------------ */
@@ -1850,6 +2423,7 @@ function bindEvents() {
                 syncGroupCategoryOtherVisibility();
             }
         );
+
 
     syncGroupCategoryOtherVisibility();
 
@@ -1897,30 +2471,39 @@ async function initializeGroupManagement() {
                 {
                     section:
                         "leadership",
+
                     loader:
                         loadLeadershipSetup
                 },
+
                 {
                     section:
                         "member count",
+
                     loader:
                         loadMemberCount
                 },
+
                 {
                     section:
                         "contribution settings",
+
                     loader:
                         loadContributionSettings
                 },
+
                 {
                     section:
                         "subscription",
+
                     loader:
                         loadSubscription
                 },
+
                 {
                     section:
                         "active custom contributions",
+
                     loader:
                         loadCustomContributions
                 }
@@ -1948,11 +2531,6 @@ async function initializeGroupManagement() {
 
             renderGroup();
 
-            /*
-             * Keep the page-level loader/content transition owned
-             * by admin-layout.js. This module only reveals the
-             * management content when that element exists.
-             */
             const managementContent =
                 document.getElementById(
                     "managementContent"
@@ -1966,12 +2544,16 @@ async function initializeGroupManagement() {
             return {
                 user:
                     currentUser,
+
                 member:
                     currentMember,
+
                 group:
                     currentGroup,
+
                 role:
                     currentRole,
+
                 isOwner:
                     currentIsOwner
             };
@@ -2008,5 +2590,10 @@ export {
 
 /*
  * admin-layout.js is the sole feature boot owner.
- * It imports this module and calls initGroupManagement().
+ *
+ * It imports this module and calls:
+ *
+ *     initGroupManagement()
+ *
+ * There is intentionally no module-level auto-boot here.
  */
