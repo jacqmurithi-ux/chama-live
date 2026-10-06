@@ -1,7797 +1,4099 @@
 /* =========================================================
    CHAMA LIVE — CONTRIBUTIONS
-   CANONICAL 2B ACCOUNTING FEATURE MODULE
+   CANONICAL 2B ACCOUNTING VERSION
 
-   PURPOSE
+   MEMBER PAYMENT EVIDENCE INTEGRATION
+   CUSTOM CONTRIBUTION INTEGRATION
+
    ---------------------------------------------------------
-   • Record authorised staff contributions through the
+   ACCOUNTING BOUNDARIES
+   ---------------------------------------------------------
+   • Ordinary members submit payment evidence only.
+   • Evidence remains pending until authorised verification.
+   • Verified member payments are recorded through the
      canonical accounting RPC.
-   • Let ordinary members submit payment evidence.
-   • Let authorised verifiers review/verify payment evidence.
-   • Create and activate Custom Contribution definitions
-     through backend-owned RPC workflows.
-   • Record Custom Contribution payments through the
-     backend-owned accounting RPC.
-   • Show active Custom Contributions as ongoing selectable
-     contribution types.
-   • Keep accounting calculations, obligations, allocations,
-     fines, credits, balances and period enforcement
-     backend-owned.
+   • Frontend never directly inserts/updates:
+       - contributions
+       - contribution_allocations
+       - contribution_obligations
+   • Custom contribution creation is performed through RPC.
+   • Active contribution definitions remain visible after
+     creation and can be selected when recording payments.
+   • Frontend is a presentation/orchestration layer only.
 
-   FRONTEND BOUNDARIES
    ---------------------------------------------------------
-   • No direct INSERT/UPDATE/DELETE against accounting tables.
-   • No frontend-created obligations or allocations.
-   • No frontend-generated fines, credits or balances.
-   • No reporting-only logic belongs in this module.
-   • Page refresh reloads state; it does not create accounting.
-   • Admin portal boot ownership remains in admin-layout.js.
-   • This module exports initContributions() and does not
-     auto-boot.
+   PAGE CONTRACT
+   ---------------------------------------------------------
+   Expected HTML IDs are resolved defensively because the
+   contributions page has evolved across versions.
 
-   CANONICAL BACKEND WORKFLOWS
+   Primary sections:
+     #contributionsTable
+     #contributionsBody
+     #contributionType
+     #contributionAmount
+     #contributionDate
+     #memberSelect
+     #paymentMethod
+     #reference
+     #notes
+
+   Custom contribution:
+     #customContributionForm
+     #customContributionName
+     #customContributionAmount
+     #customContributionFrequency
+     #customContributionDescription
+
+   Evidence:
+     #paymentEvidenceForm
+     #evidenceAmount
+     #evidenceDate
+     #evidenceReference
+     #evidencePaymentMethod
+     #evidenceNotes
+
    ---------------------------------------------------------
-   • cl_2b_record_contribution()
-   • verify_member_payment_evidence()
-   • create_custom_contribution()
-   • activate_custom_contribution()
-   • record_custom_contribution_payment()
-   • refresh_canonical_contribution_accounting()
-========================================================= */
+   IMPORTANT
+   ---------------------------------------------------------
+   This module does NOT assume that every DOM element exists.
+   Missing optional elements must not break the page.
+   ========================================================= */
+
+import { supabase } from "./supabase.js";
 
 import {
-  supabase
-} from "./supabase.js";
-
-import {
-  getMyApplicationContext
+  requireAuth,
+  getMyMember,
+  getMyGroup
 } from "./auth.js";
 
-/* =========================================================
-   ELEMENTS
-========================================================= */
-
-const statusEl =
-  document.getElementById("status");
-
-const errorEl =
-  document.getElementById("error");
-
-const form =
-  document.getElementById("contributionForm");
-
-const recordContributionCard =
-  document.getElementById(
-    "recordContributionCard"
-  );
-
-const memberSelect =
-  document.getElementById("member");
-
-const amountInput =
-  document.getElementById("amount");
-
-const dateInput =
-  document.getElementById("contributionDate");
-
-const typeSelect =
-  document.getElementById("contributionType");
-
-const methodSelect =
-  document.getElementById("paymentMethod");
-
-const mpesaReference =
-  document.getElementById("mpesaReference");
-
-const mpesaReferenceWrap =
-  document.getElementById("mpesaReferenceWrap");
-
-const saveButton =
-  document.getElementById("saveContribution");
-
-const monthlyExpected =
-  document.getElementById("monthlyExpected");
-
-const memberStatusRows =
-  document.getElementById("memberStatusRows");
-
-const contributionRows =
-  document.getElementById("contributionRows");
-
-const notesInput =
-  document.getElementById("notes");
-
-const goalSelect =
-  document.getElementById("goal") ||
-  document.getElementById(
-    "contributionGoal"
-  );
-
-const goalProgressContainer =
-  document.getElementById(
-    "goalProgressContainer"
-  );
-
-const accountingMonthSelect =
-  document.getElementById(
-    "accountingMonth"
-  );
-
-const selectedAccountingMonthLabel =
-  document.getElementById(
-    "selectedAccountingMonthLabel"
-  );
-
-const contributionIdempotencyKeyInput =
-  document.getElementById(
-    "contributionIdempotencyKey"
-  );
-
-/* =========================================================
-   MEMBER PAYMENT EVIDENCE ELEMENTS
-========================================================= */
-
-const memberPaymentEvidenceCard =
-  document.getElementById(
-    "memberPaymentEvidenceCard"
-  );
-
-const memberPaymentEvidenceForm =
-  document.getElementById(
-    "memberPaymentEvidenceForm"
-  );
-
-const memberEvidenceAmount =
-  document.getElementById(
-    "memberEvidenceAmount"
-  );
-
-const memberEvidenceDate =
-  document.getElementById(
-    "memberEvidenceDate"
-  );
-
-const memberEvidenceMethod =
-  document.getElementById(
-    "memberEvidenceMethod"
-  );
-
-const memberEvidenceMpesaWrap =
-  document.getElementById(
-    "memberEvidenceMpesaWrap"
-  );
-
-const memberEvidenceMpesaReference =
-  document.getElementById(
-    "memberEvidenceMpesaReference"
-  );
-
-const memberEvidenceText =
-  document.getElementById(
-    "memberEvidenceText"
-  );
-
-const submitMemberPaymentEvidenceButton =
-  document.getElementById(
-    "submitMemberPaymentEvidence"
-  );
-
-const memberPaymentEvidenceRows =
-  document.getElementById(
-    "memberPaymentEvidenceRows"
-  );
-
-const memberEvidenceMessage =
-  document.getElementById(
-    "memberEvidenceMessage"
-  );
-
-/* =========================================================
-   VERIFIER PAYMENT EVIDENCE ELEMENTS
-========================================================= */
-
-const verifierPaymentEvidenceCard =
-  document.getElementById(
-    "verifierPaymentEvidenceCard"
-  );
-
-const verifierPaymentEvidenceMessage =
-  document.getElementById(
-    "verifierPaymentEvidenceMessage"
-  );
-
-const verifierPaymentEvidenceRows =
-  document.getElementById(
-    "verifierPaymentEvidenceRows"
-  );
-
-const verifierPaymentEvidenceDetail =
-  document.getElementById(
-    "verifierPaymentEvidenceDetail"
-  );
-
-/* =========================================================
-   CUSTOM CONTRIBUTION EDITOR ELEMENTS
-========================================================= */
-
-const customContributionEditorCard =
-  document.getElementById(
-    "customContributionEditorCard"
-  );
-
-const customContributionForm =
-  document.getElementById(
-    "customContributionForm"
-  );
-
-const customContributionEditorMessage =
-  document.getElementById(
-    "customContributionEditorMessage"
-  );
-
-const customContributionName =
-  document.getElementById(
-    "customContributionName"
-  );
-
-const customContributionAmount =
-  document.getElementById(
-    "customContributionAmount"
-  );
-
-const customContributionCycle =
-  document.getElementById(
-    "customContributionCycle"
-  );
-
-const customContributionStartDate =
-  document.getElementById(
-    "customContributionStartDate"
-  );
-
-const customContributionDueDate =
-  document.getElementById(
-    "customContributionDueDate"
-  );
-
-const customContributionClosingDate =
-  document.getElementById(
-    "customContributionClosingDate"
-  );
-
-const customContributionDescription =
-  document.getElementById(
-    "customContributionDescription"
-  );
-
-const customContributionGraceDays =
-  document.getElementById(
-    "customContributionGraceDays"
-  );
-
-const customContributionApplyFine =
-  document.getElementById(
-    "customContributionApplyFine"
-  );
-
-const customContributionFineAmount =
-  document.getElementById(
-    "customContributionFineAmount"
-  );
-
-const customContributionFineWrap =
-  document.getElementById(
-    "customContributionFineWrap"
-  );
-
-const saveCustomContribution =
-  document.getElementById(
-    "saveCustomContribution"
-  );
-
-const cancelCustomContribution =
-  document.getElementById(
-    "cancelCustomContribution"
-  );
-
-/* =========================================================
-   OPTIONAL ACTIVE CUSTOM CONTRIBUTION DISPLAY
-========================================================= */
-
-const activeCustomContributionRows =
-  document.getElementById(
-    "activeCustomContributionRows"
-  );
-
-const activeCustomContributionContainer =
-  document.getElementById(
-    "activeCustomContributionContainer"
-  );
-
-const draftCustomContributionsCard =
-  document.getElementById(
-    "draftCustomContributionsCard"
-  );
-
-const draftCustomContributionRows =
-  document.getElementById(
-    "draftCustomContributionRows"
-  );
 
 /* =========================================================
    STATE
-========================================================= */
+   ========================================================= */
 
-let groupId = null;
+const state = {
+  user: null,
+  member: null,
+  group: null,
 
-let members = [];
+  members: [],
+  contributionTypes: [],
+  activeContributionTypes: [],
 
-let contributions = [];
+  selectedMemberId: null,
+  selectedContributionTypeId: null,
 
-let contributionGoals = [];
-
-let activeCustomContributions = [];
-
-let draftCustomContributions = [];
-
-let canonicalMemberStatus = [];
-
-let memberPaymentEvidence = [];
-
-let verifierPaymentEvidence = [];
-
-let currentMember = null;
-
-let isGroupOwner = false;
-
-let monthlyContribution = 0;
-
-let initialized = false;
-
-let accountingMonth =
-  getCurrentMonth();
-
-let selectedVerifierEvidenceId =
-  null;
-
-/*
- * Keeps the Custom Contribution that was just created
- * selected until the backend refresh confirms the
- * contribution is active.
- */
-let preferredCustomContributionValue =
-  null;
-
-/* =========================================================
-   CONSTANTS
-========================================================= */
-
-const PAYMENT_METHODS = {
-
-  MPESA: "M-Pesa",
-
-  CASH: "Cash",
-
-  BANK: "Bank transfer"
-
+  loading: false,
+  submitting: false
 };
 
-const MEMBER_EVIDENCE_STATUSES = {
-
-  PENDING: "pending",
-
-  VERIFIED: "verified",
-
-  REJECTED: "rejected"
-
-};
-
-const RECORDER_ROLES = new Set([
-
-  "admin",
-
-  "administrator",
-
-  "chairperson",
-
-  "treasurer",
-
-  "secretary"
-
-]);
-
-const CUSTOM_CONTRIBUTION_ACTIVATOR_ROLES = new Set([
-
-  "chairperson"
-
-]);
-
-const VERIFIER_ROLES = new Set([
-
-  "admin",
-
-  "chairperson",
-
-  "secretary",
-
-  "treasurer"
-
-]);
-
-const ACTIVE_CUSTOM_PERIOD_STATUSES = new Set([
-
-  "open",
-
-  "due",
-
-  "grace"
-
-]);
 
 /* =========================================================
-   GENERIC HELPERS
-========================================================= */
+   DOM HELPERS
+   ========================================================= */
 
-function money(value) {
+function $(selector) {
+  return document.querySelector(selector);
+}
 
-  return new Intl.NumberFormat(
-    "en-KE",
-    {
-      style: "currency",
-      currency: "KES",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2
+function $all(selector) {
+  return Array.from(document.querySelectorAll(selector));
+}
+
+function byId(id) {
+  return document.getElementById(id);
+}
+
+function firstExisting(...selectors) {
+  for (const selector of selectors) {
+    const element = document.querySelector(selector);
+
+    if (element) {
+      return element;
     }
-  ).format(
-    Number(value || 0)
-  );
-
-}
-
-function number(value) {
-
-  const result =
-    Number(value || 0);
-
-  return Number.isFinite(result)
-    ? result
-    : 0;
-
-}
-
-function todayString() {
-
-  const now =
-    new Date();
-
-  return [
-
-    now.getFullYear(),
-
-    String(
-      now.getMonth() + 1
-    ).padStart(2, "0"),
-
-    String(
-      now.getDate()
-    ).padStart(2, "0")
-
-  ].join("-");
-
-}
-
-/*
- * Canonical date-only value for RPC parameters.
- *
- * HTML date inputs already expose YYYY-MM-DD, but normalize
- * and validate explicitly before sending the value to Supabase.
- * This prevents locale/timezone conversions from changing the
- * accounting date.
- */
-function normalizeContributionDate(value) {
-
-  const date =
-    String(value || "").trim();
-
-  if (
-    !/^\\d{4}-\\d{2}-\\d{2}$/.test(
-      date
-    )
-  ) {
-
-    return "";
-
   }
 
-  const [year, month, day] =
-    date.split("-").map(Number);
+  return null;
+}
 
-  const parsed =
-    new Date(
-      Date.UTC(
-        year,
-        month - 1,
-        day
-      )
-    );
+function setText(target, value) {
+  const element =
+    typeof target === "string"
+      ? firstExisting(target)
+      : target;
 
-  if (
-    parsed.getUTCFullYear() !== year ||
-    parsed.getUTCMonth() !== month - 1 ||
-    parsed.getUTCDate() !== day
-  ) {
+  if (element) {
+    element.textContent =
+      value === null || value === undefined
+        ? ""
+        : String(value);
+  }
+}
 
-    return "";
+function setHTML(target, value) {
+  const element =
+    typeof target === "string"
+      ? firstExisting(target)
+      : target;
 
+  if (element) {
+    element.innerHTML =
+      value === null || value === undefined
+        ? ""
+        : String(value);
+  }
+}
+
+function show(target) {
+  const element =
+    typeof target === "string"
+      ? firstExisting(target)
+      : target;
+
+  if (!element) {
+    return;
   }
 
-  return [
-    String(year).padStart(4, "0"),
-    String(month).padStart(2, "0"),
-    String(day).padStart(2, "0")
-  ].join("-");
-
+  element.hidden = false;
+  element.style.display = "";
 }
 
-function getCurrentMonth() {
+function hide(target) {
+  const element =
+    typeof target === "string"
+      ? firstExisting(target)
+      : target;
 
-  const now =
-    new Date();
-
-  return (
-    `${now.getFullYear()}-` +
-    `${String(
-      now.getMonth() + 1
-    ).padStart(2, "0")}`
-  );
-
-}
-
-function formatAccountingMonth(month) {
-
-  if (
-    !/^\d{4}-\d{2}$/.test(
-      String(month || "")
-    )
-  ) {
-
-    return String(
-      month || ""
-    );
-
+  if (!element) {
+    return;
   }
 
-  const [
-    year,
-    monthNumber
-  ] =
-    String(month).split("-");
-
-  const date =
-    new Date(
-      Number(year),
-      Number(monthNumber) - 1,
-      1
-    );
-
-  return date.toLocaleDateString(
-    "en-KE",
-    {
-      month: "long",
-      year: "numeric"
-    }
-  );
-
+  element.hidden = true;
+  element.style.display = "none";
 }
 
-function monthKeyFromDate(date) {
+function disable(target, disabled = true) {
+  const element =
+    typeof target === "string"
+      ? firstExisting(target)
+      : target;
 
-  return (
-    `${date.getFullYear()}-` +
-    `${String(
-      date.getMonth() + 1
-    ).padStart(2, "0")}`
-  );
-
+  if (element) {
+    element.disabled = disabled;
+  }
 }
 
-function shiftMonth(
-  month,
-  offset
-) {
 
-  const [
-    year,
-    monthNumber
-  ] =
-    String(month)
-      .split("-")
-      .map(Number);
+/* =========================================================
+   USER FEEDBACK
+   ========================================================= */
 
-  const date =
-    new Date(
-      year,
-      monthNumber - 1 + offset,
-      1
-    );
-
-  return monthKeyFromDate(
-    date
+function notify(message, type = "info") {
+  const existing = firstExisting(
+    "#contributionMessage",
+    "#formMessage",
+    "#pageMessage",
+    "[data-contribution-message]"
   );
 
+  if (existing) {
+    existing.textContent = message;
+    existing.dataset.type = type;
+    existing.classList.remove(
+      "success",
+      "error",
+      "warning",
+      "info"
+    );
+    existing.classList.add(type);
+    show(existing);
+    return;
+  }
+
+  if (type === "error") {
+    console.error(message);
+  } else {
+    console.log(message);
+  }
 }
 
-function escapeHtml(value) {
+function clearNotification() {
+  const existing = firstExisting(
+    "#contributionMessage",
+    "#formMessage",
+    "#pageMessage",
+    "[data-contribution-message]"
+  );
 
-  return String(
-    value ?? ""
-  )
-    .replaceAll(
-      "&",
-      "&amp;"
-    )
-    .replaceAll(
-      "<",
-      "&lt;"
-    )
-    .replaceAll(
-      ">",
-      "&gt;"
-    )
-    .replaceAll(
-      '"',
-      "&quot;"
-    )
-    .replaceAll(
-      "'",
-      "&#039;"
-    );
+  if (existing) {
+    existing.textContent = "";
+    hide(existing);
+  }
+}
 
+
+/* =========================================================
+   FORMATTERS
+   ========================================================= */
+
+function formatKES(amount) {
+  const numeric = Number(amount);
+
+  if (!Number.isFinite(numeric)) {
+    return "KSh 0";
+  }
+
+  return new Intl.NumberFormat("en-KE", {
+    style: "currency",
+    currency: "KES",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2
+  }).format(numeric);
 }
 
 function formatDate(value) {
-
   if (!value) {
     return "—";
   }
 
-  const date =
-    new Date(value);
+  const date = new Date(value);
 
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
-
+  if (Number.isNaN(date.getTime())) {
     return String(value);
-
   }
 
-  return date.toLocaleDateString(
-    "en-KE",
-    {
-      day: "2-digit",
-      month: "short",
-      year: "numeric"
-    }
-  );
-
+  return new Intl.DateTimeFormat("en-KE", {
+    year: "numeric",
+    month: "short",
+    day: "numeric"
+  }).format(date);
 }
 
-function safeUuid() {
+function normaliseAmount(value) {
+  const amount = Number.parseFloat(value);
 
-  if (
-    typeof crypto !== "undefined" &&
-    typeof crypto.randomUUID === "function"
-  ) {
-
-    return crypto.randomUUID();
-
+  if (!Number.isFinite(amount) || amount <= 0) {
+    return null;
   }
 
-  throw new Error(
-    "Secure request ID generation is unavailable in this browser."
-  );
-
+  return Math.round(amount * 100) / 100;
 }
 
-function normalizeRpcResult(data) {
-
-  if (Array.isArray(data)) {
-
-    return data[0] || null;
-
-  }
-
-  return data || null;
-
+function escapeHTML(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
+
 
 /* =========================================================
-   ACCOUNTING MONTH
-========================================================= */
-
-function buildAccountingMonthOptions() {
-
-  if (!accountingMonthSelect) {
-    return;
-  }
-
-  const current =
-    getCurrentMonth();
-
-  const start =
-    shiftMonth(
-      current,
-      -12
-    );
-
-  const end =
-    shiftMonth(
-      current,
-      6
-    );
-
-  const options = [];
-
-  let cursor =
-    start;
-
-  while (
-    cursor <= end
-  ) {
-
-    options.push(cursor);
-
-    cursor =
-      shiftMonth(
-        cursor,
-        1
-      );
-
-  }
-
-  accountingMonthSelect.innerHTML =
-    options
-      .map(
-        month => `
-          <option value="${escapeHtml(
-            month
-          )}">
-            ${escapeHtml(
-              formatAccountingMonth(
-                month
-              )
-            )}
-          </option>
-        `
-      )
-      .join("");
-
-  accountingMonthSelect.value =
-    accountingMonth;
-
-}
-
-function renderAccountingMonthLabel() {
-
-  if (
-    !selectedAccountingMonthLabel
-  ) {
-    return;
-  }
-
-  selectedAccountingMonthLabel.textContent =
-    formatAccountingMonth(
-      accountingMonth
-    );
-
-}
-
-function getSelectedAccountingMonth() {
-
-  const value =
-    String(
-      accountingMonthSelect?.value ||
-      accountingMonth ||
-      getCurrentMonth()
-    );
-
-  if (
-    !/^\d{4}-\d{2}$/.test(
-      value
-    )
-  ) {
-
-    return getCurrentMonth();
-
-  }
-
-  return value;
-
-}
-
-/* =========================================================
-   CANONICAL ACCOUNTING MONTH REFRESH
-========================================================= */
-
-/*
- * Refresh canonical accounting through the selected month.
- *
- * The frontend does not create obligations, allocations,
- * arrears, credits, or balances. The existing canonical
- * refresh RPC remains authoritative for all accounting work.
- */
-async function refreshCanonicalAccountingThroughMonth(
-  month
-) {
-
-  if (!groupId) {
-
-    throw new Error(
-      "No current group is available."
-    );
-
-  }
-
-  if (
-    !/^\d{4}-\d{2}$/.test(
-      String(month || "")
-    )
-  ) {
-
-    throw new Error(
-      "Accounting month must use YYYY-MM format."
-    );
-
-  }
-
-  const {
-    data,
-    error
-  } =
-    await supabase.rpc(
-      "refresh_canonical_contribution_accounting",
-      {
-        p_group_id:
-          groupId,
-
-        p_through_month:
-          month,
-
-        p_member_id:
-          null
-      }
-    );
-
-  if (error) {
-
-    throw error;
-
-  }
-
-  return data;
-
-}
-
-/* =========================================================
-   ACCOUNTING MONTH CHANGE
-========================================================= */
-
-/*
- * Change the selected accounting month, refresh the existing
- * canonical accounting chain through that month, then read
- * canonical monthly status for display.
- *
- * No frontend accounting calculation or direct accounting
- * table mutation is performed here.
- */
-async function changeAccountingMonth() {
-
-  const selected =
-    getSelectedAccountingMonth();
-
-  accountingMonth =
-    selected;
-
-  renderAccountingMonthLabel();
-
-  clearError();
-
-  if (statusEl) {
-
-    statusEl.hidden =
-      false;
-
-    statusEl.textContent =
-      `Refreshing ${formatAccountingMonth(
-        accountingMonth
-      )} canonical accounting...`;
-
-  }
-
-  try {
-
-    await refreshCanonicalAccountingThroughMonth(
-      accountingMonth
-    );
-
-    await loadCanonicalMemberStatus(
-      accountingMonth
-    );
-
-    renderMemberStatus();
-
-    renderSummary();
-
-    if (statusEl) {
-
-      statusEl.textContent =
-        `${formatAccountingMonth(
-          accountingMonth
-        )} accounting loaded.`;
-
-    }
-
-  }
-  catch (error) {
-
-    showError(error);
-
-  }
-
-}
-
-function getContributionMonth(item) {
-
-  if (
-    item?.contribution_date
-  ) {
-
-    return String(
-      item.contribution_date
-    ).slice(0, 7);
-
-  }
-
-  if (
-    item?.created_at
-  ) {
-
-    const date =
-      new Date(
-        item.created_at
-      );
-
-    if (
-      !Number.isNaN(
-        date.getTime()
-      )
-    ) {
-
-      return monthKeyFromDate(
-        date
-      );
-
-    }
-
-  }
-
-  return "";
-
-}
-
-/* =========================================================
-   STATUS / ERROR
-========================================================= */
-
-function showError(error) {
-
-  console.error(
-    "CHAMA LIVE Contributions Error:",
-    error
-  );
-
-  if (errorEl) {
-
-    errorEl.textContent =
-      error?.message ||
-      "Something went wrong.";
-
-    errorEl.hidden =
-      false;
-
-  }
-
-  if (statusEl) {
-
-    statusEl.hidden =
-      false;
-
-    statusEl.textContent =
-      "Unable to complete the contribution request.";
-
-  }
-
-}
-
-function clearError() {
-
-  if (errorEl) {
-
-    errorEl.hidden =
-      true;
-
-    errorEl.textContent =
-      "";
-
-  }
-
-}
-
-/* =========================================================
-   CURRENT MEMBER / ROLE
-========================================================= */
-
-function getCurrentMemberRole() {
-
-  return String(
-    currentMember?.role ||
-    ""
-  )
+   ROLE HELPERS
+   ========================================================= */
+
+function normaliseRole(role) {
+  return String(role || "")
     .trim()
-    .toLowerCase();
-
+    .toLowerCase()
+    .replaceAll("-", "_")
+    .replaceAll(" ", "_");
 }
 
-function isOrdinaryMember() {
-
-  return (
-    getCurrentMemberRole() ===
-    "member"
+function getMemberRole() {
+  return normaliseRole(
+    state.member?.role ||
+    state.member?.member_role ||
+    state.member?.group_role
   );
-
 }
 
-function isAuthorizedRecorder() {
+function canManageContributions() {
+  const role = getMemberRole();
 
-  return RECORDER_ROLES.has(
-    getCurrentMemberRole()
-  );
-
+  return [
+    "owner",
+    "admin",
+    "administrator",
+    "chairperson",
+    "secretary",
+    "treasurer"
+  ].includes(role);
 }
 
-function isAuthorizedVerifier() {
+function canVerifyEvidence() {
+  const role = getMemberRole();
 
-  return VERIFIER_ROLES.has(
-    getCurrentMemberRole()
-  );
-
+  return [
+    "admin",
+    "administrator",
+    "chairperson",
+    "secretary",
+    "treasurer"
+  ].includes(role);
 }
+
 
 /* =========================================================
-   PAYMENT METHOD
-========================================================= */
+   SAFE RPC CALLER
+   ========================================================= */
 
-function normalizePaymentMethod(value) {
-
-  const method =
-    String(value || "")
-      .trim()
-      .toLowerCase();
-
-  if (
-    method === "m-pesa" ||
-    method === "mpesa" ||
-    method === "m_pesa"
-  ) {
-
-    return PAYMENT_METHODS.MPESA;
-
-  }
-
-  if (
-    method === "cash"
-  ) {
-
-    return PAYMENT_METHODS.CASH;
-
-  }
-
-  if (
-    method === "bank" ||
-    method === "bank transfer" ||
-    method === "bank_transfer"
-  ) {
-
-    return PAYMENT_METHODS.BANK;
-
-  }
-
-  return value || "";
-
-}
-
-/*
- * Keep the canonical recording form's M-Pesa reference field
- * synchronized with the selected payment method. This is a
- * presentation/validation helper only; canonical accounting
- * remains backend-owned.
- */
-function updatePaymentMethod() {
-
-  if (!methodSelect || !mpesaReferenceWrap) {
-    return;
-  }
-
-  const method =
-    normalizePaymentMethod(
-      methodSelect.value
-    );
-
-  const isMpesa =
-    method === PAYMENT_METHODS.MPESA;
-
-  mpesaReferenceWrap.hidden =
-    !isMpesa;
-
-  if (mpesaReference) {
-    mpesaReference.required =
-      isMpesa;
-
-    if (!isMpesa) {
-      mpesaReference.value = "";
-    }
-  }
-
-}
-
-/*
- * Keep the member payment-evidence form's M-Pesa reference
- * field synchronized with its selected payment method.
- * Evidence remains pending until backend verification.
- */
-function updateMemberEvidencePaymentMethod() {
-
-  if (
-    !memberEvidenceMethod ||
-    !memberEvidenceMpesaWrap
-  ) {
-    return;
-  }
-
-  const method =
-    normalizePaymentMethod(
-      memberEvidenceMethod.value
-    );
-
-  const isMpesa =
-    method === PAYMENT_METHODS.MPESA;
-
-  memberEvidenceMpesaWrap.hidden =
-    !isMpesa;
-
-  if (memberEvidenceMpesaReference) {
-    memberEvidenceMpesaReference.required =
-      isMpesa;
-
-    if (!isMpesa) {
-      memberEvidenceMpesaReference.value = "";
-    }
-  }
-
-}
-
-/* =========================================================
-   IDEMPOTENCY
-========================================================= */
-
-function generateIdempotencyKey() {
-
-  return safeUuid();
-
-}
-
-function getContributionIdempotencyKey() {
-
-  if (!contributionIdempotencyKeyInput) {
-
-    throw new Error(
-      "Contribution idempotency field is missing from the page."
-    );
-
-  }
-
-  let key =
-    String(
-      contributionIdempotencyKeyInput.value ||
-      ""
-    ).trim();
-
-  if (!key) {
-
-    key =
-      generateIdempotencyKey();
-
-    contributionIdempotencyKeyInput.value =
-      key;
-
-  }
-
-  return key;
-
-}
-
-function resetContributionIdempotencyKey() {
-
-  if (!contributionIdempotencyKeyInput) {
-    return;
-  }
-
-  contributionIdempotencyKeyInput.value =
-    generateIdempotencyKey();
-
-}
-
-/* =========================================================
-   CURRENT GROUP
-========================================================= */
-
-async function getGroupId() {
-
-  const {
-    data,
-    error
-  } =
-    await supabase.rpc(
-      "my_group_id"
-    );
+async function callRPC(name, args = {}) {
+  const { data, error } = await supabase.rpc(name, args);
 
   if (error) {
-
     throw error;
-
-  }
-
-  if (!data) {
-
-    throw new Error(
-      "No group is associated with your account."
-    );
-
   }
 
   return data;
-
 }
 
+
 /* =========================================================
-   LOAD GROUP
-========================================================= */
+   INITIAL AUTH / CONTEXT
+   ========================================================= */
 
-async function loadGroup() {
+async function loadContext() {
+  const authResult = await requireAuth();
 
-  const {
-    data,
-    error
-  } =
-    await supabase
-      .from("groups")
-      .select(
-        "monthly_contribution,name,category"
-      )
-      .eq(
-        "id",
-        groupId
-      )
-      .single();
+  state.user =
+    authResult?.user ||
+    authResult ||
+    null;
 
-  if (error) {
-
-    throw error;
-
+  if (!state.user?.id) {
+    throw new Error("Authenticated user could not be resolved.");
   }
 
-  monthlyContribution =
-    number(
-      data?.monthly_contribution
-    );
+  state.member = await getMyMember();
+  state.group = await getMyGroup();
 
-  if (
-    monthlyExpected
-  ) {
-
-    monthlyExpected.textContent =
-      money(
-        monthlyContribution
-      );
-
+  if (!state.group?.id) {
+    throw new Error("Your group could not be resolved.");
   }
 
-  if (
-    amountInput &&
-    monthlyContribution > 0
-  ) {
+  return {
+    user: state.user,
+    member: state.member,
+    group: state.group
+  };
+}
 
-    amountInput.value =
-      monthlyContribution;
 
+/* =========================================================
+   CONTRIBUTION TYPE NORMALISATION
+   ========================================================= */
+
+function normaliseContributionType(row) {
+  if (!row) {
+    return null;
   }
 
-  document
-    .querySelectorAll(
-      "[data-group-name]"
-    )
-    .forEach(
-      element => {
+  const id =
+    row.id ??
+    row.contribution_type_id ??
+    row.type_id ??
+    null;
 
-        element.textContent =
-          data?.name ||
-          "CHAMA";
+  const name =
+    row.name ??
+    row.contribution_name ??
+    row.type_name ??
+    row.title ??
+    "";
 
+  const amount =
+    row.amount ??
+    row.default_amount ??
+    row.required_amount ??
+    row.monthly_amount ??
+    null;
+
+  const status =
+    row.status ??
+    row.contribution_status ??
+    "active";
+
+  const isActive =
+    row.is_active !== undefined
+      ? Boolean(row.is_active)
+      : String(status).toLowerCase() === "active";
+
+  return {
+    ...row,
+    id,
+    name: String(name || "").trim(),
+    amount: amount === null ? null : Number(amount),
+    status,
+    is_active: isActive,
+
+    frequency:
+      row.frequency ??
+      row.contribution_frequency ??
+      row.interval ??
+      null,
+
+    description:
+      row.description ??
+      row.notes ??
+      "",
+
+    type:
+      row.type ??
+      row.contribution_type ??
+      "custom"
+  };
+}
+
+
+/* =========================================================
+   LOAD ACTIVE CONTRIBUTION TYPES
+   ========================================================= */
+
+async function loadContributionTypes() {
+  /*
+   * Prefer the canonical read RPC where available.
+   * We do not fabricate contribution definitions in the
+   * frontend.
+   */
+
+  let rows = null;
+  let lastError = null;
+
+  const candidates = [
+    "get_active_contribution_types",
+    "get_group_contribution_types",
+    "get_contribution_types"
+  ];
+
+  for (const rpcName of candidates) {
+    try {
+      rows = await callRPC(rpcName, {
+        p_group_id: state.group.id
+      });
+
+      if (Array.isArray(rows)) {
+        break;
       }
+
+      /*
+       * Some RPCs return an object containing rows.
+       */
+      if (Array.isArray(rows?.data)) {
+        rows = rows.data;
+        break;
+      }
+
+      if (Array.isArray(rows?.rows)) {
+        rows = rows.rows;
+        break;
+      }
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  if (!Array.isArray(rows)) {
+    /*
+     * Do not silently invent database data.
+     * If the read RPC is unavailable, leave the list empty
+     * and surface the real error.
+     */
+    throw lastError ||
+      new Error(
+        "No contribution-type read RPC is available."
+      );
+  }
+
+  state.contributionTypes = rows
+    .map(normaliseContributionType)
+    .filter(Boolean);
+
+  state.activeContributionTypes =
+    state.contributionTypes.filter(
+      type => type.is_active !== false
     );
 
+  renderContributionTypeOptions();
+
+  return state.activeContributionTypes;
 }
 
-/* =========================================================
-   ACTIVE CUSTOM CONTRIBUTIONS
-========================================================= */
-
-async function loadActiveCustomContributions() {
-
-  activeCustomContributions = [];
-
-  if (!groupId) {
-
-    return [];
-
-  }
-
-  const {
-    data: contributionTypes,
-    error: contributionTypeError
-  } =
-    await supabase
-      .from("contribution_types")
-      .select(
-        "id,group_id,name,code"
-      )
-      .eq(
-        "group_id",
-        groupId
-      )
-      .eq(
-        "code",
-        "custom"
-      );
-
-  if (contributionTypeError) {
-
-    throw contributionTypeError;
-
-  }
-
-  const customTypes =
-    Array.isArray(
-      contributionTypes
-    )
-      ? contributionTypes
-      : [];
-
-  if (!customTypes.length) {
-    return [];
-
-  }
-
-  const customTypeIds =
-    customTypes.map(
-      type =>
-        type.id
-    );
-
-  const {
-    data: periods,
-    error: periodError
-  } =
-    await supabase
-      .from("contribution_periods")
-      .select(
-        [
-          "id",
-          "group_id",
-          "contribution_type_id",
-          "period_key",
-          "opening_date",
-          "due_date",
-          "closing_date",
-          "amount",
-          "frequency",
-          "status",
-          "description",
-          "fine_rule_id"
-        ].join(",")
-      )
-      .eq(
-        "group_id",
-        groupId
-      )
-      .in(
-        "contribution_type_id",
-        customTypeIds
-      )
-      .in(
-        "status",
-        Array.from(
-          ACTIVE_CUSTOM_PERIOD_STATUSES
-        )
-      )
-      .order(
-        "opening_date",
-        {
-          ascending: false
-        }
-      );
-
-  if (periodError) {
-
-    throw periodError;
-
-  }
-
-  const typeById =
-    new Map(
-      customTypes.map(
-        type => [
-          String(type.id),
-          type
-        ]
-      )
-    );
-
-  activeCustomContributions =
-    (
-      Array.isArray(periods)
-        ? periods
-        : []
-    )
-      .filter(
-        period =>
-          typeById.has(
-            String(
-              period.contribution_type_id
-            )
-          )
-      )
-      .map(
-        period => {
-
-          const type =
-            typeById.get(
-              String(
-                period.contribution_type_id
-              )
-            );
-
-          return {
-
-            ...period,
-
-            contributionTypeId:
-              period.contribution_type_id,
-
-            contribution_name:
-              type?.name ||
-              "Custom Contribution",
-
-            name:
-              type?.name ||
-              "Custom Contribution",
-
-            contribution_code:
-              type?.code ||
-              "custom"
-
-          };
-
-        }
-      );
-
-  return activeCustomContributions;
-
-}
 
 /* =========================================================
-   DRAFT CUSTOM CONTRIBUTIONS
-========================================================= */
+   CONTRIBUTION TYPE SELECT
+   ========================================================= */
 
-async function loadDraftCustomContributions() {
+function renderContributionTypeOptions() {
+  const select = firstExisting(
+    "#contributionType",
+    "#contribution_type",
+    "#contributionTypeSelect",
+    "[data-contribution-type]"
+  );
 
-  draftCustomContributions = [];
-
-  if (!groupId) {
-
-    renderDraftCustomContributionList();
-
-    return [];
-
+  if (!select) {
+    return;
   }
 
-  const {
-    data: contributionTypes,
-    error: contributionTypeError
-  } =
-    await supabase
-      .from("contribution_types")
-      .select(
-        "id,group_id,name,code"
-      )
-      .eq(
-        "group_id",
-        groupId
-      )
-      .eq(
-        "code",
-        "custom"
-      );
+  const currentValue = select.value;
 
-  if (contributionTypeError) {
+  select.innerHTML = `
+    <option value="">Select contribution type</option>
+  `;
 
-    throw contributionTypeError;
+  for (const type of state.activeContributionTypes) {
+    if (!type.id) {
+      continue;
+    }
 
+    const amountText =
+      Number.isFinite(type.amount)
+        ? ` — ${formatKES(type.amount)}`
+        : "";
+
+    const option = document.createElement("option");
+
+    option.value = type.id;
+    option.textContent =
+      `${type.name || "Contribution"}${amountText}`;
+
+    option.dataset.contributionTypeId = type.id;
+
+    select.appendChild(option);
   }
-
-  const customTypes =
-    Array.isArray(
-      contributionTypes
-    )
-      ? contributionTypes
-      : [];
-
-  if (!customTypes.length) {
-
-    renderDraftCustomContributionList();
-
-    return [];
-
-  }
-
-  const customTypeIds =
-    customTypes.map(
-      type =>
-        type.id
-    );
-
-  const {
-    data: periods,
-    error: periodError
-  } =
-    await supabase
-      .from("contribution_periods")
-      .select(
-        [
-          "id",
-          "group_id",
-          "contribution_type_id",
-          "period_key",
-          "opening_date",
-          "due_date",
-          "closing_date",
-          "amount",
-          "frequency",
-          "status",
-          "description",
-          "fine_rule_id"
-        ].join(",")
-      )
-      .eq(
-        "group_id",
-        groupId
-      )
-      .in(
-        "contribution_type_id",
-        customTypeIds
-      )
-      .eq(
-        "status",
-        "draft"
-      )
-      .order(
-        "opening_date",
-        {
-          ascending: false
-        }
-      );
-
-  if (periodError) {
-
-    throw periodError;
-
-  }
-
-  const typeById =
-    new Map(
-      customTypes.map(
-        type => [
-          String(type.id),
-          type
-        ]
-      )
-    );
-
-  draftCustomContributions =
-    (
-      Array.isArray(periods)
-        ? periods
-        : []
-    )
-      .filter(
-        period =>
-          typeById.has(
-            String(
-              period.contribution_type_id
-            )
-          )
-      )
-      .map(
-        period => {
-
-          const type =
-            typeById.get(
-              String(
-                period.contribution_type_id
-              )
-            );
-
-          return {
-
-            ...period,
-
-            contributionTypeId:
-              period.contribution_type_id,
-
-            contribution_name:
-              type?.name ||
-              "Custom Contribution",
-
-            name:
-              type?.name ||
-              "Custom Contribution",
-
-            contribution_code:
-              type?.code ||
-              "custom"
-
-          };
-
-        }
-      );
-
-  renderDraftCustomContributionList();
-
-  return draftCustomContributions;
-
-}
-
-/* =========================================================
-   DRAFT CUSTOM CONTRIBUTION DISPLAY
-========================================================= */
-
-function renderDraftCustomContributionList() {
 
   if (
-    !draftCustomContributionsCard ||
-    !draftCustomContributionRows
+    currentValue &&
+    state.activeContributionTypes.some(
+      type => String(type.id) === String(currentValue)
+    )
   ) {
-
-    return;
-
+    select.value = currentValue;
   }
+}
 
-  const canActivate =
-    isGroupOwner ||
-    CUSTOM_CONTRIBUTION_ACTIVATOR_ROLES.has(
-      getCurrentMemberRole()
-    );
-
-  if (!draftCustomContributions.length) {
-
-    draftCustomContributionsCard.hidden =
-      true;
-
-    draftCustomContributionRows.innerHTML =
-      "";
-
-    return;
-
-  }
-
-  draftCustomContributionsCard.hidden =
-    false;
-
-  draftCustomContributionRows.innerHTML =
-    draftCustomContributions
-      .map(
-        item => {
-
-          const name =
-            item.contribution_name ||
-            item.name ||
-            "Custom Contribution";
-
-          const amount =
-            number(
-              item.amount
-            );
-
-          const frequency =
-            item.frequency ||
-            "—";
-
-          const openingDate =
-            item.opening_date
-              ? formatDate(
-                  item.opening_date
-                )
-              : "—";
-
-          const dueDate =
-            item.due_date
-              ? formatDate(
-                  item.due_date
-                )
-              : "—";
-
-          const closingDate =
-            item.closing_date
-              ? formatDate(
-                  item.closing_date
-                )
-              : "—";
-
-          const description =
-            String(
-              item.description ||
-              ""
-            ).trim();
-
-          return `
-
-            <div
-              class="cl-draft-contribution-card"
-            >
-
-              <div
-                class="cl-draft-contribution-main"
-              >
-
-                <div
-                  class="cl-draft-contribution-name"
-                >
-                  ${escapeHtml(name)}
-                </div>
-
-                <div
-                  class="cl-draft-contribution-meta"
-                >
-
-                  <span>
-                    <strong>Amount:</strong>
-                    ${escapeHtml(
-                      money(amount)
-                    )}
-                  </span>
-
-                  <span>
-                    <strong>Cycle:</strong>
-                    ${escapeHtml(
-                      frequency
-                    )}
-                  </span>
-
-                  <span>
-                    <strong>Start:</strong>
-                    ${escapeHtml(
-                      openingDate
-                    )}
-                  </span>
-
-                  <span>
-                    <strong>Due:</strong>
-                    ${escapeHtml(
-                      dueDate
-                    )}
-                  </span>
-
-                  <span>
-                    <strong>Closing:</strong>
-                    ${escapeHtml(
-                      closingDate
-                    )}
-                  </span>
-
-                </div>
-
-                ${
-                  description
-                    ? `
-                      <div
-                        class="cl-draft-contribution-description"
-                      >
-                        ${escapeHtml(
-                          description
-                        )}
-                      </div>
-                    `
-                    : ""
-                }
-
-              </div>
-
-              <div
-                class="cl-draft-contribution-actions"
-              >
-
-                <span
-                  class="cl-draft-status-badge"
-                >
-                  DRAFT
-                </span>
-
-                ${
-                  canActivate
-                    ? `
-                      <button
-                        type="button"
-                        class="cl-draft-activate-button"
-                        data-activate-custom-contribution="${escapeHtml(
-                          item.id
-                        )}"
-                      >
-                        Activate
-                      </button>
-                    `
-                    : ""
-                }
-
-              </div>
-
-            </div>
-
-          `;
-
-        }
-      )
-      .join("");
-
-  if (!canActivate) {
-
-    const note =
-      document.createElement("div");
-
-    note.className =
-      "cl-draft-contribution-empty";
-
-    note.textContent =
-      "Only the group owner, administrator or chairperson can ac
 
 /* =========================================================
-   RESTORED CONTRIBUTIONS OPERATIONAL HANDLERS
-   Read/display/evidence handlers; canonical accounting
-   mutations remain backend-owned.
-========================================================= */
+   MEMBERS
+   ========================================================= */
 
-function renderActiveCustomContributionList() {
+async function loadMembers() {
+  /*
+   * Member reads are allowed here.
+   * Accounting writes remain RPC-owned.
+   */
 
-  const container =
-    activeCustomContributionRows ||
-    activeCustomContributionContainer;
+  const result = await callRPC(
+    "get_group_members",
+    {
+      p_group_id: state.group.id
+    }
+  );
+
+  const rows =
+    Array.isArray(result)
+      ? result
+      : Array.isArray(result?.data)
+        ? result.data
+        : Array.isArray(result?.rows)
+          ? result.rows
+          : [];
+
+  /*
+   * Do not filter members merely because a status/onboarding
+   * column is different. Membership visibility is based on
+   * the actual returned member rows.
+   */
+  state.members = rows.filter(Boolean);
+
+  renderMemberOptions();
+
+  return state.members;
+}
+
+
+/* =========================================================
+   MEMBER SELECT
+   ========================================================= */
+
+function getMemberDisplayName(member) {
+  return (
+    member.full_name ||
+    member.name ||
+    [
+      member.first_name,
+      member.last_name
+    ]
+      .filter(Boolean)
+      .join(" ") ||
+    member.email ||
+    "Member"
+  );
+}
+
+function renderMemberOptions() {
+  const select = firstExisting(
+    "#memberSelect",
+    "#member",
+    "#member_id",
+    "#contributionMember",
+    "[data-member-select]"
+  );
+
+  if (!select) {
+    return;
+  }
+
+  const currentValue = select.value;
+
+  select.innerHTML = `
+    <option value="">Select member</option>
+  `;
+
+  for (const member of state.members) {
+    const id =
+      member.id ??
+      member.member_id;
+
+    if (!id) {
+      continue;
+    }
+
+    const option = document.createElement("option");
+
+    option.value = id;
+    option.textContent = getMemberDisplayName(member);
+
+    select.appendChild(option);
+  }
+
+  if (
+    currentValue &&
+    state.members.some(
+      member =>
+        String(member.id ?? member.member_id) ===
+        String(currentValue)
+    )
+  ) {
+    select.value = currentValue;
+  }
+}
+
+
+/* =========================================================
+   CUSTOM CONTRIBUTION VISIBILITY
+   ========================================================= */
+
+function renderCustomContributionSummary() {
+  const container = firstExisting(
+    "#activeContributions",
+    "#activeContributionTypes",
+    "#customContributions",
+    "[data-active-contributions]"
+  );
 
   if (!container) {
     return;
   }
 
-  if (!activeCustomContributions.length) {
+  const types = state.activeContributionTypes;
 
-    if (
-      activeCustomContributionRows
-    ) {
-
-      activeCustomContributionRows.innerHTML = `
-
-        <tr>
-
-          <td
-            colspan="7"
-            class="cl-empty-table"
-          >
-            No active custom contributions.
-          </td>
-
-        </tr>
-
-      `;
-
-    }
-    else {
-
-      container.innerHTML = `
-
-        <div class="cl-empty-table">
-
-          No active custom contributions.
-
-        </div>
-
-      `;
-
-    }
-
+  if (!types.length) {
+    container.innerHTML = `
+      <div class="empty-state">
+        No active contribution types.
+      </div>
+    `;
     return;
-
   }
 
-  if (
-    activeCustomContributionRows
-  ) {
+  container.innerHTML = types
+    .map(type => {
+      const name = escapeHTML(
+        type.name || "Contribution"
+      );
 
-    activeCustomContributionRows.innerHTML =
-      activeCustomContributions
-        .map(
-          item => {
+      const amount =
+        Number.isFinite(type.amount)
+          ? formatKES(type.amount)
+          : "Amount varies";
 
-            const name =
-              item.contribution_name ||
-              item.name ||
-              "Custom Contribution";
+      const frequency = escapeHTML(
+        type.frequency || ""
+      );
 
-            const amount =
-              number(
-                item.amount
-              );
+      const description = escapeHTML(
+        type.description || ""
+      );
 
-            const frequency =
-              item.frequency ||
-              "—";
+      return `
+        <div
+          class="contribution-type-card"
+          data-contribution-type-id="${escapeHTML(type.id)}"
+        >
+          <div class="contribution-type-card__header">
+            <strong>${name}</strong>
+            <span class="status-badge status-active">
+              Active
+            </span>
+          </div>
 
-            const status =
-              String(
-                item.status ||
-                ""
-              ).toUpperCase();
+          <div class="contribution-type-card__amount">
+            ${escapeHTML(amount)}
+          </div>
 
-            const dueDate =
-              item.due_date
-                ? formatDate(
-                    item.due_date
-                  )
-                : "—";
-
-            const closingDate =
-              item.closing_date
-                ? formatDate(
-                    item.closing_date
-                  )
-                : "—";
-
-            const typeId =
-              getCustomContributionTypeId(
-                item
-              );
-
-            return `
-
-              <tr>
-
-                <td data-label="Contribution">
-
-                  <strong>
-                    ${escapeHtml(name)}
-                  </strong>
-
-                </td>
-
-                <td data-label="Amount">
-
-                  ${escapeHtml(
-                    money(amount)
-                  )}
-
-                </td>
-
-                <td data-label="Cycle">
-
-                  ${escapeHtml(
-                    frequency
-                  )}
-
-                </td>
-
-                <td data-label="Due">
-
-                  ${escapeHtml(
-                    dueDate
-                  )}
-
-                </td>
-
-                <td data-label="Closing">
-
-                  ${escapeHtml(
-                    closingDate
-                  )}
-
-                </td>
-
-                <td data-label="Status">
-
-                  <span class="cl-status-badge cl-status-paid">
-
-                    ${escapeHtml(status)}
-
-                  </span>
-
-                </td>
-
-                <td data-label="Action">
-
-                  ${
-                    typeId
-                      ? `
-                        <button
-                          type="button"
-                          class="cl-verifier-button"
-                          data-select-custom-contribution="${escapeHtml(
-                            typeId
-                          )}"
-                        >
-                          Record Payment
-                        </button>
-                      `
-                      : "—"
-                  }
-
-                </td>
-
-              </tr>
-
-            `;
-
+          ${
+            frequency
+              ? `<div class="contribution-type-card__frequency">
+                   ${frequency}
+                 </div>`
+              : ""
           }
-        )
-        .join("");
 
-    return;
-
-  }
-
-  container.innerHTML =
-    activeCustomContributions
-      .map(
-        item => {
-
-          const name =
-            item.contribution_name ||
-            item.name ||
-            "Custom Contribution";
-
-          const amount =
-            number(
-              item.amount
-            );
-
-          const frequency =
-            item.frequency ||
-            "—";
-
-          const dueDate =
-            item.due_date
-              ? formatDate(
-                  item.due_date
-                )
-              : "—";
-
-          const status =
-            String(
-              item.status ||
-              ""
-            ).toUpperCase();
-
-          return `
-
-            <div class="cl-goal-card">
-
-              <div class="cl-goal-top">
-
-                <div>
-
-                  <strong>
-                    ${escapeHtml(name)}
-                  </strong>
-
-                  <small>
-                    ${escapeHtml(frequency)}
-                    ·
-                    ${escapeHtml(status)}
-                  </small>
-
-                </div>
-
-                <strong>
-                  ${escapeHtml(
-                    money(amount)
-                  )}
-                </strong>
-
-              </div>
-
-              <div class="cl-goal-bottom">
-
-                <span>
-                  Due:
-                  ${escapeHtml(dueDate)}
-                </span>
-
-              </div>
-
-            </div>
-
-          `;
-
-        }
-      )
-      .join("");
-
+          ${
+            description
+              ? `<div class="contribution-type-card__description">
+                   ${description}
+                 </div>`
+              : ""
+          }
+        </div>
+      `;
+    })
+    .join("");
 }
+
 
 /* =========================================================
-   CUSTOM CONTRIBUTION IDENTIFIERS
-========================================================= */
+   SELECTED CONTRIBUTION TYPE
+   ========================================================= */
 
-function getCustomContributionTypeId(
-  item
-) {
-
-  return (
-    item?.contribution_type_id ||
-    item?.contributionTypeId ||
-    null
+function getSelectedContributionType() {
+  const select = firstExisting(
+    "#contributionType",
+    "#contribution_type",
+    "#contributionTypeSelect",
+    "[data-contribution-type]"
   );
 
-}
-
-function getCustomContributionSelectorValue(
-  item
-) {
-
-  const typeId =
-    getCustomContributionTypeId(
-      item
-    );
-
-  if (!typeId) {
+  if (!select?.value) {
     return null;
   }
 
-  return `custom:${typeId}`;
-
+  return (
+    state.activeContributionTypes.find(
+      type =>
+        String(type.id) ===
+        String(select.value)
+    ) ||
+    null
+  );
 }
 
-function findActiveCustomContribution(
-  contributionTypeId
-) {
+function applyContributionTypeDefaults() {
+  const type = getSelectedContributionType();
 
-  return activeCustomContributions.find(
-    item =>
-      String(
-        getCustomContributionTypeId(
-          item
-        )
-      ) ===
-      String(
-        contributionTypeId
-      )
-  ) || null;
-
-}
-
-/* =========================================================
-   CONTRIBUTION TYPE SELECTOR
-========================================================= */
-
-function renderContributionTypeOptions(
-  preferredValue = null
-) {
-
-  if (!typeSelect) {
+  if (!type) {
     return;
   }
 
-  const previousValue =
-    preferredValue ||
-    preferredCustomContributionValue ||
-    typeSelect.value ||
-    "monthly";
+  state.selectedContributionTypeId = type.id;
 
-  typeSelect.innerHTML =
-    "";
-
-  const monthlyOption =
-    document.createElement("option");
-
-  monthlyOption.value =
-    "monthly";
-
-  monthlyOption.textContent =
-    "Monthly Contribution";
-
-  typeSelect.appendChild(
-    monthlyOption
+  const amountInput = firstExisting(
+    "#contributionAmount",
+    "#contribution_amount",
+    "#amount"
   );
-
-  activeCustomContributions.forEach(
-    item => {
-
-      const contributionTypeId =
-        getCustomContributionTypeId(
-          item
-        );
-
-      if (!contributionTypeId) {
-        return;
-      }
-
-      const option =
-        document.createElement(
-          "option"
-        );
-
-      option.value =
-        `custom:${contributionTypeId}`;
-
-      const name =
-        item.contribution_name ||
-        item.name ||
-        "Custom Contribution";
-
-      const amount =
-        number(
-          item.amount
-        );
-
-      const dueDate =
-        item.due_date ||
-        null;
-
-      const status =
-        String(
-          item.status ||
-          ""
-        )
-          .trim()
-          .toLowerCase();
-
-      let label =
-        name;
-
-      if (
-        amount > 0
-      ) {
-
-        label +=
-          ` — ${money(amount)}`;
-
-      }
-
-      if (dueDate) {
-
-        label +=
-          ` due ${formatDate(
-            dueDate
-          )}`;
-
-      }
-
-      if (status) {
-
-        label +=
-          ` (${status})`;
-
-      }
-
-      option.textContent =
-        label;
-
-      typeSelect.appendChild(
-        option
-      );
-
-    }
-  );
-
-  const validSelection =
-    Array.from(
-      typeSelect.options
-    ).some(
-      option =>
-        option.value ===
-        previousValue
-    );
-
-  if (validSelection) {
-
-    typeSelect.value =
-      previousValue;
-
-  }
-  else {
-
-    typeSelect.value =
-      "monthly";
-
-  }
-
-  preferredCustomContributionValue =
-    typeSelect.value.startsWith(
-      "custom:"
-    )
-      ? typeSelect.value
-      : null;
-
-  updateContributionAmountFromType();
-
-}
-
-/* =========================================================
-   CUSTOM CONTRIBUTION REFRESH
-========================================================= */
-
-async function refreshActiveCustomContributions(
-  preferredValue = null
-) {
-
-  if (preferredValue) {
-
-    preferredCustomContributionValue =
-      preferredValue;
-
-  }
-
-  await loadActiveCustomContributions();
-
-  renderContributionTypeOptions(
-    preferredValue
-  );
-
-}
-
-/* =========================================================
-   CUSTOM CONTRIBUTION AMOUNT
-========================================================= */
-
-function updateContributionAmountFromType() {
-
-  if (!typeSelect) {
-    return;
-  }
-
-  const value =
-    String(
-      typeSelect.value ||
-      ""
-    )
-      .trim()
-      .toLowerCase();
-
-  if (
-    value.startsWith(
-      "custom:"
-    )
-  ) {
-
-    const customTypeId =
-      value.slice(
-        "custom:".length
-      );
-
-    const custom =
-      findActiveCustomContribution(
-        customTypeId
-      );
-
-    if (
-      custom &&
-      amountInput
-    ) {
-
-      const amount =
-        number(
-          custom.amount
-        );
-
-      if (
-        amount > 0
-      ) {
-
-        amountInput.value =
-          amount;
-
-      }
-
-    }
-
-    return;
-
-  }
 
   if (
     amountInput &&
-    monthlyContribution > 0
+    Number.isFinite(type.amount) &&
+    (!amountInput.value ||
+      amountInput.dataset.autoFilled === "true")
   ) {
-
-    amountInput.value =
-      monthlyContribution;
-
+    amountInput.value = type.amount;
+    amountInput.dataset.autoFilled = "true";
   }
 
-}
-
-/* =========================================================
-   LOAD MEMBERS
-========================================================= */
-
-async function loadMembers() {
-
-  const {
-    data,
-    error
-  } =
-    await supabase
-      .from("members")
-      .select(
-        `
-          id,
-          name,
-          status
-        `
-      )
-      .eq(
-        "group_id",
-        groupId
-      )
-      .order(
-        "name",
-        {
-          ascending: true
-        }
-      );
-
-  if (error) {
-
-    throw error;
-
-  }
-
-  /*
-   * Keep all active members available.
-   * Backend authorization remains authoritative.
-   */
-  members =
-    (data || [])
-      .filter(
-        member =>
-          String(
-            member.status ||
-            "active"
-          )
-            .trim()
-            .toLowerCase() ===
-          "active"
-      );
-
-  if (!memberSelect) {
-    return;
-  }
-
-  memberSelect.innerHTML = `
-
-    <option value="">
-      Select member
-    </option>
-
-  `;
-
-  members.forEach(
-    member => {
-
-      const option =
-        document.createElement(
-          "option"
-        );
-
-      option.value =
-        member.id;
-
-      option.textContent =
-        member.name;
-
-      memberSelect.appendChild(
-        option
-      );
-
-    }
-  );
-
-}
-
-/* =========================================================
-   LOAD CONTRIBUTION GOALS
-========================================================= */
-
-async function loadContributionGoals() {
-
-  contributionGoals = [];
-
-  if (!goalSelect) {
-    return;
-  }
-
-  const {
-    data,
-    error
-  } =
-    await supabase
-      .from("contribution_goals")
-      .select(
-        `
-          id,
-          goal_name,
-          category,
-          target_amount,
-          status,
-          start_date,
-          end_date,
-          created_at
-        `
-      )
-      .eq(
-        "group_id",
-        groupId
-      )
-      .eq(
-        "status",
-        "active"
-      )
-      .order(
-        "created_at",
-        {
-          ascending: false
-        }
-      );
-
-  if (error) {
-
-    throw error;
-
-  }
-
-  contributionGoals =
-    data || [];
-
-  goalSelect.innerHTML = `
-
-    <option value="">
-      General contribution
-    </option>
-
-  `;
-
-  contributionGoals.forEach(
-    goal => {
-
-      const option =
-        document.createElement(
-          "option"
-        );
-
-      option.value =
-        goal.id;
-
-      option.textContent =
-        goal.target_amount
-          ? `${goal.goal_name} — ${money(
-              goal.target_amount
-            )}`
-          : goal.goal_name;
-
-      goalSelect.appendChild(
-        option
-      );
-
-    }
-  );
-
-}
-
-/* =========================================================
-   LOAD CONTRIBUTIONS
-========================================================= */
-
-async function loadContributions() {
-
-  /*
-   * IMPORTANT:
-   *
-   * Keep this projection limited to columns that are part
-   * of the confirmed contribution ledger contract.
-   *
-   * Do not make the whole page dependent on optional /
-   * previously-unconfirmed fields such as:
-   *
-   *   month
-   *   recorded_by
-   *   reference
-   *   goal_id
-   *   notes
-   *   mpesa_reference
-   *
-   * Canonical accounting is still performed by backend RPCs.
-   */
-  const {
-    data,
-    error
-  } =
-    await supabase
-      .from("contributions")
-      .select(
-        `
-          id,
-          group_id,
-          member_id,
-          amount,
-          contribution_type,
-          payment_method,
-          contribution_date,
-          created_at
-        `
-      )
-      .eq(
-        "group_id",
-        groupId
-      )
-      .order(
-        "contribution_date",
-        {
-          ascending: false
-        }
-      )
-      .order(
-        "created_at",
-        {
-          ascending: false
-        }
-      );
-
-  if (error) {
-
-    throw error;
-
-  }
-
-  contributions =
-    data || [];
-
-}
-
-/* =========================================================
-   CANONICAL 2B STATUS
-========================================================= */
-
-async function loadCanonicalMemberStatus(
-  month = accountingMonth
-) {
-
-  if (!groupId) {
-
-    canonicalMemberStatus = [];
-
-    return [];
-
-  }
-
-  if (
-    !/^\d{4}-\d{2}$/.test(
-      String(month || "")
-    )
-  ) {
-
-    throw new Error(
-      "Accounting month must use YYYY-MM format."
-    );
-
-  }
-
-  const {
-    data,
-    error
-  } =
-    await supabase.rpc(
-      "get_canonical_member_monthly_status",
-      {
-        p_group_id:
-          groupId,
-
-        p_month:
-          month
-      }
-    );
-
-  if (error) {
-
-    throw error;
-
-  }
-
-  canonicalMemberStatus =
-    data || [];
-
-  return canonicalMemberStatus;
-
-}
-
-function getCanonicalMemberStatus(
-  memberId
-) {
-
-  return canonicalMemberStatus.find(
-    item =>
-      String(item.member_id) ===
-      String(memberId)
-  ) || null;
-
-}
-
-/* =========================================================
-   MEMBER NAME
-========================================================= */
-
-function getMemberName(memberId) {
-
-  const member =
-    members.find(
-      item =>
-        String(item.id) ===
-        String(memberId)
-    );
-
-  return (
-    member?.name ||
-    "Unknown member"
-  );
-
-}
-
-/* =========================================================
-   GOAL NAME
-========================================================= */
-
-function getGoalName(goalId) {
-
-  if (!goalId) {
-
-    return "General";
-
-  }
-
-  const goal =
-    contributionGoals.find(
-      item =>
-        String(item.id) ===
-        String(goalId)
-    );
-
-  return (
-    goal?.goal_name ||
-    "Goal"
-  );
-
-}
-
-/* =========================================================
-   MEMBER PAYMENT EVIDENCE MESSAGE
-========================================================= */
-
-function showMemberEvidenceMessage(
-  message
-) {
-
-  if (!memberEvidenceMessage) {
-    return;
-  }
-
-  memberEvidenceMessage.textContent =
-    message || "";
-
-  memberEvidenceMessage.hidden =
-    !message;
-
-}
-
-function clearMemberEvidenceMessage() {
-
-  showMemberEvidenceMessage("");
-
-}
-
-/* =========================================================
-   MEMBER PAYMENT EVIDENCE PAYMENT METHOD
-========================================================= */
-
-function memberEvidenceStatusLabel(
-  status
-) {
-
-  const value =
-    String(
-      status || ""
-    )
-      .trim()
-      .toLowerCase();
-
-  if (
-    value ===
-    MEMBER_EVIDENCE_STATUSES.VERIFIED
-  ) {
-
-    return "VERIFIED";
-
-  }
-
-  if (
-    value ===
-    MEMBER_EVIDENCE_STATUSES.REJECTED
-  ) {
-
-    return "REJECTED";
-
-  }
-
-  return "PENDING";
-
-}
-
-function memberEvidenceStatusClass(
-  status
-) {
-
-  const value =
-    String(
-      status || ""
-    )
-      .trim()
-      .toLowerCase();
-
-  if (
-    value ===
-    MEMBER_EVIDENCE_STATUSES.VERIFIED
-  ) {
-
-    return "cl-evidence-status-verified";
-
-  }
-
-  if (
-    value ===
-    MEMBER_EVIDENCE_STATUSES.REJECTED
-  ) {
-
-    return "cl-evidence-status-rejected";
-
-  }
-
-  return "cl-evidence-status-pending";
-
-}
-
-/* =========================================================
-   RENDER MEMBER PAYMENT EVIDENCE
-========================================================= */
-
-function renderMemberPaymentEvidence() {
-
-  if (!memberPaymentEvidenceRows) {
-    return;
-  }
-
-  if (!memberPaymentEvidence.length) {
-
-    memberPaymentEvidenceRows.innerHTML = `
-
-      <tr>
-
-        <td
-          colspan="7"
-          class="cl-evidence-empty"
-        >
-          You have not submitted any payment
-          evidence yet.
-        </td>
-
-      </tr>
-
-    `;
-
-    return;
-
-  }
-
-  memberPaymentEvidenceRows.innerHTML =
-    memberPaymentEvidence
-      .map(
-        evidence => {
-
-          const method =
-            normalizePaymentMethod(
-              evidence.payment_method
-            );
-
-          const status =
-            memberEvidenceStatusLabel(
-              evidence.status
-            );
-
-          const statusClass =
-            memberEvidenceStatusClass(
-              evidence.status
-            );
-
-          const reference =
-            evidence.mpesa_reference ||
-            "—";
-
-          const rejectionReason =
-            evidence.rejection_reason ||
-            "";
-
-          return `
-
-            <tr>
-
-              <td data-label="Date">
-                ${escapeHtml(
-                  formatDate(
-                    evidence.payment_date
-                  )
-                )}
-              </td>
-
-              <td
-                data-label="Amount"
-                class="cl-money-cell"
-              >
-                <strong>
-                  ${escapeHtml(
-                    money(
-                      evidence.amount
-                    )
-                  )}
-                </strong>
-              </td>
-
-              <td data-label="Method">
-                <span class="cl-payment-badge">
-                  ${escapeHtml(
-                    method
-                  )}
-                </span>
-              </td>
-
-              <td data-label="Reference">
-                ${escapeHtml(
-                  reference
-                )}
-              </td>
-
-              <td data-label="Submitted">
-                ${escapeHtml(
-                  formatDate(
-                    evidence.submitted_at
-                  )
-                )}
-              </td>
-
-              <td data-label="Status">
-                <span
-                  class="
-                    cl-evidence-status-badge
-                    ${statusClass}
-                  "
-                >
-                  ${escapeHtml(
-                    status
-                  )}
-                </span>
-              </td>
-
-              <td data-label="Details">
-
-                ${
-                  rejectionReason
-                    ? `
-                      <span class="cl-evidence-reason">
-                        ${escapeHtml(
-                          rejectionReason
-                        )}
-                      </span>
-                    `
-                    : `
-                      <span class="cl-evidence-reason">
-                        ${escapeHtml(
-                          evidence.evidence_text ||
-                          "Payment submitted for verification."
-                        )}
-                      </span>
-                    `
-                }
-
-              </td>
-
-            </tr>
-
-          `;
-
-        }
-      )
-      .join("");
-
-}
-
-/* =========================================================
-   LOAD MEMBER PAYMENT EVIDENCE
-========================================================= */
-
-async function loadMemberPaymentEvidence() {
-
-  memberPaymentEvidence = [];
-
-  if (
-    !currentMember?.id ||
-    !groupId ||
-    !isOrdinaryMember()
-  ) {
-
-    renderMemberPaymentEvidence();
-
-    return;
-
-  }
-
-  const {
-    data,
-    error
-  } =
-    await supabase
-      .from(
-        "member_payment_evidence"
-      )
-      .select(
-        `
-          id,
-          group_id,
-          member_id,
-          amount,
-          payment_method,
-          mpesa_reference,
-          payment_date,
-          evidence_text,
-          status,
-          submitted_at,
-          verified_at,
-          rejection_reason,
-          contribution_id
-        `
-      )
-      .eq(
-        "group_id",
-        groupId
-      )
-      .eq(
-        "member_id",
-        currentMember.id
-      )
-      .order(
-        "submitted_at",
-        {
-          ascending: false
-        }
-      );
-
-  if (error) {
-
-    throw error;
-
-  }
-
-  memberPaymentEvidence =
-    data || [];
-
-  renderMemberPaymentEvidence();
-
-}
-
-/* =========================================================
-   CONFIGURE MEMBER EVIDENCE
-========================================================= */
-
-function configureMemberPaymentEvidence() {
-
-  if (
-    !memberPaymentEvidenceCard
-  ) {
-    return;
-  }
-
-  const show =
-    isOrdinaryMember();
-
-  memberPaymentEvidenceCard.hidden =
-    !show;
-
-  memberPaymentEvidenceCard.classList.toggle(
-    "cl-member-evidence-visible",
-    show
+  const description = firstExisting(
+    "#contributionDescription",
+    "#contribution_description"
   );
 
   if (
-    recordContributionCard
+    description &&
+    !description.value &&
+    type.description
   ) {
-
-    recordContributionCard.hidden =
-      !isAuthorizedRecorder();
-
+    description.value = type.description;
   }
-
-  if (
-    show &&
-    memberEvidenceDate &&
-    !memberEvidenceDate.value
-  ) {
-
-    memberEvidenceDate.value =
-      todayString();
-
-  }
-
-  updateMemberEvidencePaymentMethod();
-
 }
 
+
 /* =========================================================
-   SUBMIT MEMBER PAYMENT EVIDENCE
-========================================================= */
+   PAYMENT FORM RESET
+   ========================================================= */
 
-async function submitMemberPaymentEvidence(
-  event
-) {
+function resetContributionForm() {
+  const form = firstExisting(
+    "#contributionForm",
+    "#recordContributionForm",
+    "[data-contribution-form]"
+  );
 
-  event.preventDefault();
-
-  clearMemberEvidenceMessage();
-  clearError();
-
-  if (!isOrdinaryMember()) {
-
-    showMemberEvidenceMessage(
-      "Payment evidence submission is available to ordinary members."
-    );
-
-    return;
-
+  if (form) {
+    form.reset();
   }
 
-  if (
-    !currentMember?.id ||
-    !groupId
-  ) {
+  const amountInput = firstExisting(
+    "#contributionAmount",
+    "#contribution_amount",
+    "#amount"
+  );
 
-    showMemberEvidenceMessage(
-      "Your active member account could not be resolved."
-    );
-
-    return;
-
+  if (amountInput) {
+    delete amountInput.dataset.autoFilled;
   }
 
-  const amount =
-    number(
-      memberEvidenceAmount?.value
-    );
+  state.selectedMemberId = null;
+  state.selectedContributionTypeId = null;
+}
+
+
+/* =========================================================
+   PAYMENT EVIDENCE FORM
+   ========================================================= */
+
+function getEvidenceFormValues() {
+  const amount = normaliseAmount(
+    firstExisting(
+      "#evidenceAmount",
+      "#evidence_amount"
+    )?.value
+  );
 
   const paymentDate =
-    memberEvidenceDate?.value ||
-    "";
+    firstExisting(
+      "#evidenceDate",
+      "#evidence_date"
+    )?.value ||
+    new Date().toISOString().slice(0, 10);
 
   const paymentMethod =
-    normalizePaymentMethod(
-      memberEvidenceMethod?.value
-    );
+    firstExisting(
+      "#evidencePaymentMethod",
+      "#evidence_payment_method"
+    )?.value ||
+    null;
 
-  const mpesaReferenceValue =
-    memberEvidenceMpesaReference?.value
-      ?.trim() ||
-    "";
+  const reference =
+    firstExisting(
+      "#evidenceReference",
+      "#evidence_reference",
+      "#reference"
+    )?.value?.trim() ||
+    null;
 
-  const evidenceText =
-    memberEvidenceText?.value
-      ?.trim() ||
-    "";
+  const notes =
+    firstExisting(
+      "#evidenceNotes",
+      "#evidence_notes"
+    )?.value?.trim() ||
+    null;
 
-  if (
-    amount <= 0
-  ) {
+  return {
+    amount,
+    payment_date: paymentDate,
+    payment_method: paymentMethod,
+    reference,
+    notes
+  };
+}
 
-    showMemberEvidenceMessage(
-      "Please enter a valid payment amount greater than zero."
-    );
 
-    memberEvidenceAmount?.focus();
+/* =========================================================
+   MEMBER PAYMENT EVIDENCE SUBMISSION
+   ========================================================= */
 
+async function submitPaymentEvidence(event) {
+  event?.preventDefault();
+
+  if (state.submitting) {
     return;
-
   }
 
-  if (!paymentDate) {
+  clearNotification();
 
-    showMemberEvidenceMessage(
-      "Please select the payment date."
+  const values = getEvidenceFormValues();
+
+  if (!values.amount) {
+    notify(
+      "Enter a valid payment amount.",
+      "error"
     );
-
-    memberEvidenceDate?.focus();
-
     return;
-
   }
 
-  if (!paymentMethod) {
+  state.submitting = true;
 
-    showMemberEvidenceMessage(
-      "Please select the payment method."
-    );
+  const submitButton = firstExisting(
+    "#submitEvidence",
+    "#submitPaymentEvidence",
+    "#evidenceSubmit",
+    "#paymentEvidenceForm button[type='submit']"
+  );
 
-    return;
-
-  }
-
-  if (
-    paymentMethod ===
-      PAYMENT_METHODS.MPESA &&
-    !mpesaReferenceValue
-  ) {
-
-    showMemberEvidenceMessage(
-      "Please enter the M-Pesa reference."
-    );
-
-    memberEvidenceMpesaReference?.focus();
-
-    return;
-
-  }
-
-  if (!evidenceText) {
-
-    showMemberEvidenceMessage(
-      "Please provide payment details."
-    );
-
-    memberEvidenceText?.focus();
-
-    return;
-
-  }
-
-  if (
-    submitMemberPaymentEvidenceButton
-  ) {
-
-    submitMemberPaymentEvidenceButton.disabled =
-      true;
-
-    submitMemberPaymentEvidenceButton.textContent =
-      "Submitting...";
-
-  }
-
-  if (statusEl) {
-
-    statusEl.hidden =
-      false;
-
-    statusEl.textContent =
-      "Submitting payment evidence securely...";
-
-  }
+  disable(submitButton, true);
 
   try {
-
     /*
-     * This is intentionally NOT a contribution ledger
-     * insert.
+     * Ordinary members submit evidence.
      *
-     * The evidence record is only the member's claim.
-     * Canonical accounting occurs later through
-     * verify_member_payment_evidence().
+     * The exact RPC owns the database write. This module
+     * deliberately does not insert directly into
+     * member_payment_evidence.
      */
-    const {
-      error
-    } =
-      await supabase
-        .from(
-          "member_payment_evidence"
-        )
-        .insert({
 
-          group_id:
-            groupId,
-
-          member_id:
-            currentMember.id,
-
-          amount:
-            amount,
-
-          payment_method:
-            paymentMethod,
-
-          mpesa_reference:
-            paymentMethod ===
-              PAYMENT_METHODS.MPESA
-              ? mpesaReferenceValue
-              : null,
-
-          payment_date:
-            paymentDate,
-
-          evidence_text:
-            evidenceText
-
-        });
-
-    if (error) {
-
-      throw error;
-
-    }
-
-    memberPaymentEvidenceForm?.reset();
-
-    if (memberEvidenceDate) {
-
-      memberEvidenceDate.value =
-        todayString();
-
-    }
-
-    if (memberEvidenceMethod) {
-
-      memberEvidenceMethod.value =
-        PAYMENT_METHODS.MPESA;
-
-    }
-
-    updateMemberEvidencePaymentMethod();
-
-    await loadMemberPaymentEvidence();
-
-    showMemberEvidenceMessage(
-      "Payment evidence submitted successfully. It is now pending verification."
+    const result = await callRPC(
+      "submit_member_payment_evidence",
+      {
+        p_group_id: state.group.id,
+        p_member_id: state.member.id,
+        p_amount: values.amount,
+        p_payment_date: values.payment_date,
+        p_payment_method: values.payment_method,
+        p_reference: values.reference,
+        p_notes: values.notes
+      }
     );
 
-    if (statusEl) {
+    notify(
+      "Payment evidence submitted and is awaiting verification.",
+      "success"
+    );
 
-      statusEl.hidden =
-        false;
+    const form = firstExisting(
+      "#paymentEvidenceForm",
+      "[data-payment-evidence-form]"
+    );
 
-      statusEl.textContent =
-        "Payment evidence submitted and is pending verification.";
-
+    if (form) {
+      form.reset();
     }
 
+    return result;
+  } catch (error) {
+    console.error(
+      "Payment evidence submission failed:",
+      error
+    );
+
+    notify(
+      error?.message ||
+        "Unable to submit payment evidence.",
+      "error"
+    );
+
+    throw error;
+  } finally {
+    state.submitting = false;
+    disable(submitButton, false);
   }
-  catch (error) {
-
-    showError(error);
-
-  }
-  finally {
-
-    if (
-      submitMemberPaymentEvidenceButton
-    ) {
-
-      submitMemberPaymentEvidenceButton.disabled =
-        false;
-
-      submitMemberPaymentEvidenceButton.textContent =
-        "Submit Payment Evidence";
-
-    }
-
-  }
-
 }
+
 
 /* =========================================================
-   VERIFIER PAYMENT EVIDENCE
-========================================================= */
+   ADMIN DIRECT RECORDING
+   ========================================================= */
 
-function showVerifierPaymentEvidenceMessage(
-  message
-) {
+function getContributionFormValues() {
+  const memberSelect = firstExisting(
+    "#memberSelect",
+    "#member",
+    "#member_id",
+    "#contributionMember"
+  );
 
-  if (!verifierPaymentEvidenceMessage) {
-    return;
-  }
+  const typeSelect = firstExisting(
+    "#contributionType",
+    "#contribution_type",
+    "#contributionTypeSelect"
+  );
 
-  verifierPaymentEvidenceMessage.textContent =
-    message || "";
+  const amountInput = firstExisting(
+    "#contributionAmount",
+    "#contribution_amount",
+    "#amount"
+  );
 
-  verifierPaymentEvidenceMessage.hidden =
-    !message;
+  const dateInput = firstExisting(
+    "#contributionDate",
+    "#contribution_date"
+  );
 
+  const paymentMethodInput = firstExisting(
+    "#paymentMethod",
+    "#payment_method"
+  );
+
+  const referenceInput = firstExisting(
+    "#reference",
+    "#paymentReference",
+    "#payment_reference"
+  );
+
+  const notesInput = firstExisting(
+    "#notes",
+    "#contributionNotes",
+    "#contribution_notes"
+  );
+
+  return {
+    member_id:
+      memberSelect?.value ||
+      null,
+
+    contribution_type_id:
+      typeSelect?.value ||
+      null,
+
+    amount:
+      normaliseAmount(amountInput?.value),
+
+    contribution_date:
+      dateInput?.value ||
+      new Date().toISOString().slice(0, 10),
+
+    payment_method:
+      paymentMethodInput?.value ||
+      null,
+
+    reference:
+      referenceInput?.value?.trim() ||
+      null,
+
+    notes:
+      notesInput?.value?.trim() ||
+      null
+  };
 }
 
-function clearVerifierPaymentEvidenceMessage() {
-
-  showVerifierPaymentEvidenceMessage("");
-
-}
-
-function configureVerifierPaymentEvidence() {
-
-  if (
-    !verifierPaymentEvidenceCard
-  ) {
-    return;
-  }
-
-  const show =
-    isAuthorizedVerifier();
-
-  verifierPaymentEvidenceCard.hidden =
-    !show;
-
-  if (!show) {
-
-    verifierPaymentEvidence = [];
-
-    selectedVerifierEvidenceId =
-      null;
-
-    clearVerifierPaymentEvidenceMessage();
-
-    if (
-      verifierPaymentEvidenceRows
-    ) {
-
-      verifierPaymentEvidenceRows.innerHTML =
-        "";
-
-    }
-
-    if (
-      verifierPaymentEvidenceDetail
-    ) {
-
-      verifierPaymentEvidenceDetail.hidden =
-        true;
-
-      verifierPaymentEvidenceDetail.innerHTML =
-        "";
-
-    }
-
-  }
-
-}
 
 /* =========================================================
-   RENDER VERIFIER EVIDENCE
-========================================================= */
+   CANONICAL CONTRIBUTION RECORDING
+   ========================================================= */
 
-function renderVerifierPaymentEvidence() {
+async function recordContribution(event) {
+  event?.preventDefault();
 
-  if (
-    !verifierPaymentEvidenceRows
-  ) {
+  if (state.submitting) {
     return;
   }
 
-  if (
-    !verifierPaymentEvidence.length
-  ) {
+  if (!canManageContributions()) {
+    notify(
+      "You are not authorised to record contributions.",
+      "error"
+    );
+    return;
+  }
 
-    verifierPaymentEvidenceRows.innerHTML = `
+  clearNotification();
 
+  const values = getContributionFormValues();
+
+  if (!values.member_id) {
+    notify(
+      "Select the member making the payment.",
+      "error"
+    );
+    return;
+  }
+
+  if (!values.contribution_type_id) {
+    notify(
+      "Select the contribution type.",
+      "error"
+    );
+    return;
+  }
+
+  if (!values.amount) {
+    notify(
+      "Enter a valid payment amount.",
+      "error"
+    );
+    return;
+  }
+
+  state.submitting = true;
+
+  const submitButton = firstExisting(
+    "#recordContribution",
+    "#saveContribution",
+    "#contributionSubmit",
+    "#contributionForm button[type='submit']"
+  );
+
+  disable(submitButton, true);
+
+  try {
+    /*
+     * Canonical accounting boundary.
+     *
+     * Do NOT replace this with a direct table insert.
+     *
+     * The backend owns:
+     *   - period resolution
+     *   - obligation resolution
+     *   - allocations
+     *   - overpayment handling
+     *   - replay safety
+     *   - accounting locks
+     */
+
+    const result = await callRPC(
+      "cl_2b_record_contribution",
+      {
+        p_group_id: state.group.id,
+        p_member_id: values.member_id,
+        p_contribution_type_id:
+          values.contribution_type_id,
+        p_amount: values.amount,
+        p_contribution_date:
+          values.contribution_date,
+        p_payment_method:
+          values.payment_method,
+        p_reference:
+          values.reference,
+        p_notes:
+          values.notes
+      }
+    );
+
+    notify(
+      "Contribution recorded successfully.",
+      "success"
+    );
+
+    resetContributionForm();
+
+    /*
+     * Refresh only through canonical/read paths.
+     */
+    await refreshContributionView();
+
+    return result;
+  } catch (error) {
+    console.error(
+      "Canonical contribution recording failed:",
+      error
+    );
+
+    notify(
+      error?.message ||
+        "Unable to record the contribution.",
+      "error"
+    );
+
+    throw error;
+  } finally {
+    state.submitting = false;
+    disable(submitButton, false);
+  }
+}
+
+
+/* =========================================================
+   VIEW REFRESH
+   ========================================================= */
+
+async function refreshContributionView() {
+  /*
+   * Re-load definitions because Custom contributions must
+   * remain visible immediately after creation.
+   */
+
+  await loadContributionTypes();
+
+  renderCustomContributionSummary();
+
+  /*
+   * Contribution ledger rendering is intentionally delegated
+   * to the canonical read implementation in the next section.
+   */
+  await loadContributionLedger();
+}
+
+
+/* =========================================================
+   PLACEHOLDER FOR PART 2
+   ========================================================= */
+
+/*
+   Part 2 continues with:
+
+   • canonical contribution ledger reads
+   • member contribution position
+   • Paid / Outstanding status
+   • monthly + Custom obligation display
+   • active contribution rendering
+   • admin verification workflow
+   • evidence loading
+
+   Part 3 continues with:
+
+   • Custom contribution creation
+   • RPC boundary
+   • active contribution persistence/display
+   • event handlers
+
+   Part 4 continues with:
+
+   • page initialisation
+   • safe event binding
+   • exports
+   • final integration
+*/
+
+
+/* =========================================================
+   TEMPORARY DECLARATION
+   ========================================================= */
+
+async function loadContributionLedger() {
+  /*
+   * Implemented in Part 2.
+   *
+   * This declaration is intentionally kept here so the file
+   * structure remains easy to merge part-by-part.
+   */
+}
+/* =========================================================
+   PART 2 — CANONICAL LEDGER / MEMBER POSITION / STATUS
+   ========================================================= */
+
+
+/* =========================================================
+   GENERIC RPC ROW EXTRACTION
+   ========================================================= */
+
+function extractRows(result) {
+  if (Array.isArray(result)) {
+    return result;
+  }
+
+  if (Array.isArray(result?.data)) {
+    return result.data;
+  }
+
+  if (Array.isArray(result?.rows)) {
+    return result.rows;
+  }
+
+  if (Array.isArray(result?.results)) {
+    return result.results;
+  }
+
+  return [];
+}
+
+
+/* =========================================================
+   CONTRIBUTION LEDGER READ
+   ========================================================= */
+
+async function loadContributionLedger() {
+  const container = firstExisting(
+    "#contributionsBody",
+    "#contributionTableBody",
+    "#contributionsList",
+    "[data-contributions-body]"
+  );
+
+  /*
+   * Try the canonical read RPCs in order.
+   *
+   * This is READ ONLY.
+   * No accounting table is written from the frontend.
+   */
+
+  let result = null;
+  let lastError = null;
+
+  const rpcCandidates = [
+    "get_group_contribution_ledger",
+    "get_contribution_ledger",
+    "get_contributions"
+  ];
+
+  for (const rpcName of rpcCandidates) {
+    try {
+      result = await callRPC(rpcName, {
+        p_group_id: state.group.id
+      });
+
+      const rows = extractRows(result);
+
+      if (Array.isArray(rows)) {
+        state.contributions = rows;
+        break;
+      }
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  if (!Array.isArray(state.contributions)) {
+    state.contributions = [];
+  }
+
+  if (lastError && !result) {
+    /*
+     * If the page has no ledger container, avoid making an
+     * otherwise valid page unusable because an optional
+     * historical ledger RPC is unavailable.
+     */
+    if (container) {
+      console.error(
+        "Unable to load contribution ledger:",
+        lastError
+      );
+
+      setHTML(
+        container,
+        `
+          <tr>
+            <td colspan="8">
+              Unable to load contribution records.
+            </td>
+          </tr>
+        `
+      );
+    }
+
+    return [];
+  }
+
+  renderContributionLedger(
+    state.contributions
+  );
+
+  return state.contributions;
+}
+
+
+/* =========================================================
+   LEDGER RENDERING
+   ========================================================= */
+
+function getContributionMemberName(row) {
+  return (
+    row.member_name ||
+    row.full_name ||
+    row.name ||
+    [
+      row.first_name,
+      row.last_name
+    ]
+      .filter(Boolean)
+      .join(" ") ||
+    "Member"
+  );
+}
+
+function getContributionTypeName(row) {
+  return (
+    row.contribution_type_name ||
+    row.type_name ||
+    row.contribution_name ||
+    row.contribution_type ||
+    row.type ||
+    "Contribution"
+  );
+}
+
+function getContributionStatus(row) {
+  const raw =
+    row.status ||
+    row.contribution_status ||
+    row.payment_status ||
+    row.accounting_status ||
+    "";
+
+  return String(raw)
+    .trim()
+    .toLowerCase();
+}
+
+function statusLabel(status) {
+  switch (status) {
+    case "paid":
+    case "settled":
+    case "complete":
+    case "completed":
+      return "Paid";
+
+    case "outstanding":
+    case "unpaid":
+    case "due":
+      return "Outstanding";
+
+    case "pending":
+      return "Pending";
+
+    case "partially_paid":
+    case "partial":
+      return "Partially Paid";
+
+    case "overpaid":
+      return "Overpaid";
+
+    case "rejected":
+      return "Rejected";
+
+    default:
+      return status
+        ? status.replaceAll("_", " ")
+        : "Recorded";
+  }
+}
+
+function statusClass(status) {
+  switch (status) {
+    case "paid":
+    case "settled":
+    case "complete":
+    case "completed":
+      return "status-paid";
+
+    case "outstanding":
+    case "unpaid":
+    case "due":
+      return "status-outstanding";
+
+    case "pending":
+      return "status-pending";
+
+    case "partially_paid":
+    case "partial":
+      return "status-partial";
+
+    case "overpaid":
+      return "status-overpaid";
+
+    case "rejected":
+      return "status-rejected";
+
+    default:
+      return "status-recorded";
+  }
+}
+
+
+/* =========================================================
+   LEDGER ROW
+   ========================================================= */
+
+function renderContributionRow(row) {
+  const amount =
+    row.amount ??
+    row.payment_amount ??
+    row.total_amount ??
+    0;
+
+  const date =
+    row.contribution_date ??
+    row.payment_date ??
+    row.recorded_at ??
+    row.created_at;
+
+  const method =
+    row.payment_method ??
+    row.method ??
+    "—";
+
+  const reference =
+    row.reference ??
+    row.payment_reference ??
+    row.mpesa_reference ??
+    "—";
+
+  const rawStatus =
+    getContributionStatus(row);
+
+  const status =
+    statusLabel(rawStatus);
+
+  const statusCss =
+    statusClass(rawStatus);
+
+  return `
+    <tr
+      data-contribution-id="${
+        escapeHTML(
+          row.id ??
+          row.contribution_id ??
+          ""
+        )
+      }"
+    >
+      <td>
+        ${escapeHTML(
+          getContributionMemberName(row)
+        )}
+      </td>
+
+      <td>
+        ${escapeHTML(
+          getContributionTypeName(row)
+        )}
+      </td>
+
+      <td>
+        ${escapeHTML(
+          formatKES(amount)
+        )}
+      </td>
+
+      <td>
+        ${escapeHTML(
+          formatDate(date)
+        )}
+      </td>
+
+      <td>
+        ${escapeHTML(method)}
+      </td>
+
+      <td>
+        ${escapeHTML(reference)}
+      </td>
+
+      <td>
+        <span class="status-badge ${statusCss}">
+          ${escapeHTML(status)}
+        </span>
+      </td>
+    </tr>
+  `;
+}
+
+
+/* =========================================================
+   LEDGER TABLE
+   ========================================================= */
+
+function renderContributionLedger(rows) {
+  const container = firstExisting(
+    "#contributionsBody",
+    "#contributionTableBody",
+    "[data-contributions-body]"
+  );
+
+  if (!container) {
+    return;
+  }
+
+  if (!Array.isArray(rows) || rows.length === 0) {
+    const table = container.closest("table");
+
+    const columnCount =
+      table?.querySelectorAll("thead th")
+        ?.length ||
+      7;
+
+    container.innerHTML = `
       <tr>
-
         <td
-          colspan="7"
-          class="cl-evidence-empty"
+          colspan="${columnCount}"
+          class="empty-state"
         >
-          No pending payment evidence requires
-          verification.
+          No contribution payments recorded yet.
         </td>
-
       </tr>
-
     `;
 
     return;
-
   }
 
-  verifierPaymentEvidenceRows.innerHTML =
-    verifierPaymentEvidence
-      .map(
-        evidence => {
-
-          const memberName =
-            getMemberName(
-              evidence.member_id
-            );
-
-          const method =
-            normalizePaymentMethod(
-              evidence.payment_method
-            );
-
-          const reference =
-            evidence.mpesa_reference ||
-            "—";
-
-          return `
-
-            <tr>
-
-              <td data-label="Member">
-
-                <strong>
-                  ${escapeHtml(
-                    memberName
-                  )}
-                </strong>
-
-              </td>
-
-              <td
-                data-label="Amount"
-                class="cl-money-cell"
-              >
-
-                <strong>
-                  ${escapeHtml(
-                    money(
-                      evidence.amount
-                    )
-                  )}
-                </strong>
-
-              </td>
-
-              <td data-label="Payment Date">
-
-                ${escapeHtml(
-                  formatDate(
-                    evidence.payment_date
-                  )
-                )}
-
-              </td>
-
-              <td data-label="Method">
-
-                <span class="cl-payment-badge">
-                  ${escapeHtml(
-                    method
-                  )}
-                </span>
-
-              </td>
-
-              <td data-label="Reference">
-
-                ${escapeHtml(
-                  reference
-                )}
-
-              </td>
-
-              <td data-label="Submitted">
-
-                ${escapeHtml(
-                  formatDate(
-                    evidence.submitted_at
-                  )
-                )}
-
-              </td>
-
-              <td data-label="Action">
-
-                <button
-                  type="button"
-                  class="cl-verifier-button"
-                  data-verifier-evidence-id="${escapeHtml(
-                    evidence.id
-                  )}"
-                >
-                  Review
-                </button>
-
-              </td>
-
-            </tr>
-
-          `;
-
-        }
-      )
-      .join("");
-
+  container.innerHTML = rows
+    .map(renderContributionRow)
+    .join("");
 }
 
-/* =========================================================
-   VERIFIER DETAIL
-========================================================= */
 
-function showVerifierPaymentEvidenceDetail(
-  evidenceId
+/* =========================================================
+   MEMBER CONTRIBUTION POSITION
+   ========================================================= */
+
+async function getMemberContributionPosition(
+  memberId,
+  contributionTypeId = null
 ) {
-
-  if (
-    !verifierPaymentEvidenceDetail
-  ) {
-    return;
+  if (!memberId) {
+    return null;
   }
 
-  const evidence =
-    verifierPaymentEvidence.find(
-      item =>
-        String(item.id) ===
-        String(evidenceId)
-    );
+  /*
+   * This read must come from the canonical accounting layer.
+   */
 
-  if (!evidence) {
+  const args = {
+    p_member_id: memberId
+  };
 
-    verifierPaymentEvidenceDetail.hidden =
-      true;
-
-    verifierPaymentEvidenceDetail.innerHTML =
-      "";
-
-    selectedVerifierEvidenceId =
-      null;
-
-    return;
-
+  if (contributionTypeId) {
+    args.p_contribution_type_id =
+      contributionTypeId;
   }
 
-  selectedVerifierEvidenceId =
-    evidence.id;
-
-  const memberName =
-    getMemberName(
-      evidence.member_id
-    );
-
-  const method =
-    normalizePaymentMethod(
-      evidence.payment_method
-    );
-
-  const reference =
-    evidence.mpesa_reference ||
-    "—";
-
-  verifierPaymentEvidenceDetail.innerHTML = `
-
-    <div class="cl-verifier-detail">
-
-      <div class="cl-verifier-detail-grid">
-
-        <div>
-          <span>Member</span>
-          <strong>
-            ${escapeHtml(
-              memberName
-            )}
-          </strong>
-        </div>
-
-        <div>
-          <span>Amount</span>
-          <strong>
-            ${escapeHtml(
-              money(
-                evidence.amount
-              )
-            )}
-          </strong>
-        </div>
-
-        <div>
-          <span>Payment date</span>
-          <strong>
-            ${escapeHtml(
-              formatDate(
-                evidence.payment_date
-              )
-            )}
-          </strong>
-        </div>
-
-        <div>
-          <span>Payment method</span>
-          <strong>
-            ${escapeHtml(
-              method
-            )}
-          </strong>
-        </div>
-
-        <div>
-          <span>M-Pesa reference</span>
-          <strong>
-            ${escapeHtml(
-              reference
-            )}
-          </strong>
-        </div>
-
-        <div>
-          <span>Submitted</span>
-          <strong>
-            ${escapeHtml(
-              formatDate(
-                evidence.submitted_at
-              )
-            )}
-          </strong>
-        </div>
-
-      </div>
-
-      <div class="cl-verifier-detail-evidence">
-
-        <span>
-          Payment details
-        </span>
-
-        <p>
-          ${escapeHtml(
-            evidence.evidence_text ||
-            "No additional payment details supplied."
-          )}
-        </p>
-
-      </div>
-
-      <div class="cl-verifier-detail-actions">
-
-        <button
-          type="button"
-          class="
-            cl-verifier-button
-            cl-verifier-button-primary
-          "
-          data-verify-evidence-id="${escapeHtml(
-            evidence.id
-          )}"
-        >
-          Verify Payment
-        </button>
-
-        <button
-          type="button"
-          class="
-            cl-verifier-button
-            cl-verifier-button-danger
-          "
-          data-reject-evidence-id="${escapeHtml(
-            evidence.id
-          )}"
-        >
-          Reject Payment
-        </button>
-
-        <button
-          type="button"
-          class="
-            cl-verifier-button
-            cl-verifier-button-secondary
-          "
-          data-close-verifier-detail
-        >
-          Close
-        </button>
-
-      </div>
-
-    </div>
-
-  `;
-
-  verifierPaymentEvidenceDetail.hidden =
-    false;
-
-}
-
-/* =========================================================
-   LOAD VERIFIER EVIDENCE
-========================================================= */
-
-async function loadVerifierPaymentEvidence() {
-
-  verifierPaymentEvidence = [];
-
-  selectedVerifierEvidenceId =
-    null;
-
-  if (
-    !groupId ||
-    !isAuthorizedVerifier()
-  ) {
-
-    renderVerifierPaymentEvidence();
-
-    if (
-      verifierPaymentEvidenceDetail
-    ) {
-
-      verifierPaymentEvidenceDetail.hidden =
-        true;
-
-      verifierPaymentEvidenceDetail.innerHTML =
-        "";
-
-    }
-
-    return;
-
-  }
-
-  const {
-    data,
-    error
-  } =
-    await supabase
-      .from(
-        "member_payment_evidence"
-      )
-      .select(
-        `
-          id,
-          group_id,
-          member_id,
-          amount,
-          payment_method,
-          mpesa_reference,
-          payment_date,
-          evidence_text,
-          status,
-          submitted_at
-        `
-      )
-      .eq(
-        "group_id",
-        groupId
-      )
-      .eq(
-        "status",
-        MEMBER_EVIDENCE_STATUSES.PENDING
-      )
-      .order(
-        "submitted_at",
-        {
-          ascending: true
-        }
-      );
-
-  if (error) {
-
-    throw error;
-
-  }
-
-  verifierPaymentEvidence =
-    data || [];
-
-  renderVerifierPaymentEvidence();
-
-}
-
-/* =========================================================
-   VERIFY PAYMENT EVIDENCE
-========================================================= */
-
-async function verifyPaymentEvidence(
-  evidenceId
-) {
-
-  if (
-    !isAuthorizedVerifier()
-  ) {
-
-    showVerifierPaymentEvidenceMessage(
-      "You are not authorised to verify payment evidence."
-    );
-
-    return;
-
-  }
-
-  const evidence =
-    verifierPaymentEvidence.find(
-      item =>
-        String(item.id) ===
-        String(evidenceId)
-    );
-
-  if (!evidence) {
-
-    showVerifierPaymentEvidenceMessage(
-      "The selected payment evidence is no longer pending."
-    );
-
-    return;
-
-  }
-
-  const confirmed =
-    window.confirm(
-      `Verify ${getMemberName(
-        evidence.member_id
-      )}'s payment of ${money(
-        evidence.amount
-      )}?\n\n` +
-      `This will pass the payment through the canonical accounting workflow.`
-    );
-
-  if (!confirmed) {
-    return;
-  }
-
-  clearVerifierPaymentEvidenceMessage();
-  clearError();
-
-  try {
-
-    if (statusEl) {
-
-      statusEl.hidden =
-        false;
-
-      statusEl.textContent =
-        "Verifying payment evidence securely...";
-
-    }
-
-    const {
-      data,
-      error
-    } =
-    await supabase.rpc(
-      "verify_member_payment_evidence",
-      {
-        p_evidence_id:
-          evidenceId,
-
-        p_decision:
-          MEMBER_EVIDENCE_STATUSES.VERIFIED,
-
-        p_rejection_reason:
-          null
+  let lastError = null;
+
+  const candidates = [
+    "get_member_contribution_position",
+    "get_member_contribution_status"
+  ];
+
+  for (const rpcName of candidates) {
+    try {
+      const result =
+        await callRPC(rpcName, args);
+
+      if (result !== null &&
+          result !== undefined) {
+        return result;
       }
-    );
-
-    if (error) {
-
-      throw error;
-
+    } catch (error) {
+      lastError = error;
     }
-
-    selectedVerifierEvidenceId =
-      null;
-
-    if (
-      verifierPaymentEvidenceDetail
-    ) {
-
-      verifierPaymentEvidenceDetail.hidden =
-        true;
-
-      verifierPaymentEvidenceDetail.innerHTML =
-        "";
-
-    }
-
-    await Promise.all([
-
-      loadVerifierPaymentEvidence(),
-
-      loadContributions(),
-
-      loadCanonicalMemberStatus(
-        accountingMonth
-      )
-
-    ]);
-
-    if (
-      isOrdinaryMember()
-    ) {
-
-      await loadMemberPaymentEvidence();
-
-    }
-
-    renderLedger();
-
-    renderMemberStatus();
-
-    renderSummary();
-
-    renderContributionGoals();
-
-    showVerifierPaymentEvidenceMessage(
-      "Payment verified successfully and passed through canonical accounting."
-    );
-
-    if (statusEl) {
-
-      statusEl.hidden =
-        false;
-
-      statusEl.textContent =
-        "Payment verified and canonical accounting refreshed.";
-
-    }
-
-  }
-  catch (error) {
-
-    showError(error);
-
-    showVerifierPaymentEvidenceMessage(
-      error?.message ||
-      "Payment verification failed. The pending evidence remains available for review."
-    );
-
   }
 
+  if (lastError) {
+    console.error(
+      "Unable to load member contribution position:",
+      lastError
+    );
+  }
+
+  return null;
 }
 
+
 /* =========================================================
-   REJECT PAYMENT EVIDENCE
-========================================================= */
+   POSITION NORMALISATION
+   ========================================================= */
 
-async function rejectPaymentEvidence(
-  evidenceId
-) {
-
-  if (
-    !isAuthorizedVerifier()
-  ) {
-
-    showVerifierPaymentEvidenceMessage(
-      "You are not authorised to reject payment evidence."
-    );
-
-    return;
-
+function normalisePosition(position) {
+  if (!position) {
+    return {
+      required: 0,
+      paid: 0,
+      allocated: 0,
+      outstanding: 0,
+      unapplied: 0,
+      status: "outstanding"
+    };
   }
 
-  const evidence =
-    verifierPaymentEvidence.find(
-      item =>
-        String(item.id) ===
-        String(evidenceId)
+  const required =
+    Number(
+      position.required ??
+      position.amount_due ??
+      position.obligation_amount ??
+      position.total_required ??
+      0
     );
 
-  if (!evidence) {
-
-    showVerifierPaymentEvidenceMessage(
-      "The selected payment evidence is no longer pending."
+  const paid =
+    Number(
+      position.paid ??
+      position.total_paid ??
+      position.amount_paid ??
+      position.recorded_amount ??
+      0
     );
 
-    return;
-
-  }
-
-  const reason =
-    window.prompt(
-      "Enter the reason for rejecting this payment evidence:"
+  const allocated =
+    Number(
+      position.allocated ??
+      position.total_allocated ??
+      position.allocated_amount ??
+      0
     );
 
-  if (reason === null) {
-    return;
-  }
+  const outstandingValue =
+    position.outstanding ??
+    position.amount_outstanding ??
+    position.balance_due;
 
-  const rejectionReason =
+  const outstanding =
+    outstandingValue !== undefined &&
+    outstandingValue !== null
+      ? Number(outstandingValue)
+      : Math.max(
+          required - allocated,
+          0
+        );
+
+  const unapplied =
+    Number(
+      position.unapplied ??
+      position.unapplied_amount ??
+      position.credit ??
+      0
+    );
+
+  let status =
     String(
-      reason
-    ).trim();
-
-  if (!rejectionReason) {
-
-    showVerifierPaymentEvidenceMessage(
-      "A rejection reason is required."
-    );
-
-    return;
-
-  }
-
-  const confirmed =
-    window.confirm(
-      `Reject ${getMemberName(
-        evidence.member_id
-      )}'s payment evidence?\n\n` +
-      `Reason: ${rejectionReason}`
-    );
-
-  if (!confirmed) {
-    return;
-  }
-
-  clearVerifierPaymentEvidenceMessage();
-  clearError();
-
-  try {
-
-    if (statusEl) {
-
-      statusEl.hidden =
-        false;
-
-      statusEl.textContent =
-        "Rejecting payment evidence securely...";
-
-    }
-
-    const {
-      data,
-      error
-    } =
-    await supabase.rpc(
-      "verify_member_payment_evidence",
-      {
-        p_evidence_id:
-          evidenceId,
-
-        p_decision:
-          MEMBER_EVIDENCE_STATUSES.REJECTED,
-
-        p_rejection_reason:
-          rejectionReason
-      }
-    );
-
-    if (error) {
-
-      throw error;
-
-    }
-
-    selectedVerifierEvidenceId =
-      null;
-
-    if (
-      verifierPaymentEvidenceDetail
-    ) {
-
-      verifierPaymentEvidenceDetail.hidden =
-        true;
-
-      verifierPaymentEvidenceDetail.innerHTML =
-        "";
-
-    }
-
-    await loadVerifierPaymentEvidence();
-
-    if (
-      isOrdinaryMember()
-    ) {
-
-      await loadMemberPaymentEvidence();
-
-    }
-
-    showVerifierPaymentEvidenceMessage(
-      "Payment evidence rejected successfully."
-    );
-
-    if (statusEl) {
-
-      statusEl.hidden =
-        false;
-
-      statusEl.textContent =
-        "Payment evidence rejected.";
-
-    }
-
-  }
-  catch (error) {
-
-    showError(error);
-
-    showVerifierPaymentEvidenceMessage(
-      error?.message ||
-      "Payment rejection failed. The pending evidence remains available for review."
-    );
-
-  }
-
-}
-
-/* =========================================================
-   VERIFIER EVENT DELEGATION
-========================================================= */
-
-function handleVerifierPaymentEvidenceClick(
-  event
-) {
-
-  const reviewButton =
-    event.target.closest(
-      "[data-verifier-evidence-id]"
-    );
-
-  if (reviewButton) {
-
-    const evidenceId =
-      reviewButton.dataset
-        .verifierEvidenceId;
-
-    showVerifierPaymentEvidenceDetail(
-      evidenceId
-    );
-
-    return;
-
-  }
-
-  const verifyButton =
-    event.target.closest(
-      "[data-verify-evidence-id]"
-    );
-
-  if (verifyButton) {
-
-    const evidenceId =
-      verifyButton.dataset
-        .verifyEvidenceId;
-
-    void verifyPaymentEvidence(
-      evidenceId
-    );
-
-    return;
-
-  }
-
-  const rejectButton =
-    event.target.closest(
-      "[data-reject-evidence-id]"
-    );
-
-  if (rejectButton) {
-
-    const evidenceId =
-      rejectButton.dataset
-        .rejectEvidenceId;
-
-    void rejectPaymentEvidence(
-      evidenceId
-    );
-
-    return;
-
-  }
-
-  const closeButton =
-    event.target.closest(
-      "[data-close-verifier-detail]"
-    );
-
-  if (closeButton) {
-
-    selectedVerifierEvidenceId =
-      null;
-
-    if (
-      verifierPaymentEvidenceDetail
-    ) {
-
-      verifierPaymentEvidenceDetail.hidden =
-        true;
-
-      verifierPaymentEvidenceDetail.innerHTML =
-        "";
-
-    }
-
-  }
-
-}
-
-/* =========================================================
-   CONTRIBUTION TYPE LABEL
-========================================================= */
-
-function contributionTypeLabel(item) {
-
-  const type =
-    String(
-      item?.contribution_type ||
+      position.status ||
+      position.payment_status ||
       ""
     )
       .trim()
       .toLowerCase();
 
-  const labels = {
+  if (!status) {
+    if (outstanding <= 0 && required > 0) {
+      status = "paid";
+    } else if (allocated > 0) {
+      status = "partially_paid";
+    } else {
+      status = "outstanding";
+    }
+  }
 
-    monthly:
-      "Monthly",
-
-    welfare:
-      "Welfare",
-
-    emergency:
-      "Emergency",
-
-    fundraising:
-      "Fundraising",
-
-    project:
-      "Project",
-
-    event:
-      "Event",
-
-    fine:
-      "Fine",
-
-    custom:
-      "Custom"
-
+  return {
+    raw: position,
+    required,
+    paid,
+    allocated,
+    outstanding,
+    unapplied,
+    status
   };
-
-  return (
-    labels[type] ||
-    (
-      type
-        ? type.charAt(0).toUpperCase() +
-          type.slice(1)
-        : "—"
-    )
-  );
-
 }
 
+
 /* =========================================================
-   PAYMENT METHOD UI
-========================================================= */
+   MEMBER STATUS DISPLAY
+   ========================================================= */
 
-function renderLedger() {
-
-  if (!contributionRows) {
+function renderMemberContributionStatus(
+  container,
+  position
+) {
+  if (!container) {
     return;
   }
 
-  if (!contributions.length) {
-    contributionRows.innerHTML = `
+  const normalised =
+    normalisePosition(position);
+
+  const label =
+    statusLabel(
+      normalised.status
+    );
+
+  const css =
+    statusClass(
+      normalised.status
+    );
+
+  container.innerHTML = `
+    <span class="status-badge ${css}">
+      ${escapeHTML(label)}
+    </span>
+  `;
+}
+
+
+/* =========================================================
+   MEMBER CONTRIBUTION DETAIL
+   ========================================================= */
+
+async function loadMemberContributionStatus(
+  memberId,
+  contributionTypeId,
+  target = null
+) {
+  const position =
+    await getMemberContributionPosition(
+      memberId,
+      contributionTypeId
+    );
+
+  const container =
+    target ||
+    firstExisting(
+      "#memberContributionStatus",
+      "#contributionStatus",
+      "[data-member-contribution-status]"
+    );
+
+  renderMemberContributionStatus(
+    container,
+    position
+  );
+
+  return normalisePosition(
+    position
+  );
+}
+
+
+/* =========================================================
+   ACTIVE CONTRIBUTION TYPES FOR PAYMENT SELECTION
+   ========================================================= */
+
+function renderPaymentContributionTypes() {
+  const select = firstExisting(
+    "#contributionType",
+    "#contribution_type",
+    "#contributionTypeSelect",
+    "#paymentContributionType"
+  );
+
+  if (!select) {
+    return;
+  }
+
+  const current =
+    select.value;
+
+  select.innerHTML = `
+    <option value="">
+      Select contribution type
+    </option>
+  `;
+
+  /*
+   * IMPORTANT:
+   * Every active contribution type is shown here.
+   *
+   * Therefore a newly-created Custom Contribution is not
+   * treated as a temporary form object. Once the backend
+   * creates it and the read RPC returns it, it becomes a
+   * selectable active contribution type.
+   */
+
+  for (
+    const type
+    of state.activeContributionTypes
+  ) {
+    if (!type?.id) {
+      continue;
+    }
+
+    const option =
+      document.createElement("option");
+
+    option.value =
+      String(type.id);
+
+    const amountText =
+      Number.isFinite(type.amount)
+        ? ` — ${formatKES(type.amount)}`
+        : "";
+
+    const frequencyText =
+      type.frequency
+        ? ` (${type.frequency})`
+        : "";
+
+    option.textContent =
+      `${type.name || "Contribution"}`
+      + amountText
+      + frequencyText;
+
+    select.appendChild(option);
+  }
+
+  if (
+    current &&
+    state.activeContributionTypes.some(
+      type =>
+        String(type.id) ===
+        String(current)
+    )
+  ) {
+    select.value = current;
+  }
+}
+
+
+/* =========================================================
+   CONTRIBUTION TYPE CHANGE
+   ========================================================= */
+
+function handleContributionTypeChange(
+  event
+) {
+  const typeId =
+    event?.target?.value ||
+    null;
+
+  state.selectedContributionTypeId =
+    typeId;
+
+  applyContributionTypeDefaults();
+
+  /*
+   * If a member is already selected, immediately refresh
+   * that member's status for the selected contribution type.
+   */
+  const memberSelect = firstExisting(
+    "#memberSelect",
+    "#member",
+    "#member_id",
+    "#contributionMember"
+  );
+
+  if (
+    memberSelect?.value &&
+    typeId
+  ) {
+    loadMemberContributionStatus(
+      memberSelect.value,
+      typeId
+    ).catch(error => {
+      console.error(
+        "Contribution status refresh failed:",
+        error
+      );
+    });
+  }
+}
+
+
+/* =========================================================
+   MEMBER CHANGE
+   ========================================================= */
+
+function handleMemberChange(event) {
+  const memberId =
+    event?.target?.value ||
+    null;
+
+  state.selectedMemberId =
+    memberId;
+
+  const type =
+    getSelectedContributionType();
+
+  if (
+    memberId &&
+    type?.id
+  ) {
+    loadMemberContributionStatus(
+      memberId,
+      type.id
+    ).catch(error => {
+      console.error(
+        "Member contribution status refresh failed:",
+        error
+      );
+    });
+  }
+}
+
+
+/* =========================================================
+   ACTIVE CONTRIBUTION CARD SELECTION
+   ========================================================= */
+
+function handleActiveContributionClick(
+  event
+) {
+  const card =
+    event.target.closest(
+      "[data-contribution-type-id]"
+    );
+
+  if (!card) {
+    return;
+  }
+
+  const typeId =
+    card.dataset.contributionTypeId;
+
+  const select = firstExisting(
+    "#contributionType",
+    "#contribution_type",
+    "#contributionTypeSelect",
+    "#paymentContributionType"
+  );
+
+  if (!select || !typeId) {
+    return;
+  }
+
+  const exists =
+    Array.from(select.options)
+      .some(
+        option =>
+          String(option.value) ===
+          String(typeId)
+      );
+
+  if (!exists) {
+    return;
+  }
+
+  select.value =
+    typeId;
+
+  select.dispatchEvent(
+    new Event("change", {
+      bubbles: true
+    })
+  );
+
+  /*
+   * Keep the selected contribution visible when the user
+   * clicks an active Custom Contribution card.
+   */
+  select.scrollIntoView({
+    behavior: "smooth",
+    block: "center"
+  });
+}
+
+
+/* =========================================================
+   ACTIVE CONTRIBUTION STATUS TABLE
+   ========================================================= */
+
+function renderContributionTypeTable(
+  rows = state.activeContributionTypes
+) {
+  const body = firstExisting(
+    "#activeContributionTypesBody",
+    "#contributionTypesBody",
+    "[data-active-contribution-types-body]"
+  );
+
+  if (!body) {
+    return;
+  }
+
+  if (!rows.length) {
+    const table =
+      body.closest("table");
+
+    const colspan =
+      table?.querySelectorAll("thead th")
+        ?.length ||
+      5;
+
+    body.innerHTML = `
       <tr>
-        <td colspan="8" class="cl-empty-table">
-          No contributions recorded yet.
+        <td colspan="${colspan}">
+          No active contribution types.
         </td>
       </tr>
     `;
+
     return;
   }
 
-  contributionRows.innerHTML =
-    contributions
-      .slice(0, 100)
-      .map(item => {
-        const date =
-          item.contribution_date ||
-          item.created_at ||
-          null;
+  body.innerHTML = rows
+    .map(type => {
+      const amount =
+        Number.isFinite(type.amount)
+          ? formatKES(type.amount)
+          : "Variable";
 
-        const paymentMethod =
-          normalizePaymentMethod(
-            item.payment_method
+      return `
+        <tr
+          data-contribution-type-id="${
+            escapeHTML(type.id)
+          }"
+        >
+          <td>
+            ${escapeHTML(
+              type.name ||
+              "Contribution"
+            )}
+          </td>
+
+          <td>
+            ${escapeHTML(amount)}
+          </td>
+
+          <td>
+            ${escapeHTML(
+              type.frequency ||
+              "—"
+            )}
+          </td>
+
+          <td>
+            <span class="status-badge status-active">
+              Active
+            </span>
+          </td>
+
+          <td>
+            ${escapeHTML(
+              type.description ||
+              "—"
+            )}
+          </td>
+        </tr>
+      `;
+    })
+    .join("");
+}
+
+
+/* =========================================================
+   MEMBER STATUS SUMMARY
+   ========================================================= */
+
+async function renderSelectedMemberSummary() {
+  const memberSelect = firstExisting(
+    "#memberSelect",
+    "#member",
+    "#member_id",
+    "#contributionMember"
+  );
+
+  const typeSelect = firstExisting(
+    "#contributionType",
+    "#contribution_type",
+    "#contributionTypeSelect"
+  );
+
+  if (
+    !memberSelect?.value ||
+    !typeSelect?.value
+  ) {
+    return null;
+  }
+
+  return loadMemberContributionStatus(
+    memberSelect.value,
+    typeSelect.value
+  );
+}
+
+
+/* =========================================================
+   PART 2 END
+   ========================================================= */
+
+/*
+   Part 3 continues with:
+
+   • Custom Contribution creation
+   • active Custom persistence/readback
+   • contribution-type creation RPC
+   • admin verification
+   • evidence queue
+   • verification through the canonical backend RPC
+*/
+/* =========================================================
+   PART 3 — CUSTOM CONTRIBUTIONS + PAYMENT EVIDENCE
+   ========================================================= */
+
+
+/* =========================================================
+   CUSTOM CONTRIBUTION FORM VALUES
+   ========================================================= */
+
+function getCustomContributionFormValues() {
+  const nameInput = firstExisting(
+    "#customContributionName",
+    "#custom_contribution_name",
+    "#customName",
+    "[name='custom_contribution_name']"
+  );
+
+  const amountInput = firstExisting(
+    "#customContributionAmount",
+    "#custom_contribution_amount",
+    "#customAmount",
+    "[name='custom_contribution_amount']"
+  );
+
+  const frequencyInput = firstExisting(
+    "#customContributionFrequency",
+    "#custom_contribution_frequency",
+    "#customFrequency",
+    "[name='custom_contribution_frequency']"
+  );
+
+  const descriptionInput = firstExisting(
+    "#customContributionDescription",
+    "#custom_contribution_description",
+    "#customDescription",
+    "[name='custom_contribution_description']"
+  );
+
+  return {
+    name:
+      nameInput?.value?.trim() ||
+      "",
+
+    amount:
+      normaliseAmount(
+        amountInput?.value
+      ),
+
+    frequency:
+      frequencyInput?.value?.trim() ||
+      null,
+
+    description:
+      descriptionInput?.value?.trim() ||
+      null
+  };
+}
+
+
+/* =========================================================
+   CUSTOM CONTRIBUTION VALIDATION
+   ========================================================= */
+
+function validateCustomContribution(values) {
+  if (!values.name) {
+    return "Enter a name for the contribution.";
+  }
+
+  if (values.name.length < 2) {
+    return "Contribution name is too short.";
+  }
+
+  if (values.name.length > 150) {
+    return "Contribution name is too long.";
+  }
+
+  if (
+    values.amount !== null &&
+    values.amount <= 0
+  ) {
+    return "Enter a valid contribution amount.";
+  }
+
+  return null;
+}
+
+
+/* =========================================================
+   CUSTOM CONTRIBUTION RPC
+   ========================================================= */
+
+async function createCustomContribution(values) {
+  /*
+   * IMPORTANT:
+   *
+   * This function does not INSERT directly into a table.
+   *
+   * The backend owns the creation of the contribution
+   * definition and any associated accounting configuration.
+   *
+   * Candidate RPC names are attempted only for compatibility
+   * with the existing CHAMA LIVE schema.
+   */
+
+  const rpcCandidates = [
+    "create_custom_contribution",
+    "create_group_custom_contribution",
+    "create_contribution_type"
+  ];
+
+  let lastError = null;
+
+  for (const rpcName of rpcCandidates) {
+    try {
+      const args = {
+        p_group_id:
+          state.group.id,
+
+        p_name:
+          values.name,
+
+        p_amount:
+          values.amount,
+
+        p_frequency:
+          values.frequency,
+
+        p_description:
+          values.description
+      };
+
+      const result =
+        await callRPC(
+          rpcName,
+          args
+        );
+
+      return result;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw (
+    lastError ||
+    new Error(
+      "Unable to create the Custom Contribution."
+    )
+  );
+}
+
+
+/* =========================================================
+   CREATE CUSTOM CONTRIBUTION
+   ========================================================= */
+
+async function submitCustomContribution(event) {
+  event?.preventDefault();
+
+  if (state.submitting) {
+    return;
+  }
+
+  if (!canManageContributions()) {
+    notify(
+      "You are not authorised to create contributions.",
+      "error"
+    );
+    return;
+  }
+
+  clearNotification();
+
+  const values =
+    getCustomContributionFormValues();
+
+  const validation =
+    validateCustomContribution(
+      values
+    );
+
+  if (validation) {
+    notify(
+      validation,
+      "error"
+    );
+    return;
+  }
+
+  state.submitting = true;
+
+  const submitButton =
+    firstExisting(
+      "#createCustomContribution",
+      "#saveCustomContribution",
+      "#customContributionSubmit",
+      "#customContributionForm button[type='submit']"
+    );
+
+  disable(
+    submitButton,
+    true
+  );
+
+  try {
+    const result =
+      await createCustomContribution(
+        values
+      );
+
+    notify(
+      "Custom Contribution created and activated.",
+      "success"
+    );
+
+    /*
+     * IMPORTANT:
+     *
+     * We immediately reload the canonical contribution
+     * definitions from the database.
+     *
+     * This is what makes the Custom Contribution remain
+     * visible after saving instead of disappearing with
+     * the form state.
+     */
+
+    await loadContributionTypes();
+
+    renderPaymentContributionTypes();
+
+    renderCustomContributionSummary();
+
+    renderContributionTypeTable();
+
+    /*
+     * Reset only the creation form.
+     * Never clear the active contribution definitions.
+     */
+    const form =
+      firstExisting(
+        "#customContributionForm",
+        "[data-custom-contribution-form]"
+      );
+
+    if (form) {
+      form.reset();
+    }
+
+    return result;
+  } catch (error) {
+    console.error(
+      "Custom Contribution creation failed:",
+      error
+    );
+
+    notify(
+      error?.message ||
+        "Unable to create the Custom Contribution.",
+      "error"
+    );
+
+    throw error;
+  } finally {
+    state.submitting = false;
+
+    disable(
+      submitButton,
+      false
+    );
+  }
+}
+
+
+/* =========================================================
+   ACTIVE CONTRIBUTION REFRESH
+   ========================================================= */
+
+async function refreshActiveContributionTypes() {
+  await loadContributionTypes();
+
+  renderPaymentContributionTypes();
+  renderCustomContributionSummary();
+  renderContributionTypeTable();
+
+  return state.activeContributionTypes;
+}
+
+
+/* =========================================================
+   PAYMENT EVIDENCE QUEUE
+   ========================================================= */
+
+async function loadPaymentEvidence() {
+  const container =
+    firstExisting(
+      "#paymentEvidenceBody",
+      "#evidenceBody",
+      "#paymentEvidenceList",
+      "[data-payment-evidence-body]"
+    );
+
+  /*
+   * Only authorised verification roles should request the
+   * verification queue.
+   */
+
+  if (!canVerifyEvidence()) {
+    if (container) {
+      hide(container);
+    }
+
+    return [];
+  }
+
+  let result = null;
+  let lastError = null;
+
+  const candidates = [
+    "get_member_payment_evidence",
+    "get_payment_evidence",
+    "get_pending_payment_evidence"
+  ];
+
+  for (
+    const rpcName
+    of candidates
+  ) {
+    try {
+      result =
+        await callRPC(
+          rpcName,
+          {
+            p_group_id:
+              state.group.id
+          }
+        );
+
+      const rows =
+        extractRows(result);
+
+      if (Array.isArray(rows)) {
+        state.paymentEvidence =
+          rows;
+
+        break;
+      }
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  if (
+    !Array.isArray(
+      state.paymentEvidence
+    )
+  ) {
+    state.paymentEvidence = [];
+  }
+
+  if (
+    lastError &&
+    !result &&
+    container
+  ) {
+    console.error(
+      "Payment evidence read failed:",
+      lastError
+    );
+
+    container.innerHTML = `
+      <tr>
+        <td colspan="8">
+          Unable to load payment evidence.
+        </td>
+      </tr>
+    `;
+
+    return [];
+  }
+
+  renderPaymentEvidence(
+    state.paymentEvidence
+  );
+
+  return state.paymentEvidence;
+}
+
+
+/* =========================================================
+   PAYMENT EVIDENCE STATUS
+   ========================================================= */
+
+function evidenceStatus(row) {
+  return String(
+    row.status ||
+    row.evidence_status ||
+    "pending"
+  )
+    .trim()
+    .toLowerCase();
+}
+
+function evidenceStatusLabel(status) {
+  switch (status) {
+    case "verified":
+    case "approved":
+      return "Verified";
+
+    case "rejected":
+      return "Rejected";
+
+    case "pending":
+    case "submitted":
+      return "Pending";
+
+    default:
+      return status
+        ? status.replaceAll(
+            "_",
+            " "
+          )
+        : "Pending";
+  }
+}
+
+
+/* =========================================================
+   PAYMENT EVIDENCE RENDERING
+   ========================================================= */
+
+function renderPaymentEvidence(rows) {
+  const container =
+    firstExisting(
+      "#paymentEvidenceBody",
+      "#evidenceBody",
+      "[data-payment-evidence-body]"
+    );
+
+  if (!container) {
+    return;
+  }
+
+  if (
+    !Array.isArray(rows) ||
+    rows.length === 0
+  ) {
+    const table =
+      container.closest("table");
+
+    const colspan =
+      table?.querySelectorAll(
+        "thead th"
+      )?.length ||
+      8;
+
+    container.innerHTML = `
+      <tr>
+        <td colspan="${colspan}">
+          No payment evidence awaiting verification.
+        </td>
+      </tr>
+    `;
+
+    return;
+  }
+
+  container.innerHTML =
+    rows
+      .map(row => {
+        const id =
+          row.id ??
+          row.evidence_id;
+
+        const memberName =
+          getContributionMemberName(
+            row
           );
 
-        const type =
-          contributionTypeLabel(item);
+        const amount =
+          row.amount ??
+          row.payment_amount ??
+          0;
+
+        const date =
+          row.payment_date ??
+          row.contribution_date ??
+          row.created_at;
+
+        const method =
+          row.payment_method ??
+          row.method ??
+          "—";
+
+        const reference =
+          row.reference ??
+          row.payment_reference ??
+          "—";
+
+        const status =
+          evidenceStatus(row);
+
+        const actions =
+          canVerifyEvidence() &&
+          (
+            status === "pending" ||
+            status === "submitted"
+          )
+            ? `
+              <button
+                type="button"
+                class="btn btn-primary"
+                data-verify-evidence="${escapeHTML(id)}"
+              >
+                Verify
+              </button>
+
+              <button
+                type="button"
+                class="btn btn-secondary"
+                data-reject-evidence="${escapeHTML(id)}"
+              >
+                Reject
+              </button>
+            `
+            : "";
 
         return `
-          <tr>
-            <td data-label="Date">
-              ${escapeHtml(formatDate(date))}
+          <tr
+            data-evidence-id="${escapeHTML(id)}"
+          >
+            <td>
+              ${escapeHTML(memberName)}
             </td>
-            <td data-label="Member">
-              <strong>
-                ${escapeHtml(getMemberName(item.member_id))}
-              </strong>
+
+            <td>
+              ${escapeHTML(
+                formatKES(amount)
+              )}
             </td>
-            <td data-label="Amount" class="cl-money-cell">
-              <strong>
-                ${escapeHtml(money(item.amount))}
-              </strong>
+
+            <td>
+              ${escapeHTML(
+                formatDate(date)
+              )}
             </td>
-            <td data-label="Type">
-              <span class="cl-type-badge">
-                ${escapeHtml(type)}
+
+            <td>
+              ${escapeHTML(method)}
+            </td>
+
+            <td>
+              ${escapeHTML(reference)}
+            </td>
+
+            <td>
+              <span
+                class="status-badge status-${escapeHTML(status)}"
+              >
+                ${escapeHTML(
+                  evidenceStatusLabel(
+                    status
+                  )
+                )}
               </span>
             </td>
-            <td data-label="Payment Method">
-              <span class="cl-payment-badge">
-                ${escapeHtml(paymentMethod)}
-              </span>
+
+            <td>
+              ${actions}
             </td>
-            <td data-label="Goal">—</td>
-            <td data-label="Reference">—</td>
-            <td data-label="Notes">—</td>
           </tr>
         `;
       })
       .join("");
 }
 
+
 /* =========================================================
-   CANONICAL STATUS HELPERS
-========================================================= */
+   EVIDENCE LOOKUP
+   ========================================================= */
 
-function canonicalStatusLabel(
-  status
-) {
-
-  const value =
-    String(
-      status || ""
-    )
-      .trim()
-      .toLowerCase();
-
-  const labels = {
-
-    paid:
-      "PAID",
-
-    partial:
-      "PARTIAL",
-
-    outstanding:
-      "OUTSTANDING",
-
-    credit:
-      "OVERPAID"
-
-  };
-
+function findEvidence(evidenceId) {
   return (
-    labels[value] ||
-    (
-      value
-        ? value.toUpperCase()
-        : "NOT SET"
-    )
+    state.paymentEvidence?.find(
+      row =>
+        String(
+          row.id ??
+          row.evidence_id
+        ) ===
+        String(evidenceId)
+    ) ||
+    null
   );
-
 }
 
-function canonicalStatusClass(
-  status
-) {
-
-  const value =
-    String(
-      status || ""
-    )
-      .trim()
-      .toLowerCase();
-
-  if (
-    value === "paid"
-  ) {
-
-    return "cl-status-paid";
-
-  }
-
-  if (
-    value === "partial"
-  ) {
-
-    return "cl-status-partial";
-
-  }
-
-  if (
-    value === "credit"
-  ) {
-
-    return "cl-status-credit";
-
-  }
-
-  if (
-    value === "outstanding"
-  ) {
-
-    return "cl-status-outstanding";
-
-  }
-
-  return "cl-status-neutral";
-
-}
-
-function canonicalProgress(
-  account
-) {
-
-  const due =
-    number(
-      account?.monthly_due
-    );
-
-  const applied =
-    number(
-      account?.applied_this_month
-    );
-
-  if (
-    due <= 0
-  ) {
-
-    return 0;
-
-  }
-
-  return Math.min(
-    Math.max(
-      (
-        applied /
-        due
-      ) * 100,
-      0
-    ),
-    100
-  );
-
-}
 
 /* =========================================================
-   MONTHLY STATUS
-========================================================= */
+   VERIFY PAYMENT EVIDENCE
+   ========================================================= */
 
-function renderMemberStatus() {
+async function verifyPaymentEvidence(
+  evidenceId
+) {
+  if (!canVerifyEvidence()) {
+    throw new Error(
+      "You are not authorised to verify payment evidence."
+    );
+  }
 
-  if (!memberStatusRows) {
+  if (!evidenceId) {
+    throw new Error(
+      "Payment evidence could not be identified."
+    );
+  }
+
+  /*
+   * Verification is a backend accounting operation.
+   *
+   * The verification RPC is responsible for:
+   *   1. validating the evidence
+   *   2. authorising the payment
+   *   3. invoking canonical contribution recording
+   *   4. creating allocations
+   *   5. maintaining accounting locks
+   *   6. preserving replay safety
+   */
+
+  const result =
+    await callRPC(
+      "verify_member_payment_evidence",
+      {
+        p_evidence_id:
+          evidenceId
+      }
+    );
+
+  return result;
+}
+
+
+/* =========================================================
+   REJECT PAYMENT EVIDENCE
+   ========================================================= */
+
+async function rejectPaymentEvidence(
+  evidenceId,
+  reason = null
+) {
+  if (!canVerifyEvidence()) {
+    throw new Error(
+      "You are not authorised to reject payment evidence."
+    );
+  }
+
+  if (!evidenceId) {
+    throw new Error(
+      "Payment evidence could not be identified."
+    );
+  }
+
+  /*
+   * Rejection is also backend-owned.
+   * No direct UPDATE against member_payment_evidence.
+   */
+
+  const rpcCandidates = [
+    "reject_member_payment_evidence",
+    "reject_payment_evidence"
+  ];
+
+  let lastError = null;
+
+  for (
+    const rpcName
+    of rpcCandidates
+  ) {
+    try {
+      return await callRPC(
+        rpcName,
+        {
+          p_evidence_id:
+            evidenceId,
+
+          p_reason:
+            reason
+        }
+      );
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw (
+    lastError ||
+    new Error(
+      "Unable to reject payment evidence."
+    )
+  );
+}
+
+
+/* =========================================================
+   VERIFY / REJECT CLICK HANDLERS
+   ========================================================= */
+
+async function handleEvidenceAction(
+  event
+) {
+  const verifyButton =
+    event.target.closest(
+      "[data-verify-evidence]"
+    );
+
+  const rejectButton =
+    event.target.closest(
+      "[data-reject-evidence]"
+    );
+
+  if (
+    !verifyButton &&
+    !rejectButton
+  ) {
     return;
   }
 
-  if (!members.length) {
+  const evidenceId =
+    verifyButton?.dataset
+      ?.verifyEvidence ||
+    rejectButton?.dataset
+      ?.rejectEvidence;
 
-    memberStatusRows.innerHTML = `
-
-      <tr>
-
-        <td
-          colspan="7"
-          class="cl-empty-table"
-        >
-
-          No active members found.
-
-        </td>
-
-      </tr>
-
-    `;
-
+  if (!evidenceId) {
     return;
-
   }
 
-  if (!canonicalMemberStatus.length) {
+  const evidence =
+    findEvidence(
+      evidenceId
+    );
 
-    memberStatusRows.innerHTML = `
-
-      <tr>
-
-        <td
-          colspan="7"
-          class="cl-empty-table"
-        >
-
-          No canonical accounting rows are
-          available for
-          ${escapeHtml(
-            formatAccountingMonth(
-              accountingMonth
-            )
-          )}.
-
-        </td>
-
-      </tr>
-
-    `;
-
+  if (!evidence) {
+    notify(
+      "Payment evidence could not be found.",
+      "error"
+    );
     return;
-
   }
 
-  memberStatusRows.innerHTML =
-    members
-      .map(
-        member => {
+  if (verifyButton) {
+    const confirmed =
+      window.confirm(
+        `Verify the payment of ${
+          formatKES(
+            evidence.amount ??
+            evidence.payment_amount ??
+            0
+          )
+        } for ${
+          getContributionMemberName(
+            evidence
+          )
+        }?`
+      );
 
-          const account =
-            getCanonicalMemberStatus(
-              member.id
-            );
+    if (!confirmed) {
+      return;
+    }
 
-          if (!account) {
+    disable(
+      verifyButton,
+      true
+    );
 
-            return `
+    try {
+      await verifyPaymentEvidence(
+        evidenceId
+      );
 
-              <tr>
+      notify(
+        "Payment evidence verified and recorded through canonical accounting.",
+        "success"
+      );
 
-                <td
-                  data-label="Member"
-                  class="cl-member-cell"
-                >
+      await refreshContributionView();
 
-                  <strong>
-                    ${escapeHtml(
-                      member.name
-                    )}
-                  </strong>
+      /*
+       * Refresh evidence separately because verification
+       * changes its status.
+       */
+      await loadPaymentEvidence();
+    } catch (error) {
+      console.error(
+        "Evidence verification failed:",
+        error
+      );
 
-                </td>
+      notify(
+        error?.message ||
+          "Unable to verify payment evidence.",
+        "error"
+      );
+    } finally {
+      disable(
+        verifyButton,
+        false
+      );
+    }
 
-                <td data-label="Current Due">
-                  —
-                </td>
+    return;
+  }
 
-                <td data-label="Previous Arrears">
-                  —
-                </td>
+  if (rejectButton) {
+    const reason =
+      window.prompt(
+        "Reason for rejecting this payment evidence (optional):"
+      );
 
-                <td data-label="Current Paid">
-                  —
-                </td>
+    /*
+     * Cancelled prompt means no action.
+     */
+    if (
+      reason === null
+    ) {
+      return;
+    }
 
-                <td data-label="Carry Forward">
-                  —
-                </td>
+    disable(
+      rejectButton,
+      true
+    );
 
-                <td data-label="Outstanding">
-                  —
-                </td>
+    try {
+      await rejectPaymentEvidence(
+        evidenceId,
+        reason.trim() || null
+      );
 
-                <td data-label="Status">
+      notify(
+        "Payment evidence rejected.",
+        "success"
+      );
 
-                  <span
-                    class="
-                      cl-status-badge
-                      cl-status-neutral
-                    "
-                  >
-                    NOT AVAILABLE
-                  </span>
+      await loadPaymentEvidence();
+    } catch (error) {
+      console.error(
+        "Evidence rejection failed:",
+        error
+      );
 
-                </td>
+      notify(
+        error?.message ||
+          "Unable to reject payment evidence.",
+        "error"
+      );
+    } finally {
+      disable(
+        rejectButton,
+        false
+      );
+    }
+  }
+}
 
-              </tr>
 
-            `;
+/* =========================================================
+   CUSTOM CONTRIBUTION — ACTIVE DISPLAY
+   ========================================================= */
 
-          }
+function renderActiveContributionDashboardCards() {
+  const containers = [
+    firstExisting(
+      "#adminActiveContributions",
+      "#dashboardActiveContributions",
+      "[data-admin-active-contributions]"
+    )
+  ].filter(Boolean);
 
-          const monthlyDue =
-            number(
-              account.monthly_due
-            );
+  for (
+    const container
+    of containers
+  ) {
+    if (
+      state.activeContributionTypes.length ===
+      0
+    ) {
+      container.innerHTML = `
+        <div class="empty-state">
+          No active contributions.
+        </div>
+      `;
 
-          const previousArrears =
-            number(
-              account.previous_outstanding
-            );
+      continue;
+    }
 
-          const currentPaid =
-            number(
-              account.current_month_payment
-            );
-
-          const appliedThisMonth =
-            number(
-              account.applied_this_month
-            );
-
-          const carryForward =
-            number(
-              account.carry_forward
-            );
-
-          const outstanding =
-            number(
-              account.current_outstanding
-            );
-
-          const progress =
-            canonicalProgress(
-              account
-            );
-
-          const status =
-            canonicalStatusLabel(
-              account.status
-            );
-
-          const statusClass =
-            canonicalStatusClass(
-              account.status
-            );
+    container.innerHTML =
+      state.activeContributionTypes
+        .map(type => {
+          const amount =
+            Number.isFinite(type.amount)
+              ? formatKES(type.amount)
+              : "Variable";
 
           return `
-
-            <tr>
-
-              <td
-                data-label="Member"
-                class="cl-member-cell"
-              >
-
-                <strong>
-                  ${escapeHtml(
-                    member.name
-                  )}
-                </strong>
-
-              </td>
-
-              <td
-                data-label="Current Due"
-                class="cl-money-cell"
-              >
-
-                ${escapeHtml(
-                  money(monthlyDue)
+            <article
+              class="active-contribution-card"
+              data-contribution-type-id="${
+                escapeHTML(
+                  type.id
+                )
+              }"
+            >
+              <div class="active-contribution-card__title">
+                ${escapeHTML(
+                  type.name ||
+                  "Contribution"
                 )}
+              </div>
 
-              </td>
+              <div class="active-contribution-card__amount">
+                ${escapeHTML(amount)}
+              </div>
 
-              <td data-label="Previous Arrears">
-
+              <div class="active-contribution-card__meta">
                 ${
-                  previousArrears > 0
-                    ? `
-                      <span class="cl-arrears">
-                        ${escapeHtml(
-                          money(
-                            previousArrears
-                          )
-                        )}
-                      </span>
-                    `
-                    : `
-                      <span class="cl-zero">
-                        —
-                      </span>
-                    `
+                  escapeHTML(
+                    type.frequency ||
+                    "Contribution"
+                  )
                 }
+              </div>
 
-              </td>
-
-              <td data-label="Current Paid">
-
-                <div class="cl-paid-cell">
-
-                  <strong>
-                    ${escapeHtml(
-                      money(
-                        currentPaid
-                      )
-                    )}
-                  </strong>
-
-                  <div
-                    class="cl-mini-progress"
-                    aria-hidden="true"
-                  >
-
-                    <span
-                      style="width:${progress}%;"
-                    ></span>
-
-                  </div>
-
-                  <small class="cl-sub-detail">
-
-                    Applied:
-                    ${escapeHtml(
-                      money(
-                        appliedThisMonth
-                      )
-                    )}
-
-                  </small>
-
-                </div>
-
-              </td>
-
-              <td data-label="Carry Forward">
-
-                ${
-                  carryForward > 0
-                    ? `
-                      <span class="cl-carry-forward">
-                        ${escapeHtml(
-                          money(
-                            carryForward
-                          )
-                        )}
-                      </span>
-                    `
-                    : `
-                      <span class="cl-zero">
-                        —
-                      </span>
-                    `
-                }
-
-              </td>
-
-              <td data-label="Outstanding">
-
-                ${
-                  outstanding > 0
-                    ? `
-                      <strong
-                        class="cl-outstanding-amount"
-                      >
-                        ${escapeHtml(
-                          money(
-                            outstanding
-                          )
-                        )}
-                      </strong>
-                    `
-                    : `
-                      <span class="cl-zero">
-                        —
-                      </span>
-                    `
-                }
-
-              </td>
-
-              <td data-label="Status">
-
-                <span
-                  class="
-                    cl-status-badge
-                    ${statusClass}
-                  "
-                >
-
-                  ${escapeHtml(
-                    status
-                  )}
-
-                </span>
-
-              </td>
-
-            </tr>
-
+              <span class="status-badge status-active">
+                Active
+              </span>
+            </article>
           `;
-
-        }
-      )
-      .join("");
-
+        })
+        .join("");
+  }
 }
 
+
 /* =========================================================
-   SUMMARY
-========================================================= */
+   MEMBER CONTRIBUTION STATUS CARD
+   ========================================================= */
 
-function renderSummary() {
-
+async function renderMemberContributionCards() {
   const container =
-    document.getElementById(
-      "contributionSummary"
+    firstExisting(
+      "#memberContributionStatuses",
+      "#memberContributionTypes",
+      "#memberContributionRules",
+      "[data-member-contribution-statuses]"
     );
 
   if (!container) {
     return;
   }
 
-  const total =
-    contributions.reduce(
-      (
-        sum,
-        item
-      ) =>
-        sum +
-        number(item.amount),
-      0
-    );
-
-  const selectedMonth =
-    accountingMonth;
-
-  const monthlyTotal =
-    contributions
-      .filter(
-        item =>
-          String(
-            item.contribution_type ||
-            ""
-          ).toLowerCase() ===
-          "monthly" &&
-          getContributionMonth(item) ===
-          selectedMonth
-      )
-      .reduce(
-        (
-          sum,
-          item
-        ) =>
-          sum +
-          number(item.amount),
-        0
-      );
-
-  const customTotal =
-    contributions
-      .filter(
-        item =>
-          String(
-            item.contribution_type ||
-            ""
-          ).toLowerCase() ===
-          "custom"
-      )
-      .reduce(
-        (
-          sum,
-          item
-        ) =>
-          sum +
-          number(item.amount),
-        0
-      );
-
-  const outstandingMembers =
-    canonicalMemberStatus.filter(
-      account =>
-        number(
-          account.current_outstanding
-        ) > 0
-    ).length;
-
-  container.innerHTML = `
-
-    <div class="cl-contribution-summary-card">
-
-      <span>
-        TOTAL RECORDED
-      </span>
-
-      <strong>
-        ${escapeHtml(
-          money(total)
-        )}
-      </strong>
-
-      <small>
-        All contribution records
-      </small>
-
-    </div>
-
-    <div class="cl-contribution-summary-card">
-
-      <span>
-        ${escapeHtml(
-          formatAccountingMonth(
-            selectedMonth
-          )
-        ).toUpperCase()}
-      </span>
-
-      <strong>
-        ${escapeHtml(
-          money(monthlyTotal)
-        )}
-      </strong>
-
-      <small>
-        Monthly contributions recorded
-      </small>
-
-    </div>
-
-    <div class="cl-contribution-summary-card">
-
-      <span>
-        CUSTOM PAYMENTS
-      </span>
-
-      <strong>
-        ${escapeHtml(
-          money(customTotal)
-        )}
-      </strong>
-
-      <small>
-        Recorded Custom Contribution payments
-      </small>
-
-    </div>
-
-    <div class="cl-contribution-summary-card">
-
-      <span>
-        NEEDS ATTENTION
-      </span>
-
-      <strong>
-        ${escapeHtml(
-          String(
-            outstandingMembers
-          )
-        )}
-      </strong>
-
-      <small>
-        Canonical outstanding members
-      </small>
-
-    </div>
-
-  `;
-
-}
-
-/* =========================================================
-   CONTRIBUTION GOALS
-========================================================= */
-
-function renderContributionGoals() {
-
-  if (!goalProgressContainer) {
+  if (
+    !state.member?.id
+  ) {
     return;
   }
 
-  if (!contributionGoals.length) {
-
-    goalProgressContainer.innerHTML = `
-
-      <div class="cl-goals-empty">
-
-        <strong>
-          No active contribution goals
-        </strong>
-
-        <span>
-          Create a contribution goal to start
-          tracking progress.
-        </span>
-
+  if (
+    !state.activeContributionTypes.length
+  ) {
+    container.innerHTML = `
+      <div class="empty-state">
+        No active contribution rules.
       </div>
-
     `;
 
     return;
-
   }
 
-  goalProgressContainer.innerHTML =
-    contributionGoals
-      .map(
-        goal => {
+  const cards = [];
 
-          const target =
-            number(
-              goal.target_amount
+  for (
+    const type
+    of state.activeContributionTypes
+  ) {
+    try {
+      const position =
+        await getMemberContributionPosition(
+          state.member.id,
+          type.id
+        );
+
+      const normalised =
+        normalisePosition(
+          position
+        );
+
+      cards.push(`
+        <article
+          class="member-contribution-card"
+          data-contribution-type-id="${
+            escapeHTML(type.id)
+          }"
+        >
+          <div class="member-contribution-card__header">
+            <strong>
+              ${escapeHTML(
+                type.name ||
+                "Contribution"
+              )}
+            </strong>
+
+            <span
+              class="status-badge ${statusClass(
+                normalised.status
+              )}"
+            >
+              ${escapeHTML(
+                statusLabel(
+                  normalised.status
+                )
+              )}
+            </span>
+          </div>
+
+          <div class="member-contribution-card__amount">
+            Required:
+            ${escapeHTML(
+              formatKES(
+                normalised.required
+              )
+            )}
+          </div>
+
+          <div class="member-contribution-card__paid">
+            Paid:
+            ${escapeHTML(
+              formatKES(
+                normalised.allocated
+              )
+            )}
+          </div>
+
+          <div class="member-contribution-card__outstanding">
+            Outstanding:
+            ${escapeHTML(
+              formatKES(
+                normalised.outstanding
+              )
+            )}
+          </div>
+        </article>
+      `);
+    } catch (error) {
+      console.error(
+        "Member contribution position failed:",
+        error
+      );
+    }
+  }
+
+  container.innerHTML =
+    cards.join("");
+}
+
+
+/* =========================================================
+   PART 3 END
+   ========================================================= */
+
+/*
+   Part 4 continues with:
+
+   • page initialisation
+   • all event bindings
+   • role-based form visibility
+   • final refresh sequence
+   • exported initPage()
+   • no automatic page execution
+*/
+/* =========================================================
+   PART 4 — INITIALISATION / EVENT BINDING / EXPORTS
+   ========================================================= */
+
+
+/* =========================================================
+   FORM VISIBILITY
+   ========================================================= */
+
+function applyRoleBasedVisibility() {
+  const managerOnlySelectors = [
+    "#recordContributionSection",
+    "#recordContributionCard",
+    "#adminContributionSection",
+    "#customContributionSection",
+    "#customContributionCard",
+    "[data-manager-only]"
+  ];
+
+  const verificationOnlySelectors = [
+    "#paymentEvidenceVerification",
+    "#evidenceVerification",
+    "#verificationQueue",
+    "[data-verification-only]"
+  ];
+
+  const managerAllowed =
+    canManageContributions();
+
+  const verifierAllowed =
+    canVerifyEvidence();
+
+  for (
+    const selector
+    of managerOnlySelectors
+  ) {
+    const elements =
+      document.querySelectorAll(
+        selector
+      );
+
+    elements.forEach(
+      element => {
+        if (managerAllowed) {
+          show(element);
+        } else {
+          hide(element);
+        }
+      }
+    );
+  }
+
+  for (
+    const selector
+    of verificationOnlySelectors
+  ) {
+    const elements =
+      document.querySelectorAll(
+        selector
+      );
+
+    elements.forEach(
+      element => {
+        if (verifierAllowed) {
+          show(element);
+        } else {
+          hide(element);
+        }
+      }
+    );
+  }
+
+  /*
+   * Ordinary members can submit payment evidence.
+   */
+  const evidenceForm =
+    firstExisting(
+      "#paymentEvidenceForm",
+      "[data-payment-evidence-form]"
+    );
+
+  if (evidenceForm) {
+    show(evidenceForm);
+  }
+}
+
+
+/* =========================================================
+   DATE DEFAULT
+   ========================================================= */
+
+function setDefaultDates() {
+  const today =
+    new Date()
+      .toISOString()
+      .slice(0, 10);
+
+  const dateInputs = [
+    firstExisting(
+      "#contributionDate",
+      "#contribution_date"
+    ),
+
+    firstExisting(
+      "#evidenceDate",
+      "#evidence_date"
+    )
+  ];
+
+  for (
+    const input
+    of dateInputs
+  ) {
+    if (
+      input &&
+      !input.value
+    ) {
+      input.value =
+        today;
+    }
+  }
+}
+
+
+/* =========================================================
+   EVENT BINDING — CONTRIBUTION FORM
+   ========================================================= */
+
+function bindContributionForm() {
+  const form =
+    firstExisting(
+      "#contributionForm",
+      "#recordContributionForm",
+      "[data-contribution-form]"
+    );
+
+  if (
+    form &&
+    !form.dataset.bound
+  ) {
+    form.addEventListener(
+      "submit",
+      recordContribution
+    );
+
+    form.dataset.bound =
+      "true";
+  }
+
+  const typeSelect =
+    firstExisting(
+      "#contributionType",
+      "#contribution_type",
+      "#contributionTypeSelect",
+      "#paymentContributionType"
+    );
+
+  if (
+    typeSelect &&
+    !typeSelect.dataset.bound
+  ) {
+    typeSelect.addEventListener(
+      "change",
+      handleContributionTypeChange
+    );
+
+    typeSelect.dataset.bound =
+      "true";
+  }
+
+  const memberSelect =
+    firstExisting(
+      "#memberSelect",
+      "#member",
+      "#member_id",
+      "#contributionMember"
+    );
+
+  if (
+    memberSelect &&
+    !memberSelect.dataset.bound
+  ) {
+    memberSelect.addEventListener(
+      "change",
+      handleMemberChange
+    );
+
+    memberSelect.dataset.bound =
+      "true";
+  }
+
+  const amountInput =
+    firstExisting(
+      "#contributionAmount",
+      "#contribution_amount",
+      "#amount"
+    );
+
+  if (
+    amountInput &&
+    !amountInput.dataset.bound
+  ) {
+    amountInput.addEventListener(
+      "input",
+      () => {
+        /*
+         * Once the user manually changes the amount,
+         * stop treating it as the automatically-filled
+         * contribution-rule amount.
+         */
+        delete amountInput.dataset.autoFilled;
+      }
+    );
+
+    amountInput.dataset.bound =
+      "true";
+  }
+}
+
+
+/* =========================================================
+   EVENT BINDING — PAYMENT EVIDENCE
+   ========================================================= */
+
+function bindPaymentEvidenceForm() {
+  const form =
+    firstExisting(
+      "#paymentEvidenceForm",
+      "[data-payment-evidence-form]"
+    );
+
+  if (
+    form &&
+    !form.dataset.bound
+  ) {
+    form.addEventListener(
+      "submit",
+      submitPaymentEvidence
+    );
+
+    form.dataset.bound =
+      "true";
+  }
+}
+
+
+/* =========================================================
+   EVENT BINDING — CUSTOM CONTRIBUTION
+   ========================================================= */
+
+function bindCustomContributionForm() {
+  const form =
+    firstExisting(
+      "#customContributionForm",
+      "[data-custom-contribution-form]"
+    );
+
+  if (
+    form &&
+    !form.dataset.bound
+  ) {
+    form.addEventListener(
+      "submit",
+      submitCustomContribution
+    );
+
+    form.dataset.bound =
+      "true";
+  }
+}
+
+
+/* =========================================================
+   EVENT BINDING — EVIDENCE ACTIONS
+   ========================================================= */
+
+function bindEvidenceActions() {
+  const containers = [
+    firstExisting(
+      "#paymentEvidenceBody",
+      "#evidenceBody",
+      "#paymentEvidenceList"
+    )
+  ].filter(Boolean);
+
+  for (
+    const container
+    of containers
+  ) {
+    if (
+      container.dataset.evidenceBound
+    ) {
+      continue;
+    }
+
+    container.addEventListener(
+      "click",
+      handleEvidenceAction
+    );
+
+    container.dataset.evidenceBound =
+      "true";
+  }
+}
+
+
+/* =========================================================
+   EVENT BINDING — ACTIVE CONTRIBUTIONS
+   ========================================================= */
+
+function bindActiveContributionCards() {
+  const containers = [
+    firstExisting(
+      "#activeContributions",
+      "#activeContributionTypes",
+      "#customContributions",
+      "[data-active-contributions]"
+    ),
+
+    firstExisting(
+      "#adminActiveContributions",
+      "#dashboardActiveContributions",
+      "[data-admin-active-contributions]"
+    )
+  ].filter(Boolean);
+
+  for (
+    const container
+    of containers
+  ) {
+    if (
+      container.dataset.activeContributionBound
+    ) {
+      continue;
+    }
+
+    container.addEventListener(
+      "click",
+      handleActiveContributionClick
+    );
+
+    container.dataset.activeContributionBound =
+      "true";
+  }
+}
+
+
+/* =========================================================
+   EVENT BINDING — REFRESH BUTTONS
+   ========================================================= */
+
+function bindRefreshButtons() {
+  const buttons =
+    document.querySelectorAll(
+      [
+        "#refreshContributions",
+        "#refreshContributionList",
+        "#refreshEvidence",
+        "[data-refresh-contributions]"
+      ].join(",")
+    );
+
+  buttons.forEach(
+    button => {
+      if (
+        button.dataset.bound
+      ) {
+        return;
+      }
+
+      button.addEventListener(
+        "click",
+        async () => {
+          if (state.loading) {
+            return;
+          }
+
+          try {
+            state.loading =
+              true;
+
+            disable(
+              button,
+              true
             );
 
-          /*
-           * This is a display-only aggregation.
-           * It does not create or modify accounting.
-           */
-          const raised =
-            contributions
-              .filter(
-                item =>
-                  false
-              )
-              .reduce(
-                (
-                  sum,
-                  item
-                ) =>
-                  sum +
-                  number(
-                    item.amount
-                  ),
-                0
-              );
+            await refreshContributionView();
 
-          const percentage =
-            target > 0
-              ? Math.min(
-                  (
-                    raised /
-                    target
-                  ) * 100,
-                  100
-                )
-              : 0;
+            if (
+              canVerifyEvidence()
+            ) {
+              await loadPaymentEvidence();
+            }
 
-          return `
+            await renderMemberContributionCards();
 
-            <div class="cl-goal-card">
+          } catch (error) {
+            console.error(
+              "Contribution refresh failed:",
+              error
+            );
 
-              <div class="cl-goal-top">
+            notify(
+              error?.message ||
+                "Unable to refresh contributions.",
+              "error"
+            );
+          } finally {
+            state.loading =
+              false;
 
-                <div>
-
-                  <strong>
-                    ${escapeHtml(
-                      goal.goal_name ||
-                      "Contribution Goal"
-                    )}
-                  </strong>
-
-                  ${
-                    goal.category
-                      ? `
-                        <small>
-                          ${escapeHtml(
-                            goal.category
-                          )}
-                        </small>
-                      `
-                      : ""
-                  }
-
-                </div>
-
-                <strong>
-                  ${escapeHtml(
-                    money(raised)
-                  )}
-                </strong>
-
-              </div>
-
-              <div class="cl-goal-progress">
-
-                <span
-                  style="width:${percentage}%;"
-                ></span>
-
-              </div>
-
-              <div class="cl-goal-bottom">
-
-                <span>
-                  ${escapeHtml(
-                    target > 0
-                      ? `${money(target)} target`
-                      : "No target set"
-                  )}
-                </span>
-
-                <strong>
-                  ${escapeHtml(
-                    `${Math.round(
-                      percentage
-                    )}%`
-                  )}
-                </strong>
-
-              </div>
-
-            </div>
-
-          `;
-
+            disable(
+              button,
+              false
+            );
+          }
         }
-      )
-      .join("");
+      );
 
+      button.dataset.bound =
+        "true";
+    }
+  );
 }
 
+
 /* =========================================================
-   RECORD CONTRIBUTION
-   CANONICAL 2B PATH
-========================================================= */
+   GLOBAL EVENT BINDING
+   ========================================================= */
 
-async function recordContribution(event) {
+function bindEvents() {
+  bindContributionForm();
+  bindPaymentEvidenceForm();
+  bindCustomContributionForm();
+  bindEvidenceActions();
+  bindActiveContributionCards();
+  bindRefreshButtons();
+}
 
-  event.preventDefault();
 
-  clearError();
+/* =========================================================
+   LOADING STATE
+   ========================================================= */
 
-  if (!isAuthorizedRecorder()) {
-
-    showError(
-      new Error(
-        "You are not authorised to record canonical contributions."
-      )
+function setPageLoading(isLoading) {
+  const loader =
+    firstExisting(
+      "#contributionsLoading",
+      "#pageLoading",
+      "[data-contributions-loading]"
     );
 
-    return;
-
-  }
-
-  const memberId =
-    memberSelect?.value ||
-    "";
-
-  let amount =
-    number(
-      amountInput?.value
+  const content =
+    firstExisting(
+      "#contributionsContent",
+      "#pageContent",
+      "[data-contributions-content]"
     );
 
-  const contributionDate =
-    normalizeContributionDate(
-      dateInput?.value
-    );
-
-  const contributionType =
-    String(
-      typeSelect?.value ||
-      ""
-    )
-      .trim()
-      .toLowerCase();
-
-  const paymentMethod =
-    normalizePaymentMethod(
-      methodSelect?.value
-    );
-
-  const reference =
-    mpesaReference?.value
-      ?.trim() ||
-    "";
-
-  const normalNotes =
-    notesInput?.value
-      ?.trim() ||
-    "";
-
-  const goalId =
-    goalSelect?.value ||
-    null;
-
-  if (!memberId) {
-
-    showError(
-      new Error(
-        "Please select a member."
-      )
-    );
-
-    return;
-
-  }
-
-  if (
-    amount <= 0
-  ) {
-
-    showError(
-      new Error(
-        "Please enter a valid amount greater than zero."
-      )
-    );
-
-    amountInput?.focus();
-
-    return;
-
-  }
-
-  if (!contributionDate) {
-
-    showError(
-      new Error(
-        "Please select a valid contribution date in YYYY-MM-DD format."
-      )
-    );
-
-    dateInput?.focus();
-
-    return;
-
-  }
-
-  if (!contributionType) {
-
-    showError(
-      new Error(
-        "Please select the contribution type."
-      )
-    );
-
-    typeSelect?.focus();
-
-    return;
-
-  }
-
-  const isCustomContribution =
-    contributionType.startsWith(
-      "custom:"
-    );
-
-  const customContributionTypeId =
-    isCustomContribution
-      ? contributionType.slice(
-          "custom:".length
-        )
-      : null;
-
-  if (
-    isCustomContribution
-  ) {
-
-    let activeCustom =
-      findActiveCustomContribution(
-        customContributionTypeId
-      );
-
-    if (!activeCustom) {
-
-      await refreshActiveCustomContributions(
-        contributionType
-      );
-
-      activeCustom =
-        findActiveCustomContribution(
-          customContributionTypeId
-        );
-
-      if (!activeCustom) {
-
-        showError(
-          new Error(
-            "The selected custom contribution is no longer active."
-          )
-        );
-
-        return;
-
-      }
-
+  if (isLoading) {
+    if (loader) {
+      show(loader);
     }
 
-    /*
-     * The configured Custom amount is authoritative for
-     * the normal payment amount shown by the UI.
-     *
-     * The backend RPC remains authoritative and must
-     * enforce its own accounting rules.
-     */
-    if (
-      number(activeCustom.amount) > 0
-    ) {
-
-      amount =
-        number(activeCustom.amount);
-
-      if (amountInput) {
-
-        amountInput.value =
-          amount;
-
-      }
-
-    }
-
-  }
-
-  if (!paymentMethod) {
-
-    showError(
-      new Error(
-        "Please select the payment method."
-      )
-    );
-
     return;
-
   }
 
-  if (
-    paymentMethod ===
-      PAYMENT_METHODS.MPESA &&
-    !reference
-  ) {
-
-    showError(
-      new Error(
-        "Please enter the M-Pesa reference."
-      )
-    );
-
-    mpesaReference?.focus();
-
-    return;
-
+  if (loader) {
+    hide(loader);
   }
 
+  if (content) {
+    show(content);
+  }
+}
+
+
+/* =========================================================
+   INITIAL DATA LOAD
+   ========================================================= */
+
+async function loadInitialData() {
   /*
-   * contributionDate is now guaranteed to be an exact
-   * PostgreSQL date-compatible YYYY-MM-DD value.
-   */
-  const month =
-    contributionDate.slice(
-      0,
-      7
-    );
-
-  if (
-    !/^\d{4}-\d{2}$/.test(
-      month
-    )
-  ) {
-
-    showError(
-      new Error(
-        "Please enter a valid contribution date."
-      )
-    );
-
-    return;
-
-  }
-
-  /*
-   * Monthly duplicate warning only.
+   * Order matters:
    *
-   * Custom Contribution payments do not participate
-   * in the monthly duplicate warning.
+   * 1. Auth/context
+   * 2. Contribution definitions
+   * 3. Members
+   * 4. Ledger
+   * 5. Evidence for authorised verifiers
+   * 6. Member-specific statuses
    */
-  const existing =
-    !isCustomContribution &&
-    contributions.some(
-      item =>
-        String(item.member_id) ===
-          String(memberId) &&
-        String(
-          item.contribution_type ||
-          ""
-        ).toLowerCase() ===
-          "monthly" &&
-        getContributionMonth(item) ===
-          month
-    );
 
-  if (existing) {
+  await loadContext();
 
-    const proceed =
-      window.confirm(
+  await loadContributionTypes();
 
-        `This member already has a monthly contribution for ${month}.\n\n` +
+  renderPaymentContributionTypes();
 
-        `You can still record another payment. ` +
+  renderCustomContributionSummary();
 
-        `Any excess payment will be handled by canonical accounting.\n\n` +
+  renderContributionTypeTable();
 
-        `Continue?`
+  renderActiveContributionDashboardCards();
 
+  /*
+   * Members are needed by manager/admin payment recording.
+   */
+  if (
+    canManageContributions()
+  ) {
+    try {
+      await loadMembers();
+    } catch (error) {
+      console.error(
+        "Member list failed:",
+        error
       );
 
-    if (!proceed) {
-      return;
+      /*
+       * Do not prevent the rest of the page from loading.
+       */
+      state.members = [];
     }
-
   }
 
-  const finalNotes =
-    String(
-      normalNotes
-    ).trim() ||
-    null;
+  await loadContributionLedger();
 
-  let idempotencyKey;
-
-  try {
-
-    idempotencyKey =
-      getContributionIdempotencyKey();
-
-  }
-  catch (error) {
-
-    showError(error);
-
-    return;
-
+  if (
+    canVerifyEvidence()
+  ) {
+    await loadPaymentEvidence();
   }
 
-  if (saveButton) {
-
-    saveButton.disabled =
-      true;
-
-    saveButton.textContent =
-      "Saving...";
-
-  }
-
-  if (statusEl) {
-
-    statusEl.hidden =
-      false;
-
-    statusEl.textContent =
-      isCustomContribution
-        ? "Recording custom contribution payment securely..."
-        : "Recording monthly contribution securely...";
-
-  }
-
-  try {
-
-    let data;
-
-    let error;
-
-    /* =====================================================
-       MONTHLY
-    ===================================================== */
-
-    if (!isCustomContribution) {
-
-      ({
-        data,
-        error
-      } =
-        await supabase.rpc(
-          "cl_2b_record_contribution",
-          {
-            p_group_id:
-              groupId,
-
-            p_member_id:
-              memberId,
-
-            p_amount:
-              amount,
-
-            p_contribution_type:
-              "monthly",
-
-            p_contribution_date:
-              contributionDate,
-
-            p_payment_method:
-              paymentMethod,
-
-            p_reference:
-              reference ||
-              null,
-
-            p_notes:
-              finalNotes,
-
-            p_goal_id:
-              goalId,
-
-            p_idempotency_key:
-              idempotencyKey
-
-          }
-        ));
-
-    }
-
-    /* =====================================================
-       CUSTOM CONTRIBUTION
-    ===================================================== */
-
-    else {
-
-      ({
-        data,
-        error
-      } =
-        await supabase.rpc(
-          "record_custom_contribution_payment",
-          {
-            p_group_id:
-              groupId,
-
-            p_member_id:
-              memberId,
-
-            p_contribution_type_id:
-              customContributionTypeId,
-
-            p_amount:
-              amount,
-
-            p_contribution_date:
-              contributionDate,
-
-            p_payment_method:
-              paymentMethod,
-
-            p_reference:
-              reference ||
-              null,
-
-            p_notes:
-              finalNotes,
-
-            p_request_id:
-              idempotencyKey
-
-          }
-        ));
-
-    }
-
-    if (error) {
-
-      throw error;
-
-    }
-
-    /* =====================================================
-       REFRESH MONTHLY ACCOUNTING
-    ===================================================== */
-
-    if (!isCustomContribution) {
-
-      accountingMonth =
-        month;
-
-      if (
-        accountingMonthSelect
-      ) {
-
-        accountingMonthSelect.value =
-          accountingMonth;
-
-      }
-
-      renderAccountingMonthLabel();
-
-    }
-
-    /* =====================================================
-       REFRESH READ-ONLY STATE
-    ===================================================== */
-
-    await loadContributions();
-
-    if (
-      isCustomContribution
-    ) {
-
-      preferredCustomContributionValue =
-        `custom:${customContributionTypeId}`;
-
-      await loadActiveCustomContributions();
-
-    }
-
-    renderContributionTypeOptions(
-      isCustomContribution
-        ? `custom:${customContributionTypeId}`
-        : "monthly"
-    );
-
-    renderLedger();
-
-    renderSummary();
-
-    renderContributionGoals();
-
-    /*
-     * Reset ordinary form controls.
-     *
-     * The Custom definition itself is NOT removed.
-     */
-    form?.reset();
-
-    if (dateInput) {
-
-      dateInput.value =
-        todayString();
-
-    }
-
-    if (methodSelect) {
-
-      methodSelect.value =
-        PAYMENT_METHODS.MPESA;
-
-    }
-
-    if (goalSelect) {
-
-      goalSelect.value =
-        "";
-
-    }
-
-    updatePaymentMethod();
-
-    /*
-     * Restore amount based on selected contribution type.
-     */
-    if (
-      isCustomContribution
-    ) {
-
-      const customValue =
-        `custom:${customContributionTypeId}`;
-
-      renderContributionTypeOptions(
-        customValue
-      );
-
-      if (typeSelect) {
-
-        typeSelect.value =
-          customValue;
-
-      }
-
-      updateContributionAmountFromType();
-
-    }
-    else {
-
-      if (typeSelect) {
-
-        typeSelect.value =
-          "monthly";
-
-      }
-
-      preferredCustomContributionValue =
-        null;
-
-      if (
-        amountInput &&
-        monthlyContribution > 0
-      ) {
-
-        amountInput.value =
-          monthlyContribution;
-
-      }
-
-    }
-
-    resetContributionIdempotencyKey();
-
-    clearError();
-
-    if (statusEl) {
-
-      statusEl.hidden =
-        false;
-
-      statusEl.textContent =
-        isCustomContribution
-          ? "✓ Custom contribution payment recorded atomically. The contribution remains active and available for further payments."
-          : `✓ Contribution recorded atomically. ${formatAccountingMonth(
-              accountingMonth
-            )} canonical accounting is current.`;
-
-    }
-
-  }
-  catch (error) {
-
-    /*
-     * Do NOT reset the idempotency key after failure.
-     */
-    showError(error);
-
-  }
-  finally {
-
-    if (saveButton) {
-
-      saveButton.disabled =
-        false;
-
-      saveButton.textContent =
-        "Record Contribution";
-
-    }
-
-  }
-
+  /*
+   * A member dashboard can show the status for every active
+   * contribution type:
+   *
+   *   Paid
+   *   Outstanding
+   *   Partially Paid
+   *
+   * This is derived from the canonical position RPC.
+   */
+  await renderMemberContributionCards();
 }
+
 
 /* =========================================================
-   CUSTOM CONTRIBUTION EDITOR
-========================================================= */
+   POST-LOAD RENDER
+   ========================================================= */
 
-function showCustomContributionEditorMessage(
-  message,
-  type = "info"
-) {
+function renderAfterLoad() {
+  renderPaymentContributionTypes();
 
-  if (!customContributionEditorMessage) {
-    return;
-  }
+  renderCustomContributionSummary();
 
-  customContributionEditorMessage.hidden =
-    false;
+  renderContributionTypeTable();
 
-  customContributionEditorMessage.textContent =
-    message;
+  renderActiveContributionDashboardCards();
 
-  customContributionEditorMessage.className =
-    "cl-evidence-message" +
-    (
-      type === "error"
-        ? " error"
-        : type === "success"
-          ? " success"
-          : ""
-    );
+  applyRoleBasedVisibility();
 
+  setDefaultDates();
 }
 
-function clearCustomContributionEditorMessage() {
 
-  if (!customContributionEditorMessage) {
+/* =========================================================
+   PUBLIC PAGE INITIALISATION
+   ========================================================= */
+
+export async function initPage() {
+  if (state.loading) {
     return;
   }
 
-  customContributionEditorMessage.hidden =
+  state.loading =
     true;
 
-  customContributionEditorMessage.textContent =
-    "";
+  clearNotification();
 
-  customContributionEditorMessage.className =
-    "cl-evidence-message";
+  setPageLoading(
+    true
+  );
 
-}
+  try {
+    await loadInitialData();
 
-function syncCustomContributionFineControl() {
+    bindEvents();
 
-  if (
-    !customContributionApplyFine ||
-    !customContributionFineAmount
-  ) {
-    return;
-  }
+    renderAfterLoad();
 
-  const enabled =
-    customContributionApplyFine.checked;
+    /*
+     * Refresh the managed-member accounting view when
+     * available, but DO NOT require data.ok === true.
+     *
+     * The refresh RPC may return a different successful
+     * payload shape.
+     */
+    if (
+      canManageContributions()
+    ) {
+      try {
+        const refreshResult =
+          await callRPC(
+            "refresh_my_managed_member_accounting",
+            {
+              p_group_id:
+                state.group.id
+            }
+          );
 
-  customContributionFineAmount.disabled =
-    !enabled;
+        /*
+         * The result is intentionally not validated as:
+         *
+         *     refreshResult.ok === true
+         *
+         * because that is not part of the RPC contract.
+         */
 
-  customContributionFineAmount.required =
-    enabled;
+        if (
+          refreshResult === null ||
+          refreshResult === undefined
+        ) {
+          /*
+           * A null result is not treated as a frontend
+           * accounting failure.
+           */
+        }
+      } catch (error) {
+        /*
+         * The page itself should remain usable if this
+         * optional refresh RPC is unavailable.
+         */
+        console.warn(
+          "Managed-member accounting refresh unavailable:",
+          error
+        );
+      }
+    }
 
-  if (
-    customContributionFineWrap
-  ) {
+    /*
+     * Re-render member statuses after the accounting refresh.
+     */
+    await renderMemberContributionCards();
 
-    customContributionFineWrap.classList.toggle(
-      "cl-visible",
-      enabled
+    setPageLoading(
+      false
     );
 
-  }
+    return {
+      ok: true,
+      user: state.user,
+      member: state.member,
+      group: state.group
+    };
 
-  if (!enabled) {
+  } catch (error) {
+    console.error(
+      "Contributions page initialisation failed:",
+      error
+    );
 
-    customContributionFineAmount.value =
-      "";
+    setPageLoading(
+      false
+    );
 
-  }
+    notify(
+      error?.message ||
+        "Unable to load Contributions.",
+      "error"
+    );
 
-}
+    return {
+      ok: false,
+      error
+    };
 
-function resetCustomContributionEditor() {
-
-  customContributionForm?.reset();
-
-  if (
-    customContributionGraceDays
-  ) {
-
-    customContributionGraceDays.value =
-      "0";
-
-  }
-
-  if (
-    customContributionApplyFine
-  ) {
-
-    customContributionApplyFine.checked =
+  } finally {
+    state.loading =
       false;
-
   }
-
-  syncCustomContributionFineControl();
-
-  clearCustomContributionEditorMessage();
-
 }
 
-function closeCustomContributionEditor() {
-
-  if (
-    customContributionEditorCard
-  ) {
-
-    customContributionEditorCard.hidden =
-      true;
-
-  }
-
-  resetCustomContributionEditor();
-
-  const url =
-    new URL(
-      window.location.href
-    );
-
-  url.searchParams.delete(
-    "new"
-  );
-
-  window.history.replaceState(
-    {},
-    "",
-    url.toString()
-  );
-
-}
-
-function openCustomContributionEditor() {
-
-  if (
-    !customContributionEditorCard
-  ) {
-    return;
-  }
-
-  customContributionEditorCard.hidden =
-    false;
-
-  resetCustomContributionEditor();
-
-  customContributionName?.focus();
-
-  customContributionEditorCard.scrollIntoView({
-    behavior:
-      "smooth",
-
-    block:
-      "start"
-
-  });
-
-}
 
 /* =========================================================
-   EXISTING CUSTOM CONTRIBUTION PREFLIGHT
-========================================================= */
+   PUBLIC REFRESH API
+   ========================================================= */
 
-async function preflightExistingCustomContribution() {
-
-  if (!groupId) return null;
-
-  const {
-    data: contributionTypes,
-    error: contributionTypeError
-  } = await supabase
-    .from("contribution_types")
-    .select("id,group_id,name,code")
-    .eq("group_id", groupId)
-    .eq("code", "custom")
-    .limit(1);
-
-  if (contributionTypeError) throw contributionTypeError;
-
-  const customType =
-    Array.isArray(contributionTypes)
-      ? contributionTypes[0]
-      : null;
-
-  if (!customType?.id) return null;
-
-  const {
-    data: periods,
-    error: periodError
-  } = await supabase
-    .from("contribution_periods")
-    .select([
-      "id",
-      "group_id",
-      "contribution_type_id",
-      "period_key",
-      "opening_date",
-      "due_date",
-      "closing_date",
-      "amount",
-      "frequency",
-      "status",
-      "description",
-      "fine_rule_id"
-    ].join(","))
-    .eq("group_id", groupId)
-    .eq("contribution_type_id", customType.id)
-    .in("status", [
-      "draft",
-      ...Array.from(ACTIVE_CUSTOM_PERIOD_STATUSES)
-    ])
-    .order("opening_date", { ascending: false });
-
-  if (periodError) throw periodError;
-
-  const existingPeriods =
-    Array.isArray(periods) ? periods : [];
-
-  const draft =
-    existingPeriods.find(
-      period =>
-        String(period.status || "").trim().toLowerCase() === "draft"
-    ) || null;
-
-  if (draft) {
-
-    await loadDraftCustomContributions();
-
-    const refreshedDraft =
-      draftCustomContributions.find(
-        item => String(item.id) === String(draft.id)
-      ) || draft;
-
-    showCustomContributionEditorMessage(
-      (customType.name || "Custom contribution") +
-        " already exists as a draft. Activate the existing contribution below instead of creating another one.",
-      "success"
-    );
-
-    if (draftCustomContributionsCard) {
-      draftCustomContributionsCard.hidden = false;
-      draftCustomContributionsCard.scrollIntoView({
-        behavior: "smooth",
-        block: "start"
-      });
-    }
-
-    const activateButton =
-      Array.from(
-        draftCustomContributionRows?.querySelectorAll(
-          "[data-activate-custom-contribution]"
-        ) || []
-      ).find(
-        button =>
-          String(button.dataset.activateCustomContribution || "") ===
-          String(refreshedDraft.id)
-      );
-
-    if (activateButton) activateButton.focus();
-
-    return {
-      type: "draft",
-      period: refreshedDraft,
-      contributionType: customType
-    };
+export async function refreshPage() {
+  if (state.loading) {
+    return;
   }
 
-  const activePeriod =
-    existingPeriods.find(
-      period =>
-        ACTIVE_CUSTOM_PERIOD_STATUSES.has(
-          String(period.status || "").trim().toLowerCase()
-        )
-    ) || null;
+  state.loading =
+    true;
 
-  if (activePeriod) {
+  try {
+    await refreshContributionView();
 
-    await loadActiveCustomContributions();
-
-    const selectorValue = "custom:" + customType.id;
-
-    preferredCustomContributionValue = selectorValue;
-
-    renderContributionTypeOptions(selectorValue);
-
-    if (typeSelect) {
-      typeSelect.value = selectorValue;
+    if (
+      canVerifyEvidence()
+    ) {
+      await loadPaymentEvidence();
     }
 
-    updateContributionAmountFromType();
+    await renderMemberContributionCards();
 
-    showCustomContributionEditorMessage(
-      (customType.name || "Custom contribution") +
-        " is already active. It has been selected for recording; no duplicate contribution was created.",
-      "success"
+    return true;
+  } catch (error) {
+    console.error(
+      "Contributions refresh failed:",
+      error
     );
 
-    if (activeCustomContributionContainer) {
-      activeCustomContributionContainer.scrollIntoView({
-        behavior: "smooth",
-        block: "start"
-      });
-    }
+    notify(
+      error?.message ||
+        "Unable to refresh Contributions.",
+      "error"
+    );
 
-    return {
-      type: "active",
-      period: activePeriod,
-      contributionType: customType
-    };
+    return false;
+
+  } finally {
+    state.loading =
+      false;
   }
+}
 
-  showCustomContributionEditorMessage(
-    (customType.name || "Custom contribution") +
-      " already exists for this group, but no draft or active period was found. Please refresh the page before creating anything else.",
-    "error"
-  );
 
+/* =========================================================
+   OPTIONAL PUBLIC HELPERS
+   ========================================================= */
+
+export function getContributionState() {
   return {
-    type: "existing_without_usable_period",
-    period: null,
-    contributionType: customType
+    ...state,
+
+    /*
+     * Return copies so callers cannot accidentally mutate
+     * this module's internal arrays.
+     */
+    members: [
+      ...(state.members || [])
+    ],
+
+    contributionTypes: [
+      ...(state.contributionTypes || [])
+    ],
+
+    activeContributionTypes: [
+      ...(state.activeContributionTypes || [])
+    ],
+
+    contributions: [
+      ...(state.contributions || [])
+    ],
+
+    paymentEvidence: [
+      ...(state.paymentEvidence || [])
+    ]
   };
 }
 
-/* =========================================================
-   CREATE + ACTIVATE CUSTOM CONTRIBUTION
-========================================================= */
-
-async function saveCustomContributionDraft(
-  event
-) {
-
-  event.preventDefault();
-
-  clearCustomContributionEditorMessage();
-
-  if (!groupId) {
-
-    showCustomContributionEditorMessage(
-      "The current group could not be determined.",
-      "error"
-    );
-
-    return;
-
-  }
-
-  if (!isAuthorizedRecorder()) {
-
-    showCustomContributionEditorMessage(
-      "You are not authorised to create custom contributions.",
-      "error"
-    );
-
-    return;
-
-  }
-
-  const name =
-    customContributionName?.value.trim() ||
-    "";
-
-  const amount =
-    Number(
-      customContributionAmount?.value
-    );
-
-  const frequency =
-    customContributionCycle?.value ||
-    "";
-
-  const startDate =
-    customContributionStartDate?.value ||
-    "";
-
-  const dueDate =
-    customContributionDueDate?.value ||
-    "";
-
-  const closingDate =
-    customContributionClosingDate?.value ||
-    "";
-
-  const description =
-    customContributionDescription?.value.trim() ||
-    "";
-
-  const graceDays =
-    Number(
-      customContributionGraceDays?.value ||
-      0
-    );
-
-  const applyFine =
-    Boolean(
-      customContributionApplyFine?.checked
-    );
-
-  const fineAmount =
-    Number(
-      customContributionFineAmount?.value
-    );
-
-  if (!name) {
-
-    showCustomContributionEditorMessage(
-      "Contribution name is required.",
-      "error"
-    );
-
-    return;
-
-  }
-
-  if (
-    !Number.isFinite(amount) ||
-    amount <= 0
-  ) {
-
-    showCustomContributionEditorMessage(
-      "Amount due must be greater than zero.",
-      "error"
-    );
-
-    return;
-
-  }
-
-  if (
-    ![
-      "one_time",
-      "weekly",
-      "monthly",
-      "quarterly",
-      "annual"
-    ].includes(
-      frequency
-    )
-  ) {
-
-    showCustomContributionEditorMessage(
-      "Invalid contribution cycle.",
-      "error"
-    );
-
-    return;
-
-  }
-
-  if (
-    !startDate ||
-    !dueDate ||
-    !closingDate
-  ) {
-
-    showCustomContributionEditorMessage(
-      "Start date, due date, and closing date are required.",
-      "error"
-    );
-
-    return;
-
-  }
-
-  if (
-    startDate > dueDate ||
-    dueDate > closingDate
-  ) {
-
-    showCustomContributionEditorMessage(
-      "Dates must follow Start ≤ Due ≤ Closing.",
-      "error"
-    );
-
-    return;
-
-  }
-
-  if (
-    !Number.isInteger(graceDays) ||
-    graceDays < 0
-  ) {
-
-    showCustomContributionEditorMessage(
-      "Grace period must be a whole number of days.",
-      "error"
-    );
-
-    return;
-
-  }
-
-  if (
-    applyFine &&
-    (
-      !Number.isFinite(fineAmount) ||
-      fineAmount <= 0
-    )
-  ) {
-
-    showCustomContributionEditorMessage(
-      "Fine amount must be greater than zero when a fine is enabled.",
-      "error"
-    );
-
-    return;
-
-  }
-
-  /*
-   * PRE-CREATE GUARD
-   *
-   * Resolve the existing custom type before calling
-   * create_custom_contribution(). The backend currently
-   * permits one code = "custom" type per group.
-   */
-  let existingCustomContribution;
-
-  try {
-    existingCustomContribution =
-      await preflightExistingCustomContribution();
-  }
-  catch (error) {
-    showCustomContributionEditorMessage(
-      error?.message ||
-        "The existing custom contribution could not be checked.",
-      "error"
-    );
-    return;
-  }
-
-  if (existingCustomContribution) {
-    return;
-  }
-
-  let requestId;
-
-  try {
-
-    requestId =
-      safeUuid();
-
-  }
-  catch (error) {
-
-    showCustomContributionEditorMessage(
-      error.message,
-      "error"
-    );
-
-    return;
-
-  }
-
-  if (
-    saveCustomContribution
-  ) {
-
-    saveCustomContribution.disabled =
-      true;
-
-  }
-
-  showCustomContributionEditorMessage(
-    "Creating custom contribution…"
-  );
-
-  try {
-
-    /* =====================================================
-       CREATE
-    ===================================================== */
-
-    const {
-      data,
-      error
-    } =
-      await supabase.rpc(
-        "create_custom_contribution",
-        {
-          p_group_id:
-            groupId,
-
-          p_name:
-            name,
-
-          p_description:
-            description,
-
-          p_amount:
-            amount,
-
-          p_frequency:
-            frequency,
-
-          p_start_date:
-            startDate,
-
-          p_due_date:
-            dueDate,
-
-          p_closing_date:
-            closingDate,
-
-          p_grace_period_value:
-            graceDays,
-
-          p_apply_fine:
-            applyFine,
-
-          p_fine_amount:
-            applyFine
-              ? fineAmount
-              : null,
-
-          p_request_id:
-            requestId
-
-        }
-      );
-
-    if (error) {
-
-      throw error;
-
-    }
-
-    const result =
-      normalizeRpcResult(
-        data
-      );
-
-    if (
-      !result?.ok
-    ) {
-
-      throw new Error(
-        "The backend did not return a successful custom contribution result."
-      );
-
-    }
-
-    if (
-      !result?.period_id
-    ) {
-
-      throw new Error(
-        "The backend did not return a valid custom contribution period."
-      );
-
-    }
-
-    /* =====================================================
-       ACTIVATE
-    ===================================================== */
-
-    const activationRequestId =
-      safeUuid();
-
-    /*
-     * Activation is intentionally retried once with the SAME
-     * request ID. This is safe for the canonical RPC because
-     * request replay is backend-owned. It also covers the
-     * browser/network case where activation succeeded but
-     * the first response was lost.
-     */
-    let activationData = null;
-    let activationError = null;
-
-    for (
-      let activationAttempt = 1;
-      activationAttempt <= 2;
-      activationAttempt += 1
-    ) {
-
-      const response =
-        await supabase.rpc(
-          "activate_custom_contribution",
-          {
-            p_group_id:
-              groupId,
-
-            p_period_id:
-              result.period_id,
-
-            p_request_id:
-              activationRequestId
-
-          }
-        );
-
-      activationData =
-        response.data;
-
-      activationError =
-        response.error;
-
-      if (!activationError) {
-        break;
-      }
-
-      if (
-        activationAttempt === 2
-      ) {
-        throw activationError;
-      }
-
-    }
-
-    const activation =
-      normalizeRpcResult(
-        activationData
-      );
-
-    /*
-     * Do not trust the RPC response alone for the UI.
-     * Re-read the period and confirm that LIVE actually
-     * persisted an active status before showing it as active.
-     */
-    const {
-      data:
-        verifiedPeriod,
-      error:
-        verificationError
-    } =
-      await supabase
-        .from("contribution_periods")
-        .select(
-          "id,contribution_type_id,status"
-        )
-        .eq(
-          "id",
-          result.period_id
-        )
-        .eq(
-          "group_id",
-          groupId
-        )
-        .single();
-
-    if (
-      verificationError
-    ) {
-
-      throw new Error(
-        "The custom contribution was created, but its activation could not be verified. Please refresh and try activation again."
-      );
-
-    }
-
-    const verifiedStatus =
-      String(
-        verifiedPeriod?.status ||
-        activation?.status ||
-        ""
-      )
-        .trim()
-        .toLowerCase();
-
-    if (
-      !ACTIVE_CUSTOM_PERIOD_STATUSES.has(
-        verifiedStatus
-      )
-    ) {
-
-      throw new Error(
-        "The custom contribution was saved as " +
-        (verifiedStatus || "draft") +
-        " but is not active yet. It was not added to Active Contributions."
-      );
-
-    }
-
-    /*
-     * Prefer the verified backend type ID. This guarantees
-     * that the selector and Active Contributions list point
-     * to the exact period that was just activated.
-     */
-    const verifiedContributionTypeId =
-      verifiedPeriod?.contribution_type_id ||
-      activation?.contribution_type_id ||
-      activation?.type_id ||
-      null;
-
-    /* =====================================================
-       RESOLVE TYPE
-    ===================================================== */
-
-    const createdContributionTypeId =
-      result.contribution_type_id ||
-      result.type_id ||
-      verifiedContributionTypeId ||
-      activation.contribution_type_id ||
-      activation.type_id ||
-      null;
-
-    await loadActiveCustomContributions();
-
-    let createdActiveContribution =
-      activeCustomContributions.find(
-        item =>
-          String(item.id) ===
-          String(result.period_id)
-      ) || null;
-
-    let resolvedTypeId =
-      createdContributionTypeId ||
-      getCustomContributionTypeId(
-        createdActiveContribution
-      );
-
-    if (
-      !resolvedTypeId &&
-      createdActiveContribution
-    ) {
-
-      resolvedTypeId =
-        createdActiveContribution.contribution_type_id ||
-        null;
-
-    }
-
-    if (!resolvedTypeId) {
-
-      /*
-       * Do not invent an identifier.
-       *
-       * The contribution is only considered fully
-       * selectable once its backend-owned type ID can
-       * be resolved.
-       */
-      throw new Error(
-        "The custom contribution was activated but its contribution type could not be resolved."
-      );
-
-    }
-
-    const preferredCustomValue =
-      `custom:${resolvedTypeId}`;
-
-    preferredCustomContributionValue =
-      preferredCustomValue;
-
-    /* =====================================================
-       REBUILD SELECTOR
-    ===================================================== */
-
-    renderContributionTypeOptions(
-      preferredCustomValue
-    );
-
-    if (
-      !findActiveCustomContribution(
-        resolvedTypeId
-      )
-    ) {
-
-      throw new Error(
-        "The custom contribution was activated but could not be confirmed in the active contribution list."
-      );
-
-    }
-
-    /* =====================================================
-       REFRESH DISPLAY DATA
-    ===================================================== */
-
-    await Promise.all([
-
-      loadContributions()
-
-    ]);
-
-    renderLedger();
-
-    renderSummary();
-
-    renderContributionGoals();
-
-    if (
-      typeSelect
-    ) {
-
-      typeSelect.value =
-        preferredCustomValue;
-
-    }
-
-    updateContributionAmountFromType();
-
-    showCustomContributionEditorMessage(
-      "Custom contribution saved and activated. It is now ongoing and available in the contribution-type list.",
-      "success"
-    );
-
-    if (statusEl) {
-
-      statusEl.hidden =
-        false;
-
-      statusEl.textContent =
-        "✓ Custom contribution is active and available for recording.";
-
-    }
-
-    /*
-     * Close only after backend confirmation and selector
-     * refresh.
-     */
-    setTimeout(
-      () => {
-
-        closeCustomContributionEditor();
-
-      },
-      700
-    );
-
-  }
-  catch (error) {
-
-    console.error(
-      "Failed to create custom contribution:",
-      error
-    );
-
-    showCustomContributionEditorMessage(
-      error?.message ||
-        "Custom contribution could not be created.",
-      "error"
-    );
-
-  }
-  finally {
-
-    if (
-      saveCustomContribution
-    ) {
-
-      saveCustomContribution.disabled =
-        false;
-
-    }
-
-  }
-
-}
 
 /* =========================================================
-   ACTIVATE EXISTING CUSTOM CONTRIBUTION
-========================================================= */
+   NO AUTO-RUN
+   =========================================================
 
-async function activateExistingCustomContribution(
-  periodId,
-  button
-) {
+   IMPORTANT:
 
-  if (
-    !isGroupOwner &&
-    !CUSTOM_CONTRIBUTION_ACTIVATOR_ROLES.has(
-      getCurrentMemberRole()
-    )
-  ) {
+   Do NOT add:
 
-    showError(
-      new Error(
-        "You are not authorised to activate custom contributions."
-      )
-    );
+       initPage();
 
-    return;
+   here.
 
-  }
+   The HTML page/application loader owns page startup.
 
-  const period =
-    draftCustomContributions.find(
-      item =>
-        String(item.id) ===
-        String(periodId)
-    );
+   Example:
 
-  if (!period) {
+       import {
+         initPage
+       } from "./js/contributions.js";
 
-    showError(
-      new Error(
-        "The draft custom contribution could not be found. Please refresh the page."
-      )
-    );
+       await initPage();
 
-    return;
+   This prevents duplicate initialisation and keeps the
+   page architecture consistent with the other CHAMA LIVE
+   modules.
+   ========================================================= */
 
-  }
-
-  if (button) {
-
-    button.disabled =
-      true;
-
-    button.textContent =
-      "Activating…";
-
-  }
-
-  let requestId;
-
-  try {
-
-    requestId =
-      safeUuid();
-
-  }
-  catch (error) {
-
-    if (button) {
-
-      button.disabled =
-        false;
-
-      button.textContent =
-        "Activate";
-
-    }
-
-    showError(error);
-
-    return;
-
-  }
-
-  try {
-
-    let activationData =
-      null;
-
-    let activationError =
-      null;
-
-    /*
-     * Retry once with the SAME request ID so a lost browser
-     * response cannot accidentally create a second activation
-     * request. Replay behavior remains backend-owned.
-     */
-    for (
-      let attempt = 1;
-      attempt <= 2;
-      attempt += 1
-    ) {
-
-      const response =
-        await supabase.rpc(
-          "activate_custom_contribution",
-          {
-            p_group_id:
-              groupId,
-
-            p_period_id:
-              period.id,
-
-            p_request_id:
-              requestId
-
-          }
-        );
-
-      activationData =
-        response.data;
-
-      activationError =
-        response.error;
-
-      if (!activationError) {
-
-        break;
-
-      }
-
-      if (attempt === 2) {
-
-        throw activationError;
-
-      }
-
-    }
-
-    const activation =
-      normalizeRpcResult(
-        activationData
-      );
-
-    const {
-      data:
-        verifiedPeriod,
-      error:
-        verificationError
-    } =
-      await supabase
-        .from("contribution_periods")
-        .select(
-          "id,contribution_type_id,status"
-        )
-        .eq(
-          "id",
-          period.id
-        )
-        .eq(
-          "group_id",
-          groupId
-        )
-        .single();
-
-    if (verificationError) {
-
-      throw new Error(
-        "The contribution activation could not be verified. Please refresh and try again."
-      );
-
-    }
-
-    const verifiedStatus =
-      String(
-        verifiedPeriod?.status ||
-        activation?.status ||
-        ""
-      )
-        .trim()
-        .toLowerCase();
-
-    if (
-      !ACTIVE_CUSTOM_PERIOD_STATUSES.has(
-        verifiedStatus
-      )
-    ) {
-
-      throw new Error(
-        "The contribution is still a draft. It was not added to Active Contributions."
-      );
-
-    }
-
-    const resolvedTypeId =
-      verifiedPeriod?.contribution_type_id ||
-      activation?.contribution_type_id ||
-      activation?.type_id ||
-      period.contribution_type_id ||
-      null;
-
-    if (!resolvedTypeId) {
-
-      throw new Error(
-        "The contribution was activated, but its contribution type could not be resolved."
-      );
-
-    }
-
-    preferredCustomContributionValue =
-      "custom:" +
-      resolvedTypeId;
-
-    await Promise.all([
-
-      loadActiveCustomContributions(),
-
-      loadDraftCustomContributions(),
-
-      loadContributions()
-
-    ]);
-
-    renderContributionTypeOptions(
-      preferredCustomContributionValue
-    );
-
-    renderDraftCustomContributionList();
-
-    renderLedger();
-
-    renderSummary();
-
-    renderContributionGoals();
-
-    if (typeSelect) {
-
-      typeSelect.value =
-        preferredCustomContributionValue;
-
-    }
-
-    updateContributionAmountFromType();
-
-    showCustomContributionEditorMessage(
-      (
-        period.contribution_name ||
-        period.name ||
-        "Custom contribution"
-      ) +
-      " is now active and available for recording.",
-      "success"
-    );
-
-    if (statusEl) {
-
-      statusEl.hidden =
-        false;
-
-      statusEl.textContent =
-        "✓ Custom contribution activated and added to Active Contributions.";
-
-    }
-
-  }
-  catch (error) {
-
-    console.error(
-      "Failed to activate existing custom contribution:",
-      error
-    );
-
-    showError(error);
-
-    if (draftCustomContributionRows) {
-
-      const message =
-        error?.message ||
-        "Custom contribution could not be activated.";
-
-      const notice =
-        document.createElement("div");
-
-      notice.className =
-        "cl-draft-contribution-empty";
-
-      notice.textContent =
-        message;
-
-      draftCustomContributionRows.prepend(
-        notice
-      );
-
-    }
-
-  }
-  finally {
-
-    if (button) {
-
-      button.disabled =
-        false;
-
-      button.textContent =
-        "Activate";
-
-    }
-
-  }
-
-}
 
 /* =========================================================
-   DRAFT CUSTOM CONTRIBUTION CLICK HANDLER
-========================================================= */
+   FINAL EXPORTS
+   ========================================================= */
 
-function handleDraftCustomContributionClick(
-  event
-) {
+export {
+  loadContributionTypes,
+  loadMembers,
+  loadContributionLedger,
 
-  const button =
-    event.target.closest(
-      "[data-activate-custom-contribution]"
-    );
+  submitPaymentEvidence,
+  recordContribution,
 
-  if (!button) {
+  submitCustomContribution,
 
-    return;
+  loadPaymentEvidence,
+  verifyPaymentEvidence,
+  rejectPaymentEvidence,
 
-  }
+  getMemberContributionPosition,
+  loadMemberContributionStatus,
 
-  const periodId =
-    button.dataset
-      .activateCustomContribution;
+  refreshActiveContributionTypes
+};
 
-  if (!periodId) {
-
-    return;
-
-  }
-
-  void activateExistingCustomContribution(
-    periodId,
-    button
-  );
-
-}
 
 /* =========================================================
-   SELECT ACTIVE CUSTOM CONTRIBUTION
-========================================================= */
+   END — CHAMA LIVE CONTRIBUTIONS
+   ========================================================= */
 
-function selectActiveCustomContribution(
-  contributionTypeId
-) {
-
-  if (!typeSelect) {
-    return;
-  }
-
-  const selectorValue =
-    `custom:${contributionTypeId}`;
-
-  const optionExists =
-    Array.from(
-      typeSelect.options
-    ).some(
-      option =>
-        option.value ===
-        selectorValue
-    );
-
-  if (!optionExists) {
-
-    void refreshActiveCustomContributions(
-      selectorValue
-    )
-      .then(
-        () => {
-
-          if (
-            typeSelect
-          ) {
-
-            typeSelect.value =
-              selectorValue;
-
-          }
-
-          updateContributionAmountFromType();
-
-        }
-      )
-      .catch(
-        showError
-      );
-
-    return;
-
-  }
-
-  typeSelect.value =
-    selectorValue;
-
-  preferredCustomContributionValue =
-    selectorValue;
-
-  updateContributionAmountFromType();
-
-  typeSelect.scrollIntoView({
-    behavior:
-      "smooth",
-
-    block:
-      "center"
-
-  });
-
-}
-
-/* =========================================================
-   ACTIVE CUSTOM CONTRIBUTION CLICK HANDLER
-========================================================= */
-
-function handleActiveCustomContributionClick(
-  event
-) {
-
-  const button =
-    event.target.closest(
-      "[data-select-custom-contribution]"
-    );
-
-  if (!button) {
-    return;
-  }
-
-  const typeId =
-    button.dataset
-      .selectCustomContribution;
-
-  if (!typeId) {
-    return;
-  }
-
-  selectActiveCustomContribution(
-    typeId
-  );
-
-}
-
-/* =========================================================
-   PAGE REFRESH
-========================================================= */
-
-async function refreshContributions() {
-
-  if (!initialized) {
-    return initContributions();
-  }
-
-  initialized = false;
-
-  return initContributions({
-    force: true
-  });
-
-}
-
-/* =========================================================
-   INITIALIZE
-========================================================= */
-
-export async function initContributions(
-  options = {}
-) {
-
-  const force =
-    Boolean(
-      options?.force
-    );
-
-  if (
-    initialized &&
-    !force
-  ) {
-
-    return;
-
-  }
-
-  initialized =
-    true;
-
-  try {
-
-    clearError();
-
-    clearMemberEvidenceMessage();
-
-    clearVerifierPaymentEvidenceMessage();
-
-    /*
-     * Resolve authenticated member through the existing
-     * canonical auth/member path.
-     */
-    const applicationContext =
-      await getMyApplicationContext();
-
-    currentMember =
-      applicationContext.member;
-
-    isGroupOwner =
-      Boolean(applicationContext.isOwner);
-
-    buildAccountingMonthOptions();
-
-    renderAccountingMonthLabel();
-
-    if (
-      contributionIdempotencyKeyInput &&
-      !String(
-        contributionIdempotencyKeyInput.value ||
-        ""
-      ).trim()
-    ) {
-
-      resetContributionIdempotencyKey();
-
-    }
-
-    if (statusEl) {
-
-      statusEl.hidden =
-        false;
-
-      statusEl.textContent =
-        "Loading contributions...";
-
-    }
-
-    groupId =
-      await getGroupId();
-
-    await Promise.all([
-
-      loadGroup(),
-
-      loadMembers(),
-
-      loadActiveCustomContributions(),
-
-      loadDraftCustomContributions(),
-
-      loadContributions(),
-
-      loadContributionGoals()
-
-    ]);
-
-    await loadCanonicalMemberStatus(
-      accountingMonth
-    );
-
-    /*
-     * Configure role-dependent UI only after currentMember
-     * has been resolved.
-     */
-    configureMemberPaymentEvidence();
-
-    configureVerifierPaymentEvidence();
-
-    renderContributionTypeOptions(
-      preferredCustomContributionValue ||
-      typeSelect?.value ||
-      "monthly"
-    );
-
-    if (dateInput) {
-
-      dateInput.value =
-        todayString();
-
-    }
-
-    if (
-      memberEvidenceDate &&
-      !memberEvidenceDate.value
-    ) {
-
-      memberEvidenceDate.value =
-        todayString();
-
-    }
-
-    if (methodSelect) {
-
-      methodSelect.value =
-        PAYMENT_METHODS.MPESA;
-
-    }
-
-    if (memberEvidenceMethod) {
-
-      memberEvidenceMethod.value =
-        PAYMENT_METHODS.MPESA;
-
-    }
-
-    updatePaymentMethod();
-
-    updateMemberEvidencePaymentMethod();
-
-    updateContributionAmountFromType();
-
-    if (
-      amountInput &&
-      monthlyContribution > 0 &&
-      (
-        !amountInput.value ||
-        number(
-          amountInput.value
-        ) ===
-          monthlyContribution
-      )
-    ) {
-
-      amountInput.value =
-        monthlyContribution;
-
-    }
-
-    if (
-      isOrdinaryMember()
-    ) {
-
-      await loadMemberPaymentEvidence();
-
-    }
-
-    if (
-      isAuthorizedVerifier()
-    ) {
-
-      await loadVerifierPaymentEvidence();
-
-    }
-
-    renderAccountingMonthLabel();
-    renderLedger();
-
-    renderMemberStatus();
-
-    renderSummary();
-
-    renderContributionGoals();
-
-    /*
-     * Support ?new=custom.
-     */
-    if (
-      new URLSearchParams(
-        window.location.search
-      ).get("new") ===
-      "custom"
-    ) {
-
-      openCustomContributionEditor();
-
-    }
-
-    if (statusEl) {
-
-      statusEl.textContent =
-        `${formatAccountingMonth(
-          accountingMonth
-        )} accounting loaded.`;
-
-    }
-
-    }
-  catch (error) {
-
-    initialized =
-      false;
-
-    showError(error);
-
-  }
-
-}
-
-/* =========================================================
-   EVENTS
-========================================================= */
-
-/* ---------------------------------------------------------
-   Refresh is a read/reload action only. It never writes
-   accounting data and does not bypass canonical RPC paths.
---------------------------------------------------------- */
-
-const refreshContributionsButton =
-  document.getElementById("refreshContributions");
-
-if (
-  refreshContributionsButton &&
-  !refreshContributionsButton.dataset.clRefreshBound
-) {
-
-  refreshContributionsButton.dataset.clRefreshBound =
-    "true";
-
-  refreshContributionsButton.addEventListener(
-    "click",
-    async () => {
-
-      refreshContributionsButton.disabled = true;
-      refreshContributionsButton.textContent =
-        "Refreshing…";
-
-      try {
-
-        await refreshContributions();
-
-      }
-      catch (error) {
-
-        showError(error);
-
-      }
-      finally {
-
-        refreshContributionsButton.disabled = false;
-        refreshContributionsButton.textContent =
-          "Refresh";
-
-      }
-
-    }
-  );
-
-}
-
-/* =========================================================
-   REMAINING EVENTS
-========================================================= */
-
-if (
-  customContributionApplyFine &&
-  !customContributionApplyFine.dataset
-    .clCustomFineBound
-) {
-
-  customContributionApplyFine.dataset
-    .clCustomFineBound =
-    "true";
-
-  customContributionApplyFine.addEventListener(
-    "change",
-    syncCustomContributionFineControl
-  );
-
-}
-
-if (
-  customContributionForm &&
-  !customContributionForm.dataset
-    .clCustomContributionBound
-) {
-
-  customContributionForm.dataset
-    .clCustomContributionBound =
-    "true";
-
-  customContributionForm.addEventListener(
-    "submit",
-    saveCustomContributionDraft
-  );
-
-}
-
-if (
-  cancelCustomContribution &&
-  !cancelCustomContribution.dataset
-    .clCustomContributionCancelBound
-) {
-
-  cancelCustomContribution.dataset
-    .clCustomContributionCancelBound =
-    "true";
-
-  cancelCustomContribution.addEventListener(
-    "click",
-    closeCustomContributionEditor
-  );
-
-}
-
-if (
-  form &&
-  !form.dataset.clContributionBound
-) {
-
-  form.dataset
-    .clContributionBound =
-    "true";
-
-  form.addEventListener(
-    "submit",
-    recordContribution
-  );
-
-}
-
-if (
-  methodSelect &&
-  !methodSelect.dataset.clPaymentBound
-) {
-
-  methodSelect.dataset
-    .clPaymentBound =
-    "true";
-
-  methodSelect.addEventListener(
-    "change",
-    updatePaymentMethod
-  );
-
-}
-
-if (
-  accountingMonthSelect &&
-  !accountingMonthSelect.dataset
-    .clAccountingMonthBound
-) {
-
-  accountingMonthSelect.dataset
-    .clAccountingMonthBound =
-    "true";
-
-  accountingMonthSelect.addEventListener(
-    "change",
-    changeAccountingMonth
-  );
-
-}
-
-if (
-  memberPaymentEvidenceForm &&
-  !memberPaymentEvidenceForm.dataset
-    .clMemberEvidenceBound
-) {
-
-  memberPaymentEvidenceForm.dataset
-    .clMemberEvidenceBound =
-    "true";
-
-  memberPaymentEvidenceForm.addEventListener(
-    "submit",
-    submitMemberPaymentEvidence
-  );
-
-}
-
-if (
-  memberEvidenceMethod &&
-  !memberEvidenceMethod.dataset
-    .clMemberEvidencePaymentBound
-) {
-
-  memberEvidenceMethod.dataset
-    .clMemberEvidencePaymentBound =
-    "true";
-
-  memberEvidenceMethod.addEventListener(
-    "change",
-    updateMemberEvidencePaymentMethod
-  );
-
-}
-
-/* =========================================================
-   CONTRIBUTION TYPE CHANGE
-========================================================= */
-
-if (
-  typeSelect &&
-  !typeSelect.dataset
-    .clContributionTypeBound
-) {
-
-  typeSelect.dataset
-    .clContributionTypeBound =
-    "true";
-
-  typeSelect.addEventListener(
-    "change",
-    () => {
-
-      const value =
-        String(
-          typeSelect.value ||
-          ""
-        )
-        .trim()
-        .toLowerCase();
-
-      if (
-        value.startsWith(
-          "custom:"
-        )
-      ) {
-
-        preferredCustomContributionValue =
-          value;
-
-      }
-      else {
-
-        preferredCustomContributionValue =
-          null;
-
-      }
-
-      updateContributionAmountFromType();
-
-    }
-  );
-
-}
-
-/* =========================================================
-   VERIFIER EVENTS
-========================================================= */
-
-if (
-  verifierPaymentEvidenceCard &&
-  !verifierPaymentEvidenceCard.dataset
-    .clVerifierEvidenceBound
-) {
-
-  verifierPaymentEvidenceCard.dataset
-    .clVerifierEvidenceBound =
-    "true";
-
-  verifierPaymentEvidenceCard.addEventListener(
-    "click",
-    handleVerifierPaymentEvidenceClick
-  );
-
-}
-
-/* =========================================================
-   DRAFT CUSTOM CONTRIBUTION EVENTS
-========================================================= */
-
-if (
-  draftCustomContributionRows &&
-  !draftCustomContributionRows.dataset
-    .clDraftCustomBound
-) {
-
-  draftCustomContributionRows.dataset
-    .clDraftCustomBound =
-    "true";
-
-  draftCustomContributionRows.addEventListener(
-    "click",
-    handleDraftCustomContributionClick
-  );
-
-}
-
-/* =========================================================
-   ACTIVE CUSTOM CONTRIBUTION EVENTS
-========================================================= */
-
-const activeCustomContributionEventTarget =
-  activeCustomContributionContainer ||
-  activeCustomContributionRows;
-
-if (
-  activeCustomContributionEventTarget &&
-  !activeCustomContributionEventTarget.dataset
-    .clActiveCustomBound
-) {
-
-  activeCustomContributionEventTarget.dataset
-    .clActiveCustomBound =
-    "true";
-
-  activeCustomContributionEventTarget.addEventListener(
-    "click",
-    handleActiveCustomContributionClick
-  );
-
-}
 
