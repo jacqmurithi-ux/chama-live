@@ -284,6 +284,11 @@ const customContributionFineAmount =
     "customContributionFineAmount"
   );
 
+const customContributionFineWrap =
+  document.getElementById(
+    "customContributionFineWrap"
+  );
+
 const saveCustomContribution =
   document.getElementById(
     "saveCustomContribution"
@@ -5936,13 +5941,31 @@ function syncCustomContributionFineControl() {
   }
 
 
+  const enabled =
+    customContributionApplyFine.checked;
+
+
   customContributionFineAmount.disabled =
-    !customContributionApplyFine.checked;
+    !enabled;
+
+
+  customContributionFineAmount.required =
+    enabled;
 
 
   if (
-    !customContributionApplyFine.checked
+    customContributionFineWrap
   ) {
+
+    customContributionFineWrap.classList.toggle(
+      "cl-visible",
+      enabled
+    );
+
+  }
+
+
+  if (!enabled) {
 
     customContributionFineAmount.value =
       "";
