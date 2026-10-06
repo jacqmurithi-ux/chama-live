@@ -40,7 +40,7 @@ import {
 } from "./supabase.js";
 
 import {
-  getMyMember
+  getMyApplicationContext
 } from "./auth.js";
 
 
@@ -349,6 +349,8 @@ let verifierPaymentEvidence = [];
 
 let currentMember = null;
 
+let isGroupOwner = false;
+
 let monthlyContribution = 0;
 
 let initialized = false;
@@ -409,10 +411,6 @@ const RECORDER_ROLES = new Set([
 
 
 const CUSTOM_CONTRIBUTION_ACTIVATOR_ROLES = new Set([
-
-  "owner",
-
-  "admin",
 
   "chairperson"
 
@@ -1508,6 +1506,7 @@ function renderDraftCustomContributionList() {
 
 
   const canActivate =
+    isGroupOwner ||
     CUSTOM_CONTRIBUTION_ACTIVATOR_ROLES.has(
       getCurrentMemberRole()
     );
@@ -7167,6 +7166,7 @@ async function activateExistingCustomContribution(
 ) {
 
   if (
+    !isGroupOwner &&
     !CUSTOM_CONTRIBUTION_ACTIVATOR_ROLES.has(
       getCurrentMemberRole()
     )
@@ -7698,8 +7698,14 @@ export async function initContributions(
      * Resolve authenticated member through the existing
      * canonical auth/member path.
      */
+    const applicationContext =
+      await getMyApplicationContext();
+
     currentMember =
-      await getMyMember();
+      applicationContext.member;
+
+    isGroupOwner =
+      Boolean(applicationContext.isOwner);
 
 
     buildAccountingMonthOptions();
