@@ -6412,33 +6412,53 @@ async function saveCustomContributionDraft(
       safeUuid();
 
 
-    const {
-      data:
-        activationData,
-      error:
-        activationError
-    } =
-      await supabase.rpc(
-        "activate_custom_contribution",
-        {
-          p_group_id:
-            groupId,
+    /*
+     * Activation is intentionally retried once with the SAME
+     * request ID. This is safe for the canonical RPC because
+     * request replay is backend-owned. It also covers the
+     * browser/network case where activation succeeded but
+     * the first response was lost.
+     */
+    let activationData = null;
+    let activationError = null;
 
-          p_period_id:
-            result.period_id,
-
-          p_request_id:
-            activationRequestId
-
-        }
-      );
-
-
-    if (
-      activationError
+    for (
+      let activationAttempt = 1;
+      activationAttempt <= 2;
+      activationAttempt += 1
     ) {
 
-      throw activationError;
+      const response =
+        await supabase.rpc(
+          "activate_custom_contribution",
+          {
+            p_group_id:
+              groupId,
+
+            p_period_id:
+              result.period_id,
+
+            p_request_id:
+              activationRequestId
+
+          }
+        );
+
+      activationData =
+        response.data;
+
+      activationError =
+        response.error;
+
+      if (!activationError) {
+        break;
+      }
+
+      if (
+        activationAttempt === 2
+      ) {
+        throw activationError;
+      }
 
     }
 
@@ -6449,8 +6469,47 @@ async function saveCustomContributionDraft(
       );
 
 
-    const activationStatus =
+    /*
+     * Do not trust the RPC response alone for the UI.
+     * Re-read the period and confirm that LIVE actually
+     * persisted an active status before showing it as active.
+     */
+    const {
+      data:
+        verifiedPeriod,
+      error:
+        verificationError
+    } =
+      await supabase
+        .from("contribution_periods")
+        .select(
+          "id,contribution_type_id,status"
+        )
+        .eq(
+          "id",
+          result.period_id
+        )
+        .eq(
+          "group_id",
+          groupId
+        )
+        .single();
+
+
+    if (
+      verificationError
+    ) {
+
+      throw new Error(
+        "The custom contribution was created, but its activation could not be verified. Please refresh and try activation again."
+      );
+
+    }
+
+
+    const verifiedStatus =
       String(
+        verifiedPeriod?.status ||
         activation?.status ||
         ""
       )
@@ -6459,17 +6518,30 @@ async function saveCustomContributionDraft(
 
 
     if (
-      !activation?.ok ||
       !ACTIVE_CUSTOM_PERIOD_STATUSES.has(
-        activationStatus
+        verifiedStatus
       )
     ) {
 
       throw new Error(
-        "The custom contribution was saved but could not be activated."
+        "The custom contribution was saved as " +
+        (verifiedStatus || "draft") +
+        " but is not active yet. It was not added to Active Contributions."
       );
 
     }
+
+
+    /*
+     * Prefer the verified backend type ID. This guarantees
+     * that the selector and Active Contributions list point
+     * to the exact period that was just activated.
+     */
+    const verifiedContributionTypeId =
+      verifiedPeriod?.contribution_type_id ||
+      activation?.contribution_type_id ||
+      activation?.type_id ||
+      null;
 
 
     /* =====================================================
@@ -6479,6 +6551,7 @@ async function saveCustomContributionDraft(
     const createdContributionTypeId =
       result.contribution_type_id ||
       result.type_id ||
+      verifiedContributionTypeId ||
       activation.contribution_type_id ||
       activation.type_id ||
       null;
