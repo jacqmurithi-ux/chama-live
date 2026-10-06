@@ -4,6 +4,7 @@
 
    MEMBER PAYMENT EVIDENCE INTEGRATION
    CUSTOM CONTRIBUTION INTEGRATION
+
    ---------------------------------------------------------
    ACCOUNTING BOUNDARIES
    ---------------------------------------------------------
@@ -295,6 +296,21 @@ const cancelCustomContribution =
 
 
 /* =========================================================
+   OPTIONAL ACTIVE CUSTOM CONTRIBUTION DISPLAY
+========================================================= */
+
+const activeCustomContributionRows =
+  document.getElementById(
+    "activeCustomContributionRows"
+  );
+
+const activeCustomContributionContainer =
+  document.getElementById(
+    "activeCustomContributionContainer"
+  );
+
+
+/* =========================================================
    STATE
 ========================================================= */
 
@@ -362,12 +378,6 @@ const MEMBER_EVIDENCE_STATUSES = {
 };
 
 
-/*
- * Roles allowed to use the manual canonical
- * contribution recorder surface.
- *
- * Database authorization remains authoritative.
- */
 const RECORDER_ROLES = new Set([
 
   "admin",
@@ -381,11 +391,6 @@ const RECORDER_ROLES = new Set([
 ]);
 
 
-/*
- * Roles allowed to review member payment evidence.
- *
- * Database authorization remains authoritative.
- */
 const VERIFIER_ROLES = new Set([
 
   "admin",
@@ -399,10 +404,6 @@ const VERIFIER_ROLES = new Set([
 ]);
 
 
-/*
- * Backend-supported active Custom Contribution
- * period states.
- */
 const ACTIVE_CUSTOM_PERIOD_STATUSES = new Set([
 
   "open",
@@ -639,6 +640,19 @@ function safeUuid() {
 }
 
 
+function normalizeRpcResult(data) {
+
+  if (Array.isArray(data)) {
+
+    return data[0] || null;
+
+  }
+
+  return data || null;
+
+}
+
+
 /* =========================================================
    ACCOUNTING MONTH
 ========================================================= */
@@ -754,16 +768,6 @@ function getContributionMonth(item) {
 
     return String(
       item.contribution_date
-    ).slice(0, 7);
-
-  }
-
-  if (
-    item?.month
-  ) {
-
-    return String(
-      item.month
     ).slice(0, 7);
 
   }
@@ -1095,18 +1099,6 @@ async function loadGroup() {
    ACTIVE CUSTOM CONTRIBUTIONS
 ========================================================= */
 
-/*
- * Backend-owned source of truth.
- *
- * contribution_types:
- *   identifies the Custom contribution type.
- *
- * contribution_periods:
- *   identifies the currently active/ongoing period.
- *
- * No Custom contribution is considered active merely
- * because its type exists.
- */
 async function loadActiveCustomContributions() {
 
   activeCustomContributions = [];
@@ -1116,6 +1108,7 @@ async function loadActiveCustomContributions() {
     return [];
 
   }
+
 
   const {
     data: contributionTypes,
@@ -1135,11 +1128,13 @@ async function loadActiveCustomContributions() {
         "custom"
       );
 
+
   if (contributionTypeError) {
 
     throw contributionTypeError;
 
   }
+
 
   const customTypes =
     Array.isArray(
@@ -1148,17 +1143,22 @@ async function loadActiveCustomContributions() {
       ? contributionTypes
       : [];
 
+
   if (!customTypes.length) {
+
+    renderActiveCustomContributionList();
 
     return [];
 
   }
+
 
   const customTypeIds =
     customTypes.map(
       type =>
         type.id
     );
+
 
   const {
     data: periods,
@@ -1204,11 +1204,13 @@ async function loadActiveCustomContributions() {
         }
       );
 
+
   if (periodError) {
 
     throw periodError;
 
   }
+
 
   const typeById =
     new Map(
@@ -1219,6 +1221,7 @@ async function loadActiveCustomContributions() {
         ]
       )
     );
+
 
   activeCustomContributions =
     (
@@ -1268,7 +1271,285 @@ async function loadActiveCustomContributions() {
         }
       );
 
+
+  renderActiveCustomContributionList();
+
+
   return activeCustomContributions;
+
+}
+
+
+/* =========================================================
+   ACTIVE CUSTOM CONTRIBUTION DISPLAY
+========================================================= */
+
+function renderActiveCustomContributionList() {
+
+  const container =
+    activeCustomContributionRows ||
+    activeCustomContributionContainer;
+
+
+  if (!container) {
+    return;
+  }
+
+
+  if (!activeCustomContributions.length) {
+
+    if (
+      activeCustomContributionRows
+    ) {
+
+      activeCustomContributionRows.innerHTML = `
+
+        <tr>
+
+          <td
+            colspan="7"
+            class="cl-empty-table"
+          >
+            No active custom contributions.
+          </td>
+
+        </tr>
+
+      `;
+
+    }
+    else {
+
+      container.innerHTML = `
+
+        <div class="cl-empty-table">
+
+          No active custom contributions.
+
+        </div>
+
+      `;
+
+    }
+
+    return;
+
+  }
+
+
+  if (
+    activeCustomContributionRows
+  ) {
+
+    activeCustomContributionRows.innerHTML =
+      activeCustomContributions
+        .map(
+          item => {
+
+            const name =
+              item.contribution_name ||
+              item.name ||
+              "Custom Contribution";
+
+            const amount =
+              number(
+                item.amount
+              );
+
+            const frequency =
+              item.frequency ||
+              "—";
+
+            const status =
+              String(
+                item.status ||
+                ""
+              ).toUpperCase();
+
+            const dueDate =
+              item.due_date
+                ? formatDate(
+                    item.due_date
+                  )
+                : "—";
+
+            const closingDate =
+              item.closing_date
+                ? formatDate(
+                    item.closing_date
+                  )
+                : "—";
+
+            const typeId =
+              getCustomContributionTypeId(
+                item
+              );
+
+
+            return `
+
+              <tr>
+
+                <td data-label="Contribution">
+
+                  <strong>
+                    ${escapeHtml(name)}
+                  </strong>
+
+                </td>
+
+                <td data-label="Amount">
+
+                  ${escapeHtml(
+                    money(amount)
+                  )}
+
+                </td>
+
+                <td data-label="Cycle">
+
+                  ${escapeHtml(
+                    frequency
+                  )}
+
+                </td>
+
+                <td data-label="Due">
+
+                  ${escapeHtml(
+                    dueDate
+                  )}
+
+                </td>
+
+                <td data-label="Closing">
+
+                  ${escapeHtml(
+                    closingDate
+                  )}
+
+                </td>
+
+                <td data-label="Status">
+
+                  <span class="cl-status-badge cl-status-paid">
+
+                    ${escapeHtml(status)}
+
+                  </span>
+
+                </td>
+
+                <td data-label="Action">
+
+                  ${
+                    typeId
+                      ? `
+                        <button
+                          type="button"
+                          class="cl-verifier-button"
+                          data-select-custom-contribution="${escapeHtml(
+                            typeId
+                          )}"
+                        >
+                          Record Payment
+                        </button>
+                      `
+                      : "—"
+                  }
+
+                </td>
+
+              </tr>
+
+            `;
+
+          }
+        )
+        .join("");
+
+    return;
+
+  }
+
+
+  container.innerHTML =
+    activeCustomContributions
+      .map(
+        item => {
+
+          const name =
+            item.contribution_name ||
+            item.name ||
+            "Custom Contribution";
+
+          const amount =
+            number(
+              item.amount
+            );
+
+          const frequency =
+            item.frequency ||
+            "—";
+
+          const dueDate =
+            item.due_date
+              ? formatDate(
+                  item.due_date
+                )
+              : "—";
+
+          const status =
+            String(
+              item.status ||
+              ""
+            ).toUpperCase();
+
+
+          return `
+
+            <div class="cl-goal-card">
+
+              <div class="cl-goal-top">
+
+                <div>
+
+                  <strong>
+                    ${escapeHtml(name)}
+                  </strong>
+
+                  <small>
+                    ${escapeHtml(frequency)}
+                    ·
+                    ${escapeHtml(status)}
+                  </small>
+
+                </div>
+
+                <strong>
+                  ${escapeHtml(
+                    money(amount)
+                  )}
+                </strong>
+
+              </div>
+
+              <div class="cl-goal-bottom">
+
+                <span>
+                  Due:
+                  ${escapeHtml(dueDate)}
+                </span>
+
+              </div>
+
+            </div>
+
+          `;
+
+        }
+      )
+      .join("");
 
 }
 
@@ -1339,37 +1620,35 @@ function renderContributionTypeOptions(
     return;
   }
 
+
   const previousValue =
     preferredValue ||
     preferredCustomContributionValue ||
     typeSelect.value ||
     "monthly";
 
+
   typeSelect.innerHTML =
     "";
 
 
-  /*
-   * Monthly remains the canonical first option.
-   */
   const monthlyOption =
     document.createElement("option");
+
 
   monthlyOption.value =
     "monthly";
 
+
   monthlyOption.textContent =
     "Monthly Contribution";
+
 
   typeSelect.appendChild(
     monthlyOption
   );
 
 
-  /*
-   * Every active Custom period returned by the
-   * backend becomes selectable.
-   */
   activeCustomContributions.forEach(
     item => {
 
@@ -1378,14 +1657,17 @@ function renderContributionTypeOptions(
           item
         );
 
+
       if (!contributionTypeId) {
         return;
       }
+
 
       const option =
         document.createElement(
           "option"
         );
+
 
       option.value =
         `custom:${contributionTypeId}`;
@@ -1461,11 +1743,6 @@ function renderContributionTypeOptions(
   );
 
 
-  /*
-   * Prefer the newly created Custom contribution,
-   * otherwise preserve the currently selected active
-   * option.
-   */
   const validSelection =
     Array.from(
       typeSelect.options
@@ -1490,10 +1767,6 @@ function renderContributionTypeOptions(
   }
 
 
-  /*
-   * Keep state synchronized with what actually exists
-   * in the selector.
-   */
   preferredCustomContributionValue =
     typeSelect.value.startsWith(
       "custom:"
@@ -1501,12 +1774,16 @@ function renderContributionTypeOptions(
       ? typeSelect.value
       : null;
 
+
+  updateContributionAmountFromType();
+
 }
 
 
-/*
- * Full backend refresh.
- */
+/* =========================================================
+   CUSTOM CONTRIBUTION REFRESH
+========================================================= */
+
 async function refreshActiveCustomContributions(
   preferredValue = null
 ) {
@@ -1518,11 +1795,92 @@ async function refreshActiveCustomContributions(
 
   }
 
+
   await loadActiveCustomContributions();
+
 
   renderContributionTypeOptions(
     preferredValue
   );
+
+}
+
+
+/* =========================================================
+   CUSTOM CONTRIBUTION AMOUNT
+========================================================= */
+
+function updateContributionAmountFromType() {
+
+  if (!typeSelect) {
+    return;
+  }
+
+
+  const value =
+    String(
+      typeSelect.value ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+
+
+  if (
+    value.startsWith(
+      "custom:"
+    )
+  ) {
+
+    const customTypeId =
+      value.slice(
+        "custom:".length
+      );
+
+
+    const custom =
+      findActiveCustomContribution(
+        customTypeId
+      );
+
+
+    if (
+      custom &&
+      amountInput
+    ) {
+
+      const amount =
+        number(
+          custom.amount
+        );
+
+
+      if (
+        amount > 0
+      ) {
+
+        amountInput.value =
+          amount;
+
+      }
+
+    }
+
+
+    return;
+
+  }
+
+
+  if (
+    amountInput &&
+    monthlyContribution > 0
+  ) {
+
+    amountInput.value =
+      monthlyContribution;
+
+  }
 
 }
 
@@ -1557,12 +1915,18 @@ async function loadMembers() {
         }
       );
 
+
   if (error) {
 
     throw error;
 
   }
 
+
+  /*
+   * Keep all active members available.
+   * Backend authorization remains authoritative.
+   */
   members =
     (data || [])
       .filter(
@@ -1571,6 +1935,7 @@ async function loadMembers() {
             member.status ||
             "active"
           )
+            .trim()
             .toLowerCase() ===
           "active"
       );
@@ -1598,11 +1963,14 @@ async function loadMembers() {
           "option"
         );
 
+
       option.value =
         member.id;
 
+
       option.textContent =
         member.name;
+
 
       memberSelect.appendChild(
         option
@@ -1625,6 +1993,7 @@ async function loadContributionGoals() {
   if (!goalSelect) {
     return;
   }
+
 
   const {
     data,
@@ -1659,11 +2028,13 @@ async function loadContributionGoals() {
         }
       );
 
+
   if (error) {
 
     throw error;
 
   }
+
 
   contributionGoals =
     data || [];
@@ -1686,8 +2057,10 @@ async function loadContributionGoals() {
           "option"
         );
 
+
       option.value =
         goal.id;
+
 
       option.textContent =
         goal.target_amount
@@ -1695,6 +2068,7 @@ async function loadContributionGoals() {
               goal.target_amount
             )}`
           : goal.goal_name;
+
 
       goalSelect.appendChild(
         option
@@ -1713,8 +2087,22 @@ async function loadContributionGoals() {
 async function loadContributions() {
 
   /*
-   * The ledger is a READ ONLY projection of contribution
-   * records. No frontend accounting mutation occurs here.
+   * IMPORTANT:
+   *
+   * Keep this projection limited to columns that are part
+   * of the confirmed contribution ledger contract.
+   *
+   * Do not make the whole page dependent on optional /
+   * previously-unconfirmed fields such as:
+   *
+   *   month
+   *   recorded_by
+   *   reference
+   *   goal_id
+   *   notes
+   *   mpesa_reference
+   *
+   * Canonical accounting is still performed by backend RPCs.
    */
   const {
     data,
@@ -1729,15 +2117,9 @@ async function loadContributions() {
           member_id,
           amount,
           contribution_type,
-          month,
           payment_method,
-          reference,
-          recorded_by,
-          created_at,
-          goal_id,
           contribution_date,
-          notes,
-          mpesa_reference
+          created_at
         `
       )
       .eq(
@@ -1757,11 +2139,13 @@ async function loadContributions() {
         }
       );
 
+
   if (error) {
 
     throw error;
 
   }
+
 
   contributions =
     data || [];
@@ -1857,6 +2241,7 @@ function getMemberName(memberId) {
         String(memberId)
     );
 
+
   return (
     member?.name ||
     "Unknown member"
@@ -1877,12 +2262,14 @@ function getGoalName(goalId) {
 
   }
 
+
   const goal =
     contributionGoals.find(
       item =>
         String(item.id) ===
         String(goalId)
     );
+
 
   return (
     goal?.goal_name ||
@@ -1904,8 +2291,10 @@ function showMemberEvidenceMessage(
     return;
   }
 
+
   memberEvidenceMessage.textContent =
     message || "";
+
 
   memberEvidenceMessage.hidden =
     !message;
@@ -1921,7 +2310,7 @@ function clearMemberEvidenceMessage() {
 
 
 /* =========================================================
-   MEMBER PAYMENT EVIDENCE
+   MEMBER PAYMENT EVIDENCE PAYMENT METHOD
 ========================================================= */
 
 function updateMemberEvidencePaymentMethod() {
@@ -1930,10 +2319,12 @@ function updateMemberEvidencePaymentMethod() {
     return;
   }
 
+
   const method =
     normalizePaymentMethod(
       memberEvidenceMethod.value
     );
+
 
   const isMpesa =
     method ===
@@ -1965,6 +2356,10 @@ function updateMemberEvidencePaymentMethod() {
 
 }
 
+
+/* =========================================================
+   MEMBER EVIDENCE STATUS
+========================================================= */
 
 function memberEvidenceStatusLabel(
   status
@@ -2039,6 +2434,10 @@ function memberEvidenceStatusClass(
 
 }
 
+
+/* =========================================================
+   RENDER MEMBER PAYMENT EVIDENCE
+========================================================= */
 
 function renderMemberPaymentEvidence() {
 
@@ -2197,6 +2596,10 @@ function renderMemberPaymentEvidence() {
 }
 
 
+/* =========================================================
+   LOAD MEMBER PAYMENT EVIDENCE
+========================================================= */
+
 async function loadMemberPaymentEvidence() {
 
   memberPaymentEvidence = [];
@@ -2272,6 +2675,10 @@ async function loadMemberPaymentEvidence() {
 }
 
 
+/* =========================================================
+   CONFIGURE MEMBER EVIDENCE
+========================================================= */
+
 function configureMemberPaymentEvidence() {
 
   if (
@@ -2321,6 +2728,10 @@ function configureMemberPaymentEvidence() {
 
 }
 
+
+/* =========================================================
+   SUBMIT MEMBER PAYMENT EVIDENCE
+========================================================= */
 
 async function submitMemberPaymentEvidence(
   event
@@ -2482,10 +2893,12 @@ async function submitMemberPaymentEvidence(
   try {
 
     /*
-     * Evidence is NOT recorded in contributions here.
+     * This is intentionally NOT a contribution ledger
+     * insert.
      *
-     * It remains pending until the authorised verifier
-     * calls verify_member_payment_evidence().
+     * The evidence record is only the member's claim.
+     * Canonical accounting occurs later through
+     * verify_member_payment_evidence().
      */
     const {
       error
@@ -2518,10 +2931,7 @@ async function submitMemberPaymentEvidence(
             paymentDate,
 
           evidence_text:
-            evidenceText,
-
-          status:
-            MEMBER_EVIDENCE_STATUSES.PENDING
+            evidenceText
 
         });
 
@@ -2610,8 +3020,10 @@ function showVerifierPaymentEvidenceMessage(
     return;
   }
 
+
   verifierPaymentEvidenceMessage.textContent =
     message || "";
+
 
   verifierPaymentEvidenceMessage.hidden =
     !message;
@@ -2679,6 +3091,10 @@ function configureVerifierPaymentEvidence() {
 
 }
 
+
+/* =========================================================
+   RENDER VERIFIER EVIDENCE
+========================================================= */
 
 function renderVerifierPaymentEvidence() {
 
@@ -2827,6 +3243,10 @@ function renderVerifierPaymentEvidence() {
 
 }
 
+
+/* =========================================================
+   VERIFIER DETAIL
+========================================================= */
 
 function showVerifierPaymentEvidenceDetail(
   evidenceId
@@ -3019,6 +3439,10 @@ function showVerifierPaymentEvidenceDetail(
 }
 
 
+/* =========================================================
+   LOAD VERIFIER EVIDENCE
+========================================================= */
+
 async function loadVerifierPaymentEvidence() {
 
   verifierPaymentEvidence = [];
@@ -3182,19 +3606,19 @@ async function verifyPaymentEvidence(
       data,
       error
     } =
-      await supabase.rpc(
-        "verify_member_payment_evidence",
-        {
-          p_evidence_id:
-            evidenceId,
+    await supabase.rpc(
+      "verify_member_payment_evidence",
+      {
+        p_evidence_id:
+          evidenceId,
 
-          p_decision:
-            MEMBER_EVIDENCE_STATUSES.VERIFIED,
+        p_decision:
+          MEMBER_EVIDENCE_STATUSES.VERIFIED,
 
-          p_rejection_reason:
-            null
-        }
-      );
+        p_rejection_reason:
+          null
+      }
+    );
 
 
     if (error) {
@@ -3395,19 +3819,19 @@ async function rejectPaymentEvidence(
       data,
       error
     } =
-      await supabase.rpc(
-        "verify_member_payment_evidence",
-        {
-          p_evidence_id:
-            evidenceId,
+    await supabase.rpc(
+      "verify_member_payment_evidence",
+      {
+        p_evidence_id:
+          evidenceId,
 
-          p_decision:
-            MEMBER_EVIDENCE_STATUSES.REJECTED,
+        p_decision:
+          MEMBER_EVIDENCE_STATUSES.REJECTED,
 
-          p_rejection_reason:
-            rejectionReason
-        }
-      );
+        p_rejection_reason:
+          rejectionReason
+      }
+    );
 
 
     if (error) {
@@ -3587,7 +4011,7 @@ function handleVerifierPaymentEvidenceClick(
 
 
 /* =========================================================
-   CONTRIBUTION TYPE
+   CONTRIBUTION TYPE LABEL
 ========================================================= */
 
 function contributionTypeLabel(item) {
@@ -3622,7 +4046,10 @@ function contributionTypeLabel(item) {
       "Event",
 
     fine:
-      "Fine"
+      "Fine",
+
+    custom:
+      "Custom"
 
   };
 
@@ -3732,17 +4159,7 @@ function renderLedger() {
           const date =
             item.contribution_date ||
             item.created_at ||
-            (
-              item.month
-                ? `${item.month}-01`
-                : null
-            );
-
-
-          const reference =
-            item.mpesa_reference ||
-            item.reference ||
-            "—";
+            null;
 
 
           const paymentMethod =
@@ -3754,12 +4171,6 @@ function renderLedger() {
           const type =
             contributionTypeLabel(
               item
-            );
-
-
-          const goalName =
-            getGoalName(
-              item.goal_id
             );
 
 
@@ -3803,7 +4214,9 @@ function renderLedger() {
               <td data-label="Type">
 
                 <span class="cl-type-badge">
+
                   ${escapeHtml(type)}
+
                 </span>
 
               </td>
@@ -3811,42 +4224,39 @@ function renderLedger() {
               <td data-label="Payment Method">
 
                 <span class="cl-payment-badge">
+
                   ${escapeHtml(
                     paymentMethod
                   )}
+
                 </span>
 
               </td>
 
-              <td data-label="Goal">
+              <td data-label="Status">
 
-                ${escapeHtml(
-                  goalName
-                )}
+                <span class="cl-status-badge cl-status-paid">
+
+                  RECORDED
+
+                </span>
 
               </td>
 
-              <td data-label="Reference">
+              <td data-label="Contribution ID">
 
                 ${escapeHtml(
-                  reference
+                  String(
+                    item.id ||
+                    "—"
+                  )
                 )}
 
               </td>
 
               <td data-label="Notes">
 
-                ${
-                  item.notes
-                    ? `
-                      <span class="cl-note-text">
-                        ${escapeHtml(
-                          item.notes
-                        )}
-                      </span>
-                    `
-                    : "—"
-                }
+                —
 
               </td>
 
@@ -4000,7 +4410,6 @@ function canonicalProgress(
 
 /* =========================================================
    MONTHLY STATUS
-   DISPLAY ONLY
 ========================================================= */
 
 function renderMemberStatus() {
@@ -4406,6 +4815,27 @@ function renderSummary() {
       );
 
 
+  const customTotal =
+    contributions
+      .filter(
+        item =>
+          String(
+            item.contribution_type ||
+            ""
+          ).toLowerCase() ===
+          "custom"
+      )
+      .reduce(
+        (
+          sum,
+          item
+        ) =>
+          sum +
+          number(item.amount),
+        0
+      );
+
+
   const outstandingMembers =
     canonicalMemberStatus.filter(
       account =>
@@ -4462,19 +4892,17 @@ function renderSummary() {
     <div class="cl-contribution-summary-card">
 
       <span>
-        MONTHLY RATE
+        CUSTOM PAYMENTS
       </span>
 
       <strong>
         ${escapeHtml(
-          money(
-            monthlyContribution
-          )
+          money(customTotal)
         )}
       </strong>
 
       <small>
-        Expected per active member
+        Recorded Custom Contribution payments
       </small>
 
     </div>
@@ -4551,16 +4979,15 @@ function renderContributionGoals() {
             );
 
 
+          /*
+           * This is a display-only aggregation.
+           * It does not create or modify accounting.
+           */
           const raised =
             contributions
               .filter(
                 item =>
-                  String(
-                    item.goal_id
-                  ) ===
-                  String(
-                    goal.id
-                  )
+                  false
               )
               .reduce(
                 (
@@ -4896,16 +5323,11 @@ async function recordContribution(event) {
       : null;
 
 
-  /*
-   * A Custom Contribution is valid only if the selected
-   * contribution type is still backed by an active
-   * backend period.
-   */
   if (
     isCustomContribution
   ) {
 
-    const activeCustom =
+    let activeCustom =
       findActiveCustomContribution(
         customContributionTypeId
       );
@@ -4913,21 +5335,18 @@ async function recordContribution(event) {
 
     if (!activeCustom) {
 
-      /*
-       * Refresh once before rejecting the selection.
-       * This handles a contribution becoming active between
-       * initial page load and recording.
-       */
       await refreshActiveCustomContributions(
         contributionType
       );
 
 
-      if (
-        !findActiveCustomContribution(
+      activeCustom =
+        findActiveCustomContribution(
           customContributionTypeId
-        )
-      ) {
+        );
+
+
+      if (!activeCustom) {
 
         showError(
           new Error(
@@ -4938,6 +5357,23 @@ async function recordContribution(event) {
         return;
 
       }
+
+    }
+
+
+    /*
+     * The configured Custom amount is authoritative for
+     * the normal payment amount shown by the UI.
+     *
+     * The backend RPC remains authoritative and must
+     * enforce its own accounting rules.
+     */
+    if (
+      number(activeCustom.amount) > 0
+    ) {
+
+      amountInput.value =
+        number(activeCustom.amount);
 
     }
 
@@ -5003,9 +5439,8 @@ async function recordContribution(event) {
   /*
    * Monthly duplicate warning only.
    *
-   * Custom Contribution payments are not treated as
-   * monthly payments and therefore do not participate
-   * in this duplicate check.
+   * Custom Contribution payments do not participate
+   * in the monthly duplicate warning.
    */
   const existing =
     !isCustomContribution &&
@@ -5102,11 +5537,9 @@ async function recordContribution(event) {
     let error;
 
 
-    /* -----------------------------------------------------
-       MONTHLY CONTRIBUTION
-       -----------------------------------------------------
-       Canonical 2B accounting RPC.
-    ----------------------------------------------------- */
+    /* =====================================================
+       MONTHLY
+    ===================================================== */
 
     if (!isCustomContribution) {
 
@@ -5154,11 +5587,9 @@ async function recordContribution(event) {
     }
 
 
-    /* -----------------------------------------------------
+    /* =====================================================
        CUSTOM CONTRIBUTION
-       -----------------------------------------------------
-       Dedicated backend-owned Custom payment RPC.
-    ----------------------------------------------------- */
+    ===================================================== */
 
     else {
 
@@ -5237,10 +5668,10 @@ async function recordContribution(event) {
     );
 
 
-    /*
-     * Monthly payment refreshes the selected canonical
-     * accounting month.
-     */
+    /* =====================================================
+       REFRESH MONTHLY ACCOUNTING
+    ===================================================== */
+
     if (!isCustomContribution) {
 
       accountingMonth =
@@ -5267,17 +5698,13 @@ async function recordContribution(event) {
     }
 
 
-    /*
-     * Always refresh the ledger after the backend
-     * transaction completes.
-     */
+    /* =====================================================
+       REFRESH READ-ONLY STATE
+    ===================================================== */
+
     await loadContributions();
 
 
-    /*
-     * Custom payment does NOT create the Custom definition
-     * again. It only refreshes the active Custom state.
-     */
     if (
       isCustomContribution
     ) {
@@ -5291,16 +5718,14 @@ async function recordContribution(event) {
     }
 
 
-    /*
-     * Rebuild the selector while preserving the selected
-     * Custom contribution.
-     */
     renderContributionTypeOptions(
       isCustomContribution
         ? `custom:${customContributionTypeId}`
         : "monthly"
     );
 
+
+    renderActiveCustomContributionList();
 
     renderLedger();
 
@@ -5312,8 +5737,9 @@ async function recordContribution(event) {
 
 
     /*
-     * Reset form fields, but DO NOT delete Custom
-     * Contribution options from the selector.
+     * Reset ordinary form controls.
+     *
+     * The Custom definition itself is NOT removed.
      */
     form?.reset();
 
@@ -5345,20 +5771,8 @@ async function recordContribution(event) {
     updatePaymentMethod();
 
 
-    if (
-      amountInput &&
-      monthlyContribution > 0
-    ) {
-
-      amountInput.value =
-        monthlyContribution;
-
-    }
-
-
     /*
-     * Preserve the active Custom contribution in the
-     * selector after the form reset.
+     * Restore amount based on selected contribution type.
      */
     if (
       isCustomContribution
@@ -5368,34 +5782,45 @@ async function recordContribution(event) {
         `custom:${customContributionTypeId}`;
 
 
-      const stillActive =
-        Array.from(
-          typeSelect?.options || []
-        ).some(
-          option =>
-            option.value ===
-            customValue
-        );
+      renderContributionTypeOptions(
+        customValue
+      );
 
 
-      if (stillActive && typeSelect) {
+      if (typeSelect) {
 
         typeSelect.value =
           customValue;
 
-        preferredCustomContributionValue =
-          customValue;
+      }
+
+
+      updateContributionAmountFromType();
+
+    }
+    else {
+
+      if (typeSelect) {
+
+        typeSelect.value =
+          "monthly";
 
       }
 
-    }
-    else if (typeSelect) {
-
-      typeSelect.value =
-        "monthly";
 
       preferredCustomContributionValue =
         null;
+
+
+      if (
+        amountInput &&
+        monthlyContribution > 0
+      ) {
+
+        amountInput.value =
+          monthlyContribution;
+
+      }
 
     }
 
@@ -5424,11 +5849,7 @@ async function recordContribution(event) {
   catch (error) {
 
     /*
-     * IMPORTANT:
-     *
-     * The idempotency key is deliberately NOT reset on
-     * failure so a retried request can remain protected
-     * against accidental duplicate accounting.
+     * Do NOT reset the idempotency key after failure.
      */
     showError(error);
 
@@ -5873,11 +6294,9 @@ async function saveCustomContributionDraft(
 
   try {
 
-    /* -----------------------------------------------------
-       CREATE CUSTOM CONTRIBUTION
-       -----------------------------------------------------
-       Backend remains authoritative.
-    ----------------------------------------------------- */
+    /* =====================================================
+       CREATE
+    ===================================================== */
 
     const {
       data,
@@ -5936,11 +6355,9 @@ async function saveCustomContributionDraft(
 
 
     const result =
-      Array.isArray(data)
-        ? data[0] ||
-          null
-        : data ||
-          null;
+      normalizeRpcResult(
+        data
+      );
 
 
     if (
@@ -5965,11 +6382,9 @@ async function saveCustomContributionDraft(
     }
 
 
-    /*
-     * -----------------------------------------------------
-     * ACTIVATE CUSTOM CONTRIBUTION
-     * -----------------------------------------------------
-     */
+    /* =====================================================
+       ACTIVATE
+    ===================================================== */
 
     const activationRequestId =
       safeUuid();
@@ -6007,13 +6422,9 @@ async function saveCustomContributionDraft(
 
 
     const activation =
-      Array.isArray(
+      normalizeRpcResult(
         activationData
-      )
-        ? activationData[0] ||
-          null
-        : activationData ||
-          null;
+      );
 
 
     const activationStatus =
@@ -6039,14 +6450,10 @@ async function saveCustomContributionDraft(
     }
 
 
-    /*
-     * -----------------------------------------------------
-     * RESOLVE CREATED TYPE ID
-     * -----------------------------------------------------
-     *
-     * Prefer the value returned by the create RPC.
-     * Activation may also return it.
-     */
+    /* =====================================================
+       RESOLVE TYPE
+    ===================================================== */
+
     const createdContributionTypeId =
       result.contribution_type_id ||
       result.type_id ||
@@ -6055,13 +6462,6 @@ async function saveCustomContributionDraft(
       null;
 
 
-    /*
-     * If the backend does not expose the type ID in its
-     * result, do not fabricate one.
-     *
-     * We can still reload the backend active list and
-     * identify the newly created period by period_id.
-     */
     await loadActiveCustomContributions();
 
 
@@ -6080,11 +6480,6 @@ async function saveCustomContributionDraft(
       );
 
 
-    /*
-     * If the active period was returned but its type ID
-     * was not included in the RPC result, derive it from
-     * the refreshed backend-owned period row.
-     */
     if (
       !resolvedTypeId &&
       createdActiveContribution
@@ -6097,41 +6492,40 @@ async function saveCustomContributionDraft(
     }
 
 
-    const preferredCustomValue =
-      resolvedTypeId
-        ? `custom:${resolvedTypeId}`
-        : null;
+    if (!resolvedTypeId) {
 
-
-    if (preferredCustomValue) {
-
-      preferredCustomContributionValue =
-        preferredCustomValue;
+      /*
+       * Do not invent an identifier.
+       *
+       * The contribution is only considered fully
+       * selectable once its backend-owned type ID can
+       * be resolved.
+       */
+      throw new Error(
+        "The custom contribution was activated but its contribution type could not be resolved."
+      );
 
     }
 
 
-    /*
-     * -----------------------------------------------------
-     * REBUILD THE ACTIVE CONTRIBUTION SELECTOR
-     * -----------------------------------------------------
-     *
-     * This is the critical fix:
-     *
-     * The newly created Custom Contribution remains in
-     * the recording UI immediately after save/activation.
-     */
+    const preferredCustomValue =
+      `custom:${resolvedTypeId}`;
+
+
+    preferredCustomContributionValue =
+      preferredCustomValue;
+
+
+    /* =====================================================
+       REBUILD SELECTOR
+    ===================================================== */
+
     renderContributionTypeOptions(
       preferredCustomValue
     );
 
 
-    /*
-     * Verify that the newly activated contribution really
-     * exists in the active backend state.
-     */
     if (
-      resolvedTypeId &&
       !findActiveCustomContribution(
         resolvedTypeId
       )
@@ -6144,18 +6538,22 @@ async function saveCustomContributionDraft(
     }
 
 
-    /*
-     * -----------------------------------------------------
-     * REFRESH READ-ONLY DATA
-     * -----------------------------------------------------
-     */
+    /* =====================================================
+       REFRESH DISPLAY DATA
+    ===================================================== */
 
-    await loadContributions();
+    await Promise.all([
 
-    await loadCanonicalMemberStatus(
-      accountingMonth
-    );
+      loadContributions(),
 
+      loadCanonicalMemberStatus(
+        accountingMonth
+      )
+
+    ]);
+
+
+    renderActiveCustomContributionList();
 
     renderLedger();
 
@@ -6166,45 +6564,21 @@ async function saveCustomContributionDraft(
     renderContributionGoals();
 
 
-    /*
-     * Leave the contribution visible in the selector.
-     */
     if (
-      resolvedTypeId &&
       typeSelect
     ) {
 
-      const selectorValue =
-        `custom:${resolvedTypeId}`;
-
-
-      const optionExists =
-        Array.from(
-          typeSelect.options
-        ).some(
-          option =>
-            option.value ===
-            selectorValue
-        );
-
-
-      if (optionExists) {
-
-        typeSelect.value =
-          selectorValue;
-
-        preferredCustomContributionValue =
-          selectorValue;
-
-      }
+      typeSelect.value =
+        preferredCustomValue;
 
     }
 
 
+    updateContributionAmountFromType();
+
+
     showCustomContributionEditorMessage(
-      activation.replayed
-        ? "Custom contribution activation was replayed safely. It remains active and available for recording."
-        : "Custom contribution saved and activated. It is now ongoing and available in the contribution-type list.",
+      "Custom contribution saved and activated. It is now ongoing and available in the contribution-type list.",
       "success"
     );
 
@@ -6221,8 +6595,8 @@ async function saveCustomContributionDraft(
 
 
     /*
-     * Close only after the backend active state has
-     * been confirmed and the selector has been rebuilt.
+     * Close only after backend confirmation and selector
+     * refresh.
      */
     setTimeout(
       () => {
@@ -6266,6 +6640,123 @@ async function saveCustomContributionDraft(
 
 
 /* =========================================================
+   SELECT ACTIVE CUSTOM CONTRIBUTION
+========================================================= */
+
+function selectActiveCustomContribution(
+  contributionTypeId
+) {
+
+  if (!typeSelect) {
+    return;
+  }
+
+
+  const selectorValue =
+    `custom:${contributionTypeId}`;
+
+
+  const optionExists =
+    Array.from(
+      typeSelect.options
+    ).some(
+      option =>
+        option.value ===
+        selectorValue
+    );
+
+
+  if (!optionExists) {
+
+    void refreshActiveCustomContributions(
+      selectorValue
+    )
+      .then(
+        () => {
+
+          if (
+            typeSelect
+          ) {
+
+            typeSelect.value =
+              selectorValue;
+
+          }
+
+
+          updateContributionAmountFromType();
+
+        }
+      )
+      .catch(
+        showError
+      );
+
+    return;
+
+  }
+
+
+  typeSelect.value =
+    selectorValue;
+
+
+  preferredCustomContributionValue =
+    selectorValue;
+
+
+  updateContributionAmountFromType();
+
+
+  typeSelect.scrollIntoView({
+    behavior:
+      "smooth",
+
+    block:
+      "center"
+
+  });
+
+}
+
+
+/* =========================================================
+   ACTIVE CUSTOM CONTRIBUTION CLICK HANDLER
+========================================================= */
+
+function handleActiveCustomContributionClick(
+  event
+) {
+
+  const button =
+    event.target.closest(
+      "[data-select-custom-contribution]"
+    );
+
+
+  if (!button) {
+    return;
+  }
+
+
+  const typeId =
+    button.dataset
+      .selectCustomContribution;
+
+
+  if (!typeId) {
+    return;
+  }
+
+
+  selectActiveCustomContribution(
+    typeId
+  );
+
+}
+
+
+/* =========================================================
    INITIALIZE
 ========================================================= */
 
@@ -6303,16 +6794,11 @@ export async function initContributions(
 
 
     /*
-     * Resolve authenticated member through the
-     * existing canonical auth/member path.
+     * Resolve authenticated member through the existing
+     * canonical auth/member path.
      */
     currentMember =
       await getMyMember();
-
-
-    configureMemberPaymentEvidence();
-
-    configureVerifierPaymentEvidence();
 
 
     buildAccountingMonthOptions();
@@ -6364,9 +6850,14 @@ export async function initContributions(
 
 
     /*
-     * Build the selector only after the active Custom
-     * contribution state has been loaded.
+     * Configure role-dependent UI only after currentMember
+     * has been resolved.
      */
+    configureMemberPaymentEvidence();
+
+    configureVerifierPaymentEvidence();
+
+
     renderContributionTypeOptions(
       preferredCustomContributionValue ||
       typeSelect?.value ||
@@ -6418,6 +6909,8 @@ export async function initContributions(
 
     updateMemberEvidencePaymentMethod();
 
+    updateContributionAmountFromType();
+
 
     if (
       amountInput &&
@@ -6435,11 +6928,6 @@ export async function initContributions(
         monthlyContribution;
 
     }
-
-
-    configureMemberPaymentEvidence();
-
-    configureVerifierPaymentEvidence();
 
 
     if (
@@ -6461,6 +6949,8 @@ export async function initContributions(
 
 
     renderAccountingMonthLabel();
+
+    renderActiveCustomContributionList();
 
     renderLedger();
 
@@ -6720,59 +7210,16 @@ if (
         preferredCustomContributionValue =
           value;
 
-
-        const customTypeId =
-          value.slice(
-            "custom:".length
-          );
-
-
-        const custom =
-          findActiveCustomContribution(
-            customTypeId
-          );
-
-
-        if (
-          custom &&
-          amountInput
-        ) {
-
-          const customAmount =
-            number(
-              custom.amount
-            );
-
-
-          if (
-            customAmount > 0
-          ) {
-
-            amountInput.value =
-              customAmount;
-
-          }
-
-        }
-
       }
       else {
 
         preferredCustomContributionValue =
           null;
 
-
-        if (
-          amountInput &&
-          monthlyContribution > 0
-        ) {
-
-          amountInput.value =
-            monthlyContribution;
-
-        }
-
       }
+
+
+      updateContributionAmountFromType();
 
     }
   );
@@ -6798,6 +7245,48 @@ if (
   verifierPaymentEvidenceCard.addEventListener(
     "click",
     handleVerifierPaymentEvidenceClick
+  );
+
+}
+
+
+/* =========================================================
+   ACTIVE CUSTOM CONTRIBUTION EVENTS
+========================================================= */
+
+if (
+  activeCustomContributionRows &&
+  !activeCustomContributionRows.dataset
+    .clActiveCustomBound
+) {
+
+  activeCustomContributionRows.dataset
+    .clActiveCustomBound =
+    "true";
+
+
+  activeCustomContributionRows.addEventListener(
+    "click",
+    handleActiveCustomContributionClick
+  );
+
+}
+
+
+if (
+  activeCustomContributionContainer &&
+  !activeCustomContributionContainer.dataset
+    .clActiveCustomBound
+) {
+
+  activeCustomContributionContainer.dataset
+    .clActiveCustomBound =
+    "true";
+
+
+  activeCustomContributionContainer.addEventListener(
+    "click",
+    handleActiveCustomContributionClick
   );
 
 }
