@@ -77,7 +77,7 @@ const elements = {
     leadershipStatus: null,
     leadershipList: null,
 
-    closingDay: null,
+    openingDay: null,
     saveContributionSettings: null,
 
     calendarContributionAmount: null,
@@ -177,8 +177,8 @@ function refreshDomReferences() {
     elements.leadershipList =
         document.getElementById("leadershipList");
 
-    elements.closingDay =
-        document.getElementById("closingDay");
+    elements.openingDay =
+        document.getElementById("openingDay");
 
     elements.saveContributionSettings =
         document.getElementById("saveContributionSettings");
@@ -379,8 +379,8 @@ function renderContributionCycleSummary() {
     const amount =
         currentGroup?.monthly_contribution;
 
-    const closingDay =
-        contributionSettings?.monthly_closing_day;
+    const openingDay =
+        contributionSettings?.monthly_opening_day;
 
     if (elements.calendarContributionAmount) {
         elements.calendarContributionAmount.textContent =
@@ -393,18 +393,18 @@ function renderContributionCycleSummary() {
 
     if (elements.calendarClosingDay) {
         elements.calendarClosingDay.textContent =
-            closingDay !== null &&
-            closingDay !== undefined &&
-            closingDay !== ""
-                ? String(closingDay)
+            openingDay !== null &&
+            openingDay !== undefined &&
+            openingDay !== ""
+                ? String(openingDay)
                 : "—";
     }
 
     if (elements.calendarCycleStatus) {
         elements.calendarCycleStatus.textContent =
-            closingDay !== null &&
-            closingDay !== undefined &&
-            closingDay !== ""
+            openingDay !== null &&
+            openingDay !== undefined &&
+            openingDay !== ""
                 ? "Configured"
                 : "Not configured";
     }
@@ -675,11 +675,11 @@ async function loadContributionSettings() {
             : data || null;
 
     if (
-        elements.closingDay &&
+        elements.openingDay &&
         contributionSettings
     ) {
-        elements.closingDay.value =
-            contributionSettings.monthly_closing_day ??
+        elements.openingDay.value =
+            contributionSettings.monthly_opening_day ??
             "";
     }
 
@@ -699,15 +699,15 @@ async function saveMonthlyContribution(event) {
     }
 
     const amount = Number(elements.monthlyContribution?.value || 0);
-    const rawClosingDay = elements.closingDay?.value?.trim();
-    const closingDay = Number(rawClosingDay);
+    const rawClosingDay = elements.openingDay?.value?.trim();
+    const openingDay = Number(rawClosingDay);
 
     if (!Number.isFinite(amount) || amount < 0) {
         throw new Error("Monthly contribution must be a valid non-negative number.");
     }
 
-    if (!rawClosingDay || !Number.isInteger(closingDay) || closingDay < 1 || closingDay > 28) {
-        throw new Error("Closing day must be a whole number between 1 and 28.");
+    if (!rawClosingDay || !Number.isInteger(openingDay) || openingDay < 1 || openingDay > 28) {
+        throw new Error("Opening day must be a whole number between 1 and 28.");
     }
 
     validateContributionRuleUI("monthly");
@@ -725,7 +725,7 @@ async function saveMonthlyContribution(event) {
         "update_group_contribution_settings",
         {
             p_group_id: currentGroup.id,
-            p_monthly_closing_day: closingDay
+            p_monthly_opening_day: openingDay
         }
     );
 
@@ -741,8 +741,8 @@ async function saveMonthlyContribution(event) {
 
     showContributionStatus(
         currentRole === "admin"
-            ? "Monthly contribution amount and closing day saved. Rule/fine values remain UI-only until the backend rule contract is approved."
-            : "Monthly closing day saved. Monthly amount changes require an admin role; rule/fine values remain UI-only until the backend rule contract is approved.",
+            ? "Monthly contribution amount and opening day saved. Rule/fine values remain UI-only until the backend rule contract is approved."
+            : "Monthly opening day saved. Monthly amount changes require an admin role; rule/fine values remain UI-only until the backend rule contract is approved.",
         "success"
     );
 }
