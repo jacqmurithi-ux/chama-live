@@ -1395,45 +1395,12 @@ export {
 
 
 /* =========================================================
-   DIRECT PAGE COMPATIBILITY
+   BOOT OWNERSHIP
+   ---------------------------------------------------------
+   member-layout.js is the sole feature boot owner.
+   Direct DOMContentLoaded/auto-initialization is intentionally
+   removed to prevent duplicate context loading and races.
 ========================================================= */
-
-if (
-  document.readyState ===
-  "loading"
-) {
-
-  document.addEventListener(
-    "DOMContentLoaded",
-    () => {
-
-      if (
-        !window.__CHAMA_LIVE_LAYOUT_LOADING__
-      ) {
-
-        initMemberActivities();
-
-      }
-
-    },
-    {
-      once: true
-    }
-  );
-
-}
-else {
-
-  if (
-    !window.__CHAMA_LIVE_LAYOUT_LOADING__
-  ) {
-
-    initMemberActivities();
-
-  }
-
-}
-
 
 console.log(
   "CHAMA LIVE: member-activities.js ready"
