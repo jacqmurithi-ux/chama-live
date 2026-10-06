@@ -1,38 +1,42 @@
 /* =========================================================
    CHAMA LIVE — CONTRIBUTIONS
-   CANONICAL 2B ACCOUNTING VERSION
+   CANONICAL 2B ACCOUNTING FEATURE MODULE
 
-   MEMBER PAYMENT EVIDENCE INTEGRATION
-   CUSTOM CONTRIBUTION INTEGRATION
-
+   PURPOSE
    ---------------------------------------------------------
-   ACCOUNTING BOUNDARIES
-   ---------------------------------------------------------
-   • Ordinary members submit payment evidence only.
-   • Member evidence is inserted into
-     member_payment_evidence.
-   • Evidence remains pending until authorised
-     verification occurs.
-   • Frontend never directly inserts into contributions
-     for the member-evidence workflow.
-   • Verification is performed by the database
-     verify_member_payment_evidence() RPC.
-   • Existing canonical contribution recording remains
-     through cl_2b_record_contribution().
-   • Custom contribution creation remains backend-owned.
-   • Custom contribution activation remains backend-owned.
-   • Custom contribution payments remain backend-owned.
-   • Verifier reads are limited to pending evidence in
-     the current group.
-   • Verifier writes occur only through
-     verify_member_payment_evidence().
-   • Canonical accounting remains backend-owned.
-   • Closed financial-period enforcement remains
+   • Record authorised staff contributions through the
+     canonical accounting RPC.
+   • Let ordinary members submit payment evidence.
+   • Let authorised verifiers review/verify payment evidence.
+   • Create and activate Custom Contribution definitions
+     through backend-owned RPC workflows.
+   • Record Custom Contribution payments through the
+     backend-owned accounting RPC.
+   • Show active Custom Contributions as ongoing selectable
+     contribution types.
+   • Keep accounting calculations, obligations, allocations,
+     fines, credits, balances and period enforcement
      backend-owned.
-   • Active Custom Contribution definitions are read from
-     contribution_types + contribution_periods.
-   • The frontend never creates accounting obligations,
-     allocations, fines, credits, or balances.
+
+   FRONTEND BOUNDARIES
+   ---------------------------------------------------------
+   • No direct INSERT/UPDATE/DELETE against accounting tables.
+   • No frontend-created obligations or allocations.
+   • No frontend-generated fines, credits or balances.
+   • No reporting-only logic belongs in this module.
+   • Page refresh reloads state; it does not create accounting.
+   • Admin portal boot ownership remains in admin-layout.js.
+   • This module exports initContributions() and does not
+     auto-boot.
+
+   CANONICAL BACKEND WORKFLOWS
+   ---------------------------------------------------------
+   • cl_2b_record_contribution()
+   • verify_member_payment_evidence()
+   • create_custom_contribution()
+   • activate_custom_contribution()
+   • record_custom_contribution_payment()
+   • refresh_canonical_contribution_accounting()
 ========================================================= */
 
 import {
