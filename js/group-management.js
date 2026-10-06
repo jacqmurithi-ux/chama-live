@@ -1159,6 +1159,19 @@ async function saveCustomContribution(event) {
             );
 
         if (error) {
+            if (
+                error?.code === "23505" &&
+                String(error?.message || "").includes(
+                    "contribution_types_group_name_unique"
+                )
+            ) {
+                throw new Error(
+                    "A custom contribution named \"" +
+                    name +
+                    "\" already exists in this group. Use a different name, or manage the existing contribution from Active Contributions."
+                );
+            }
+
             throw error;
         }
 
