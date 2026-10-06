@@ -4332,9 +4332,23 @@ function bindEvents() {
   $("applyFilters")
     ?.addEventListener(
       "click",
-      () =>
-        generateReport()
-          .catch(reportError)
+      async event => {
+        const button = event.currentTarget;
+
+        button.disabled = true;
+        button.textContent = "Generating…";
+
+        try {
+          await generateReport();
+        }
+        catch (error) {
+          reportError(error);
+        }
+        finally {
+          button.disabled = false;
+          button.textContent = "Generate Report";
+        }
+      }
     );
 
   $("resetFilters")
