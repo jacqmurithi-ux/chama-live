@@ -96,11 +96,6 @@ const date = value =>
         message.textContent="Fine ledger loaded from authoritative records."; message.className="fine-message visible success";
       } catch(error) { console.error("CHAMA LIVE fine UI:",error); message.textContent=error?.message||"Unable to load the fine ledger."; message.className="fine-message visible error"; }
     }
-    document.getElementById("accountingMonth")?.addEventListener("change",loadFineLedgerUI);
-    document.getElementById("fineMember")?.addEventListener("change",loadFineLedgerUI);
-    document.getElementById("clearFineFilters")?.addEventListener("click",()=>{document.getElementById("accountingMonth").value="";document.getElementById("fineMember").value="";loadFineLedgerUI();});
-    document.getElementById("refreshFines")?.addEventListener("click",loadFineLedgerUI);
-
 export async function initFines() {
   document
     .getElementById("accountingMonth")
