@@ -114,6 +114,8 @@ let milestones = 0;
 let assets = 0;
 let contributionGoals = 0;
 
+let monthlyContribution = 0;
+
 /*
    Active contribution definitions are read-only dashboard
    data.
@@ -1160,47 +1162,285 @@ async function loadActiveContributionTypes() {
 
   activeContributionTypes = [];
 
-
   /*
-     The existing frontend/backend contract may expose
-     contribution definitions under different schema names.
+   * Monthly Contribution is a group-level ongoing definition.
+   * Read-only source: groups.monthly_contribution.
+   */
+  monthlyContribution =
+    numberValue(
+      currentGroup?.monthly_contribution
+    );
 
-     We therefore do not guess a new canonical table and
-     issue a potentially invalid query.
+  try {
 
-     The monthly contribution type is always known from the
-     canonical monthly accounting contract.
-  */
+    const {
+      data,
+      error
+    } =
+      await supabase
+        .from("groups")
+        .select(
+          "monthly_contribution"
+        )
+        .eq(
+          "id",
+          currentGroupId
+        )
+        .single();
+
+    if (!error) {
+
+      monthlyContribution =
+        numberValue(
+          data?.monthly_contribution
+        );
+
+    }
+
+  }
+  catch (error) {
+
+    console.warn(
+      "CHAMA LIVE: Monthly contribution definition read failed; using authenticated group context.",
+      error
+    );
+
+  }
 
   activeContributionTypes.push({
+
     key: "monthly",
+
     name: "Monthly Contribution",
+
     type: "Monthly",
-    active: true,
-    source: "canonical_monthly_accounting"
+
+    amount:
+      monthlyContribution,
+
+    frequency:
+      "Monthly",
+
+    due_date:
+      null,
+
+    closing_date:
+      null,
+
+    fine_rule:
+      "Canonical monthly rule",
+
+    status:
+      "Active",
+
+    active:
+      true,
+
+    source:
+      "groups.monthly_contribution"
+
   });
 
 
   /*
-     Custom / Other contribution definitions should only be
-     added here when the application already exposes them
-     through an approved read-only source.
+   * Custom contribution definitions are read-only here.
+   *
+   * Ongoing custom contribution = active period status:
+   *   open / due / grace
+   *
+   * Draft, scheduled, closed and cancelled periods are
+   * intentionally excluded.
+   */
+  const {
+    data: contributionTypes,
+    error: contributionTypeError
+  } =
+    await supabase
+      .from("contribution_types")
+      .select(
+        "id,group_id,name,code"
+      )
+      .eq(
+        "group_id",
+        currentGroupId
+      )
+      .eq(
+        "code",
+        "custom"
+      );
 
-     Do not manufacture a Custom Contribution record from
-     payment rows.
+  if (contributionTypeError) {
 
-     In particular:
+    throw contributionTypeError;
 
-       contribution_type = "Custom"
+  }
 
-     in the contributions ledger does NOT by itself prove
-     that an active Custom Contribution rule exists.
+  const customTypes =
+    Array.isArray(
+      contributionTypes
+    )
+      ? contributionTypes
+      : [];
 
-     Therefore no inferred Custom rule is created here.
-  */
+  if (customTypes.length) {
 
+    const customTypeIds =
+      customTypes.map(
+        type =>
+          type.id
+      );
+
+    const {
+      data: periods,
+      error: periodError
+    } =
+      await supabase
+        .from("contribution_periods")
+        .select(
+          [
+            "id",
+            "group_id",
+            "contribution_type_id",
+            "period_key",
+            "opening_date",
+            "due_date",
+            "closing_date",
+            "amount",
+            "frequency",
+            "status",
+            "description",
+            "fine_rule_id"
+          ].join(",")
+        )
+        .eq(
+          "group_id",
+          currentGroupId
+        )
+        .in(
+          "contribution_type_id",
+          customTypeIds
+        )
+        .in(
+          "status",
+          [
+            "open",
+            "due",
+            "grace"
+          ]
+        )
+        .order(
+          "opening_date",
+          {
+            ascending:
+              false
+          }
+        );
+
+    if (periodError) {
+
+      throw periodError;
+
+    }
+
+    const typeById =
+      new Map(
+        customTypes.map(
+          type => [
+            String(type.id),
+            type
+          ]
+        )
+      );
+
+    (
+      Array.isArray(periods)
+        ? periods
+        : []
+    )
+      .filter(
+        period =>
+          typeById.has(
+            String(
+              period.contribution_type_id
+            )
+          )
+      )
+      .forEach(
+        period => {
+
+          const type =
+            typeById.get(
+              String(
+                period.contribution_type_id
+              )
+            );
+
+          activeContributionTypes.push({
+
+            key:
+              `custom:${period.contribution_type_id}`,
+
+            id:
+              period.id,
+
+            contribution_type_id:
+              period.contribution_type_id,
+
+            name:
+              type?.name ||
+              "Custom Contribution",
+
+            type:
+              "Custom",
+
+            amount:
+              numberValue(
+                period.amount
+              ),
+
+            frequency:
+              period.frequency ||
+              "—",
+
+            opening_date:
+              period.opening_date,
+
+            due_date:
+              period.due_date,
+
+            closing_date:
+              period.closing_date,
+
+            fine_rule:
+              period.fine_rule_id
+                ? "Configured"
+                : "None",
+
+            fine_rule_id:
+              period.fine_rule_id,
+
+            status:
+              period.status,
+
+            description:
+              period.description || "",
+
+            active:
+              true,
+
+            source:
+              "contribution_periods"
+
+          });
+
+        }
+      );
+
+  }
 
   renderActiveContributionTypes();
+
+  return activeContributionTypes;
 
 }
 
@@ -1330,29 +1570,70 @@ function renderActiveContributionTypes() {
 
   const container =
     el(
-      "activeContributionRows"
+      "activeContributionTypeRows"
     );
 
-
   if (!container) {
+
+    console.warn(
+      "CHAMA LIVE: #activeContributionTypeRows not found."
+    );
+
     return;
+
   }
 
+  const rows =
+    Array.isArray(
+      activeContributionTypes
+    )
+      ? activeContributionTypes
+      : [];
 
-  if (
-    !activeContributionTypes.length
-  ) {
+  const monthlyRows =
+    rows.filter(
+      row =>
+        row?.type ===
+        "Monthly"
+    );
+
+  const customRows =
+    rows.filter(
+      row =>
+        row?.type ===
+        "Custom"
+    );
+
+  setText(
+    "activeContributionTypesCount",
+    rows.length
+  );
+
+  setText(
+    "monthlyContributionActiveCount",
+    monthlyRows.length
+  );
+
+  setText(
+    "customContributionTypesCount",
+    customRows.length
+  );
+
+  setText(
+    "activeContributionMembersCount",
+    getActiveMembers().length
+  );
+
+  if (!rows.length) {
 
     container.innerHTML = `
       <tr>
-        <td colspan="6">
+        <td colspan="8">
           <div class="empty-state">
-            <strong>
-              No active contribution types available
-            </strong>
+            <strong>No ongoing contributions</strong>
             <span>
-              Active contribution definitions will appear
-              here when an approved read-only source is available.
+              No Monthly or active Custom Contribution definitions
+              are currently available.
             </span>
           </div>
         </td>
@@ -1363,61 +1644,88 @@ function renderActiveContributionTypes() {
 
   }
 
-
   container.innerHTML =
-    activeContributionTypes
+    rows
       .map(
         row => {
 
-          const amount =
-            contributionTypeAmount(
-              row
-            );
-
-
-          const cycle =
-            contributionTypeCycle(
-              row
-            );
-
+          const isCustom =
+            row?.type ===
+            "Custom";
 
           const status =
-            contributionTypeStatus(
-              row
+            String(
+              row?.status ||
+              "Active"
             );
 
+          const statusClassName =
+            statusClass(
+              status
+            ) ||
+            "active";
+
+          const cycle =
+            row?.frequency ||
+            row?.cycle ||
+            (
+              isCustom
+                ? "—"
+                : "Monthly"
+            );
+
+          const due =
+            row?.due_date
+              ? formatDate(
+                  row.due_date
+                )
+              : isCustom
+                ? "—"
+                : "Current month";
+
+          const closing =
+            row?.closing_date
+              ? formatDate(
+                  row.closing_date
+                )
+              : "—";
+
+          const fineRule =
+            row?.fine_rule ||
+            (
+              row?.fine_rule_id
+                ? "Configured"
+                : "None"
+            );
 
           return `
             <tr>
 
               <td>
-                <strong>
+                <strong class="active-contribution-name">
                   ${escapeHtml(
-                    contributionTypeName(
-                      row
-                    )
+                    row?.name ||
+                    "Contribution"
                   )}
                 </strong>
               </td>
 
               <td>
-                ${escapeHtml(
-                  row?.type ||
-                  row?.contribution_type ||
-                  "Contribution"
-                )}
+                <span class="active-contribution-type ${isCustom ? "custom" : "monthly"}">
+                  ${escapeHtml(
+                    isCustom
+                      ? "Custom"
+                      : "Monthly"
+                  )}
+                </span>
               </td>
 
               <td>
-                ${
-                  amount === null
-                    ? "—"
-                    : escapeHtml(
-                        money(
-                          amount
-                        )
-                      )
-                }
+                ${escapeHtml(
+                  money(
+                    row?.amount
+                  )
+                )}
               </td>
 
               <td>
@@ -1427,28 +1735,33 @@ function renderActiveContributionTypes() {
               </td>
 
               <td>
+                ${escapeHtml(
+                  due
+                )}
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  closing
+                )}
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  fineRule
+                )}
+              </td>
+
+              <td>
                 <span
                   class="status-badge status-${escapeHtml(
-                    statusClass(
-                      status
-                    ) ||
-                    "active"
+                    statusClassName
                   )}"
                 >
                   ${escapeHtml(
                     status
                   )}
                 </span>
-              </td>
-
-              <td>
-                ${
-                  row?.source
-                    ? escapeHtml(
-                        row.source
-                      )
-                    : "—"
-                }
               </td>
 
             </tr>
