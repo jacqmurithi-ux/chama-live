@@ -1694,6 +1694,42 @@ function setupTableActions() {
 
 function setupButtons() {
 
+  document
+    .getElementById("refreshMeetings")
+    ?.addEventListener(
+      "click",
+      async event => {
+        const button = event.currentTarget;
+
+        button.disabled = true;
+        button.textContent = "Refreshing…";
+
+        try {
+          clearError();
+          showStatus("Refreshing meetings...");
+
+          await loadMeetings();
+          renderMetrics();
+          renderMeetings();
+          renderDetails();
+
+          showStatus("Meetings refreshed.");
+
+          setTimeout(
+            () => showStatus(""),
+            2000
+          );
+        }
+        catch (error) {
+          showError(error);
+        }
+        finally {
+          button.disabled = false;
+          button.textContent = "Refresh";
+        }
+      }
+    );
+
   statusFilter?.addEventListener(
     "change",
     renderMeetings
