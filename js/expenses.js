@@ -676,7 +676,7 @@ function renderExpenses() {
           actions += `
             <button
               type="button"
-              class="btn btn-secondary"
+              class="btn btn-action-approve"
               data-action="approve"
               data-id="${escapeHtml(expense.id)}"
             >
@@ -685,7 +685,7 @@ function renderExpenses() {
 
             <button
               type="button"
-              class="btn btn-secondary"
+              class="btn btn-action-reject"
               data-action="reject"
               data-id="${escapeHtml(expense.id)}"
             >
@@ -721,7 +721,7 @@ function renderExpenses() {
           actions += `
             <button
               type="button"
-              class="btn btn-secondary"
+              class="btn btn-action-restore"
               data-action="pending"
               data-id="${escapeHtml(expense.id)}"
             >
@@ -737,7 +737,7 @@ function renderExpenses() {
         actions += `
           <button
             type="button"
-            class="btn btn-secondary"
+            class="btn btn-action-delete"
             data-action="delete"
             data-id="${escapeHtml(expense.id)}"
           >
@@ -1348,6 +1348,63 @@ function setupActions() {
 FILTER EVENTS
 ========================================================= */
 
+function setupRefresh() {
+
+  const button =
+    document.getElementById("refreshExpenses");
+
+  if (
+    !button ||
+    button.dataset.refreshBound === "true"
+  ) {
+    return;
+  }
+
+  button.dataset.refreshBound = "true";
+
+  button.addEventListener(
+    "click",
+    async () => {
+
+      button.disabled = true;
+      button.textContent = "Refreshing…";
+
+      try {
+
+        clearError();
+        showStatus("Refreshing expenses...");
+
+        await loadExpenses();
+
+        renderMetrics();
+        renderExpenses();
+
+        showStatus("Expenses refreshed.");
+
+        setTimeout(
+          () => showStatus(""),
+          2000
+        );
+
+      }
+      catch (error) {
+
+        showStatus("");
+        showPageError(error);
+
+      }
+      finally {
+
+        button.disabled = false;
+        button.textContent = "Refresh";
+
+      }
+
+    }
+  );
+
+}
+
 function setupFilters() {
   statusFilter?.addEventListener(
     "change",
@@ -1452,6 +1509,8 @@ export async function initPage() {
     setupActions();
 
     setupFilters();
+
+    setupRefresh();
 
     setupCategoryField();
 
