@@ -2292,6 +2292,57 @@ function bindEvents() {
 
 
     /* ------------------------------------------------------------
+       ACTION LOADING STATES
+    ------------------------------------------------------------ */
+
+    const bindSubmitLoading = (
+        form,
+        button,
+        loadingText,
+        idleText
+    ) => {
+        form?.addEventListener(
+            "submit",
+            () => {
+                if (!button) {
+                    return;
+                }
+
+                button.disabled = true;
+                button.textContent = loadingText;
+
+                window.setTimeout(() => {
+                    if (button.disabled) {
+                        button.disabled = false;
+                        button.textContent = idleText;
+                    }
+                }, 30000);
+            }
+        );
+    };
+
+    bindSubmitLoading(
+        elements.groupForm,
+        elements.groupForm?.querySelector("button[type=\"submit\"]"),
+        "Saving...",
+        "Save Group Settings"
+    );
+
+    bindSubmitLoading(
+        elements.monthlyContributionForm,
+        elements.saveMonthlyContribution,
+        "Saving...",
+        "Save Monthly Contribution"
+    );
+
+    bindSubmitLoading(
+        elements.customContributionForm,
+        elements.saveCustomContribution,
+        "Saving & Activating...",
+        "Save & Activate"
+    );
+
+    /* ------------------------------------------------------------
        MONTHLY CONTRIBUTION
     ------------------------------------------------------------ */
 
@@ -2362,8 +2413,15 @@ function bindEvents() {
                     return;
                 }
 
-                window.location.href =
-                    "contributions.html?new=custom";
+                resetCustomContributionForm();
+
+                if (elements.customContributionEditor) {
+                    elements.customContributionEditor.hidden = false;
+                    elements.customContributionEditor.scrollIntoView({
+                        behavior: "smooth",
+                        block: "start"
+                    });
+                }
             }
         );
 
