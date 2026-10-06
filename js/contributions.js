@@ -3407,11 +3407,7 @@ async function saveCustomContributionDraft(
 
     await Promise.all([
 
-      loadContributions(),
-
-      loadCanonicalMemberStatus(
-        accountingMonth
-      )
+      loadContributions()
 
     ]);
 
@@ -3733,11 +3729,7 @@ async function activateExistingCustomContribution(
 
       loadDraftCustomContributions(),
 
-      loadContributions(),
-
-      loadCanonicalMemberStatus(
-        accountingMonth
-      )
+      loadContributions()
 
     ]);
 
