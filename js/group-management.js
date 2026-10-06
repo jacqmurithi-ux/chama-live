@@ -2266,6 +2266,16 @@ function bindEvents() {
     elements.groupForm?.addEventListener(
         "submit",
         async (event) => {
+            const button =
+                elements.groupForm?.querySelector(
+                    "button[type=\"submit\"]"
+                );
+
+            if (button) {
+                button.disabled = true;
+                button.textContent = "Saving...";
+            }
+
             try {
                 await saveGroupInformation(
                     event
@@ -2292,57 +2302,6 @@ function bindEvents() {
 
 
     /* ------------------------------------------------------------
-       ACTION LOADING STATES
-    ------------------------------------------------------------ */
-
-    const bindSubmitLoading = (
-        form,
-        button,
-        loadingText,
-        idleText
-    ) => {
-        form?.addEventListener(
-            "submit",
-            () => {
-                if (!button) {
-                    return;
-                }
-
-                button.disabled = true;
-                button.textContent = loadingText;
-
-                window.setTimeout(() => {
-                    if (button.disabled) {
-                        button.disabled = false;
-                        button.textContent = idleText;
-                    }
-                }, 30000);
-            }
-        );
-    };
-
-    bindSubmitLoading(
-        elements.groupForm,
-        elements.groupForm?.querySelector("button[type=\"submit\"]"),
-        "Saving...",
-        "Save Group Settings"
-    );
-
-    bindSubmitLoading(
-        elements.monthlyContributionForm,
-        elements.saveMonthlyContribution,
-        "Saving...",
-        "Save Monthly Contribution"
-    );
-
-    bindSubmitLoading(
-        elements.customContributionForm,
-        elements.saveCustomContribution,
-        "Saving & Activating...",
-        "Save & Activate"
-    );
-
-    /* ------------------------------------------------------------
        MONTHLY CONTRIBUTION
     ------------------------------------------------------------ */
 
@@ -2350,6 +2309,11 @@ function bindEvents() {
         ?.addEventListener(
             "submit",
             async (event) => {
+                if (elements.saveMonthlyContribution) {
+                    elements.saveMonthlyContribution.disabled = true;
+                    elements.saveMonthlyContribution.textContent = "Saving...";
+                }
+
                 try {
                     await saveMonthlyContribution(
                         event
@@ -2378,6 +2342,11 @@ function bindEvents() {
         ?.addEventListener(
             "submit",
             async (event) => {
+                if (elements.saveCustomContribution) {
+                    elements.saveCustomContribution.disabled = true;
+                    elements.saveCustomContribution.textContent = "Saving & Activating...";
+                }
+
                 try {
                     await saveCustomContribution(
                         event
