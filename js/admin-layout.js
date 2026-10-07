@@ -122,7 +122,7 @@ const ADMIN_PAGES = new Set([
   "billing.html",
   "assets.html",
   "plans-activities.html",
-  "support-welfare.html",
+  "welfare.html",
   "milestones.html",
   "data-migration.html",
   "admin-getting-started.html"
@@ -220,8 +220,8 @@ const PAGE_SCRIPTS = {
     "initPage"
   ],
 
-  "support-welfare.html": [
-    "./support-welfare.js",
+  "welfare.html": [
+    "./welfare.js",
     "initPage"
   ],
 
@@ -432,8 +432,8 @@ const NAVIGATION_GROUPS = [
         "Assets"
       ],
       [
-        "support-welfare.html",
-        "Support & Welfare"
+        "welfare.html",
+        "Welfare"
       ]
     ]
   ],
