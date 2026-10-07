@@ -1948,6 +1948,17 @@ function validateForm(values) {
     return "Member number is required.";
   }
 
+  if (
+    values.membership_number &&
+    !/^[0-9]{4}$/.test(values.membership_number)
+  ) {
+    return (
+      "Membership Number must be exactly 4 digits, for example 0002. " +
+      "If it is left blank, the Member Number is used, " +
+      "so the Member Number must be 4 digits too."
+    );
+  }
+
   if (!values.name) {
     return "Member name is required.";
   }
