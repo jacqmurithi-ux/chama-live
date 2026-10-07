@@ -2058,4 +2058,4 @@ export async function addMemberInit() {
    ========================================================= */
 
 export const initPage =
-  addMemberInit;a
+  addMemberInit;
