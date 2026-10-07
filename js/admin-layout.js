@@ -80,6 +80,13 @@ import {
   signOut
 } from "./auth.js";
 
+import {
+  getDemoContext,
+  getDemoGroup,
+  isDemoMode,
+  clearDemoSession
+} from "./demo-client.js";
+
 
 /* =========================================================
    ADMIN ROLES
@@ -245,6 +252,7 @@ const PAGE_SCRIPTS = {
 let bootStarted = false;
 
 let context = null;
+let demoMode = false;
 
 
 /* =========================================================
@@ -271,6 +279,7 @@ function getCurrentPage() {
 function isAdminAccount() {
 
   return (
+    demoMode ||
     context?.isOwner === true ||
     ADMIN_ROLES.has(
       String(
@@ -1894,19 +1903,83 @@ export async function boot() {
 
     /* -------------------------------------------------------
        APPLICATION CONTEXT
+       -------------------------------------------------------
+       A valid demo token is an alternate identity boundary.
+       It never creates a Supabase Auth user.
     ------------------------------------------------------- */
 
     stage =
       "application context";
 
+    if (isDemoMode()) {
 
-    context =
-      await getMyApplicationContext();
+      stage =
+        "demo session";
+
+      try {
+
+        const demo =
+          await getDemoContext();
+
+        if (!demo?.demo || !demo?.group_id) {
+          throw new Error(
+            "The demo session is invalid or expired."
+          );
+        }
+
+        const group =
+          await getDemoGroup();
+
+        if (!group?.id) {
+          throw new Error(
+            "The demo group could not be loaded."
+          );
+        }
+
+        context = {
+          demo: true,
+          user: null,
+          member: {
+            id: "demo-viewer",
+            group_id: group.id,
+            name: demo.visitor_name || "Demo Visitor",
+            role: "viewer",
+            status: "active",
+            onboarding_status: "active"
+          },
+          group,
+          isOwner: false,
+          role: "viewer"
+        };
+
+        demoMode = true;
+
+      } catch (demoError) {
+
+        console.warn(
+          "CHAMA LIVE: demo session rejected; clearing demo token.",
+          demoError
+        );
+
+        clearDemoSession();
+
+        throw new Error(
+          "Your CHAMA LIVE demo session is invalid or has expired."
+        );
+
+      }
+
+    } else {
+
+      context =
+        await getMyApplicationContext();
+
+    }
 
 
     if (
-      !context?.user ||
-      !context?.member?.group_id
+      !context?.member?.group_id ||
+      (!demoMode && !context?.user)
     ) {
 
       throw new Error(
@@ -1969,9 +2042,13 @@ export async function boot() {
 
 
     if (
-      !ADMIN_PAGES.has(
-        page
-      )
+      demoMode
+        ? !new Set([
+            "dashboard.html",
+            "members.html",
+            "meetings.html"
+          ]).has(page)
+        : !ADMIN_PAGES.has(page)
     ) {
 
       window.location.replace(
@@ -2019,6 +2096,29 @@ export async function boot() {
     renderMobileNavigation();
 
     renderMobileBottomNavigation();
+
+    if (demoMode) {
+      document
+        .querySelectorAll("a[href]")
+        .forEach(function (link) {
+          const href =
+            String(link.getAttribute("href") || "")
+              .split("#")[0]
+              .split("?")[0]
+              .toLowerCase();
+
+          if (
+            ![
+              "dashboard.html",
+              "members.html",
+              "meetings.html"
+            ].includes(href) &&
+            ADMIN_PAGES.has(href)
+          ) {
+            link.remove();
+          }
+        });
+    }
 
     bindAdminLogout();
 
