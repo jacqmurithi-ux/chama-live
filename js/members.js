@@ -2747,16 +2747,7 @@ export async function init() {
       currentMember = demo?.member || null;
       currentGroup = demo?.group || null;
 
-      groupId =
-        currentGroup?.id ||
-        currentMember?.group_id ||
-        null;
-
-      if (!groupId) {
-        throw new Error(
-          "The demo group could not be determined."
-        );
-      }
+      groupId = null;
 
       if (byId("addMemberButton")) {
         byId("addMemberButton").hidden = true;
