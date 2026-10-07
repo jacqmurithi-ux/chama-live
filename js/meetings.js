@@ -2402,16 +2402,7 @@ export async function initPage() {
       currentMember =
         demo?.member || null;
 
-      groupId =
-        demo?.group?.id ||
-        currentMember?.group_id ||
-        null;
-
-      if (!groupId) {
-        throw new Error(
-          "The demo group could not be determined."
-        );
-      }
+      groupId = null;
 
       setCreateMode();
 
