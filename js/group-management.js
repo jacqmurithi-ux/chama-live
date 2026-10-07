@@ -93,7 +93,9 @@ const elements = {
     leadershipStatus: null,
     leadershipList: null,
 
-    openingDay: null,
+    monthlyClosingDay: null,
+    monthlyOpeningDayDerived: null,
+    monthlyCycleSummary: null,
     saveContributionSettings: null,
 
     calendarContributionAmount: null,
@@ -209,8 +211,14 @@ function refreshDomReferences() {
     elements.leadershipList =
         document.getElementById("leadershipList");
 
-    elements.openingDay =
-        document.getElementById("openingDay");
+    elements.monthlyClosingDay =
+        document.getElementById("monthlyClosingDay");
+
+    elements.monthlyOpeningDayDerived =
+        document.getElementById("monthlyOpeningDayDerived");
+
+    elements.monthlyCycleSummary =
+        document.getElementById("monthlyCycleSummary");
 
     elements.saveContributionSettings =
         document.getElementById("saveContributionSettings");
