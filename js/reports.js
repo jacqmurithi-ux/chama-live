@@ -1,90 +1,92 @@
-import { supabase } from "./supabase.js";
+/* =========================================================
+   CHAMA LIVE — REPORTS
+   CANONICAL READ-ONLY REPORTING + VISUAL INSIGHTS
+   =========================================================
 
+   ARCHITECTURE
+   ------------
+   • reports.html remains unchanged.
+   • admin-layout.js remains the page boot owner.
+   • reports.js exports initPage().
+   • No auto-run.
+   • No direct accounting writes.
+   • No direct writes to:
+       contributions
+       contribution_allocations
+       contribution_obligations
+
+   CANONICAL ACCOUNTING
+   --------------------
+   Monthly:
+     get_canonical_member_monthly_status()
+     get_canonical_monthly_accounting_summary()
+
+   Cumulative:
+     get_member_contribution_position()
+
+   IMPORTANT
+   ---------
+   JavaScript does NOT reconstruct authoritative accounting.
+   Visuals use the same canonical RPC results already used
+   by the report tables.
+
+   ========================================================= */
+
+/* =========================================================
+   IMPORTS
+   ========================================================= */
+
+import { supabase } from "./supabase.js";
 import {
   requireAuth,
   getMyMember,
   getMyGroup
 } from "./auth.js";
 
+
 /* =========================================================
-   CHAMA LIVE — REPORTS
-   =========================================================
+   CONSTANTS
+   ========================================================= */
 
-   READ-ONLY REPORTING
+const PAGE_NAME = "Reports";
 
-   Canonical accounting chain:
+const VISUALS_ID = "reportVisualInsights";
+const VISUAL_STYLE_ID = "reportVisualInsightsStyles";
 
-   Obligation
-        ↓
-   Payment
-        ↓
-   Allocation
-        ↓
-   Arrears / Credit
+const DEFAULT_PERIOD_PRESET = "this-month";
+const DEFAULT_REPORT_TYPE = "executive";
 
-   Canonical RPCs:
+const REPORT_TYPE_LABELS = {
+  executive: "Executive Summary",
+  "member-contributions": "Member Contributions",
+  arrears: "Monthly Arrears",
+  "cumulative-arrears": "Cumulative Arrears",
+  "cumulative-credit": "Cumulative Credit",
+  "cumulative-up-to-date": "Cumulative Up to Date",
+  credit: "Monthly Credit",
+  "contribution-types": "Contribution Types",
+  "payment-methods": "Payment Methods",
+  expenses: "Expenses",
+  "cash-flow": "Cash Flow",
+  meetings: "Meetings",
+  full: "Full Report"
+};
 
-   MONTHLY:
-   - get_canonical_member_monthly_status()
-   - get_canonical_monthly_accounting_summary()
+const STATUS_LABELS = {
+  paid: "Paid",
+  partial: "Partial",
+  outstanding: "Outstanding",
+  arrears: "Arrears",
+  credit: "Credit",
+  up_to_date: "Up to Date",
+  "up-to-date": "Up to Date",
+  current: "Up to Date"
+};
 
-   CUMULATIVE:
-   - get_member_contribution_position()
-
-   IMPORTANT:
-   This file NEVER calls:
-
-   - refresh_canonical_contribution_accounting()
-   - cl_2b_refresh_member()
-
-   Reports only READ existing accounting results.
-
-   IMPORTANT SEMANTIC DISTINCTION:
-
-   Monthly accounting:
-   - previous_outstanding
-   - previous_credit
-   - current_month_payment
-   - applied_this_month
-   - carry_forward
-   - current_outstanding
-   - monthly status
-
-   Cumulative accounting:
-   - total_due
-   - total_allocated
-   - arrears
-   - credit
-   - cumulative status
-
-   The monthly "outstanding" value is NOT relabeled
-   as cumulative arrears.
-
-   QUICK FILTER CONTRACT:
-
-   - All
-   - Needs Attention
-   - Has Previous Outstanding
-   - Has Credit
-
-   "Has Previous Outstanding" is based specifically on:
-   previous_outstanding > 0
-
-   It is NOT the same as:
-   current_outstanding > 0
-
-   BOOT OWNERSHIP
-
-   This module only exports initPage().
-   It does NOT auto-run.
-   It does NOT import admin-layout.js.
-========================================================= */
-
-console.log("CHAMA LIVE: reports.js loaded");
 
 /* =========================================================
    STATE
-========================================================= */
+   ========================================================= */
 
 let currentUser = null;
 let currentMember = null;
@@ -98,473 +100,664 @@ let meetings = [];
 let canonicalStatus = [];
 let canonicalSummary = null;
 
-/*
- * Cumulative position is loaded independently from
- * monthly accounting.
- *
- * The canonical RPC is authoritative for:
- * - arrears
- * - credit
- * - cumulative status
- */
 let cumulativePositions = [];
 let cumulativePositionsLoaded = false;
 
 let currentReportRows = [];
-let currentReportType = "executive";
+let currentReportType = DEFAULT_REPORT_TYPE;
 
-/*
- * Quick filters have their own semantic state.
- *
- * This is deliberately separate from statusFilter because:
- *
- * - statusFilter = "outstanding"
- *     means CURRENT MONTH outstanding
- *
- * - quick filter = "arrears"
- *     means PREVIOUS outstanding
- */
 let activeQuickFilter = "all";
 
-/*
- * Active custom contribution reporting.
- * Definitions are read from contribution_types / contribution_periods.
- * Member status is read from the existing canonical RPC.
- */
 let activeCustomContributions = [];
 let customMemberStatusRows = [];
-let selectedCustomContributionId = "all";
+let selectedCustomContributionId = null;
+
 
 /* =========================================================
    DOM HELPERS
-========================================================= */
+   ========================================================= */
 
 function $(id) {
   return document.getElementById(id);
 }
 
+function query(selector, root = document) {
+  return root.querySelector(selector);
+}
+
+function queryAll(selector, root = document) {
+  return Array.from(root.querySelectorAll(selector));
+}
+
 function setText(id, value) {
-  const node = $(id);
-
-  if (node) {
-    node.textContent = value ?? "";
+  const el = $(id);
+  if (el) {
+    el.textContent = value == null ? "" : String(value);
   }
 }
 
-function showStatus(message) {
-  const node = $("statusMessage");
+function showElement(id, visible = true) {
+  const el = $(id);
+  if (!el) return;
 
-  if (!node) {
-    return;
+  el.hidden = !visible;
+  el.style.display = visible ? "" : "none";
+}
+
+function setHTML(id, html) {
+  const el = $(id);
+  if (el) {
+    el.innerHTML = html;
   }
-
-  node.textContent = message || "";
-  node.classList.toggle("hidden", !message);
 }
 
-function clearStatus() {
-  showStatus("");
+function escapeHTML(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
-function showError(message) {
-  const node = $("errorMessage");
-
-  if (!node) {
-    return;
-  }
-
-  node.textContent =
-    message ||
-    "Something went wrong.";
-
-  node.classList.remove("hidden");
-}
-
-function clearError() {
-  const node = $("errorMessage");
-
-  if (!node) {
-    return;
-  }
-
-  node.textContent = "";
-  node.classList.add("hidden");
-}
 
 /* =========================================================
-   SAFE FORMATTING
-========================================================= */
+   SAFE VALUE HELPERS
+   ========================================================= */
 
-function escapeHtml(value) {
-  return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+function numberValue(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : 0;
 }
 
-function money(value) {
-  const amount = Number(value || 0);
+function integerValue(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? Math.trunc(number) : 0;
+}
 
-  return new Intl.NumberFormat("en-KE", {
-    style: "currency",
-    currency: "KES",
+function safeArray(value) {
+  return Array.isArray(value) ? value : [];
+}
+
+function normalizeText(value) {
+  return String(value ?? "").trim();
+}
+
+function lower(value) {
+  return normalizeText(value).toLowerCase();
+}
+
+function formatCurrency(value) {
+  return `KSh ${numberValue(value).toLocaleString("en-KE", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
-  }).format(amount);
+  })}`;
 }
 
-function number(value) {
-  const n = Number(value || 0);
-
-  return Number.isFinite(n)
-    ? n
-    : 0;
+function formatWholeCurrency(value) {
+  return `KSh ${numberValue(value).toLocaleString("en-KE", {
+    maximumFractionDigits: 0
+  })}`;
 }
 
-function normalizeRows(data) {
-  if (Array.isArray(data)) {
-    return data;
-  }
-
-  if (data) {
-    return [data];
-  }
-
-  return [];
+function formatNumber(value) {
+  return numberValue(value).toLocaleString("en-KE", {
+    maximumFractionDigits: 2
+  });
 }
 
-/* =========================================================
-   DATE HELPERS
-========================================================= */
-
-function today() {
-  return new Date()
-    .toISOString()
-    .slice(0, 10);
+function formatPercentage(value) {
+  return `${numberValue(value).toFixed(1)}%`;
 }
 
-function firstDayOfMonth(date = new Date()) {
-  const d = new Date(date);
+function safeDate(value) {
+  if (!value) return null;
 
-  return `${d.getFullYear()}-${String(
-    d.getMonth() + 1
-  ).padStart(2, "0")}-01`;
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return date;
 }
 
-function monthKey(value) {
-  if (!value) {
-    return "";
-  }
+function dateInputValue(value) {
+  const date = safeDate(value);
 
-  const raw = String(value);
+  if (!date) return "";
 
-  if (/^\d{4}-\d{2}$/.test(raw)) {
-    return raw;
-  }
-
-  const d = new Date(raw);
-
-  if (Number.isNaN(d.getTime())) {
-    return raw.slice(0, 7);
-  }
-
-  return `${d.getFullYear()}-${String(
-    d.getMonth() + 1
-  ).padStart(2, "0")}`;
-}
-
-function monthStart(month) {
-  return month
-    ? `${month}-01`
-    : "";
-}
-
-function nextMonthStart(month) {
-  if (!month) {
-    return "";
-  }
-
-  const parts = String(month)
-    .split("-")
-    .map(Number);
-
-  if (parts.length !== 2) {
-    return "";
-  }
-
-  const year = parts[0];
-  const monthNumber = parts[1];
-
-  if (!year || !monthNumber) {
-    return "";
-  }
-
-  const d = new Date(
-    year,
-    monthNumber,
-    1
-  );
-
-  return `${d.getFullYear()}-${String(
-    d.getMonth() + 1
-  ).padStart(2, "0")}-01`;
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0")
+  ].join("-");
 }
 
 function formatDate(value) {
-  if (!value) {
-    return "—";
+  const date = safeDate(value);
+
+  if (!date) return "—";
+
+  return date.toLocaleDateString("en-KE", {
+    year: "numeric",
+    month: "short",
+    day: "numeric"
+  });
+}
+
+function formatDateTime(value) {
+  const date = safeDate(value);
+
+  if (!date) return "—";
+
+  return date.toLocaleString("en-KE", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+
+/* =========================================================
+   ERROR / STATUS
+   ========================================================= */
+
+function clearError() {
+  const el =
+    $("reportsError") ||
+    $("reportError") ||
+    $("errorMessage");
+
+  if (el) {
+    el.textContent = "";
+    el.hidden = true;
+    el.style.display = "none";
+  }
+}
+
+function showError(message) {
+  const text = normalizeText(message) || "Unable to load reports.";
+
+  const el =
+    $("reportsError") ||
+    $("reportError") ||
+    $("errorMessage");
+
+  if (el) {
+    el.textContent = text;
+    el.hidden = false;
+    el.style.display = "";
   }
 
-  const raw = String(value).slice(0, 10);
+  console.error(`[${PAGE_NAME}]`, text);
+}
 
-  const d = new Date(
-    `${raw}T00:00:00`
-  );
+function setStatus(message) {
+  const candidates = [
+    $("reportsStatus"),
+    $("reportStatus"),
+    $("statusMessage")
+  ];
 
-  if (Number.isNaN(d.getTime())) {
-    return String(value);
+  const el = candidates.find(Boolean);
+
+  if (el) {
+    el.textContent = message || "";
+  }
+}
+
+
+/* =========================================================
+   GROUP / MEMBER CONTEXT
+   ========================================================= */
+
+async function loadContext() {
+  currentUser = await requireAuth();
+
+  if (!currentUser) {
+    throw new Error("AUTHENTICATION_REQUIRED");
   }
 
-  return d.toLocaleDateString(
-    "en-KE",
-    {
-      year: "numeric",
-      month: "short",
-      day: "numeric"
-    }
+  currentMember = await getMyMember();
+
+  if (!currentMember) {
+    throw new Error("ACTIVE_GROUP_MEMBER_REQUIRED");
+  }
+
+  currentGroup = await getMyGroup();
+
+  if (!currentGroup) {
+    throw new Error("GROUP_CONTEXT_REQUIRED");
+  }
+
+  const groupName =
+    currentGroup.name ||
+    currentGroup.group_name ||
+    currentGroup.title ||
+    "Group";
+
+  const memberName =
+    currentMember.name ||
+    currentMember.full_name ||
+    "Member";
+
+  setText("groupName", groupName);
+  setText("groupNameLabel", groupName);
+  setText("reportGroupName", groupName);
+  setText("currentGroupName", groupName);
+
+  setText("memberName", memberName);
+  setText("currentMemberName", memberName);
+
+  return {
+    user: currentUser,
+    member: currentMember,
+    group: currentGroup
+  };
+}
+
+
+/* =========================================================
+   MEMBER LOADING
+   ========================================================= */
+
+async function loadMembers() {
+  const groupId = currentGroup?.id;
+
+  if (!groupId) {
+    throw new Error("GROUP_CONTEXT_REQUIRED");
+  }
+
+  const { data, error } = await supabase
+    .from("members")
+    .select(`
+      id,
+      group_id,
+      member_number,
+      membership_number,
+      name,
+      status,
+      join_date
+    `)
+    .eq("group_id", groupId)
+    .order("name", { ascending: true });
+
+  if (error) {
+    throw error;
+  }
+
+  members = safeArray(data);
+
+  populateMemberFilter();
+
+  return members;
+}
+
+function populateMemberFilter() {
+  const select = $("memberFilter");
+
+  if (!select) return;
+
+  const currentValue = select.value;
+
+  const options = [
+    `<option value="">All members</option>`
+  ];
+
+  for (const member of members) {
+    const id = member.id;
+    const name =
+      member.name ||
+      member.membership_number ||
+      member.member_number ||
+      "Member";
+
+    options.push(
+      `<option value="${escapeHTML(id)}">${escapeHTML(name)}</option>`
+    );
+  }
+
+  select.innerHTML = options.join("");
+
+  if (currentValue) {
+    select.value = currentValue;
+  }
+}
+
+
+/* =========================================================
+   CONTRIBUTIONS
+   ========================================================= */
+
+async function loadContributions() {
+  const groupId = currentGroup?.id;
+
+  if (!groupId) {
+    throw new Error("GROUP_CONTEXT_REQUIRED");
+  }
+
+  const { data, error } = await supabase
+    .from("contributions")
+    .select(`
+      id,
+      group_id,
+      member_id,
+      amount,
+      contribution_type,
+      payment_method,
+      created_at,
+      contribution_date
+    `)
+    .eq("group_id", groupId)
+    .order("contribution_date", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    throw error;
+  }
+
+  contributions = safeArray(data);
+
+  return contributions;
+}
+
+
+/* =========================================================
+   EXPENSES
+   ========================================================= */
+
+async function loadExpenses() {
+  const groupId = currentGroup?.id;
+
+  if (!groupId) {
+    throw new Error("GROUP_CONTEXT_REQUIRED");
+  }
+
+  const { data, error } = await supabase
+    .from("expenses")
+    .select(`
+      id,
+      group_id,
+      description,
+      category,
+      amount,
+      date,
+      recorded_by,
+      receipt_url,
+      approval_status,
+      created_at
+    `)
+    .eq("group_id", groupId)
+    .order("date", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    throw error;
+  }
+
+  expenses = safeArray(data);
+
+  return expenses;
+}
+
+
+/* =========================================================
+   MEETINGS
+   ========================================================= */
+
+async function loadMeetings() {
+  const groupId = currentGroup?.id;
+
+  if (!groupId) {
+    throw new Error("GROUP_CONTEXT_REQUIRED");
+  }
+
+  const { data, error } = await supabase
+    .from("meetings")
+    .select(`
+      id,
+      group_id,
+      title,
+      date,
+      venue,
+      agenda,
+      minutes,
+      resolution,
+      status,
+      created_at
+    `)
+    .eq("group_id", groupId)
+    .order("date", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    throw error;
+  }
+
+  meetings = safeArray(data);
+
+  return meetings;
+}
+
+
+/* =========================================================
+   PERIOD HELPERS
+   ========================================================= */
+
+function startOfMonth(date = new Date()) {
+  return new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    1
   );
 }
 
-function formatMonth(value) {
-  if (!value) {
-    return "—";
-  }
+function endOfMonth(date = new Date()) {
+  return new Date(
+    date.getFullYear(),
+    date.getMonth() + 1,
+    0
+  );
+}
 
-  const raw = String(value).slice(0, 7);
-  const parts = raw.split("-").map(Number);
-
-  if (parts.length !== 2) {
-    return String(value);
-  }
-
-  const year = parts[0];
-  const month = parts[1];
-
-  if (!year || !month) {
-    return String(value);
-  }
+function startOfQuarter(date = new Date()) {
+  const quarterStartMonth =
+    Math.floor(date.getMonth() / 3) * 3;
 
   return new Date(
-    year,
-    month - 1,
+    date.getFullYear(),
+    quarterStartMonth,
     1
-  ).toLocaleDateString(
-    "en-KE",
-    {
-      year: "numeric",
-      month: "long"
-    }
   );
 }
 
-function normalizeDate(value) {
-  if (!value) {
+function endOfQuarter(date = new Date()) {
+  const start = startOfQuarter(date);
+
+  return new Date(
+    start.getFullYear(),
+    start.getMonth() + 3,
+    0
+  );
+}
+
+function startOfYear(date = new Date()) {
+  return new Date(
+    date.getFullYear(),
+    0,
+    1
+  );
+}
+
+function endOfYear(date = new Date()) {
+  return new Date(
+    date.getFullYear(),
+    11,
+    31
+  );
+}
+
+function toISODate(date) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
     return "";
   }
 
-  return String(value).slice(0, 10);
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0")
+  ].join("-");
 }
 
-function inRange(value, from, to) {
-  const date = normalizeDate(value);
+function getAccountingMonth() {
+  const value = $("accountingMonth")?.value;
 
-  if (!date) {
-    return false;
+  if (value) {
+    return value;
   }
 
-  if (from && date < from) {
-    return false;
+  const fromDate = $("fromDate")?.value;
+
+  if (fromDate) {
+    return fromDate.slice(0, 7);
   }
 
-  if (to && date > to) {
-    return false;
+  const now = new Date();
+
+  return `${now.getFullYear()}-${String(
+    now.getMonth() + 1
+  ).padStart(2, "0")}`;
+}
+
+function getDateRange() {
+  const preset = $("periodPreset")?.value || DEFAULT_PERIOD_PRESET;
+
+  const now = new Date();
+
+  if (preset === "this-month") {
+    return {
+      from: toISODate(startOfMonth(now)),
+      to: toISODate(endOfMonth(now))
+    };
   }
+
+  if (preset === "last-month") {
+    const previous = new Date(
+      now.getFullYear(),
+      now.getMonth() - 1,
+      1
+    );
+
+    return {
+      from: toISODate(startOfMonth(previous)),
+      to: toISODate(endOfMonth(previous))
+    };
+  }
+
+  if (preset === "this-quarter") {
+    return {
+      from: toISODate(startOfQuarter(now)),
+      to: toISODate(endOfQuarter(now))
+    };
+  }
+
+  if (preset === "this-year") {
+    return {
+      from: toISODate(startOfYear(now)),
+      to: toISODate(endOfYear(now))
+    };
+  }
+
+  return {
+    from: $("fromDate")?.value || "",
+    to: $("toDate")?.value || ""
+  };
+}
+
+function applyPeriodPreset() {
+  const preset = $("periodPreset")?.value;
+
+  if (!preset || preset === "custom") {
+    return;
+  }
+
+  const now = new Date();
+
+  let from;
+  let to;
+
+  switch (preset) {
+    case "this-month":
+      from = startOfMonth(now);
+      to = endOfMonth(now);
+      break;
+
+    case "last-month": {
+      const previous = new Date(
+        now.getFullYear(),
+        now.getMonth() - 1,
+        1
+      );
+
+      from = startOfMonth(previous);
+      to = endOfMonth(previous);
+      break;
+    }
+
+    case "this-quarter":
+      from = startOfQuarter(now);
+      to = endOfQuarter(now);
+      break;
+
+    case "this-year":
+      from = startOfYear(now);
+      to = endOfYear(now);
+      break;
+
+    default:
+      return;
+  }
+
+  if ($("fromDate")) {
+    $("fromDate").value = toISODate(from);
+  }
+
+  if ($("toDate")) {
+    $("toDate").value = toISODate(to);
+  }
+
+  if ($("accountingMonth")) {
+    $("accountingMonth").value =
+      `${from.getFullYear()}-${String(
+        from.getMonth() + 1
+      ).padStart(2, "0")}`;
+  }
+}
+
+
+/* =========================================================
+   FILTER HELPERS
+   ========================================================= */
+
+function dateWithinRange(value, from, to) {
+  const date = safeDate(value);
+
+  if (!date) return false;
+
+  const day = toISODate(date);
+
+  if (from && day < from) return false;
+  if (to && day > to) return false;
 
   return true;
 }
 
-/* =========================================================
-   PERIOD FILTERS
-========================================================= */
-
-function setPeriod(from, to) {
-  if ($("fromDate")) {
-    $("fromDate").value = from;
-  }
-
-  if ($("toDate")) {
-    $("toDate").value = to;
-  }
-}
-
-function setPeriodFromPreset(preset) {
-  const now = new Date();
-
-  const year = now.getFullYear();
-  const monthIndex = now.getMonth();
-
-  switch (preset) {
-    case "this-month":
-      setPeriod(
-        firstDayOfMonth(now),
-        today()
-      );
-      break;
-
-    case "last-month": {
-      const first = new Date(
-        year,
-        monthIndex - 1,
-        1
-      );
-
-      const last = new Date(
-        year,
-        monthIndex,
-        0
-      );
-
-      setPeriod(
-        firstDayOfMonth(first),
-        last.toISOString().slice(0, 10)
-      );
-
-      break;
-    }
-
-    case "this-quarter": {
-      const quarterStart =
-        Math.floor(monthIndex / 3) * 3;
-
-      const first = new Date(
-        year,
-        quarterStart,
-        1
-      );
-
-      setPeriod(
-        firstDayOfMonth(first),
-        today()
-      );
-
-      break;
-    }
-
-    case "this-year":
-      setPeriod(
-        `${year}-01-01`,
-        today()
-      );
-      break;
-
-    case "custom":
-    default:
-      break;
-  }
-}
-
-function setDefaultFilters() {
-  const now = new Date();
-
-  activeQuickFilter = "all";
-
-  if ($("periodPreset")) {
-    $("periodPreset").value =
-      "this-month";
-  }
-
-  setPeriodFromPreset(
-    "this-month"
-  );
-
-  if ($("accountingMonth")) {
-    $("accountingMonth").value =
-      monthKey(now);
-  }
-
-  if ($("reportType")) {
-    $("reportType").value =
-      "executive";
-  }
-
-  if ($("memberFilter")) {
-    $("memberFilter").value =
-      "all";
-  }
-
-  if ($("statusFilter")) {
-    $("statusFilter").value =
-      "all";
-  }
-
-  if ($("contributionTypeFilter")) {
-    $("contributionTypeFilter").value =
-      "all";
-  }
-
-  if ($("paymentMethodFilter")) {
-    $("paymentMethodFilter").value =
-      "all";
-  }
-
-  if ($("groupBy")) {
-    $("groupBy").value =
-      "member";
-  }
-
-  document
-    .querySelectorAll(".quick-filter")
-    .forEach(button => {
-      button.classList.toggle(
-        "active",
-        button.dataset.quick === "all"
-      );
-    });
-}
-
-function selectedPeriod() {
-  return {
-    from:
-      $("fromDate")?.value ||
-      firstDayOfMonth(),
-
-    to:
-      $("toDate")?.value ||
-      today()
-  };
-}
-
-function selectedAccountingMonth() {
-  return (
-    $("accountingMonth")?.value ||
-    monthKey(
-      $("toDate")?.value ||
-      today()
-    )
-  );
-}
-
-/* =========================================================
-   MEMBER HELPERS
-========================================================= */
-
-function memberName(memberId) {
+function getMemberName(memberId) {
   const member = members.find(
-    item =>
-      String(item.id) ===
-      String(memberId)
+    item => String(item.id) === String(memberId)
   );
 
   if (!member) {
@@ -573,3102 +766,4331 @@ function memberName(memberId) {
 
   return (
     member.name ||
-    member.member_number ||
     member.membership_number ||
-    "Unnamed member"
+    member.member_number ||
+    "Member"
   );
 }
 
-function memberNumber(memberId) {
+function getMemberNumber(memberId) {
   const member = members.find(
-    item =>
-      String(item.id) ===
-      String(memberId)
+    item => String(item.id) === String(memberId)
   );
 
-  if (!member) {
-    return "—";
-  }
+  if (!member) return "";
 
   return (
     member.member_number ||
     member.membership_number ||
-    "—"
+    ""
   );
 }
 
-function activeMembers() {
-  return members.filter(
-    member =>
-      String(
-        member.status || "active"
-      ).toLowerCase() === "active"
-  );
-}
+function memberMatchesFilter(memberId) {
+  const selected = $("memberFilter")?.value || "";
 
-/* =========================================================
-   STATUS HELPERS
-========================================================= */
-
-function normalizeStatus(value) {
-  return String(value || "")
-    .trim()
-    .toLowerCase();
-}
-
-function statusLabel(status) {
-  const normalized =
-    normalizeStatus(status);
-
-  switch (normalized) {
-    case "paid":
-      return "Paid";
-
-    case "partial":
-      return "Partial";
-
-    case "credit":
-      return "Credit";
-
-    case "outstanding":
-      return "Outstanding";
-
-    case "no-payment":
-      return "No Payment";
-
-    default:
-      return normalized ||
-        "Unknown";
-  }
-}
-
-function statusClass(status) {
-  const normalized =
-    normalizeStatus(status);
-
-  if (normalized === "paid") {
-    return "status-paid";
+  if (!selected) {
+    return true;
   }
 
-  if (normalized === "credit") {
-    return "status-credit";
-  }
-
-  if (normalized === "partial") {
-    return "status-partial";
-  }
-
-  if (
-    normalized === "outstanding" ||
-    normalized === "no-payment"
-  ) {
-    return "status-outstanding";
-  }
-
-  return "status-other";
+  return String(memberId) === String(selected);
 }
 
-function statusBadge(status) {
-  return `
-    <span class="status-badge ${statusClass(status)}">
-      ${escapeHtml(
-        statusLabel(status)
-      )}
-    </span>
-  `;
-}
+function contributionTypeMatchesFilter(row) {
+  const selected =
+    lower($("contributionTypeFilter")?.value || "");
 
-function contributionTypeLabel(value) {
-  const type =
-    String(value || "")
-      .trim()
-      .toLowerCase();
-
-  if (type === "monthly") {
-    return "Monthly";
+  if (!selected) {
+    return true;
   }
 
-  if (type === "other") {
-    return "Other Savings";
+  return lower(row.contribution_type) === selected;
+}
+
+function paymentMethodMatchesFilter(row) {
+  const selected =
+    lower($("paymentMethodFilter")?.value || "");
+
+  if (!selected) {
+    return true;
   }
 
-  return value
-    ? String(value)
-    : "Other";
+  return lower(row.payment_method) === selected;
 }
 
-function paymentMethodLabel(value) {
-  if (!value) {
-    return "Not specified";
-  }
+function filteredContributions() {
+  const { from, to } = getDateRange();
 
-  const raw =
-    String(value).trim();
+  return contributions.filter(row => {
+    const date =
+      row.contribution_date ||
+      row.created_at;
 
-  return raw ||
-    "Not specified";
-}
-
-function expenseStatus(row) {
-  return normalizeStatus(
-    row?.approval_status ||
-    "pending"
-  );
-}
-
-/* =========================================================
-   CUMULATIVE STATUS HELPERS
-========================================================= */
-
-function cumulativePositionFor(memberId) {
-  return (
-    cumulativePositions.find(
-      row =>
-        String(row.memberId) ===
-        String(memberId)
-    ) || null
-  );
-}
-
-function cumulativeStatusKey(position) {
-  const status =
-    String(
-      position?.status || ""
-    )
-      .trim()
-      .toUpperCase();
-
-  if (status === "ARREARS") {
-    return "ARREARS";
-  }
-
-  if (status === "CREDIT") {
-    return "CREDIT";
-  }
-
-  return "UP_TO_DATE";
-}
-
-function cumulativeStatusLabel(status) {
-  switch (
-    cumulativeStatusKey({
-      status
-    })
-  ) {
-    case "ARREARS":
-      return "Cumulative Arrears";
-
-    case "CREDIT":
-      return "Cumulative Credit";
-
-    default:
-      return "Cumulative Up to Date";
-  }
-}
-
-function cumulativeStatusClass(status) {
-  switch (
-    cumulativeStatusKey({
-      status
-    })
-  ) {
-    case "ARREARS":
-      return "status-outstanding";
-
-    case "CREDIT":
-      return "status-credit";
-
-    default:
-      return "status-paid";
-  }
-}
-
-function cumulativeStatusBadge(status) {
-  return `
-    <span class="status-badge ${cumulativeStatusClass(
-      status
-    )}">
-      ${escapeHtml(
-        cumulativeStatusLabel(
-          status
-        )
-      )}
-    </span>
-  `;
-}
-
-/* =========================================================
-   AUTHENTICATED GROUP CONTEXT
-========================================================= */
-
-async function loadContext() {
-  currentUser =
-    await requireAuth();
-
-  currentMember =
-    await getMyMember();
-
-  currentGroup =
-    await getMyGroup();
-
-  if (
-    !currentMember?.group_id ||
-    !currentGroup?.id ||
-    currentMember.group_id !==
-      currentGroup.id
-  ) {
-    throw new Error(
-      "Your member and group context could not be verified."
+    return (
+      dateWithinRange(date, from, to) &&
+      memberMatchesFilter(row.member_id) &&
+      contributionTypeMatchesFilter(row) &&
+      paymentMethodMatchesFilter(row)
     );
-  }
-
-  setText(
-    "groupLabel",
-    currentGroup.name ||
-      "Group"
-  );
-
-  setText(
-    "printGroupName",
-    currentGroup.name ||
-      "Group Report"
-  );
+  });
 }
 
-/* =========================================================
-   LOAD MEMBERS
-========================================================= */
+function filteredExpenses() {
+  const { from, to } = getDateRange();
 
-async function loadMembers() {
-  const {
-    data,
-    error
-  } = await supabase
-    .from("members")
-    .select(
-      [
-        "id",
-        "group_id",
-        "member_number",
-        "membership_number",
-        "name",
-        "status",
-        "join_date"
-      ].join(",")
-    )
-    .eq(
-      "group_id",
-      currentGroup.id
-    )
-    .order(
-      "name",
-      {
-        ascending: true
-      }
-    );
+  const selectedStatus =
+    lower($("statusFilter")?.value || "");
 
-  if (error) {
-    throw error;
-  }
+  return expenses.filter(row => {
+    const date =
+      row.date ||
+      row.created_at;
 
-  members = data || [];
+    if (!dateWithinRange(date, from, to)) {
+      return false;
+    }
 
-  const select =
-    $("memberFilter");
+    if (
+      selectedStatus &&
+      lower(row.approval_status) !== selectedStatus
+    ) {
+      return false;
+    }
 
-  if (select) {
-    select.innerHTML =
-      `<option value="all">All Members</option>` +
-      members
-        .map(
-          member => `
-            <option value="${escapeHtml(
-              member.id
-            )}">
-              ${escapeHtml(
-                member.name ||
-                member.member_number ||
-                "Member"
-              )}
-            </option>
-          `
-        )
-        .join("");
-  }
-
-  setText(
-    "activeMembers",
-    activeMembers().length
-  );
+    return true;
+  });
 }
 
-/* =========================================================
-   LOAD CONTRIBUTIONS
-=========================================================
+function filteredMeetings() {
+  const { from, to } = getDateRange();
 
-   IMPORTANT SCHEMA SAFETY:
-
-   This query intentionally uses only the contribution
-   columns already established for the current reporting
-   path.
-
-   The following previously requested columns are NOT
-   selected because their current production presence has
-   not been confirmed:
-
-   - month
-   - recorded_by
-   - reference
-   - goal_id
-   - notes
-   - mpesa_reference
-
-   Reports do not require those fields for canonical
-   accounting.
-
-   No accounting mutation occurs here.
-========================================================= */
-
-async function loadContributions() {
-  const {
-    data,
-    error
-  } = await supabase
-    .from("contributions")
-    .select(
-      [
-        "id",
-        "group_id",
-        "member_id",
-        "amount",
-        "contribution_type",
-        "payment_method",
-        "created_at",
-        "contribution_date"
-      ].join(",")
-    )
-    .eq(
-      "group_id",
-      currentGroup.id
-    )
-    .order(
-      "contribution_date",
-      {
-        ascending: false
-      }
-    )
-    .order(
-      "created_at",
-      {
-        ascending: false
-      }
-    );
-
-  if (error) {
-    throw error;
-  }
-
-  contributions = data || [];
-
-  const methods = [
-    ...new Set(
-      contributions
-        .map(
-          row =>
-            row.payment_method
-        )
-        .filter(Boolean)
-    )
-  ].sort();
-
-  const select =
-    $("paymentMethodFilter");
-
-  if (select) {
-    select.innerHTML =
-      `<option value="all">All Methods</option>` +
-      methods
-        .map(
-          method => `
-            <option value="${escapeHtml(
-              method
-            )}">
-              ${escapeHtml(method)}
-            </option>
-          `
-        )
-        .join("");
-  }
+  return meetings.filter(row => {
+    return dateWithinRange(row.date, from, to);
+  });
 }
 
-/* =========================================================
-   LOAD EXPENSES
-========================================================= */
-
-async function loadExpenses() {
-  const {
-    data,
-    error
-  } = await supabase
-    .from("expenses")
-    .select(
-      [
-        "id",
-        "group_id",
-        "description",
-        "category",
-        "amount",
-        "date",
-        "recorded_by",
-        "receipt_url",
-        "approval_status",
-        "created_at"
-      ].join(",")
-    )
-    .eq(
-      "group_id",
-      currentGroup.id
-    )
-    .order(
-      "date",
-      {
-        ascending: false
-      }
-    )
-    .order(
-      "created_at",
-      {
-        ascending: false
-      }
-    );
-
-  if (error) {
-    throw error;
-  }
-
-  expenses = data || [];
-}
 
 /* =========================================================
-   LOAD MEETINGS
-========================================================= */
-
-async function loadMeetings() {
-  const {
-    data,
-    error
-  } = await supabase
-    .from("meetings")
-    .select(
-      [
-        "id",
-        "group_id",
-        "title",
-        "date",
-        "venue",
-        "agenda",
-        "minutes",
-        "resolution",
-        "status",
-        "created_at"
-      ].join(",")
-    )
-    .eq(
-      "group_id",
-      currentGroup.id
-    )
-    .order(
-      "date",
-      {
-        ascending: false
-      }
-    );
-
-  if (error) {
-    throw error;
-  }
-
-  meetings = data || [];
-}
-
-/* =========================================================
-   LOAD MONTHLY CANONICAL ACCOUNTING
-========================================================= */
+   CANONICAL MONTHLY ACCOUNTING
+   ========================================================= */
 
 async function loadCanonical(month) {
-  canonicalStatus = [];
-  canonicalSummary = null;
-
-  const {
-    data: statusData,
-    error: statusError
-  } = await supabase.rpc(
-    "get_canonical_member_monthly_status",
-    {
-      p_group_id:
-        currentGroup.id,
-      p_month: month
-    }
-  );
-
-  if (statusError) {
-    throw statusError;
+  if (!currentGroup?.id) {
+    throw new Error("GROUP_CONTEXT_REQUIRED");
   }
 
-  canonicalStatus =
-    normalizeRows(statusData);
+  const groupId = currentGroup.id;
 
-  const {
-    data: summaryData,
-    error: summaryError
-  } = await supabase.rpc(
-    "get_canonical_monthly_accounting_summary",
-    {
-      p_group_id:
-        currentGroup.id,
-      p_month: month
-    }
+  const [
+    monthlyStatusResult,
+    monthlySummaryResult
+  ] = await Promise.all([
+    supabase.rpc(
+      "get_canonical_member_monthly_status",
+      {
+        p_group_id: groupId,
+        p_accounting_month: month
+      }
+    ),
+
+    supabase.rpc(
+      "get_canonical_monthly_accounting_summary",
+      {
+        p_group_id: groupId,
+        p_accounting_month: month
+      }
+    )
+  ]);
+
+  if (monthlyStatusResult.error) {
+    throw monthlyStatusResult.error;
+  }
+
+  if (monthlySummaryResult.error) {
+    throw monthlySummaryResult.error;
+  }
+
+  canonicalStatus = safeArray(
+    monthlyStatusResult.data
   );
 
-  if (summaryError) {
-    throw summaryError;
-  }
+  const summaryData = safeArray(
+    monthlySummaryResult.data
+  );
 
   canonicalSummary =
-    Array.isArray(summaryData)
-      ? summaryData[0] || null
-      : summaryData || null;
+    summaryData.length === 1
+      ? summaryData[0]
+      : summaryData[0] || monthlySummaryResult.data || null;
+
+  return {
+    status: canonicalStatus,
+    summary: canonicalSummary
+  };
 }
 
+
 /* =========================================================
-   LOAD CUMULATIVE CANONICAL ACCOUNTING
-========================================================= */
+   CUMULATIVE ACCOUNTING
+   ========================================================= */
 
 async function loadCumulativePositions() {
-  cumulativePositions = [];
-  cumulativePositionsLoaded = false;
-
-  const active =
-    activeMembers();
-
-  if (!active.length) {
-    cumulativePositions = [];
-    cumulativePositionsLoaded = true;
-
-    return cumulativePositions;
+  if (!currentGroup?.id) {
+    throw new Error("GROUP_CONTEXT_REQUIRED");
   }
 
-  /*
-   * Promise.all() is intentional.
-   *
-   * If one canonical member-position request fails,
-   * the entire cumulative result fails instead of
-   * presenting a partial dataset as complete.
-   */
-  const results =
-    await Promise.all(
-      active.map(
-        async member => {
-          const {
-            data,
-            error
-          } = await supabase.rpc(
-            "get_member_contribution_position",
-            {
-              p_member_id:
-                member.id
-            }
-          );
+  const activeMembers = members.filter(member => {
+    const status = lower(member.status);
 
-          if (error) {
-            throw new Error(
-              `Cumulative contribution position could not be loaded for ${
-                member.name ||
-                member.id
-              }: ${error.message}`
-            );
-          }
-
-          const row =
-            Array.isArray(data)
-              ? data[0]
-              : data;
-
-          if (!row) {
-            throw new Error(
-              `Cumulative contribution position returned no result for ${
-                member.name ||
-                member.id
-              }.`
-            );
-          }
-
-          return {
-            memberId:
-              row.member_id,
-
-            groupId:
-              row.group_id,
-
-            totalDue:
-              number(
-                row.total_due
-              ),
-
-            totalAllocated:
-              number(
-                row.total_allocated
-              ),
-
-            arrears:
-              number(
-                row.arrears
-              ),
-
-            credit:
-              number(
-                row.credit
-              ),
-
-            status:
-              String(
-                row.status ||
-                "UP_TO_DATE"
-              )
-                .trim()
-                .toUpperCase()
-          };
-        }
-      )
+    return (
+      !status ||
+      status === "active" ||
+      status === "approved"
     );
+  });
 
-  cumulativePositions =
-    results;
+  const results = await Promise.all(
+    activeMembers.map(async member => {
+      const { data, error } = await supabase.rpc(
+        "get_member_contribution_position",
+        {
+          p_member_id: member.id
+        }
+      );
 
-  cumulativePositionsLoaded =
-    true;
+      if (error) {
+        throw error;
+      }
+
+      const row =
+        Array.isArray(data)
+          ? data[0]
+          : data;
+
+      if (!row) {
+        return {
+          member_id: member.id,
+          group_id: currentGroup.id,
+          total_due: 0,
+          total_allocated: 0,
+          arrears: 0,
+          credit: 0,
+          status: "up_to_date"
+        };
+      }
+
+      return {
+        member_id:
+          row.member_id ||
+          member.id,
+
+        group_id:
+          row.group_id ||
+          currentGroup.id,
+
+        total_due:
+          numberValue(row.total_due),
+
+        total_allocated:
+          numberValue(row.total_allocated),
+
+        arrears:
+          numberValue(row.arrears),
+
+        credit:
+          numberValue(row.credit),
+
+        status:
+          row.status ||
+          "up_to_date"
+      };
+    })
+  );
+
+  cumulativePositions = results;
+  cumulativePositionsLoaded = true;
 
   return cumulativePositions;
 }
 
+
 /* =========================================================
-   ACTIVE CUSTOM CONTRIBUTION MEMBER STATUS
-========================================================= */
+   CUSTOM CONTRIBUTION STATUS
+   ========================================================= */
 
 async function loadActiveCustomContributionStatus() {
+  if (!currentGroup?.id) {
+    return;
+  }
+
   activeCustomContributions = [];
   customMemberStatusRows = [];
-  selectedCustomContributionId = "all";
 
-  if (!currentGroup?.id) return;
+  /*
+   * This is a reporting/status feature.
+   * It does not write accounting rows.
+   */
 
-  const { data: typeData, error: typeError } = await supabase
-    .from("contribution_types")
-    .select("id,group_id,name,code")
-    .eq("group_id", currentGroup.id)
-    .eq("code", "custom");
+  try {
+    const [
+      contributionTypesResult,
+      contributionPeriodsResult
+    ] = await Promise.all([
+      supabase
+        .from("contribution_types")
+        .select("*")
+        .eq("group_id", currentGroup.id),
 
-  if (typeError) throw typeError;
+      supabase
+        .from("contribution_periods")
+        .select("*")
+        .eq("group_id", currentGroup.id)
+    ]);
 
-  const customTypes = Array.isArray(typeData) ? typeData : [];
-  if (!customTypes.length) {
-    renderCustomMemberStatusSelector();
-    renderCustomMemberStatus();
-    return;
+    if (
+      contributionTypesResult.error ||
+      contributionPeriodsResult.error
+    ) {
+      return;
+    }
+
+    const types =
+      safeArray(contributionTypesResult.data);
+
+    const periods =
+      safeArray(contributionPeriodsResult.data);
+
+    const combined = [];
+
+    for (const type of types) {
+      combined.push({
+        ...type,
+        _kind: "type"
+      });
+    }
+
+    for (const period of periods) {
+      combined.push({
+        ...period,
+        _kind: "period"
+      });
+    }
+
+    activeCustomContributions =
+      combined.filter(row => {
+        if (
+          row.active === false ||
+          row.is_active === false
+        ) {
+          return false;
+        }
+
+        if (
+          lower(row.status) === "inactive" ||
+          lower(row.status) === "archived"
+        ) {
+          return false;
+        }
+
+        return true;
+      });
+
+    populateCustomContributionSelector();
+
+    if (activeCustomContributions.length) {
+      await refreshSelectedCustomContribution();
+    }
+  } catch (error) {
+    console.warn(
+      "[Reports] Custom contribution status unavailable:",
+      error
+    );
   }
-
-  const typeIds = customTypes.map(type => type.id);
-  const { data: periodData, error: periodError } = await supabase
-    .from("contribution_periods")
-    .select("id,group_id,contribution_type_id,opening_date,due_date,closing_date,amount,frequency,status,fine_rule_id")
-    .eq("group_id", currentGroup.id)
-    .in("contribution_type_id", typeIds)
-    .in("status", ["open", "due", "grace"])
-    .order("opening_date", { ascending: false });
-
-  if (periodError) throw periodError;
-
-  const typeById = new Map(customTypes.map(type => [String(type.id), type]));
-
-  activeCustomContributions = (Array.isArray(periodData) ? periodData : [])
-    .map(period => {
-      const type = typeById.get(String(period.contribution_type_id));
-      return {
-        id: period.id,
-        typeId: period.contribution_type_id,
-        name: type?.name || "Custom contribution",
-        amount: Number(period.amount || 0),
-        frequency: period.frequency || "",
-        openingDate: period.opening_date,
-        dueDate: period.due_date,
-        closingDate: period.closing_date,
-        status: period.status
-      };
-    });
-
-  if (!activeCustomContributions.length) {
-    renderCustomMemberStatusSelector();
-    renderCustomMemberStatus();
-    return;
-  }
-
-  const results = await Promise.all(
-    activeMembers().map(async member => {
-      const { data, error } = await supabase.rpc(
-        "get_member_active_contributions",
-        { p_group_id: currentGroup.id, p_member_id: member.id }
-      );
-
-      if (error) throw error;
-
-      const rows = Array.isArray(data) ? data : [];
-      return rows
-        .filter(row => String(row?.type || row?.contribution_type || "").trim().toLowerCase() !== "monthly")
-        .map(row => ({
-          memberId: member.id,
-          memberName: member.name || member.member_number || "Member",
-          ...row
-        }));
-    })
-  );
-
-  customMemberStatusRows = results.flat();
-  renderCustomMemberStatusSelector();
-  renderCustomMemberStatus();
 }
 
-function customContributionMatches(row, selected) {
-  if (!selected) return false;
+function populateCustomContributionSelector() {
+  const select =
+    $("customContributionMemberStatusSelect");
 
-  const identifiers = [row?.period_id, row?.contribution_period_id, row?.id].filter(Boolean);
-  if (identifiers.some(value => String(value) === String(selected.id))) return true;
-
-  const typeIdentifiers = [row?.contribution_type_id, row?.type_id].filter(Boolean);
-  if (typeIdentifiers.some(value => String(value) === String(selected.typeId))) return true;
-
-  const names = [row?.contribution_name, row?.name].filter(Boolean)
-    .map(value => String(value).trim().toLowerCase());
-  return names.includes(String(selected.name).trim().toLowerCase());
-}
-
-function customStatusLabel(value) {
-  const status = String(value || "").trim().toUpperCase();
-  if (status === "PAID") return "PAID";
-  if (status === "PARTIAL") return "PARTIAL";
-  return "OUTSTANDING";
-}
-
-function customStatusClass(value) {
-  const status = customStatusLabel(value);
-  if (status === "PAID") return "status-paid";
-  if (status === "PARTIAL") return "status-warning";
-  return "status-outstanding";
-}
-
-function renderCustomMemberStatusSelector() {
-  const select = $("customContributionMemberStatusSelect");
   if (!select) return;
 
-  select.innerHTML =
-    '<option value="all">Select an active contribution</option>' +
-    activeCustomContributions.map(item =>
-      '<option value="' + escapeHtml(String(item.id)) + '">' +
-      escapeHtml(item.name) + ' · KSh ' +
-      escapeHtml(Number(item.amount || 0).toLocaleString("en-KE")) +
-      ' · ' + escapeHtml(item.frequency || "—") +
-      '</option>'
-    ).join("");
+  const currentValue = select.value;
 
-  select.value = selectedCustomContributionId === "all"
-    ? "all"
-    : String(selectedCustomContributionId);
-  setText("customContributionMemberStatusViewing", "—");
+  const options = [
+    `<option value="">Select contribution</option>`
+  ];
+
+  for (const item of activeCustomContributions) {
+    const id =
+      item.id ||
+      item.contribution_type_id ||
+      item.period_id;
+
+    const name =
+      item.name ||
+      item.title ||
+      item.label ||
+      item.contribution_type ||
+      "Contribution";
+
+    if (!id) continue;
+
+    options.push(
+      `<option value="${escapeHTML(id)}">${escapeHTML(name)}</option>`
+    );
+  }
+
+  select.innerHTML = options.join("");
+
+  if (currentValue) {
+    select.value = currentValue;
+  }
+
+  if (
+    selectedCustomContributionId &&
+    select.querySelector(
+      `option[value="${CSS.escape(String(selectedCustomContributionId))}"]`
+    )
+  ) {
+    select.value = selectedCustomContributionId;
+  }
 }
 
-function renderCustomMemberStatus() {
-  const body = $("customContributionMemberStatusRows");
-  if (!body) return;
+async function refreshSelectedCustomContribution() {
+  const select =
+    $("customContributionMemberStatusSelect");
 
-  const selected = activeCustomContributions.find(item =>
-    String(item.id) === String(selectedCustomContributionId)
-  );
+  if (!select) return;
 
-  if (!selected) {
-    body.innerHTML =
-      '<tr><td colspan="6" class="report-empty">' +
-      'Select an active contribution to view member status.' +
-      '</td></tr>';
+  const selectedId = select.value;
+
+  if (!selectedId) {
+    customMemberStatusRows = [];
+    selectedCustomContributionId = null;
+    renderCustomContributionStatus();
     return;
   }
 
-  setText("customContributionMemberStatusViewing", selected.name);
+  selectedCustomContributionId = selectedId;
 
-  const rows = customMemberStatusRows.filter(row =>
-    customContributionMatches(row, selected)
-  );
+  try {
+    const activeMembers = members.filter(member => {
+      const status = lower(member.status);
 
-  if (!rows.length) {
-    body.innerHTML =
-      '<tr><td colspan="6" class="report-empty">' +
-      'No canonical member status is available for this contribution.' +
-      '</td></tr>';
-    return;
-  }
+      return (
+        !status ||
+        status === "active" ||
+        status === "approved"
+      );
+    });
 
-  body.innerHTML = rows
-    .sort((a, b) => String(a.memberName).localeCompare(String(b.memberName)))
-    .map(row =>
-      '<tr>' +
-      '<td><strong>' + escapeHtml(row.memberName) + '</strong></td>' +
-      '<td class="amount">' + escapeHtml(money(row.amount_due)) + '</td>' +
-      '<td class="amount">' + escapeHtml(money(row.amount_allocated ?? row.current_paid)) + '</td>' +
-      '<td class="amount">' + escapeHtml(money(row.outstanding_balance)) + '</td>' +
-      '<td>' + escapeHtml(formatDate(row.due_date)) + '</td>' +
-      '<td><span class="status-badge ' + customStatusClass(row.status) + '">' +
-      escapeHtml(customStatusLabel(row.status)) +
-      '</span></td>' +
-      '</tr>'
-    ).join("");
-}
-
-/* =========================================================
-   FILTERED DATA
-========================================================= */
-
-function filteredContributions() {
-  const {
-    from,
-    to
-  } = selectedPeriod();
-
-  const selectedMember =
-    $("memberFilter")?.value ||
-    "all";
-
-  const selectedType =
-    $("contributionTypeFilter")
-      ?.value ||
-    "all";
-
-  const selectedMethod =
-    $("paymentMethodFilter")
-      ?.value ||
-    "all";
-
-  return contributions.filter(
-    row => {
-      const date =
-        row.contribution_date ||
-        normalizeDate(
-          row.created_at
+    const rows = await Promise.all(
+      activeMembers.map(async member => {
+        const { data, error } = await supabase.rpc(
+          "get_member_active_contributions",
+          {
+            p_member_id: member.id
+          }
         );
 
-      if (!inRange(
-        date,
-        from,
-        to
-      )) {
-        return false;
-      }
-
-      if (
-        selectedMember !== "all" &&
-        String(row.member_id) !==
-          String(selectedMember)
-      ) {
-        return false;
-      }
-
-      if (
-        selectedMethod !== "all" &&
-        String(
-          row.payment_method || ""
-        ) !==
-          String(selectedMethod)
-      ) {
-        return false;
-      }
-
-      if (
-        selectedType !== "all"
-      ) {
-        const type =
-          String(
-            row.contribution_type ||
-              ""
-          ).toLowerCase();
-
-        if (
-          selectedType === "monthly" &&
-          type !== "monthly"
-        ) {
-          return false;
+        if (error) {
+          return null;
         }
 
-        if (
-          selectedType === "other" &&
-          type === "monthly"
-        ) {
-          return false;
+        const list = safeArray(data);
+
+        const matching = list.find(row => {
+          const ids = [
+            row.id,
+            row.contribution_type_id,
+            row.period_id,
+            row.contribution_id
+          ];
+
+          return ids.some(
+            id => String(id) === String(selectedId)
+          );
+        });
+
+        if (!matching) {
+          return {
+            member_id: member.id,
+            status: "not active"
+          };
         }
-      }
 
-      return true;
-    }
-  );
+        return {
+          member_id: member.id,
+          ...matching
+        };
+      })
+    );
+
+    customMemberStatusRows =
+      rows.filter(Boolean);
+
+    renderCustomContributionStatus();
+  } catch (error) {
+    console.warn(
+      "[Reports] Unable to load custom contribution status:",
+      error
+    );
+
+    customMemberStatusRows = [];
+    renderCustomContributionStatus();
+  }
 }
 
-function filteredExpenses() {
-  const {
-    from,
-    to
-  } = selectedPeriod();
+function renderCustomContributionStatus() {
+  const target =
+    $("customContributionMemberStatusRows");
 
-  return expenses.filter(
-    row =>
-      inRange(
-        row.date ||
-          row.created_at,
-        from,
-        to
-      )
-  );
+  if (!target) return;
+
+  if (!customMemberStatusRows.length) {
+    target.innerHTML =
+      `<tr><td colspan="6">No custom contribution status available.</td></tr>`;
+    return;
+  }
+
+  target.innerHTML =
+    customMemberStatusRows.map(row => {
+      const memberName =
+        getMemberName(row.member_id);
+
+      const status =
+        row.status ||
+        row.payment_status ||
+        row.contribution_status ||
+        "—";
+
+      const amount =
+        numberValue(
+          row.amount ??
+          row.allocated ??
+          row.total_allocated ??
+          0
+        );
+
+      return `
+        <tr>
+          <td>${escapeHTML(memberName)}</td>
+          <td>${escapeHTML(getMemberNumber(row.member_id) || "—")}</td>
+          <td>${escapeHTML(status)}</td>
+          <td>${formatCurrency(amount)}</td>
+          <td>${escapeHTML(formatDate(row.due_date))}</td>
+          <td>${escapeHTML(row.notes || "—")}</td>
+        </tr>
+      `;
+    }).join("");
 }
 
-function filteredMeetings() {
-  const {
-    from,
-    to
-  } = selectedPeriod();
-
-  return meetings.filter(
-    row =>
-      inRange(
-        row.date ||
-          row.created_at,
-        from,
-        to
-      )
-  );
-}
 
 /* =========================================================
-   MONTHLY CANONICAL FILTERS
-========================================================= */
+   CANONICAL FILTERING
+   ========================================================= */
 
 function filteredCanonicalStatus() {
   const selectedMember =
-    $("memberFilter")?.value ||
-    "all";
+    $("memberFilter")?.value || "";
 
   const selectedStatus =
-    $("statusFilter")?.value ||
-    "all";
+    lower($("statusFilter")?.value || "");
 
-  return canonicalStatus.filter(
-    row => {
-      if (
-        selectedMember !== "all" &&
-        String(row.member_id) !==
-          String(selectedMember)
-      ) {
-        return false;
-      }
+  let rows = canonicalStatus.slice();
 
+  if (selectedMember) {
+    rows = rows.filter(
+      row =>
+        String(row.member_id) ===
+        String(selectedMember)
+    );
+  }
+
+  if (selectedStatus) {
+    rows = rows.filter(row => {
       const status =
-        normalizeStatus(
-          row.status
+        lower(
+          row.status ||
+          row.accounting_status ||
+          row.payment_status
         );
 
-      const previousOutstanding =
-        number(
-          row.previous_outstanding
+      return status === selectedStatus;
+    });
+  }
+
+  if (activeQuickFilter === "arrears") {
+    rows = rows.filter(row =>
+      numberValue(
+        row.previous_outstanding ??
+        row.previous_arrears ??
+        row.outstanding_before ??
+        0
+      ) > 0
+    );
+  }
+
+  if (activeQuickFilter === "attention") {
+    rows = rows.filter(row => {
+      const previous =
+        numberValue(
+          row.previous_outstanding ??
+          row.previous_arrears ??
+          row.outstanding_before ??
+          0
         );
 
-      const currentOutstanding =
-        number(
-          row.current_outstanding
+      const current =
+        numberValue(
+          row.outstanding ??
+          row.current_outstanding ??
+          row.arrears ??
+          0
         );
 
-      const carryForward =
-        number(
-          row.carry_forward
-        );
+      return previous > 0 || current > 0;
+    });
+  }
 
-      /*
-       * -----------------------------------------------------
-       * QUICK FILTER SEMANTICS
-       * -----------------------------------------------------
-       *
-       * Has Previous Outstanding:
-       * previous_outstanding > 0
-       *
-       * Needs Attention:
-       * previous_outstanding > 0 OR
-       * current_outstanding > 0
-       *
-       * Has Credit:
-       * monthly carry-forward credit > 0
-       *
-       * None of these are cumulative arrears/credit.
-       */
-      if (
-        activeQuickFilter ===
-        "arrears"
-      ) {
-        return (
-          previousOutstanding > 0
-        );
-      }
+  if (activeQuickFilter === "credit") {
+    rows = rows.filter(row =>
+      numberValue(
+        row.carry_forward_credit ??
+        row.credit ??
+        0
+      ) > 0
+    );
+  }
 
-      if (
-        activeQuickFilter ===
-        "attention"
-      ) {
-        return (
-          previousOutstanding > 0 ||
-          currentOutstanding > 0
-        );
-      }
-
-      if (
-        activeQuickFilter ===
-        "credit"
-      ) {
-        return (
-          carryForward > 0
-        );
-      }
-
-      /*
-       * -----------------------------------------------------
-       * MONTHLY STATUS FILTER
-       * -----------------------------------------------------
-       *
-       * "outstanding" means current-month
-       * outstanding / no-payment.
-       *
-       * It does NOT mean previous outstanding.
-       *
-       * It does NOT mean cumulative arrears.
-       */
-      if (
-        selectedStatus ===
-        "outstanding"
-      ) {
-        return (
-          status ===
-            "outstanding" ||
-          status ===
-            "no-payment"
-        );
-      }
-
-      if (
-        selectedStatus === "credit"
-      ) {
-        return status ===
-          "credit";
-      }
-
-      /*
-       * Cumulative filter values belong to
-       * cumulative report types and must not
-       * accidentally filter monthly RPC rows.
-       */
-      if (
-        selectedStatus ===
-          "cumulative-arrears" ||
-        selectedStatus ===
-          "cumulative-credit" ||
-        selectedStatus ===
-          "cumulative-up-to-date"
-      ) {
-        return true;
-      }
-
-      if (
-        selectedStatus === "all"
-      ) {
-        return true;
-      }
-
-      return status ===
-        selectedStatus;
-    }
-  );
+  return rows;
 }
 
 function filteredCumulativePositions() {
   const selectedMember =
-    $("memberFilter")?.value ||
-    "all";
+    $("memberFilter")?.value || "";
 
-  return cumulativePositions.filter(
-    position => {
-      if (
-        selectedMember !== "all" &&
-        String(
-          position.memberId
-        ) !==
-          String(selectedMember)
-      ) {
-        return false;
-      }
+  let rows = cumulativePositions.slice();
 
-      return true;
-    }
-  );
+  if (selectedMember) {
+    rows = rows.filter(
+      row =>
+        String(row.member_id) ===
+        String(selectedMember)
+    );
+  }
+
+  if (activeQuickFilter === "arrears") {
+    rows = rows.filter(
+      row => numberValue(row.arrears) > 0
+    );
+  }
+
+  if (activeQuickFilter === "credit") {
+    rows = rows.filter(
+      row => numberValue(row.credit) > 0
+    );
+  }
+
+  if (activeQuickFilter === "attention") {
+    rows = rows.filter(row =>
+      numberValue(row.arrears) > 0 ||
+      numberValue(row.credit) > 0
+    );
+  }
+
+  return rows;
 }
 
+
 /* =========================================================
-   SUMMARY CARDS
-========================================================= */
+   SUMMARY
+   ========================================================= */
 
 function updateSummary(
-  contributionRows,
-  expenseRows
+  visibleContributions,
+  visibleExpenses
 ) {
-  const received =
-    contributionRows.reduce(
+  const totalContributions =
+    visibleContributions.reduce(
       (sum, row) =>
-        sum + number(row.amount),
+        sum + numberValue(row.amount),
       0
     );
 
-  const approved =
-    expenseRows
-      .filter(
-        row =>
-          expenseStatus(row) ===
-          "approved"
+  const approvedExpenses =
+    visibleExpenses
+      .filter(row =>
+        lower(row.approval_status) === "approved"
       )
       .reduce(
         (sum, row) =>
-          sum + number(row.amount),
+          sum + numberValue(row.amount),
         0
       );
 
-  const pending =
-    expenseRows
-      .filter(
-        row =>
-          expenseStatus(row) ===
-          "pending"
+  const pendingExpenses =
+    visibleExpenses
+      .filter(row =>
+        lower(row.approval_status) === "pending"
       )
       .reduce(
         (sum, row) =>
-          sum + number(row.amount),
+          sum + numberValue(row.amount),
         0
       );
 
-  const rejected =
-    expenseRows
-      .filter(
-        row =>
-          expenseStatus(row) ===
-          "rejected"
+  const rejectedExpenses =
+    visibleExpenses
+      .filter(row =>
+        lower(row.approval_status) === "rejected"
       )
       .reduce(
         (sum, row) =>
-          sum + number(row.amount),
+          sum + numberValue(row.amount),
         0
       );
+
+  const currentBalance =
+    totalContributions -
+    approvedExpenses;
+
+  const activeMembers =
+    members.filter(member => {
+      const status = lower(member.status);
+
+      return (
+        !status ||
+        status === "active" ||
+        status === "approved"
+      );
+    }).length;
 
   setText(
     "totalContributions",
-    money(received)
+    formatCurrency(totalContributions)
   );
 
   setText(
     "approvedExpenses",
-    money(approved)
+    formatCurrency(approvedExpenses)
   );
 
   setText(
     "currentBalance",
-    money(
-      received - approved
-    )
+    formatCurrency(currentBalance)
   );
 
   setText(
     "pendingExpenses",
-    money(pending)
+    formatCurrency(pendingExpenses)
   );
 
   setText(
     "rejectedExpenses",
-    money(rejected)
+    formatCurrency(rejectedExpenses)
   );
 
   setText(
-    "reportApplied",
-    money(
-      canonicalSummary
-        ?.applied_this_month
-    )
+    "activeMembers",
+    formatNumber(activeMembers)
   );
 
-  setText(
-    "reportOutstanding",
-    money(
-      canonicalSummary
-        ?.current_outstanding
-    )
-  );
+  const summary =
+    canonicalSummary || {};
 
-  setText(
-    "reportCarryForward",
-    money(
-      canonicalSummary
-        ?.carry_forward
-    )
-  );
+  const applied =
+    numberValue(
+      summary.applied ??
+      summary.total_applied ??
+      summary.total_allocated ??
+      summary.current_applied
+    );
 
-  setText(
-    "reportCollectionRate",
-    `${number(
-      canonicalSummary
-        ?.collection_rate
-    ).toFixed(0)}%`
-  );
+  const outstanding =
+    numberValue(
+      summary.outstanding ??
+      summary.total_outstanding ??
+      summary.current_outstanding
+    );
 
-  /*
-   * Cumulative KPI values are derived only from
-   * get_member_contribution_position().
-   */
+  const carryForward =
+    numberValue(
+      summary.carry_forward_credit ??
+      summary.total_carry_forward_credit ??
+      summary.credit
+    );
+
+  const totalDue =
+    numberValue(
+      summary.total_due ??
+      summary.total_obligations ??
+      applied + outstanding
+    );
+
+  const collectionRate =
+    totalDue > 0
+      ? (applied / totalDue) * 100
+      : 0;
+
+  const cumulativeRows =
+    cumulativePositions;
+
   const cumulativeArrears =
-    cumulativePositions.reduce(
-      (sum, position) =>
-        sum +
-        number(
-          position.arrears
-        ),
+    cumulativeRows.reduce(
+      (sum, row) =>
+        sum + numberValue(row.arrears),
       0
     );
 
   const cumulativeCredit =
-    cumulativePositions.reduce(
-      (sum, position) =>
-        sum +
-        number(
-          position.credit
-        ),
+    cumulativeRows.reduce(
+      (sum, row) =>
+        sum + numberValue(row.credit),
       0
     );
 
   setText(
+    "reportApplied",
+    formatCurrency(applied)
+  );
+
+  setText(
+    "reportOutstanding",
+    formatCurrency(outstanding)
+  );
+
+  setText(
+    "reportCarryForward",
+    formatCurrency(carryForward)
+  );
+
+  setText(
+    "reportCollectionRate",
+    formatPercentage(collectionRate)
+  );
+
+  setText(
     "reportCumulativeArrears",
-    money(cumulativeArrears)
+    formatCurrency(cumulativeArrears)
   );
 
   setText(
     "reportCumulativeCredit",
-    money(cumulativeCredit)
+    formatCurrency(cumulativeCredit)
   );
 }
 
+
 /* =========================================================
-   BREAKDOWN TABLES
-========================================================= */
+   CONTRIBUTION BREAKDOWN
+   ========================================================= */
 
-function renderBreakdown(rows) {
-  const target =
-    $("contributionBreakdownRows");
-
-  if (!target) {
-    return;
-  }
-
+function buildContributionBreakdown(rows) {
   const map = new Map();
 
-  rows.forEach(row => {
-    const key =
-      row.contribution_type ||
-      "Other";
+  for (const row of rows) {
+    const type =
+      normalizeText(row.contribution_type) ||
+      "Unspecified";
 
     const existing =
-      map.get(key) || {
+      map.get(type) || {
+        type,
         count: 0,
         amount: 0
       };
 
     existing.count += 1;
+    existing.amount += numberValue(row.amount);
 
-    existing.amount +=
-      number(row.amount);
+    map.set(type, existing);
+  }
 
-    map.set(
-      key,
-      existing
-    );
-  });
+  return Array.from(map.values())
+    .sort((a, b) => b.amount - a.amount);
+}
 
-  if (!map.size) {
-    target.innerHTML = `
-      <tr>
-        <td
-          colspan="4"
-          class="report-empty">
-          No data.
-        </td>
-      </tr>
-    `;
+function renderContributionBreakdown(rows) {
+  const target =
+    $("contributionBreakdownRows");
 
+  if (!target) return;
+
+  const breakdown =
+    buildContributionBreakdown(rows);
+
+  if (!breakdown.length) {
+    target.innerHTML =
+      `<tr><td colspan="3">No contribution data for the selected period.</td></tr>`;
     return;
   }
 
-  const total =
-    rows.reduce(
-      (sum, row) =>
-        sum + number(row.amount),
-      0
-    );
-
   target.innerHTML =
-    [...map.entries()]
-      .map(
-        ([type, value]) => `
-          <tr>
-            <td>
-              ${escapeHtml(
-                contributionTypeLabel(
-                  type
-                )
-              )}
-            </td>
+    breakdown.map(row => `
+      <tr>
+        <td>${escapeHTML(row.type)}</td>
+        <td>${formatNumber(row.count)}</td>
+        <td>${formatCurrency(row.amount)}</td>
+      </tr>
+    `).join("");
+}
 
-            <td class="amount">
-              ${value.count}
-            </td>
 
-            <td class="amount">
-              ${money(value.amount)}
-            </td>
+/* =========================================================
+   EXPENSE BREAKDOWN
+   ========================================================= */
 
-            <td class="amount">
-              ${
-                total
-                  ? (
-                      value.amount /
-                      total *
-                      100
-                    ).toFixed(1)
-                  : "0.0"
-              }%
-            </td>
-          </tr>
-        `
-      )
-      .join("");
+function buildExpenseBreakdown(rows) {
+  const map = new Map();
+
+  for (const row of rows) {
+    const category =
+      normalizeText(row.category) ||
+      "Uncategorised";
+
+    const existing =
+      map.get(category) || {
+        category,
+        count: 0,
+        amount: 0
+      };
+
+    existing.count += 1;
+    existing.amount += numberValue(row.amount);
+
+    map.set(category, existing);
+  }
+
+  return Array.from(map.values())
+    .sort((a, b) => b.amount - a.amount);
 }
 
 function renderExpenseBreakdown(rows) {
   const target =
     $("expenseBreakdownRows");
 
-  if (!target) {
+  if (!target) return;
+
+  const breakdown =
+    buildExpenseBreakdown(rows);
+
+  if (!breakdown.length) {
+    target.innerHTML =
+      `<tr><td colspan="3">No expense data for the selected period.</td></tr>`;
     return;
   }
-
-  const map = new Map();
-
-  rows.forEach(row => {
-    const key =
-      row.category ||
-      "Uncategorised";
-
-    const existing =
-      map.get(key) || {
-        count: 0,
-        amount: 0
-      };
-
-    existing.count += 1;
-
-    existing.amount +=
-      number(row.amount);
-
-    map.set(
-      key,
-      existing
-    );
-  });
-
-  if (!map.size) {
-    target.innerHTML = `
-      <tr>
-        <td
-          colspan="4"
-          class="report-empty">
-          No data.
-        </td>
-      </tr>
-    `;
-
-    return;
-  }
-
-  const total =
-    rows.reduce(
-      (sum, row) =>
-        sum + number(row.amount),
-      0
-    );
 
   target.innerHTML =
-    [...map.entries()]
-      .map(
-        ([category, value]) => `
-          <tr>
-            <td>
-              ${escapeHtml(
-                category
-              )}
-            </td>
-
-            <td class="amount">
-              ${value.count}
-            </td>
-
-            <td class="amount">
-              ${money(value.amount)}
-            </td>
-
-            <td class="amount">
-              ${
-                total
-                  ? (
-                      value.amount /
-                      total *
-                      100
-                    ).toFixed(1)
-                  : "0.0"
-              }%
-            </td>
-          </tr>
-        `
-      )
-      .join("");
+    breakdown.map(row => `
+      <tr>
+        <td>${escapeHTML(row.category)}</td>
+        <td>${formatNumber(row.count)}</td>
+        <td>${formatCurrency(row.amount)}</td>
+      </tr>
+    `).join("");
 }
+
 
 /* =========================================================
    CONTRIBUTION ENTRIES
-========================================================= */
+   ========================================================= */
 
 function renderContributionEntries(rows) {
   const target =
     $("reportContributionEntries");
 
-  if (!target) {
-    return;
-  }
+  if (!target) return;
 
   if (!rows.length) {
-    target.innerHTML = `
-      <tr>
-        <td
-          colspan="5"
-          class="report-empty">
-          No data.
-        </td>
-      </tr>
-    `;
-
+    target.innerHTML =
+      `<tr><td colspan="8">No contribution entries for the selected period.</td></tr>`;
     return;
   }
 
   target.innerHTML =
-    rows
-      .map(
-        row => `
-          <tr>
-            <td>
-              ${escapeHtml(
-                formatDate(
-                  row.contribution_date ||
-                  row.created_at
-                )
-              )}
-            </td>
+    rows.map(row => `
+      <tr>
+        <td>${escapeHTML(formatDate(
+          row.contribution_date ||
+          row.created_at
+        ))}</td>
 
-            <td>
-              ${escapeHtml(
-                memberName(
-                  row.member_id
-                )
-              )}
-            </td>
+        <td>${escapeHTML(
+          getMemberNumber(row.member_id) || "—"
+        )}</td>
 
-            <td>
-              ${escapeHtml(
-                contributionTypeLabel(
-                  row.contribution_type
-                )
-              )}
-            </td>
+        <td>${escapeHTML(
+          getMemberName(row.member_id)
+        )}</td>
 
-            <td>
-              ${escapeHtml(
-                paymentMethodLabel(
-                  row.payment_method
-                )
-              )}
-            </td>
+        <td>${escapeHTML(
+          row.contribution_type || "—"
+        )}</td>
 
-            <td class="amount">
-              ${money(row.amount)}
-            </td>
-          </tr>
-        `
-      )
-      .join("");
+        <td>${escapeHTML(
+          row.payment_method || "—"
+        )}</td>
+
+        <td>${formatCurrency(row.amount)}</td>
+
+        <td>${escapeHTML(
+          formatDateTime(row.created_at)
+        )}</td>
+
+        <td>${escapeHTML(
+          row.id || "—"
+        )}</td>
+      </tr>
+    `).join("");
 }
+
 
 /* =========================================================
    EXPENSE ENTRIES
-========================================================= */
+   ========================================================= */
 
 function renderExpenseEntries(rows) {
   const target =
     $("reportExpenseEntries");
 
-  if (!target) {
-    return;
-  }
+  if (!target) return;
 
   if (!rows.length) {
-    target.innerHTML = `
-      <tr>
-        <td
-          colspan="5"
-          class="report-empty">
-          No data.
-        </td>
-      </tr>
-    `;
-
+    target.innerHTML =
+      `<tr><td colspan="7">No expense entries for the selected period.</td></tr>`;
     return;
   }
 
   target.innerHTML =
-    rows
-      .map(
-        row => `
-          <tr>
-            <td>
-              ${escapeHtml(
-                formatDate(row.date)
-              )}
-            </td>
+    rows.map(row => `
+      <tr>
+        <td>${escapeHTML(
+          formatDate(row.date || row.created_at)
+        )}</td>
 
-            <td>
-              ${escapeHtml(
-                row.description ||
-                "—"
-              )}
-            </td>
+        <td>${escapeHTML(
+          row.description || "—"
+        )}</td>
 
-            <td>
-              ${escapeHtml(
-                row.category ||
-                "Uncategorised"
-              )}
-            </td>
+        <td>${escapeHTML(
+          row.category || "—"
+        )}</td>
 
-            <td>
-              ${statusBadge(
-                row.approval_status
-              )}
-            </td>
+        <td>${formatCurrency(row.amount)}</td>
 
-            <td class="amount">
-              ${money(row.amount)}
-            </td>
-          </tr>
-        `
-      )
-      .join("");
+        <td>${escapeHTML(
+          row.approval_status || "—"
+        )}</td>
+
+        <td>${escapeHTML(
+          row.recorded_by || "—"
+        )}</td>
+
+        <td>
+          ${
+            row.receipt_url
+              ? `<a href="${escapeHTML(row.receipt_url)}" target="_blank" rel="noopener">Receipt</a>`
+              : "—"
+          }
+        </td>
+      </tr>
+    `).join("");
 }
 
+
 /* =========================================================
-   MEETINGS
-========================================================= */
+   MEETING SUMMARY
+   ========================================================= */
 
 function renderMeetings(rows) {
-  const target =
-    $("meetingRows");
-
-  if (target) {
-    if (!rows.length) {
-      target.innerHTML = `
-        <tr>
-          <td
-            colspan="4"
-            class="report-empty">
-            No meetings.
-          </td>
-        </tr>
-      `;
-    } else {
-      target.innerHTML =
-        rows
-          .map(
-            row => `
-              <tr>
-                <td>
-                  ${escapeHtml(
-                    formatDate(row.date)
-                  )}
-                </td>
-
-                <td>
-                  ${escapeHtml(
-                    row.title ||
-                    "—"
-                  )}
-                </td>
-
-                <td>
-                  ${escapeHtml(
-                    row.venue ||
-                    "—"
-                  )}
-                </td>
-
-                <td>
-                  ${statusBadge(
-                    row.status ||
-                    "scheduled"
-                  )}
-                </td>
-              </tr>
-            `
-          )
-          .join("");
-    }
-  }
-
-  setText(
-    "totalMeetings",
-    rows.length
-  );
-
-  const todayDate =
-    today();
+  const total =
+    rows.length;
 
   const upcoming =
-    rows.filter(
-      row =>
-        normalizeDate(
-          row.date
-        ) >= todayDate
+    rows.filter(row =>
+      safeDate(row.date) &&
+      safeDate(row.date) > new Date() &&
+      lower(row.status) !== "cancelled"
     ).length;
 
   const completed =
-    rows.filter(
-      row =>
-        normalizeStatus(
-          row.status
-        ) === "completed"
+    rows.filter(row =>
+      lower(row.status) === "completed"
     ).length;
 
   const cancelled =
-    rows.filter(
-      row =>
-        normalizeStatus(
-          row.status
-        ) === "cancelled"
+    rows.filter(row =>
+      lower(row.status) === "cancelled"
     ).length;
 
-  setText(
-    "upcomingMeetings",
-    upcoming
-  );
+  setText("totalMeetings", formatNumber(total));
+  setText("upcomingMeetings", formatNumber(upcoming));
+  setText("completedMeetings", formatNumber(completed));
+  setText("cancelledMeetings", formatNumber(cancelled));
 
-  setText(
-    "completedMeetings",
-    completed
-  );
+  const target =
+    $("meetingRows");
 
-  setText(
-    "cancelledMeetings",
-    cancelled
-  );
+  if (!target) return;
+
+  if (!rows.length) {
+    target.innerHTML =
+      `<tr><td colspan="6">No meetings for the selected period.</td></tr>`;
+    return;
+  }
+
+  target.innerHTML =
+    rows.map(row => `
+      <tr>
+        <td>${escapeHTML(
+          formatDate(row.date)
+        )}</td>
+
+        <td>${escapeHTML(
+          row.title || "Meeting"
+        )}</td>
+
+        <td>${escapeHTML(
+          row.venue || "—"
+        )}</td>
+
+        <td>${escapeHTML(
+          row.status || "—"
+        )}</td>
+
+        <td>${escapeHTML(
+          row.agenda || "—"
+        )}</td>
+
+        <td>${escapeHTML(
+          row.resolution || "—"
+        )}</td>
+      </tr>
+    `).join("");
 }
+
 
 /* =========================================================
-   CUMULATIVE REPORT RENDERING
-========================================================= */
+   CUMULATIVE POSITION TABLE
+   ========================================================= */
 
-function renderCumulativeReport(
-  type
-) {
-  const output =
+function renderCumulativePosition(rows) {
+  const target =
     $("reportOutput");
 
-  if (!output) {
+  if (!target) return;
+
+  if (!rows.length) {
+    target.innerHTML =
+      `<div class="report-empty">No cumulative accounting data available.</div>`;
     return;
   }
 
-  if (!cumulativePositionsLoaded) {
-    currentReportRows = [];
+  target.innerHTML = `
+    <div class="report-table-wrap">
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>Member</th>
+            <th>Member No.</th>
+            <th>Total Due</th>
+            <th>Total Allocated</th>
+            <th>Arrears</th>
+            <th>Credit</th>
+            <th>Status</th>
+          </tr>
+        </thead>
 
-    output.innerHTML = `
-      <div class="report-empty">
-        Cumulative contribution position is still loading.
-      </div>
-    `;
+        <tbody>
+          ${rows.map(row => `
+            <tr>
+              <td>${escapeHTML(
+                getMemberName(row.member_id)
+              )}</td>
 
-    return;
-  }
+              <td>${escapeHTML(
+                getMemberNumber(row.member_id) || "—"
+              )}</td>
 
-  let rows =
-    filteredCumulativePositions();
+              <td>${formatCurrency(
+                row.total_due
+              )}</td>
 
-  if (
-    type ===
-    "cumulative-arrears"
-  ) {
-    rows =
-      rows.filter(
-        position =>
-          cumulativeStatusKey(
-            position
-          ) === "ARREARS"
-      );
+              <td>${formatCurrency(
+                row.total_allocated
+              )}</td>
 
-    currentReportRows =
-      rows;
+              <td>${formatCurrency(
+                row.arrears
+              )}</td>
 
-    output.innerHTML =
-      rows.length
-        ? `
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Member</th>
-                  <th>Member No.</th>
-                  <th class="amount">
-                    Total Due
-                  </th>
-                  <th class="amount">
-                    Total Allocated
-                  </th>
-                  <th class="amount">
-                    Cumulative Arrears
-                  </th>
-                  <th>Status</th>
-                </tr>
-              </thead>
+              <td>${formatCurrency(
+                row.credit
+              )}</td>
 
-              <tbody>
-                ${rows
-                  .map(
-                    row => `
-                      <tr>
-                        <td>
-                          ${escapeHtml(
-                            memberName(
-                              row.memberId
-                            )
-                          )}
-                        </td>
-
-                        <td>
-                          ${escapeHtml(
-                            memberNumber(
-                              row.memberId
-                            )
-                          )}
-                        </td>
-
-                        <td class="amount">
-                          ${money(
-                            row.totalDue
-                          )}
-                        </td>
-
-                        <td class="amount">
-                          ${money(
-                            row.totalAllocated
-                          )}
-                        </td>
-
-                        <td class="amount">
-                          ${money(
-                            row.arrears
-                          )}
-                        </td>
-
-                        <td>
-                          ${cumulativeStatusBadge(
-                            row.status
-                          )}
-                        </td>
-                      </tr>
-                    `
-                  )
-                  .join("")}
-              </tbody>
-            </table>
-          </div>
-        `
-        : `
-          <div class="report-empty">
-            No members have cumulative arrears.
-          </div>
-        `;
-
-    return;
-  }
-
-  if (
-    type ===
-    "cumulative-credit"
-  ) {
-    rows =
-      rows.filter(
-        position =>
-          cumulativeStatusKey(
-            position
-          ) === "CREDIT"
-      );
-
-    currentReportRows =
-      rows;
-
-    output.innerHTML =
-      rows.length
-        ? `
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Member</th>
-                  <th>Member No.</th>
-                  <th class="amount">
-                    Total Due
-                  </th>
-                  <th class="amount">
-                    Total Allocated
-                  </th>
-                  <th class="amount">
-                    Cumulative Credit
-                  </th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                ${rows
-                  .map(
-                    row => `
-                      <tr>
-                        <td>
-                          ${escapeHtml(
-                            memberName(
-                              row.memberId
-                            )
-                          )}
-                        </td>
-
-                        <td>
-                          ${escapeHtml(
-                            memberNumber(
-                              row.memberId
-                            )
-                          )}
-                        </td>
-
-                        <td class="amount">
-                          ${money(
-                            row.totalDue
-                          )}
-                        </td>
-
-                        <td class="amount">
-                          ${money(
-                            row.totalAllocated
-                          )}
-                        </td>
-
-                        <td class="amount">
-                          ${money(
-                            row.credit
-                          )}
-                        </td>
-
-                        <td>
-                          ${cumulativeStatusBadge(
-                            row.status
-                          )}
-                        </td>
-                      </tr>
-                    `
-                  )
-                  .join("")}
-              </tbody>
-            </table>
-          </div>
-        `
-        : `
-          <div class="report-empty">
-            No members have cumulative credit.
-          </div>
-        `;
-
-    return;
-  }
-
-  if (
-    type ===
-    "cumulative-up-to-date"
-  ) {
-    rows =
-      rows.filter(
-        position =>
-          cumulativeStatusKey(
-            position
-          ) === "UP_TO_DATE"
-      );
-
-    currentReportRows =
-      rows;
-
-    output.innerHTML =
-      rows.length
-        ? `
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Member</th>
-                  <th>Member No.</th>
-                  <th class="amount">
-                    Total Due
-                  </th>
-                  <th class="amount">
-                    Total Allocated
-                  </th>
-                  <th class="amount">
-                    Arrears
-                  </th>
-                  <th class="amount">
-                    Credit
-                  </th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                ${rows
-                  .map(
-                    row => `
-                      <tr>
-                        <td>
-                          ${escapeHtml(
-                            memberName(
-                              row.memberId
-                            )
-                          )}
-                        </td>
-
-                        <td>
-                          ${escapeHtml(
-                            memberNumber(
-                              row.memberId
-                            )
-                          )}
-                        </td>
-
-                        <td class="amount">
-                          ${money(
-                            row.totalDue
-                          )}
-                        </td>
-
-                        <td class="amount">
-                          ${money(
-                            row.totalAllocated
-                          )}
-                        </td>
-
-                        <td class="amount">
-                          ${money(
-                            row.arrears
-                          )}
-                        </td>
-
-                        <td class="amount">
-                          ${money(
-                            row.credit
-                          )}
-                        </td>
-
-                        <td>
-                          ${cumulativeStatusBadge(
-                            row.status
-                          )}
-                        </td>
-                      </tr>
-                    `
-                  )
-                  .join("")}
-              </tbody>
-            </table>
-          </div>
-        `
-        : `
-          <div class="report-empty">
-            No members are currently up to date cumulatively.
-          </div>
-        `;
-
-    return;
-  }
+              <td>${escapeHTML(
+                getStatusLabel(row.status)
+              )}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
 }
+
+
+/* =========================================================
+   STATUS HELPERS
+   ========================================================= */
+
+function getStatusLabel(value) {
+  const key = lower(value);
+
+  return (
+    STATUS_LABELS[key] ||
+    normalizeText(value) ||
+    "—"
+  );
+}
+
+function canonicalRowStatus(row) {
+  return (
+    row.status ||
+    row.accounting_status ||
+    row.payment_status ||
+    ""
+  );
+}
+
+function canonicalApplied(row) {
+  return numberValue(
+    row.applied ??
+    row.allocated ??
+    row.total_allocated ??
+    row.current_allocated ??
+    0
+  );
+}
+
+function canonicalOutstanding(row) {
+  return numberValue(
+    row.outstanding ??
+    row.current_outstanding ??
+    row.arrears ??
+    row.current_arrears ??
+    0
+  );
+}
+
+function canonicalCredit(row) {
+  return numberValue(
+    row.carry_forward_credit ??
+    row.credit ??
+    row.current_credit ??
+    0
+  );
+}
+
+function canonicalDue(row) {
+  return numberValue(
+    row.due ??
+    row.amount_due ??
+    row.obligation ??
+    row.total_due ??
+    canonicalApplied(row) +
+      canonicalOutstanding(row)
+  );
+}
+
 
 /* =========================================================
    REPORT OUTPUT
-========================================================= */
+   ========================================================= */
 
-function renderReportOutput(
-  type,
+function setReportHeader(title, subtitle = "") {
+  setText("reportOutputTitle", title);
+  setText("reportOutputSubtitle", subtitle);
+}
+
+function renderExecutiveReport(
   contributionRows,
   expenseRows,
   meetingRows
 ) {
-  const output =
+  const target =
     $("reportOutput");
 
-  if (!output) {
-    return;
-  }
+  if (!target) return;
 
-  const month =
-    selectedAccountingMonth();
-
-  const statusRows =
-    filteredCanonicalStatus();
-
-  currentReportRows = [];
-
-  setText(
-    "reportOutputTitle",
-    $("reportType")
-      ?.selectedOptions?.[0]
-      ?.textContent ||
-      "Report"
-  );
-
-  setText(
-    "reportOutputSubtitle",
-    `${formatDate(
-      selectedPeriod().from
-    )} — ${formatDate(
-      selectedPeriod().to
-    )}`
-  );
-
-  setText(
-    "printReportType",
-    $("reportType")
-      ?.selectedOptions?.[0]
-      ?.textContent ||
-      "Executive Summary"
-  );
-
-  setText(
-    "printPeriod",
-    `${formatDate(
-      selectedPeriod().from
-    )} — ${formatDate(
-      selectedPeriod().to
-    )}`
-  );
-
-  setText(
-    "printAccountingMonth",
-    formatMonth(month)
-  );
-
-  setText(
-    "printGeneratedAt",
-    new Date().toLocaleString(
-      "en-KE"
-    )
-  );
-
-  /*
-   * Cumulative reports are deliberately handled before
-   * monthly report branches.
-   */
-  if (
-    type ===
-      "cumulative-arrears" ||
-    type ===
-      "cumulative-credit" ||
-    type ===
-      "cumulative-up-to-date"
-  ) {
-    renderCumulativeReport(
-      type
+  const totalContributions =
+    contributionRows.reduce(
+      (sum, row) =>
+        sum + numberValue(row.amount),
+      0
     );
 
-    return;
-  }
-
-  if (
-    type ===
-    "member-contributions"
-  ) {
-    currentReportRows =
-      statusRows;
-
-    output.innerHTML =
-      statusRows.length
-        ? `
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Member</th>
-                  <th>Member No.</th>
-                  <th class="amount">Due</th>
-                  <th class="amount">
-                    Previous Outstanding
-                  </th>
-                  <th class="amount">
-                    Current Payment
-                  </th>
-                  <th class="amount">
-                    Applied
-                  </th>
-                  <th class="amount">
-                    Carry-forward Credit
-                  </th>
-                  <th class="amount">
-                    Current Outstanding
-                  </th>
-                  <th>Monthly Status</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                ${statusRows
-                  .map(
-                    row => `
-                      <tr>
-                        <td>
-                          ${escapeHtml(
-                            row.member_name ||
-                            memberName(
-                              row.member_id
-                            )
-                          )}
-                        </td>
-
-                        <td>
-                          ${escapeHtml(
-                            row.member_number ||
-                            memberNumber(
-                              row.member_id
-                            )
-                          )}
-                        </td>
-
-                        <td class="amount">
-                          ${money(
-                            row.monthly_due
-                          )}
-                        </td>
-
-                        <td class="amount">
-                          ${money(
-                            row.previous_outstanding
-                          )}
-                        </td>
-
-                        <td class="amount">
-                          ${money(
-                            row.current_month_payment
-                          )}
-                        </td>
-
-                        <td class="amount">
-                          ${money(
-                            row.applied_this_month
-                          )}
-                        </td>
-
-                        <td class="amount">
-                          ${money(
-                            row.carry_forward
-                          )}
-                        </td>
-
-                        <td class="amount">
-                          ${money(
-                            row.current_outstanding
-                          )}
-                        </td>
-
-                        <td>
-                          ${statusBadge(
-                            row.status
-                          )}
-                        </td>
-                      </tr>
-                    `
-                  )
-                  .join("")}
-              </tbody>
-            </table>
-          </div>
-        `
-        : `
-          <div class="report-empty">
-            No matching member accounting records.
-          </div>
-        `;
-
-    return;
-  }
-
-  /*
-   * Existing "arrears" report is retained for compatibility,
-   * but its value is explicitly MONTHLY OUTSTANDING.
-   */
-  if (type === "arrears") {
-    const rows =
-      statusRows.filter(
-        row =>
-          number(
-            row.current_outstanding
-          ) > 0
-      );
-
-    currentReportRows =
-      rows;
-
-    output.innerHTML =
-      rows.length
-        ? `
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Member</th>
-                  <th>Member No.</th>
-                  <th class="amount">
-                    Current Outstanding
-                  </th>
-                  <th>Monthly Status</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                ${rows
-                  .map(
-                    row => `
-                      <tr>
-                        <td>
-                          ${escapeHtml(
-                            row.member_name ||
-                            memberName(
-                              row.member_id
-                            )
-                          )}
-                        </td>
-
-                        <td>
-                          ${escapeHtml(
-                            row.member_number ||
-                            memberNumber(
-                              row.member_id
-                            )
-                          )}
-                        </td>
-
-                        <td class="amount">
-                          ${money(
-                            row.current_outstanding
-                          )}
-                        </td>
-
-                        <td>
-                          ${statusBadge(
-                            row.status
-                          )}
-                        </td>
-                      </tr>
-                    `
-                  )
-                  .join("")}
-              </tbody>
-            </table>
-          </div>
-        `
-        : `
-          <div class="report-empty">
-            No members currently have outstanding accounting for the selected month.
-          </div>
-        `;
-
-    return;
-  }
-
-  /*
-   * Existing monthly credit report remains based on
-   * carry-forward from the monthly canonical RPC.
-   */
-  if (type === "credit") {
-    const rows =
-      statusRows.filter(
-        row =>
-          number(
-            row.carry_forward
-          ) > 0
-      );
-
-    currentReportRows =
-      rows;
-
-    output.innerHTML =
-      rows.length
-        ? `
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Member</th>
-                  <th>Member No.</th>
-                  <th class="amount">
-                    Carry-forward Credit
-                  </th>
-                  <th>Monthly Status</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                ${rows
-                  .map(
-                    row => `
-                      <tr>
-                        <td>
-                          ${escapeHtml(
-                            row.member_name ||
-                            memberName(
-                              row.member_id
-                            )
-                          )}
-                        </td>
-
-                        <td>
-                          ${escapeHtml(
-                            row.member_number ||
-                            memberNumber(
-                              row.member_id
-                            )
-                          )}
-                        </td>
-
-                        <td class="amount">
-                          ${money(
-                            row.carry_forward
-                          )}
-                        </td>
-
-                        <td>
-                          ${statusBadge(
-                            row.status
-                          )}
-                        </td>
-                      </tr>
-                    `
-                  )
-                  .join("")}
-              </tbody>
-            </table>
-          </div>
-        `
-        : `
-          <div class="report-empty">
-            No carry-forward credit for the selected month.
-          </div>
-        `;
-
-    return;
-  }
-
-  if (
-    type ===
-      "contribution-types" ||
-    type ===
-      "payment-methods"
-  ) {
-    const field =
-      type ===
-      "contribution-types"
-        ? "contribution_type"
-        : "payment_method";
-
-    const map = new Map();
-
-    contributionRows.forEach(
-      row => {
-        const key =
-          row[field] ||
-          "Unspecified";
-
-        map.set(
-          key,
-          (map.get(key) || 0) +
-            number(row.amount)
-        );
-      }
-    );
-
-    const total =
-      contributionRows.reduce(
+  const approvedExpenses =
+    expenseRows
+      .filter(row =>
+        lower(row.approval_status) === "approved"
+      )
+      .reduce(
         (sum, row) =>
-          sum + number(row.amount),
+          sum + numberValue(row.amount),
         0
       );
 
-    currentReportRows =
-      [...map.entries()].map(
-        ([key, amount]) => ({
-          [field]: key,
-          amount
-        })
-      );
+  const balance =
+    totalContributions -
+    approvedExpenses;
 
-    output.innerHTML =
-      map.size
-        ? `
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>
-                    ${
-                      field ===
-                      "contribution_type"
-                        ? "Contribution Type"
-                        : "Payment Method"
-                    }
-                  </th>
+  const cumulativeArrears =
+    cumulativePositions.reduce(
+      (sum, row) =>
+        sum + numberValue(row.arrears),
+      0
+    );
 
-                  <th class="amount">
-                    Amount
-                  </th>
+  const cumulativeCredit =
+    cumulativePositions.reduce(
+      (sum, row) =>
+        sum + numberValue(row.credit),
+      0
+    );
 
-                  <th class="amount">
-                    Share
-                  </th>
-                </tr>
-              </thead>
+  target.innerHTML = `
+    <div class="report-executive">
+      <div class="report-executive-grid">
 
-              <tbody>
-                ${[
-                  ...map.entries()
-                ]
-                  .map(
-                    ([key, amount]) => `
-                      <tr>
-                        <td>
-                          ${escapeHtml(
-                            field ===
-                            "contribution_type"
-                              ? contributionTypeLabel(
-                                  key
-                                )
-                              : paymentMethodLabel(
-                                  key
-                                )
-                          )}
-                        </td>
-
-                        <td class="amount">
-                          ${money(amount)}
-                        </td>
-
-                        <td class="amount">
-                          ${
-                            total
-                              ? (
-                                  amount /
-                                  total *
-                                  100
-                                ).toFixed(1)
-                              : "0.0"
-                          }%
-                        </td>
-                      </tr>
-                    `
-                  )
-                  .join("")}
-              </tbody>
-            </table>
-          </div>
-        `
-        : `
-          <div class="report-empty">
-            No matching contribution records.
-          </div>
-        `;
-
-    return;
-  }
-
-  if (type === "expenses") {
-    currentReportRows =
-      expenseRows;
-
-    output.innerHTML =
-      expenseRows.length
-        ? `
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Description</th>
-                  <th>Category</th>
-                  <th>Status</th>
-                  <th class="amount">
-                    Amount
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody>
-                ${expenseRows
-                  .map(
-                    row => `
-                      <tr>
-                        <td>
-                          ${escapeHtml(
-                            formatDate(
-                              row.date
-                            )
-                          )}
-                        </td>
-
-                        <td>
-                          ${escapeHtml(
-                            row.description ||
-                            "—"
-                          )}
-                        </td>
-
-                        <td>
-                          ${escapeHtml(
-                            row.category ||
-                            "Uncategorised"
-                          )}
-                        </td>
-
-                        <td>
-                          ${statusBadge(
-                            row.approval_status
-                          )}
-                        </td>
-
-                        <td class="amount">
-                          ${money(
-                            row.amount
-                          )}
-                        </td>
-                      </tr>
-                    `
-                  )
-                  .join("")}
-              </tbody>
-            </table>
-          </div>
-        `
-        : `
-          <div class="report-empty">
-            No expense records.
-          </div>
-        `;
-
-    return;
-  }
-
-  if (type === "cash-flow") {
-    const received =
-      contributionRows.reduce(
-        (sum, row) =>
-          sum + number(row.amount),
-        0
-      );
-
-    const approved =
-      expenseRows
-        .filter(
-          row =>
-            expenseStatus(row) ===
-            "approved"
-        )
-        .reduce(
-          (sum, row) =>
-            sum + number(row.amount),
-          0
-        );
-
-    const net =
-      received - approved;
-
-    currentReportRows = [
-      {
-        received,
-        approved,
-        net
-      }
-    ];
-
-    output.innerHTML = `
-      <div class="report-kpi-grid">
-
-        <div class="report-kpi">
-          <span>Received</span>
-          <strong>
-            ${money(received)}
-          </strong>
+        <div class="report-mini-card">
+          <span>Contributions</span>
+          <strong>${formatCurrency(totalContributions)}</strong>
         </div>
 
-        <div class="report-kpi">
+        <div class="report-mini-card">
           <span>Approved Expenses</span>
-          <strong>
-            ${money(approved)}
-          </strong>
+          <strong>${formatCurrency(approvedExpenses)}</strong>
         </div>
 
-        <div class="report-kpi">
-          <span>Net Cash Movement</span>
-          <strong>
-            ${money(net)}
-          </strong>
+        <div class="report-mini-card">
+          <span>Net Cash Position</span>
+          <strong>${formatCurrency(balance)}</strong>
         </div>
 
-        <div class="report-kpi">
-          <span>Canonical Carry-forward Credit</span>
-          <strong>
-            ${money(
-              canonicalSummary
-                ?.carry_forward
-            )}
-          </strong>
+        <div class="report-mini-card">
+          <span>Cumulative Arrears</span>
+          <strong>${formatCurrency(cumulativeArrears)}</strong>
         </div>
 
-      </div>
-    `;
-
-    return;
-  }
-
-  if (type === "meetings") {
-    currentReportRows =
-      meetingRows;
-
-    output.innerHTML =
-      meetingRows.length
-        ? `
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Title</th>
-                  <th>Venue</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                ${meetingRows
-                  .map(
-                    row => `
-                      <tr>
-                        <td>
-                          ${escapeHtml(
-                            formatDate(
-                              row.date
-                            )
-                          )}
-                        </td>
-
-                        <td>
-                          ${escapeHtml(
-                            row.title ||
-                            "—"
-                          )}
-                        </td>
-
-                        <td>
-                          ${escapeHtml(
-                            row.venue ||
-                            "—"
-                          )}
-                        </td>
-
-                        <td>
-                          ${statusBadge(
-                            row.status ||
-                            "scheduled"
-                          )}
-                        </td>
-                      </tr>
-                    `
-                  )
-                  .join("")}
-              </tbody>
-            </table>
-          </div>
-        `
-        : `
-          <div class="report-empty">
-            No meetings in the selected period.
-          </div>
-        `;
-
-    return;
-  }
-
-  if (type === "full") {
-    currentReportRows =
-      contributionRows;
-
-    output.innerHTML = `
-      <div class="report-kpi-grid">
-
-        <div class="report-kpi">
-          <span>Contribution Entries</span>
-          <strong>
-            ${contributionRows.length}
-          </strong>
+        <div class="report-mini-card">
+          <span>Cumulative Credit</span>
+          <strong>${formatCurrency(cumulativeCredit)}</strong>
         </div>
 
-        <div class="report-kpi">
-          <span>Expense Records</span>
-          <strong>
-            ${expenseRows.length}
-          </strong>
-        </div>
-
-        <div class="report-kpi">
+        <div class="report-mini-card">
           <span>Meetings</span>
-          <strong>
-            ${meetingRows.length}
-          </strong>
-        </div>
-
-        <div class="report-kpi">
-          <span>Accounting Month</span>
-          <strong>
-            ${escapeHtml(
-              formatMonth(month)
-            )}
-          </strong>
+          <strong>${formatNumber(meetingRows.length)}</strong>
         </div>
 
       </div>
 
-      <p>
-        The detailed contribution, expense and meeting
-        tables below are filtered to the selected reporting
-        period. Canonical accounting figures are read from
-        the canonical monthly accounting RPCs.
-      </p>
-    `;
-
-    return;
-  }
-
-  /* =======================================================
-     EXECUTIVE SUMMARY
-  ======================================================= */
-
-  currentReportRows =
-    statusRows;
-
-  const summary =
-    canonicalSummary || {};
-
-  output.innerHTML = `
-    <div class="report-kpi-grid">
-
-      <div class="report-kpi">
-        <span>Active Members</span>
-        <strong>
-          ${number(
-            summary.active_members
-          )}
-        </strong>
+      <div class="report-executive-note">
+        <strong>Accounting view</strong>
+        <p>
+          Monthly contribution status and cumulative member positions
+          are supplied by the canonical server-side accounting functions.
+          This report does not reconstruct accounting totals in the browser.
+        </p>
       </div>
-
-      <div class="report-kpi">
-        <span>Expected Monthly</span>
-        <strong>
-          ${money(
-            summary
-              .expected_monthly_contributions
-          )}
-        </strong>
-      </div>
-
-      <div class="report-kpi">
-        <span>Collected This Month</span>
-        <strong>
-          ${money(
-            summary
-              .total_contributions_collected
-          )}
-        </strong>
-      </div>
-
-      <div class="report-kpi">
-        <span>Applied This Month</span>
-        <strong>
-          ${money(
-            summary.applied_this_month
-          )}
-        </strong>
-      </div>
-
     </div>
-
-    <p>
-      Canonical collection rate is based on
-      applied accounting against expected monthly
-      contributions. Actual cash received in the
-      selected reporting period is shown separately.
-    </p>
   `;
 }
 
+function renderMemberContributions(rows) {
+  const target =
+    $("reportOutput");
+
+  if (!target) return;
+
+  const grouped = new Map();
+
+  for (const row of rows) {
+    const key = row.member_id;
+
+    const existing =
+      grouped.get(key) || {
+        member_id: key,
+        count: 0,
+        amount: 0
+      };
+
+    existing.count += 1;
+    existing.amount += numberValue(row.amount);
+
+    grouped.set(key, existing);
+  }
+
+  const data =
+    Array.from(grouped.values())
+      .sort((a, b) => b.amount - a.amount);
+
+  target.innerHTML = `
+    <div class="report-table-wrap">
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>Member</th>
+            <th>Member No.</th>
+            <th>Entries</th>
+            <th>Total Contributions</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          ${
+            data.length
+              ? data.map(row => `
+                  <tr>
+                    <td>${escapeHTML(
+                      getMemberName(row.member_id)
+                    )}</td>
+
+                    <td>${escapeHTML(
+                      getMemberNumber(row.member_id) || "—"
+                    )}</td>
+
+                    <td>${formatNumber(row.count)}</td>
+
+                    <td>${formatCurrency(row.amount)}</td>
+                  </tr>
+                `).join("")
+              : `<tr><td colspan="4">No contribution data.</td></tr>`
+          }
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderMonthlyStatusReport(rows) {
+  const target =
+    $("reportOutput");
+
+  if (!target) return;
+
+  target.innerHTML = `
+    <div class="report-table-wrap">
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>Member</th>
+            <th>Member No.</th>
+            <th>Due</th>
+            <th>Applied</th>
+            <th>Outstanding</th>
+            <th>Credit</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          ${
+            rows.length
+              ? rows.map(row => `
+                  <tr>
+                    <td>${escapeHTML(
+                      getMemberName(row.member_id)
+                    )}</td>
+
+                    <td>${escapeHTML(
+                      getMemberNumber(row.member_id) || "—"
+                    )}</td>
+
+                    <td>${formatCurrency(
+                      canonicalDue(row)
+                    )}</td>
+
+                    <td>${formatCurrency(
+                      canonicalApplied(row)
+                    )}</td>
+
+                    <td>${formatCurrency(
+                      canonicalOutstanding(row)
+                    )}</td>
+
+                    <td>${formatCurrency(
+                      canonicalCredit(row)
+                    )}</td>
+
+                    <td>${escapeHTML(
+                      getStatusLabel(
+                        canonicalRowStatus(row)
+                      )
+                    )}</td>
+                  </tr>
+                `).join("")
+              : `<tr><td colspan="7">No monthly accounting records.</td></tr>`
+          }
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderMonthlyArrearsReport(rows) {
+  const arrearsRows =
+    rows.filter(row =>
+      canonicalOutstanding(row) > 0
+    );
+
+  const target =
+    $("reportOutput");
+
+  if (!target) return;
+
+  target.innerHTML = `
+    <div class="report-table-wrap">
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>Member</th>
+            <th>Member No.</th>
+            <th>Outstanding</th>
+            <th>Previous Outstanding</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          ${
+            arrearsRows.length
+              ? arrearsRows.map(row => `
+                  <tr>
+                    <td>${escapeHTML(
+                      getMemberName(row.member_id)
+                    )}</td>
+
+                    <td>${escapeHTML(
+                      getMemberNumber(row.member_id) || "—"
+                    )}</td>
+
+                    <td>${formatCurrency(
+                      canonicalOutstanding(row)
+                    )}</td>
+
+                    <td>${formatCurrency(
+                      row.previous_outstanding ??
+                      row.previous_arrears ??
+                      row.outstanding_before ??
+                      0
+                    )}</td>
+
+                    <td>${escapeHTML(
+                      getStatusLabel(
+                        canonicalRowStatus(row)
+                      )
+                    )}</td>
+                  </tr>
+                `).join("")
+              : `<tr><td colspan="5">No members are in arrears for the selected month.</td></tr>`
+          }
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderMonthlyCreditReport(rows) {
+  const creditRows =
+    rows.filter(row =>
+      canonicalCredit(row) > 0
+    );
+
+  const target =
+    $("reportOutput");
+
+  if (!target) return;
+
+  target.innerHTML = `
+    <div class="report-table-wrap">
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>Member</th>
+            <th>Member No.</th>
+            <th>Credit</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          ${
+            creditRows.length
+              ? creditRows.map(row => `
+                  <tr>
+                    <td>${escapeHTML(
+                      getMemberName(row.member_id)
+                    )}</td>
+
+                    <td>${escapeHTML(
+                      getMemberNumber(row.member_id) || "—"
+                    )}</td>
+
+                    <td>${formatCurrency(
+                      canonicalCredit(row)
+                    )}</td>
+
+                    <td>${escapeHTML(
+                      getStatusLabel(
+                        canonicalRowStatus(row)
+                      )
+                    )}</td>
+                  </tr>
+                `).join("")
+              : `<tr><td colspan="4">No monthly credit records.</td></tr>`
+          }
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderContributionTypesReport(rows) {
+  const breakdown =
+    buildContributionBreakdown(rows);
+
+  const target =
+    $("reportOutput");
+
+  if (!target) return;
+
+  target.innerHTML = `
+    <div class="report-table-wrap">
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>Contribution Type</th>
+            <th>Entries</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          ${
+            breakdown.length
+              ? breakdown.map(row => `
+                  <tr>
+                    <td>${escapeHTML(row.type)}</td>
+                    <td>${formatNumber(row.count)}</td>
+                    <td>${formatCurrency(row.amount)}</td>
+                  </tr>
+                `).join("")
+              : `<tr><td colspan="3">No contribution types found.</td></tr>`
+          }
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderPaymentMethodsReport(rows) {
+  const map = new Map();
+
+  for (const row of rows) {
+    const method =
+      normalizeText(row.payment_method) ||
+      "Unspecified";
+
+    const existing =
+      map.get(method) || {
+        method,
+        count: 0,
+        amount: 0
+      };
+
+    existing.count += 1;
+    existing.amount += numberValue(row.amount);
+
+    map.set(method, existing);
+  }
+
+  const data =
+    Array.from(map.values())
+      .sort((a, b) => b.amount - a.amount);
+
+  const target =
+    $("reportOutput");
+
+  if (!target) return;
+
+  target.innerHTML = `
+    <div class="report-table-wrap">
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>Payment Method</th>
+            <th>Entries</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          ${
+            data.length
+              ? data.map(row => `
+                  <tr>
+                    <td>${escapeHTML(row.method)}</td>
+                    <td>${formatNumber(row.count)}</td>
+                    <td>${formatCurrency(row.amount)}</td>
+                  </tr>
+                `).join("")
+              : `<tr><td colspan="3">No payment method data.</td></tr>`
+          }
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderExpensesReport(rows) {
+  const target =
+    $("reportOutput");
+
+  if (!target) return;
+
+  target.innerHTML = `
+    <div class="report-table-wrap">
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Description</th>
+            <th>Category</th>
+            <th>Amount</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          ${
+            rows.length
+              ? rows.map(row => `
+                  <tr>
+                    <td>${escapeHTML(
+                      formatDate(row.date || row.created_at)
+                    )}</td>
+
+                    <td>${escapeHTML(
+                      row.description || "—"
+                    )}</td>
+
+                    <td>${escapeHTML(
+                      row.category || "—"
+                    )}</td>
+
+                    <td>${formatCurrency(row.amount)}</td>
+
+                    <td>${escapeHTML(
+                      row.approval_status || "—"
+                    )}</td>
+                  </tr>
+                `).join("")
+              : `<tr><td colspan="5">No expense records.</td></tr>`
+          }
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderCashFlowReport(
+  contributionRows,
+  expenseRows
+) {
+  const contributionsTotal =
+    contributionRows.reduce(
+      (sum, row) =>
+        sum + numberValue(row.amount),
+      0
+    );
+
+  const approvedExpenses =
+    expenseRows
+      .filter(row =>
+        lower(row.approval_status) === "approved"
+      )
+      .reduce(
+        (sum, row) =>
+          sum + numberValue(row.amount),
+        0
+      );
+
+  const pendingExpenses =
+    expenseRows
+      .filter(row =>
+        lower(row.approval_status) === "pending"
+      )
+      .reduce(
+        (sum, row) =>
+          sum + numberValue(row.amount),
+        0
+      );
+
+  const rejectedExpenses =
+    expenseRows
+      .filter(row =>
+        lower(row.approval_status) === "rejected"
+      )
+      .reduce(
+        (sum, row) =>
+          sum + numberValue(row.amount),
+        0
+      );
+
+  const net =
+    contributionsTotal -
+    approvedExpenses;
+
+  const target =
+    $("reportOutput");
+
+  if (!target) return;
+
+  target.innerHTML = `
+    <div class="report-table-wrap">
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>Cash Flow Item</th>
+            <th>Amount</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr>
+            <td>Contributions Received</td>
+            <td>${formatCurrency(contributionsTotal)}</td>
+          </tr>
+
+          <tr>
+            <td>Approved Expenses</td>
+            <td>${formatCurrency(approvedExpenses)}</td>
+          </tr>
+
+          <tr>
+            <td>Net Cash Movement</td>
+            <td>${formatCurrency(net)}</td>
+          </tr>
+
+          <tr>
+            <td>Pending Expenses</td>
+            <td>${formatCurrency(pendingExpenses)}</td>
+          </tr>
+
+          <tr>
+            <td>Rejected Expenses</td>
+            <td>${formatCurrency(rejectedExpenses)}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderMeetingsReport(rows) {
+  const target =
+    $("reportOutput");
+
+  if (!target) return;
+
+  target.innerHTML = `
+    <div class="report-table-wrap">
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Meeting</th>
+            <th>Venue</th>
+            <th>Status</th>
+            <th>Agenda</th>
+            <th>Resolution</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          ${
+            rows.length
+              ? rows.map(row => `
+                  <tr>
+                    <td>${escapeHTML(
+                      formatDate(row.date)
+                    )}</td>
+
+                    <td>${escapeHTML(
+                      row.title || "Meeting"
+                    )}</td>
+
+                    <td>${escapeHTML(
+                      row.venue || "—"
+                    )}</td>
+
+                    <td>${escapeHTML(
+                      row.status || "—"
+                    )}</td>
+
+                    <td>${escapeHTML(
+                      row.agenda || "—"
+                    )}</td>
+
+                    <td>${escapeHTML(
+                      row.resolution || "—"
+                    )}</td>
+                  </tr>
+                `).join("")
+              : `<tr><td colspan="6">No meetings found.</td></tr>`
+          }
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderFullReport(
+  contributionRows,
+  expenseRows,
+  meetingRows
+) {
+  const target =
+    $("reportOutput");
+
+  if (!target) return;
+
+  target.innerHTML = `
+    <div class="report-full">
+
+      <section class="report-subsection">
+        <h3>Monthly Member Accounting</h3>
+        ${buildCanonicalTable(filteredCanonicalStatus())}
+      </section>
+
+      <section class="report-subsection">
+        <h3>Cumulative Member Position</h3>
+        ${buildCumulativeTable(filteredCumulativePositions())}
+      </section>
+
+      <section class="report-subsection">
+        <h3>Contributions</h3>
+        ${buildContributionTable(contributionRows)}
+      </section>
+
+      <section class="report-subsection">
+        <h3>Expenses</h3>
+        ${buildExpenseTable(expenseRows)}
+      </section>
+
+      <section class="report-subsection">
+        <h3>Meetings</h3>
+        ${buildMeetingTable(meetingRows)}
+      </section>
+
+    </div>
+  `;
+}
+
+function buildCanonicalTable(rows) {
+  return `
+    <div class="report-table-wrap">
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>Member</th>
+            <th>Due</th>
+            <th>Applied</th>
+            <th>Outstanding</th>
+            <th>Credit</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${
+            rows.length
+              ? rows.map(row => `
+                  <tr>
+                    <td>${escapeHTML(
+                      getMemberName(row.member_id)
+                    )}</td>
+
+                    <td>${formatCurrency(
+                      canonicalDue(row)
+                    )}</td>
+
+                    <td>${formatCurrency(
+                      canonicalApplied(row)
+                    )}</td>
+
+                    <td>${formatCurrency(
+                      canonicalOutstanding(row)
+                    )}</td>
+
+                    <td>${formatCurrency(
+                      canonicalCredit(row)
+                    )}</td>
+
+                    <td>${escapeHTML(
+                      getStatusLabel(
+                        canonicalRowStatus(row)
+                      )
+                    )}</td>
+                  </tr>
+                `).join("")
+              : `<tr><td colspan="6">No monthly accounting data.</td></tr>`
+          }
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function buildCumulativeTable(rows) {
+  return `
+    <div class="report-table-wrap">
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>Member</th>
+            <th>Total Due</th>
+            <th>Total Allocated</th>
+            <th>Arrears</th>
+            <th>Credit</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${
+            rows.length
+              ? rows.map(row => `
+                  <tr>
+                    <td>${escapeHTML(
+                      getMemberName(row.member_id)
+                    )}</td>
+
+                    <td>${formatCurrency(
+                      row.total_due
+                    )}</td>
+
+                    <td>${formatCurrency(
+                      row.total_allocated
+                    )}</td>
+
+                    <td>${formatCurrency(
+                      row.arrears
+                    )}</td>
+
+                    <td>${formatCurrency(
+                      row.credit
+                    )}</td>
+
+                    <td>${escapeHTML(
+                      getStatusLabel(row.status)
+                    )}</td>
+                  </tr>
+                `).join("")
+              : `<tr><td colspan="6">No cumulative data.</td></tr>`
+          }
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function buildContributionTable(rows) {
+  return `
+    <div class="report-table-wrap">
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Member</th>
+            <th>Type</th>
+            <th>Method</th>
+            <th>Amount</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          ${
+            rows.length
+              ? rows.map(row => `
+                  <tr>
+                    <td>${escapeHTML(
+                      formatDate(
+                        row.contribution_date ||
+                        row.created_at
+                      )
+                    )}</td>
+
+                    <td>${escapeHTML(
+                      getMemberName(row.member_id)
+                    )}</td>
+
+                    <td>${escapeHTML(
+                      row.contribution_type || "—"
+                    )}</td>
+
+                    <td>${escapeHTML(
+                      row.payment_method || "—"
+                    )}</td>
+
+                    <td>${formatCurrency(
+                      row.amount
+                    )}</td>
+                  </tr>
+                `).join("")
+              : `<tr><td colspan="5">No contributions.</td></tr>`
+          }
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function buildExpenseTable(rows) {
+  return `
+    <div class="report-table-wrap">
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Description</th>
+            <th>Category</th>
+            <th>Amount</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          ${
+            rows.length
+              ? rows.map(row => `
+                  <tr>
+                    <td>${escapeHTML(
+                      formatDate(
+                        row.date ||
+                        row.created_at
+                      )
+                    )}</td>
+
+                    <td>${escapeHTML(
+                      row.description || "—"
+                    )}</td>
+
+                    <td>${escapeHTML(
+                      row.category || "—"
+                    )}</td>
+
+                    <td>${formatCurrency(
+                      row.amount
+                    )}</td>
+
+                    <td>${escapeHTML(
+                      row.approval_status || "—"
+                    )}</td>
+                  </tr>
+                `).join("")
+              : `<tr><td colspan="5">No expenses.</td></tr>`
+          }
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function buildMeetingTable(rows) {
+  return `
+    <div class="report-table-wrap">
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Meeting</th>
+            <th>Venue</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          ${
+            rows.length
+              ? rows.map(row => `
+                  <tr>
+                    <td>${escapeHTML(
+                      formatDate(row.date)
+                    )}</td>
+
+                    <td>${escapeHTML(
+                      row.title || "Meeting"
+                    )}</td>
+
+                    <td>${escapeHTML(
+                      row.venue || "—"
+                    )}</td>
+
+                    <td>${escapeHTML(
+                      row.status || "—"
+                    )}</td>
+                  </tr>
+                `).join("")
+              : `<tr><td colspan="4">No meetings.</td></tr>`
+          }
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+
 /* =========================================================
-   GENERATE REPORT
-========================================================= */
+   VISUAL INSIGHTS — DYNAMIC CSS
+   ========================================================= */
 
-async function generateReport() {
-  clearError();
-  clearStatus();
+function injectVisualStyles() {
+  if ($(VISUAL_STYLE_ID)) {
+    return;
+  }
 
-  const month =
-    selectedAccountingMonth();
+  const style = document.createElement("style");
 
-  if (!month) {
-    throw new Error(
-      "Please select an accounting month."
+  style.id = VISUAL_STYLE_ID;
+
+  style.textContent = `
+    #${VISUALS_ID} {
+      margin: 24px 0;
+    }
+
+    #${VISUALS_ID} .report-visual-heading {
+      margin-bottom: 16px;
+    }
+
+    #${VISUALS_ID} .report-visual-heading h2 {
+      margin: 0 0 6px;
+    }
+
+    #${VISUALS_ID} .report-visual-heading p {
+      margin: 0;
+      opacity: .72;
+    }
+
+    #${VISUALS_ID} .report-chart-grid {
+      display: grid;
+      grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    #${VISUALS_ID} .report-chart-card {
+      min-width: 0;
+      border: 1px solid
+        var(--border-color, rgba(0,0,0,.10));
+      border-radius: 14px;
+      background:
+        var(--card-bg, var(--surface, #fff));
+      padding: 16px;
+      box-sizing: border-box;
+    }
+
+    #${VISUALS_ID} .report-chart-card.full {
+      grid-column: 1 / -1;
+    }
+
+    #${VISUALS_ID} .report-chart-card h3 {
+      margin: 0 0 4px;
+      font-size: 1rem;
+    }
+
+    #${VISUALS_ID} .report-chart-card p {
+      margin: 0 0 12px;
+      opacity: .68;
+      font-size: .88rem;
+    }
+
+    #${VISUALS_ID} .report-chart-wrap {
+      position: relative;
+      width: 100%;
+      height: 270px;
+    }
+
+    #${VISUALS_ID} canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    #${VISUALS_ID} .report-chart-summary {
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid
+        var(--border-color, rgba(0,0,0,.08));
+      font-size: .88rem;
+      line-height: 1.5;
+    }
+
+    #${VISUALS_ID} .report-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 14px;
+      margin-top: 10px;
+    }
+
+    #${VISUALS_ID} .report-legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: .8rem;
+    }
+
+    #${VISUALS_ID} .report-legend-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    #${VISUALS_ID} .report-visual-empty {
+      padding: 24px;
+      border: 1px dashed
+        var(--border-color, rgba(0,0,0,.16));
+      border-radius: 12px;
+      opacity: .72;
+    }
+
+    @media (max-width: 900px) {
+      #${VISUALS_ID} .report-chart-grid {
+        grid-template-columns: 1fr;
+      }
+
+      #${VISUALS_ID} .report-chart-card.full {
+        grid-column: auto;
+      }
+    }
+
+    @media print {
+      #${VISUALS_ID} {
+        break-inside: avoid;
+      }
+
+      #${VISUALS_ID} .report-chart-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      #${VISUALS_ID} .report-chart-card {
+        break-inside: avoid;
+      }
+
+      #${VISUALS_ID} .report-chart-wrap {
+        height: 220px;
+      }
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
+
+/* =========================================================
+   VISUAL INSIGHTS — CONTAINER
+   ========================================================= */
+
+function ensureVisualContainer() {
+  let container =
+    $(VISUALS_ID);
+
+  if (container) {
+    return container;
+  }
+
+  injectVisualStyles();
+
+  container =
+    document.createElement("section");
+
+  container.id =
+    VISUALS_ID;
+
+  container.setAttribute(
+    "aria-label",
+    "Report visual insights"
+  );
+
+  const reportOutput =
+    $("reportOutput");
+
+  if (reportOutput?.parentElement) {
+    reportOutput.parentElement.insertBefore(
+      container,
+      reportOutput
+    );
+  } else {
+    const main =
+      query("main") ||
+      query(".main-content") ||
+      document.body;
+
+    main.appendChild(container);
+  }
+
+  return container;
+}
+
+
+/* =========================================================
+   CANVAS HELPERS
+   ========================================================= */
+
+function getCanvasContext(canvas) {
+  if (!canvas) return null;
+
+  const context =
+    canvas.getContext("2d");
+
+  if (!context) return null;
+
+  const rect =
+    canvas.getBoundingClientRect();
+
+  const width =
+    Math.max(
+      1,
+      Math.round(rect.width || 600)
+    );
+
+  const height =
+    Math.max(
+      1,
+      Math.round(rect.height || 270)
+    );
+
+  const ratio =
+    Math.max(
+      1,
+      Math.min(
+        3,
+        window.devicePixelRatio || 1
+      )
+    );
+
+  canvas.width =
+    width * ratio;
+
+  canvas.height =
+    height * ratio;
+
+  context.setTransform(
+    ratio,
+    0,
+    0,
+    ratio,
+    0,
+    0
+  );
+
+  return {
+    ctx: context,
+    width,
+    height
+  };
+}
+
+function getCSSVariable(
+  name,
+  fallback
+) {
+  const value =
+    getComputedStyle(document.documentElement)
+      .getPropertyValue(name)
+      .trim();
+
+  return value || fallback;
+}
+
+function visualColors() {
+  return {
+    primary:
+      getCSSVariable(
+        "--primary-color",
+        "#198754"
+      ),
+
+    primaryAlt:
+      getCSSVariable(
+        "--accent-color",
+        "#2e7d32"
+      ),
+
+    text:
+      getCSSVariable(
+        "--text-color",
+        "#24302a"
+      ),
+
+    muted:
+      getCSSVariable(
+        "--muted-text",
+        "#6b7280"
+      ),
+
+    border:
+      getCSSVariable(
+        "--border-color",
+        "rgba(0,0,0,.12)"
+      ),
+
+    background:
+      getCSSVariable(
+        "--card-bg",
+        "#ffffff"
+      ),
+
+    warning:
+      getCSSVariable(
+        "--warning-color",
+        "#d97706"
+      ),
+
+    danger:
+      getCSSVariable(
+        "--danger-color",
+        "#dc2626"
+      )
+  };
+}
+
+function roundedRect(
+  ctx,
+  x,
+  y,
+  width,
+  height,
+  radius
+) {
+  const r =
+    Math.min(
+      radius,
+      width / 2,
+      height / 2
+    );
+
+  ctx.beginPath();
+
+  ctx.moveTo(
+    x + r,
+    y
+  );
+
+  ctx.arcTo(
+    x + width,
+    y,
+    x + width,
+    y + height,
+    r
+  );
+
+  ctx.arcTo(
+    x + width,
+    y + height,
+    x,
+    y + height,
+    r
+  );
+
+  ctx.arcTo(
+    x,
+    y + height,
+    x,
+    y,
+    r
+  );
+
+  ctx.arcTo(
+    x,
+    y,
+    x + width,
+    y,
+    r
+  );
+
+  ctx.closePath();
+}
+
+function niceMax(value) {
+  if (value <= 0) {
+    return 1;
+  }
+
+  const magnitude =
+    Math.pow(
+      10,
+      Math.floor(
+        Math.log10(value)
+      )
+    );
+
+  const normalized =
+    value / magnitude;
+
+  let rounded;
+
+  if (normalized <= 1) {
+    rounded = 1;
+  } else if (normalized <= 2) {
+    rounded = 2;
+  } else if (normalized <= 5) {
+    rounded = 5;
+  } else {
+    rounded = 10;
+  }
+
+  return rounded * magnitude;
+}
+
+function truncateLabel(
+  value,
+  maxLength = 18
+) {
+  const text =
+    String(value ?? "");
+
+  if (text.length <= maxLength) {
+    return text;
+  }
+
+  return `${text.slice(0, maxLength - 1)}…`;
+}
+
+function drawNoData(canvas, message = "No data") {
+  const setup =
+    getCanvasContext(canvas);
+
+  if (!setup) return;
+
+  const {
+    ctx,
+    width,
+    height
+  } = setup;
+
+  const colors =
+    visualColors();
+
+  ctx.clearRect(
+    0,
+    0,
+    width,
+    height
+  );
+
+  ctx.fillStyle =
+    colors.muted;
+
+  ctx.font =
+    "14px Inter, system-ui, sans-serif";
+
+  ctx.textAlign =
+    "center";
+
+  ctx.textBaseline =
+    "middle";
+
+  ctx.fillText(
+    message,
+    width / 2,
+    height / 2
+  );
+}
+
+
+/* =========================================================
+   CHART — CONTRIBUTIONS VS EXPENSES
+   ========================================================= */
+
+function drawContributionExpenseChart(
+  canvas,
+  contributionRows,
+  expenseRows
+) {
+  const contributionTotal =
+    contributionRows.reduce(
+      (sum, row) =>
+        sum + numberValue(row.amount),
+      0
+    );
+
+  const approvedExpenseTotal =
+    expenseRows
+      .filter(row =>
+        lower(row.approval_status) === "approved"
+      )
+      .reduce(
+        (sum, row) =>
+          sum + numberValue(row.amount),
+        0
+      );
+
+  const values = [
+    contributionTotal,
+    approvedExpenseTotal
+  ];
+
+  if (
+    values.every(
+      value => value <= 0
+    )
+  ) {
+    drawNoData(
+      canvas,
+      "No cash-flow data for this selection"
+    );
+
+    return {
+      contributionTotal,
+      approvedExpenseTotal
+    };
+  }
+
+  const setup =
+    getCanvasContext(canvas);
+
+  if (!setup) return;
+
+  const {
+    ctx,
+    width,
+    height
+  } = setup;
+
+  const colors =
+    visualColors();
+
+  ctx.clearRect(
+    0,
+    0,
+    width,
+    height
+  );
+
+  const left = 56;
+  const right = 20;
+  const top = 20;
+  const bottom = 52;
+
+  const chartWidth =
+    width - left - right;
+
+  const chartHeight =
+    height - top - bottom;
+
+  const max =
+    niceMax(
+      Math.max(...values)
+    );
+
+  const barWidth =
+    Math.min(
+      90,
+      chartWidth / 4
+    );
+
+  const gap =
+    chartWidth / 3;
+
+  const labels = [
+    "Received",
+    "Approved expenses"
+  ];
+
+  const barValues = values;
+
+  ctx.strokeStyle =
+    colors.border;
+
+  ctx.lineWidth = 1;
+
+  for (let i = 0; i <= 4; i++) {
+    const y =
+      top +
+      chartHeight -
+      (chartHeight * i / 4);
+
+    ctx.beginPath();
+    ctx.moveTo(left, y);
+    ctx.lineTo(
+      width - right,
+      y
+    );
+    ctx.stroke();
+
+    ctx.fillStyle =
+      colors.muted;
+
+    ctx.font =
+      "10px Inter, system-ui, sans-serif";
+
+    ctx.textAlign =
+      "right";
+
+    ctx.textBaseline =
+      "middle";
+
+    ctx.fillText(
+      formatWholeCurrency(
+        max * i / 4
+      ),
+      left - 7,
+      y
     );
   }
 
-  showStatus(
-    "Generating report…"
-  );
+  const barColors = [
+    colors.primary,
+    colors.danger
+  ];
 
-  /*
-   * Both monthly and cumulative accounting are loaded
-   * from their canonical read-only RPCs.
-   *
-   * Promise.all() means a failed cumulative read cannot
-   * silently produce a report with incomplete accounting
-   * state.
-   */
-  await Promise.all([
-    loadCanonical(month),
-    loadCumulativePositions()
-  ]);
+  barValues.forEach(
+    (value, index) => {
+      const x =
+        left +
+        gap * (index + 0.5) -
+        barWidth / 2;
 
-  const contributionRows =
-    filteredContributions();
+      const barHeight =
+        max > 0
+          ? chartHeight *
+            value /
+            max
+          : 0;
 
-  const expenseRows =
-    filteredExpenses();
+      const y =
+        top +
+        chartHeight -
+        barHeight;
 
-  const meetingRows =
-    filteredMeetings();
+      ctx.fillStyle =
+        barColors[index];
 
-  currentReportType =
-    $("reportType")?.value ||
-    "executive";
-
-  updateSummary(
-    contributionRows,
-    expenseRows
-  );
-
-  renderBreakdown(
-    contributionRows
-  );
-
-  renderExpenseBreakdown(
-    expenseRows
-  );
-
-  renderContributionEntries(
-    contributionRows
-  );
-
-  renderExpenseEntries(
-    expenseRows
-  );
-
-  renderMeetings(
-    meetingRows
-  );
-
-  renderReportOutput(
-    currentReportType,
-    contributionRows,
-    expenseRows,
-    meetingRows
-  );
-
-  clearStatus();
-
-  showStatus(
-    `Report generated for ${formatMonth(
-      month
-    )}.`
-  );
-}
-
-/* =========================================================
-   RESET
-========================================================= */
-
-function resetFilters() {
-  setDefaultFilters();
-
-  generateReport()
-    .catch(reportError);
-}
-
-/* =========================================================
-   QUICK FILTERS
-========================================================= */
-
-function applyQuickFilter(value) {
-  const status =
-    $("statusFilter");
-
-  activeQuickFilter =
-    value || "all";
-
-  /*
-   * Quick filters are intentionally kept separate from
-   * cumulative report filters.
-   */
-  if (value === "all") {
-    if (status) {
-      status.value = "all";
-    }
-  }
-
-  if (value === "attention") {
-    /*
-     * Needs Attention is a monthly accounting
-     * quick filter:
-     *
-     * previous_outstanding > 0 OR
-     * current_outstanding > 0
-     */
-    if (status) {
-      status.value = "all";
-    }
-  }
-
-  if (value === "arrears") {
-    /*
-     * IMPORTANT:
-     *
-     * The HTML label is "Has Previous Outstanding".
-     *
-     * Do NOT set statusFilter to "outstanding"
-     * because that means CURRENT MONTH outstanding.
-     *
-     * The semantic filter is implemented in
-     * filteredCanonicalStatus() using
-     * previous_outstanding > 0.
-     */
-    if (status) {
-      status.value = "all";
-    }
-  }
-
-  if (value === "credit") {
-    /*
-     * Quick-filter credit means MONTHLY
-     * carry-forward credit.
-     *
-     * It does NOT mean cumulative credit.
-     */
-    if (status) {
-      status.value =
-        "credit";
-    }
-  }
-
-  document
-    .querySelectorAll(
-      ".quick-filter"
-    )
-    .forEach(button => {
-      button.classList.toggle(
-        "active",
-        button.dataset.quick ===
-          value
+      roundedRect(
+        ctx,
+        x,
+        y,
+        barWidth,
+        Math.max(
+          2,
+          barHeight
+        ),
+        7
       );
-    });
 
-  generateReport()
-    .catch(reportError);
-}
+      ctx.fill();
 
-/* =========================================================
-   ERROR HANDLING
-========================================================= */
+      ctx.fillStyle =
+        colors.text;
 
-function reportError(error) {
-  console.error(
-    "CHAMA LIVE reports:",
-    error
+      ctx.font =
+        "bold 11px Inter, system-ui, sans-serif";
+
+      ctx.textAlign =
+        "center";
+
+      ctx.textBaseline =
+        "bottom";
+
+      ctx.fillText(
+        formatWholeCurrency(value),
+        x + barWidth / 2,
+        y - 6
+      );
+
+      ctx.fillStyle =
+        colors.muted;
+
+      ctx.font =
+        "10px Inter, system-ui, sans-serif";
+
+      ctx.textBaseline =
+        "top";
+
+      ctx.fillText(
+        labels[index],
+        x + barWidth / 2,
+        top + chartHeight + 12
+      );
+    }
   );
 
-  clearStatus();
-
-  showError(
-    error?.message ||
-      String(error) ||
-      "Unable to generate report."
-  );
+  return {
+    contributionTotal,
+    approvedExpenseTotal
+  };
 }
 
-/* =========================================================
-   EXPORT HELPERS
-========================================================= */
 
-function downloadBlob(
-  content,
-  filename,
-  mimeType
+/* =========================================================
+   CHART — CONTRIBUTION MIX
+   ========================================================= */
+
+function drawContributionMixChart(
+  canvas,
+  rows
 ) {
-  const blob =
-    new Blob(
-      [content],
-      {
-        type: mimeType
+  const breakdown =
+    buildContributionBreakdown(rows);
+
+  if (!breakdown.length) {
+    drawNoData(
+      canvas,
+      "No contribution mix available"
+    );
+
+    return breakdown;
+  }
+
+  const setup =
+    getCanvasContext(canvas);
+
+  if (!setup) return breakdown;
+
+  const {
+    ctx,
+    width,
+    height
+  } = setup;
+
+  const colors =
+    visualColors();
+
+  ctx.clearRect(
+    0,
+    0,
+    width,
+    height
+  );
+
+  const total =
+    breakdown.reduce(
+      (sum, row) =>
+        sum + row.amount,
+      0
+    );
+
+  const centerX =
+    Math.min(
+      width * 0.32,
+      150
+    );
+
+  const centerY =
+    height / 2;
+
+  const radius =
+    Math.min(
+      92,
+      height * 0.34
+    );
+
+  let angle =
+    -Math.PI / 2;
+
+  const palette = [
+    colors.primary,
+    colors.primaryAlt,
+    colors.warning,
+    colors.danger,
+    "#64748b",
+    "#7c3aed",
+    "#0891b2",
+    "#be123c"
+  ];
+
+  breakdown.forEach(
+    (row, index) => {
+      const slice =
+        total > 0
+          ? (
+              row.amount /
+              total
+            ) * Math.PI * 2
+          : 0;
+
+      ctx.beginPath();
+
+      ctx.moveTo(
+        centerX,
+        centerY
+      );
+
+      ctx.arc(
+        centerX,
+        centerY,
+        radius,
+        angle,
+        angle + slice
+      );
+
+      ctx.closePath();
+
+      ctx.fillStyle =
+        palette[
+          index % palette.length
+        ];
+
+      ctx.fill();
+
+      angle += slice;
+    }
+  );
+
+  ctx.beginPath();
+
+  ctx.arc(
+    centerX,
+    centerY,
+    radius * .56,
+    0,
+    Math.PI * 2
+  );
+
+  ctx.fillStyle =
+    colors.background;
+
+  ctx.fill();
+
+  ctx.fillStyle =
+    colors.text;
+
+  ctx.font =
+    "bold 12px Inter, system-ui, sans-serif";
+
+  ctx.textAlign =
+    "center";
+
+  ctx.textBaseline =
+    "middle";
+
+  ctx.fillText(
+    formatWholeCurrency(total),
+    centerX,
+    centerY
+  );
+
+  const legendX =
+    Math.min(
+      width * .55,
+      280
+    );
+
+  const legendTop =
+    24;
+
+  const rowHeight =
+    29;
+
+  breakdown
+    .slice(0, 8)
+    .forEach(
+      (row, index) => {
+        const y =
+          legendTop +
+          index * rowHeight;
+
+        ctx.fillStyle =
+          palette[
+            index % palette.length
+          ];
+
+        ctx.beginPath();
+
+        ctx.arc(
+          legendX,
+          y + 6,
+          4,
+          0,
+          Math.PI * 2
+        );
+
+        ctx.fill();
+
+        ctx.fillStyle =
+          colors.text;
+
+        ctx.font =
+          "11px Inter, system-ui, sans-serif";
+
+        ctx.textAlign =
+          "left";
+
+        ctx.textBaseline =
+          "middle";
+
+        ctx.fillText(
+          truncateLabel(row.type),
+          legendX + 10,
+          y + 6
+        );
+
+        ctx.fillStyle =
+          colors.muted;
+
+        ctx.textAlign =
+          "right";
+
+        ctx.fillText(
+          formatPercentage(
+            total > 0
+              ? row.amount / total * 100
+              : 0
+          ),
+          width - 18,
+          y + 6
+        );
       }
     );
 
+  return breakdown;
+}
+
+
+/* =========================================================
+   CHART — MONTHLY MEMBER STATUS
+   ========================================================= */
+
+function drawMonthlyStatusChart(
+  canvas,
+  rows
+) {
+  const counts = {
+    paid: 0,
+    partial: 0,
+    outstanding: 0,
+    credit: 0,
+    other: 0
+  };
+
+  for (const row of rows) {
+    const status =
+      lower(
+        canonicalRowStatus(row)
+      );
+
+    const outstanding =
+      canonicalOutstanding(row);
+
+    const credit =
+      canonicalCredit(row);
+
+    if (credit > 0) {
+      counts.credit += 1;
+      continue;
+    }
+
+    if (
+      outstanding > 0 &&
+      canonicalApplied(row) > 0
+    ) {
+      counts.partial += 1;
+      continue;
+    }
+
+    if (outstanding > 0) {
+      counts.outstanding += 1;
+      continue;
+    }
+
+    if (
+      status.includes("paid") ||
+      status.includes("up") ||
+      status.includes("current")
+    ) {
+      counts.paid += 1;
+      continue;
+    }
+
+    if (status.includes("partial")) {
+      counts.partial += 1;
+      continue;
+    }
+
+    if (
+      status.includes("arrear") ||
+      status.includes("outstanding")
+    ) {
+      counts.outstanding += 1;
+      continue;
+    }
+
+    counts.other += 1;
+  }
+
+  const entries =
+    [
+      ["Paid", counts.paid],
+      ["Partial", counts.partial],
+      ["Outstanding", counts.outstanding],
+      ["Credit", counts.credit],
+      ["Other", counts.other]
+    ].filter(
+      item => item[1] > 0
+    );
+
+  if (!entries.length) {
+    drawNoData(
+      canvas,
+      "No monthly member status data"
+    );
+
+    return counts;
+  }
+
+  const setup =
+    getCanvasContext(canvas);
+
+  if (!setup) return counts;
+
+  const {
+    ctx,
+    width,
+    height
+  } = setup;
+
+  const colors =
+    visualColors();
+
+  ctx.clearRect(
+    0,
+    0,
+    width,
+    height
+  );
+
+  const max =
+    niceMax(
+      Math.max(
+        ...entries.map(
+          item => item[1]
+        )
+      )
+    );
+
+  const left = 48;
+  const right = 16;
+  const top = 18;
+  const bottom = 45;
+
+  const chartWidth =
+    width - left - right;
+
+  const chartHeight =
+    height - top - bottom;
+
+  const slotWidth =
+    chartWidth /
+    Math.max(
+      1,
+      entries.length
+    );
+
+  const barWidth =
+    Math.min(
+      54,
+      slotWidth * .56
+    );
+
+  const palette = [
+    colors.primary,
+    colors.warning,
+    colors.danger,
+    colors.primaryAlt,
+    colors.muted
+  ];
+
+  for (let i = 0; i <= 4; i++) {
+    const y =
+      top +
+      chartHeight -
+      chartHeight * i / 4;
+
+    ctx.strokeStyle =
+      colors.border;
+
+    ctx.beginPath();
+    ctx.moveTo(left, y);
+    ctx.lineTo(
+      width - right,
+      y
+    );
+    ctx.stroke();
+
+    ctx.fillStyle =
+      colors.muted;
+
+    ctx.font =
+      "10px Inter, system-ui, sans-serif";
+
+    ctx.textAlign =
+      "right";
+
+    ctx.textBaseline =
+      "middle";
+
+    ctx.fillText(
+      String(
+        Math.round(
+          max * i / 4
+        )
+      ),
+      left - 6,
+      y
+    );
+  }
+
+  entries.forEach(
+    ([label, value], index) => {
+      const x =
+        left +
+        slotWidth * index +
+        slotWidth / 2 -
+        barWidth / 2;
+
+      const barHeight =
+        chartHeight *
+        value /
+        max;
+
+      const y =
+        top +
+        chartHeight -
+        barHeight;
+
+      ctx.fillStyle =
+        palette[
+          index % palette.length
+        ];
+
+      roundedRect(
+        ctx,
+        x,
+        y,
+        barWidth,
+        Math.max(
+          2,
+          barHeight
+        ),
+        6
+      );
+
+      ctx.fill();
+
+      ctx.fillStyle =
+        colors.text;
+
+      ctx.font =
+        "bold 11px Inter, system-ui, sans-serif";
+
+      ctx.textAlign =
+        "center";
+
+      ctx.textBaseline =
+        "bottom";
+
+      ctx.fillText(
+        String(value),
+        x + barWidth / 2,
+        y - 5
+      );
+
+      ctx.fillStyle =
+        colors.muted;
+
+      ctx.font =
+        "10px Inter, system-ui, sans-serif";
+
+      ctx.textBaseline =
+        "top";
+
+      ctx.fillText(
+        label,
+        x + barWidth / 2,
+        top + chartHeight + 10
+      );
+    }
+  );
+
+  return counts;
+}
+
+
+/* =========================================================
+   CHART — CUMULATIVE POSITION
+   ========================================================= */
+
+function drawCumulativePositionChart(
+  canvas,
+  rows
+) {
+  if (!rows.length) {
+    drawNoData(
+      canvas,
+      "No cumulative position data"
+    );
+
+    return null;
+  }
+
+  let arrears = 0;
+  let credit = 0;
+  let upToDate = 0;
+
+  for (const row of rows) {
+    arrears += numberValue(row.arrears);
+    credit += numberValue(row.credit);
+
+    if (
+      numberValue(row.arrears) <= 0 &&
+      numberValue(row.credit) <= 0
+    ) {
+      upToDate += 1;
+    }
+  }
+
+  const setup =
+    getCanvasContext(canvas);
+
+  if (!setup) return null;
+
+  const {
+    ctx,
+    width,
+    height
+  } = setup;
+
+  const colors =
+    visualColors();
+
+  ctx.clearRect(
+    0,
+    0,
+    width,
+    height
+  );
+
+  const totalMembers =
+    rows.length;
+
+  const left = 56;
+  const right = 20;
+  const top = 20;
+  const bottom = 48;
+
+  const chartHeight =
+    height - top - bottom;
+
+  const values = [
+    arrears,
+    credit,
+    upToDate
+  ];
+
+  const labels = [
+    "Arrears value",
+    "Credit value",
+    "Up to date members"
+  ];
+
+  const barColors = [
+    colors.danger,
+    colors.primaryAlt,
+    colors.primary
+  ];
+
+  const max =
+    niceMax(
+      Math.max(...values)
+    );
+
+  /*
+   * If only the count is non-zero, keep the chart useful.
+   */
+  if (
+    arrears <= 0 &&
+    credit <= 0
+  ) {
+    max = Math.max(
+      1,
+      niceMax(totalMembers)
+    );
+  }
+
+  const chartWidth =
+    width - left - right;
+
+  const slotWidth =
+    chartWidth / 3;
+
+  const barWidth =
+    Math.min(
+      70,
+      slotWidth * .52
+    );
+
+  for (let i = 0; i <= 4; i++) {
+    const y =
+      top +
+      chartHeight -
+      chartHeight * i / 4;
+
+    ctx.strokeStyle =
+      colors.border;
+
+    ctx.beginPath();
+    ctx.moveTo(left, y);
+    ctx.lineTo(
+      width - right,
+      y
+    );
+    ctx.stroke();
+
+    ctx.fillStyle =
+      colors.muted;
+
+    ctx.font =
+      "10px Inter, system-ui, sans-serif";
+
+    ctx.textAlign =
+      "right";
+
+    ctx.textBaseline =
+      "middle";
+
+    ctx.fillText(
+      formatWholeCurrency(
+        max * i / 4
+      ),
+      left - 7,
+      y
+    );
+  }
+
+  values.forEach(
+    (value, index) => {
+      const x =
+        left +
+        slotWidth * index +
+        slotWidth / 2 -
+        barWidth / 2;
+
+      const barHeight =
+        max > 0
+          ? chartHeight *
+            value /
+            max
+          : 0;
+
+      const y =
+        top +
+        chartHeight -
+        barHeight;
+
+      ctx.fillStyle =
+        barColors[index];
+
+      roundedRect(
+        ctx,
+        x,
+        y,
+        barWidth,
+        Math.max(
+          2,
+          barHeight
+        ),
+        6
+      );
+
+      ctx.fill();
+
+      ctx.fillStyle =
+        colors.text;
+
+      ctx.font =
+        "bold 10px Inter, system-ui, sans-serif";
+
+      ctx.textAlign =
+        "center";
+
+      ctx.textBaseline =
+        "bottom";
+
+      ctx.fillText(
+        index === 2
+          ? String(
+              integerValue(value)
+            )
+          : formatWholeCurrency(value),
+        x + barWidth / 2,
+        y - 5
+      );
+
+      ctx.fillStyle =
+        colors.muted;
+
+      ctx.font =
+        "10px Inter, system-ui, sans-serif";
+
+      ctx.textBaseline =
+        "top";
+
+      ctx.fillText(
+        labels[index],
+        x + barWidth / 2,
+        top + chartHeight + 10
+      );
+    }
+  );
+
+  return {
+    arrears,
+    credit,
+    upToDate,
+    totalMembers
+  };
+}
+
+
+/* =========================================================
+   CHART — EXPENSE CATEGORIES
+   ========================================================= */
+
+function drawExpenseCategoryChart(
+  canvas,
+  rows
+) {
+  const breakdown =
+    buildExpenseBreakdown(rows);
+
+  if (!breakdown.length) {
+    drawNoData(
+      canvas,
+      "No expense category data"
+    );
+
+    return breakdown;
+  }
+
+  const setup =
+    getCanvasContext(canvas);
+
+  if (!setup) return breakdown;
+
+  const {
+    ctx,
+    width,
+    height
+  } = setup;
+
+  const colors =
+    visualColors();
+
+  ctx.clearRect(
+    0,
+    0,
+    width,
+    height
+  );
+
+  const visible =
+    breakdown.slice(0, 7);
+
+  const max =
+    niceMax(
+      Math.max(
+        ...visible.map(
+          row => row.amount
+        )
+      )
+    );
+
+  const left = 105;
+  const right = 55;
+  const top = 16;
+  const rowHeight =
+    Math.min(
+      32,
+      (height - 30) /
+        Math.max(
+          1,
+          visible.length
+        )
+    );
+
+  visible.forEach(
+    (row, index) => {
+      const y =
+        top +
+        index * rowHeight;
+
+      const barWidth =
+        max > 0
+          ? (
+              width -
+              left -
+              right
+            ) *
+            row.amount /
+            max
+          : 0;
+
+      ctx.fillStyle =
+        colors.border;
+
+      roundedRect(
+        ctx,
+        left,
+        y + 5,
+        width - left - right,
+        15,
+        5
+      );
+
+      ctx.fill();
+
+      ctx.fillStyle =
+        colors.primary;
+
+      roundedRect(
+        ctx,
+        left,
+        y + 5,
+        Math.max(
+          2,
+          barWidth
+        ),
+        15,
+        5
+      );
+
+      ctx.fill();
+
+      ctx.fillStyle =
+        colors.text;
+
+      ctx.font =
+        "10px Inter, system-ui, sans-serif";
+
+      ctx.textAlign =
+        "right";
+
+      ctx.textBaseline =
+        "middle";
+
+      ctx.fillText(
+        truncateLabel(
+          row.category,
+          16
+        ),
+        left - 9,
+        y + 12
+      );
+
+      ctx.textAlign =
+        "left";
+
+      ctx.fillStyle =
+        colors.muted;
+
+      ctx.fillText(
+        formatWholeCurrency(
+          row.amount
+        ),
+        width - right + 8,
+        y + 12
+      );
+    }
+  );
+
+  return breakdown;
+}
+
+
+/* =========================================================
+   VISUAL INSIGHT SUMMARY
+   ========================================================= */
+
+function visualCard(
+  id,
+  title,
+  description
+) {
+  return `
+    <article class="report-chart-card">
+      <h3>${escapeHTML(title)}</h3>
+      <p>${escapeHTML(description)}</p>
+
+      <div class="report-chart-wrap">
+        <canvas id="${escapeHTML(id)}"></canvas>
+      </div>
+
+      <div
+        class="report-chart-summary"
+        id="${escapeHTML(id)}Summary">
+      </div>
+    </article>
+  `;
+}
+
+function renderVisualInsights(
+  contributionRows,
+  expenseRows,
+  canonicalRows,
+  cumulativeRows
+) {
+  const container =
+    ensureVisualContainer();
+
+  container.innerHTML = `
+    <div class="report-visual-heading">
+      <h2>Visual Insights</h2>
+      <p>
+        A quick visual view of the same report data shown below.
+        Accounting status remains authoritative from the server-side
+        accounting functions.
+      </p>
+    </div>
+
+    <div class="report-chart-grid">
+
+      ${visualCard(
+        "reportCashFlowChart",
+        "Contributions vs Expenses",
+        "Money received compared with approved expenses."
+      )}
+
+      ${visualCard(
+        "reportContributionMixChart",
+        "Contribution Mix",
+        "How selected contributions are distributed by type."
+      )}
+
+      ${visualCard(
+        "reportMemberStatusChart",
+        "Monthly Member Status",
+        "Members grouped by their canonical monthly accounting position."
+      )}
+
+      ${visualCard(
+        "reportCumulativeChart",
+        "Cumulative Position",
+        "Cumulative arrears, credit and members currently up to date."
+      )}
+
+      ${visualCard(
+        "reportExpenseCategoryChart",
+        "Expense Categories",
+        "Approved and other selected expenses grouped by category."
+      )}
+
+    </div>
+  `;
+
+  const cashResult =
+    drawContributionExpenseChart(
+      $("reportCashFlowChart"),
+      contributionRows,
+      expenseRows
+    );
+
+  drawContributionMixChart(
+    $("reportContributionMixChart"),
+    contributionRows
+  );
+
+  const statusResult =
+    drawMonthlyStatusChart(
+      $("reportMemberStatusChart"),
+      canonicalRows
+    );
+
+  const cumulativeResult =
+    drawCumulativePositionChart(
+      $("reportCumulativeChart"),
+      cumulativeRows
+    );
+
+  const expenseResult =
+    drawExpenseCategoryChart(
+      $("reportExpenseCategoryChart"),
+      expenseRows
+  );
+
+  if (cashResult) {
+    setHTML(
+      "reportCashFlowChartSummary",
+      `
+        <strong>Net movement:</strong>
+        ${formatCurrency(
+          cashResult.contributionTotal -
+          cashResult.approvedExpenseTotal
+        )}
+      `
+    );
+  }
+
+  if (statusResult) {
+    setHTML(
+      "reportMemberStatusChartSummary",
+      `
+        <strong>${formatNumber(
+          statusResult.paid
+        )}</strong> paid,
+        <strong>${formatNumber(
+          statusResult.partial
+        )}</strong> partial,
+        <strong>${formatNumber(
+          statusResult.outstanding
+        )}</strong> outstanding,
+        <strong>${formatNumber(
+          statusResult.credit
+        )}</strong> with credit.
+      `
+    );
+  }
+
+  if (cumulativeResult) {
+    setHTML(
+      "reportCumulativeChartSummary",
+      `
+        <strong>${formatCurrency(
+          cumulativeResult.arrears
+        )}</strong> cumulative arrears and
+        <strong>${formatCurrency(
+          cumulativeResult.credit
+        )}</strong> cumulative credit across
+        <strong>${formatNumber(
+          cumulativeResult.totalMembers
+        )}</strong> members.
+      `
+    );
+  }
+
+  if (expenseResult?.length) {
+    const top =
+      expenseResult[0];
+
+    setHTML(
+      "reportExpenseCategoryChartSummary",
+      `
+        Largest category:
+        <strong>${escapeHTML(
+          top.category
+        )}</strong>
+        at
+        <strong>${formatCurrency(
+          top.amount
+        )}</strong>.
+      `
+    );
+  }
+
+  if (cashResult) {
+    setHTML(
+      "reportContributionMixChartSummary",
+      `
+        Total selected contributions:
+        <strong>${formatCurrency(
+          cashResult.contributionTotal
+        )}</strong>.
+      `
+    );
+  }
+}
+
+
+/* =========================================================
+   RENDER REPORT
+   ========================================================= */
+
+function renderSelectedReport(
+  type,
+  contributionRows,
+  expenseRows,
+  meetingRows,
+  canonicalRows,
+  cumulativeRows
+) {
+  currentReportType = type;
+
+  const label =
+    REPORT_TYPE_LABELS[type] ||
+    "Report";
+
+  const month =
+    getAccountingMonth();
+
+  setReportHeader(
+    label,
+    `Accounting month: ${month}`
+  );
+
+  switch (type) {
+    case "member-contributions":
+      renderMemberContributions(
+        contributionRows
+      );
+      break;
+
+    case "arrears":
+      renderMonthlyArrearsReport(
+        canonicalRows
+      );
+      break;
+
+    case "credit":
+      renderMonthlyCreditReport(
+        canonicalRows
+      );
+      break;
+
+    case "cumulative-arrears":
+      renderCumulativePosition(
+        cumulativeRows.filter(
+          row => numberValue(row.arrears) > 0
+        )
+      );
+      break;
+
+    case "cumulative-credit":
+      renderCumulativePosition(
+        cumulativeRows.filter(
+          row => numberValue(row.credit) > 0
+        )
+      );
+      break;
+
+    case "cumulative-up-to-date":
+      renderCumulativePosition(
+        cumulativeRows.filter(
+          row =>
+            numberValue(row.arrears) <= 0 &&
+            numberValue(row.credit) <= 0
+        )
+      );
+      break;
+
+    case "contribution-types":
+      renderContributionTypesReport(
+        contributionRows
+      );
+      break;
+
+    case "payment-methods":
+      renderPaymentMethodsReport(
+        contributionRows
+      );
+      break;
+
+    case "expenses":
+      renderExpensesReport(
+        expenseRows
+      );
+      break;
+
+    case "cash-flow":
+      renderCashFlowReport(
+        contributionRows,
+        expenseRows
+      );
+      break;
+
+    case "meetings":
+      renderMeetingsReport(
+        meetingRows
+      );
+      break;
+
+    case "full":
+      renderFullReport(
+        contributionRows,
+        expenseRows,
+        meetingRows
+      );
+      break;
+
+    case "executive":
+    default:
+      renderExecutiveReport(
+        contributionRows,
+        expenseRows,
+        meetingRows
+      );
+      break;
+  }
+
+  /*
+   * Keep visuals useful regardless of selected report type.
+   * They reflect the same current filters.
+   */
+  renderVisualInsights(
+    contributionRows,
+    expenseRows,
+    canonicalRows,
+    cumulativeRows
+  );
+}
+
+
+/* =========================================================
+   GENERATE REPORT
+   ========================================================= */
+
+async function generateReport() {
+  clearError();
+
+  try {
+    setStatus("Loading report data…");
+
+    const month =
+      getAccountingMonth();
+
+    /*
+     * These are the canonical accounting reads.
+     * No refresh RPC and no accounting mutation.
+     */
+    await Promise.all([
+      loadCanonical(month),
+      loadCumulativePositions()
+    ]);
+
+    const contributionRows =
+      filteredContributions();
+
+    const expenseRows =
+      filteredExpenses();
+
+    const meetingRows =
+      filteredMeetings();
+
+    const canonicalRows =
+      filteredCanonicalStatus();
+
+    const cumulativeRows =
+      filteredCumulativePositions();
+
+    currentReportRows = contributionRows;
+
+    updateSummary(
+      contributionRows,
+      expenseRows
+    );
+
+    renderContributionBreakdown(
+      contributionRows
+    );
+
+    renderExpenseBreakdown(
+      expenseRows
+    );
+
+    renderContributionEntries(
+      contributionRows
+    );
+
+    renderExpenseEntries(
+      expenseRows
+    );
+
+    renderMeetings(
+      meetingRows
+    );
+
+    renderSelectedReport(
+      $("reportType")?.value ||
+        DEFAULT_REPORT_TYPE,
+      contributionRows,
+      expenseRows,
+      meetingRows,
+      canonicalRows,
+      cumulativeRows
+    );
+
+    setStatus(
+      `Report ready • ${formatNumber(
+        contributionRows.length
+      )} contribution entries • ${formatNumber(
+        expenseRows.length
+      )} expense entries`
+    );
+  } catch (error) {
+    console.error(
+      "[Reports] generateReport failed:",
+      error
+    );
+
+    showError(
+      friendlyError(error)
+    );
+
+    setStatus("");
+  }
+}
+
+
+/* =========================================================
+   FRIENDLY ERRORS
+   ========================================================= */
+
+function friendlyError(error) {
+  const message =
+    normalizeText(
+      error?.message ||
+      error?.error_description ||
+      error
+    );
+
+  const safeMessages = {
+    AUTHENTICATION_REQUIRED:
+      "You must be signed in to view reports.",
+
+    ACTIVE_GROUP_MEMBER_REQUIRED:
+      "Your account must be an active group member to view reports.",
+
+    GROUP_CONTEXT_REQUIRED:
+      "Your group context could not be loaded.",
+
+    PGRST116:
+      "The requested report data could not be found."
+  };
+
+  if (safeMessages[message]) {
+    return safeMessages[message];
+  }
+
+  if (
+    message.toLowerCase().includes(
+      "permission"
+    )
+  ) {
+    return "You do not have permission to view this report.";
+  }
+
+  return (
+    message ||
+    "Unable to generate the report."
+  );
+}
+
+
+/* =========================================================
+   RESET
+   ========================================================= */
+
+function resetFilters() {
+  activeQuickFilter = "all";
+
+  if ($("reportType")) {
+    $("reportType").value =
+      DEFAULT_REPORT_TYPE;
+  }
+
+  if ($("periodPreset")) {
+    $("periodPreset").value =
+      DEFAULT_PERIOD_PRESET;
+  }
+
+  applyPeriodPreset();
+
+  const ids = [
+    "memberFilter",
+    "statusFilter",
+    "contributionTypeFilter",
+    "paymentMethodFilter"
+  ];
+
+  for (const id of ids) {
+    const el = $(id);
+
+    if (el) {
+      el.value = "";
+    }
+  }
+
+  queryAll(
+    "[data-report-quick-filter]"
+  ).forEach(button => {
+    button.classList.remove("active");
+    button.removeAttribute("aria-pressed");
+  });
+
+  const allButton =
+    query(
+      '[data-report-quick-filter="all"]'
+    );
+
+  if (allButton) {
+    allButton.classList.add("active");
+    allButton.setAttribute(
+      "aria-pressed",
+      "true"
+    );
+  }
+
+  generateReport();
+}
+
+
+/* =========================================================
+   QUICK FILTERS
+   ========================================================= */
+
+function applyQuickFilter(filter) {
+  activeQuickFilter =
+    filter || "all";
+
+  queryAll(
+    "[data-report-quick-filter]"
+  ).forEach(button => {
+    const active =
+      button.dataset.reportQuickFilter ===
+      activeQuickFilter;
+
+    button.classList.toggle(
+      "active",
+      active
+    );
+
+    button.setAttribute(
+      "aria-pressed",
+      active ? "true" : "false"
+    );
+  });
+
+  generateReport();
+}
+
+
+/* =========================================================
+   CSV EXPORT
+   ========================================================= */
+
+function csvEscape(value) {
+  const text =
+    String(value ?? "");
+
+  return `"${text
+    .replace(/"/g, '""')
+    .replace(/\r?\n/g, " ")}"`;
+}
+
+function downloadBlob(
+  blob,
+  filename
+) {
   const url =
     URL.createObjectURL(blob);
 
@@ -3678,826 +5100,873 @@ function downloadBlob(
   anchor.href = url;
   anchor.download = filename;
 
-  document.body.appendChild(
-    anchor
-  );
-
+  document.body.appendChild(anchor);
   anchor.click();
-
   anchor.remove();
 
   setTimeout(
-    () =>
-      URL.revokeObjectURL(
-        url
-      ),
+    () => URL.revokeObjectURL(url),
     1000
   );
 }
 
-/* =========================================================
-   CSV
-========================================================= */
+function reportFilename(extension) {
+  const group =
+    normalizeText(
+      currentGroup?.name ||
+      "group"
+    )
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") ||
+    "group";
 
-function csvEscape(value) {
-  const text =
-    String(value ?? "");
+  const type =
+    normalizeText(
+      REPORT_TYPE_LABELS[
+        $("reportType")?.value ||
+        DEFAULT_REPORT_TYPE
+      ] ||
+      "report"
+    )
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
 
-  if (
-    /[",\n\r]/.test(text)
-  ) {
-    return `"${text.replaceAll(
-      '"',
-      '""'
-    )}"`;
-  }
+  const month =
+    getAccountingMonth()
+      .replace(/[^0-9-]/g, "");
 
-  return text;
+  return `chama-live-${group}-${type}-${month}.${extension}`;
 }
 
 function exportCSV() {
-  const rows = [];
+  try {
+    const contributionRows =
+      filteredContributions();
 
-  rows.push([
-    "CHAMA LIVE Report"
-  ]);
+    const expenseRows =
+      filteredExpenses();
 
-  rows.push([
-    "Group",
-    currentGroup?.name ||
-      ""
-  ]);
+    const cumulativeRows =
+      filteredCumulativePositions();
 
-  rows.push([
-    "Period",
-    `${selectedPeriod().from} to ${selectedPeriod().to}`
-  ]);
+    const canonicalRows =
+      filteredCanonicalStatus();
 
-  rows.push([
-    "Accounting Month",
-    selectedAccountingMonth()
-  ]);
+    const lines = [];
 
-  rows.push([]);
+    lines.push(
+      [
+        "REPORT",
+        REPORT_TYPE_LABELS[
+          $("reportType")?.value ||
+          DEFAULT_REPORT_TYPE
+        ]
+      ]
+        .map(csvEscape)
+        .join(",")
+    );
 
-  /*
-   * Contribution export intentionally contains only
-   * fields loaded by the schema-safe contribution query.
-   */
-  rows.push([
-    "Contribution Date",
-    "Member",
-    "Member Number",
-    "Contribution Type",
-    "Payment Method",
-    "Amount"
-  ]);
+    lines.push("");
 
-  filteredContributions()
-    .forEach(row => {
-      rows.push([
-        row.contribution_date ||
-          normalizeDate(
-            row.created_at
-          ),
+    lines.push(
+      [
+        "MONTHLY MEMBER ACCOUNTING"
+      ]
+        .map(csvEscape)
+        .join(",")
+    );
 
-        memberName(
-          row.member_id
-        ),
+    lines.push(
+      [
+        "Member",
+        "Member Number",
+        "Due",
+        "Applied",
+        "Outstanding",
+        "Credit",
+        "Status"
+      ]
+        .map(csvEscape)
+        .join(",")
+    );
 
-        memberNumber(
-          row.member_id
-        ),
-
-        contributionTypeLabel(
-          row.contribution_type
-        ),
-
-        paymentMethodLabel(
-          row.payment_method
-        ),
-
-        number(row.amount)
-          .toFixed(2)
-      ]);
-    });
-
-  rows.push([]);
-
-  rows.push([
-    "Expense Date",
-    "Description",
-    "Category",
-    "Status",
-    "Amount"
-  ]);
-
-  filteredExpenses()
-    .forEach(row => {
-      rows.push([
-        row.date ||
-          normalizeDate(
-            row.created_at
-          ),
-
-        row.description ||
-          "",
-
-        row.category ||
-          "",
-
-        row.approval_status ||
-          "",
-
-        number(row.amount)
-          .toFixed(2)
-      ]);
-    });
-
-  /*
-   * Cumulative accounting is exported as a separate
-   * explicitly labelled section.
-   *
-   * It is never mixed with the monthly accounting
-   * columns above.
-   */
-  if (cumulativePositionsLoaded) {
-    rows.push([]);
-
-    rows.push([
-      "Cumulative Contribution Position"
-    ]);
-
-    rows.push([
-      "Member",
-      "Member Number",
-      "Total Due",
-      "Total Allocated",
-      "Cumulative Arrears",
-      "Cumulative Credit",
-      "Cumulative Status"
-    ]);
-
-    filteredCumulativePositions()
-      .forEach(position => {
-        rows.push([
-          memberName(
-            position.memberId
-          ),
-
-          memberNumber(
-            position.memberId
-          ),
-
-          position.totalDue
-            .toFixed(2),
-
-          position.totalAllocated
-            .toFixed(2),
-
-          position.arrears
-            .toFixed(2),
-
-          position.credit
-            .toFixed(2),
-
-          cumulativeStatusLabel(
-            position.status
+    for (const row of canonicalRows) {
+      lines.push(
+        [
+          getMemberName(row.member_id),
+          getMemberNumber(row.member_id),
+          canonicalDue(row),
+          canonicalApplied(row),
+          canonicalOutstanding(row),
+          canonicalCredit(row),
+          getStatusLabel(
+            canonicalRowStatus(row)
           )
-        ]);
-      });
-  }
-
-  const csv =
-    rows
-      .map(row =>
-        row
+        ]
           .map(csvEscape)
           .join(",")
-      )
-      .join("\r\n");
+      );
+    }
 
-  downloadBlob(
-    csv,
-    `chama-live-report-${today()}.csv`,
-    "text/csv;charset=utf-8"
-  );
+    lines.push("");
+
+    lines.push(
+      [
+        "CONTRIBUTIONS"
+      ]
+        .map(csvEscape)
+        .join(",")
+    );
+
+    lines.push(
+      [
+        "Date",
+        "Member",
+        "Member Number",
+        "Contribution Type",
+        "Payment Method",
+        "Amount",
+        "ID"
+      ]
+        .map(csvEscape)
+        .join(",")
+    );
+
+    for (const row of contributionRows) {
+      lines.push(
+        [
+          formatDate(
+            row.contribution_date ||
+            row.created_at
+          ),
+          getMemberName(row.member_id),
+          getMemberNumber(row.member_id),
+          row.contribution_type,
+          row.payment_method,
+          row.amount,
+          row.id
+        ]
+          .map(csvEscape)
+          .join(",")
+      );
+    }
+
+    lines.push("");
+
+    lines.push(
+      [
+        "EXPENSES"
+      ]
+        .map(csvEscape)
+        .join(",")
+    );
+
+    lines.push(
+      [
+        "Date",
+        "Description",
+        "Category",
+        "Amount",
+        "Approval Status",
+        "Recorded By",
+        "Receipt"
+      ]
+        .map(csvEscape)
+        .join(",")
+    );
+
+    for (const row of expenseRows) {
+      lines.push(
+        [
+          formatDate(
+            row.date ||
+            row.created_at
+          ),
+          row.description,
+          row.category,
+          row.amount,
+          row.approval_status,
+          row.recorded_by,
+          row.receipt_url
+        ]
+          .map(csvEscape)
+          .join(",")
+      );
+    }
+
+    lines.push("");
+
+    lines.push(
+      [
+        "CUMULATIVE MEMBER POSITION"
+      ]
+        .map(csvEscape)
+        .join(",")
+    );
+
+    lines.push(
+      [
+        "Member",
+        "Member Number",
+        "Total Due",
+        "Total Allocated",
+        "Arrears",
+        "Credit",
+        "Status"
+      ]
+        .map(csvEscape)
+        .join(",")
+    );
+
+    for (const row of cumulativeRows) {
+      lines.push(
+        [
+          getMemberName(row.member_id),
+          getMemberNumber(row.member_id),
+          row.total_due,
+          row.total_allocated,
+          row.arrears,
+          row.credit,
+          getStatusLabel(row.status)
+        ]
+          .map(csvEscape)
+          .join(",")
+      );
+    }
+
+    const blob =
+      new Blob(
+        [lines.join("\r\n")],
+        {
+          type:
+            "text/csv;charset=utf-8"
+        }
+      );
+
+    downloadBlob(
+      blob,
+      reportFilename("csv")
+    );
+
+    setStatus(
+      "CSV report downloaded."
+    );
+  } catch (error) {
+    console.error(
+      "[Reports] CSV export failed:",
+      error
+    );
+
+    showError(
+      "Unable to download the CSV report."
+    );
+  }
 }
+
 
 /* =========================================================
-   EXCEL-COMPATIBLE EXPORT
-========================================================= */
+   EXCEL EXPORT
+   ========================================================= */
 
-function exportExcel() {
-  const contributionsRows =
-    filteredContributions();
-
-  const expenseRows =
-    filteredExpenses();
-
-  const meetingRows =
-    filteredMeetings();
-
-  const contributionHtml =
-    contributionsRows
-      .map(
-        row => `
-          <tr>
-            <td>
-              ${escapeHtml(
-                formatDate(
-                  row.contribution_date ||
-                  row.created_at
-                )
-              )}
-            </td>
-
-            <td>
-              ${escapeHtml(
-                memberName(
-                  row.member_id
-                )
-              )}
-            </td>
-
-            <td>
-              ${escapeHtml(
-                memberNumber(
-                  row.member_id
-                )
-              )}
-            </td>
-
-            <td>
-              ${escapeHtml(
-                contributionTypeLabel(
-                  row.contribution_type
-                )
-              )}
-            </td>
-
-            <td>
-              ${escapeHtml(
-                paymentMethodLabel(
-                  row.payment_method
-                )
-              )}
-            </td>
-
-            <td>
-              ${number(
-                row.amount
-              ).toFixed(2)}
-            </td>
-          </tr>
-        `
-      )
-      .join("");
-
-  const expenseHtml =
-    expenseRows
-      .map(
-        row => `
-          <tr>
-            <td>
-              ${escapeHtml(
-                formatDate(row.date)
-              )}
-            </td>
-
-            <td>
-              ${escapeHtml(
-                row.description ||
-                ""
-              )}
-            </td>
-
-            <td>
-              ${escapeHtml(
-                row.category ||
-                ""
-              )}
-            </td>
-
-            <td>
-              ${escapeHtml(
-                row.approval_status ||
-                ""
-              )}
-            </td>
-
-            <td>
-              ${number(
-                row.amount
-              ).toFixed(2)}
-            </td>
-          </tr>
-        `
-      )
-      .join("");
-
-  const meetingHtml =
-    meetingRows
-      .map(
-        row => `
-          <tr>
-            <td>
-              ${escapeHtml(
-                formatDate(row.date)
-              )}
-            </td>
-
-            <td>
-              ${escapeHtml(
-                row.title ||
-                ""
-              )}
-            </td>
-
-            <td>
-              ${escapeHtml(
-                row.venue ||
-                ""
-              )}
-            </td>
-
-            <td>
-              ${escapeHtml(
-                row.status ||
-                ""
-              )}
-            </td>
-          </tr>
-        `
-      )
-      .join("");
-
-  const cumulativeHtml =
-    cumulativePositionsLoaded
-      ? filteredCumulativePositions()
-          .map(
-            position => `
-              <tr>
-                <td>
-                  ${escapeHtml(
-                    memberName(
-                      position.memberId
-                    )
-                  )}
-                </td>
-
-                <td>
-                  ${escapeHtml(
-                    memberNumber(
-                      position.memberId
-                    )
-                  )}
-                </td>
-
-                <td>
-                  ${number(
-                    position.totalDue
-                  ).toFixed(2)}
-                </td>
-
-                <td>
-                  ${number(
-                    position.totalAllocated
-                  ).toFixed(2)}
-                </td>
-
-                <td>
-                  ${number(
-                    position.arrears
-                  ).toFixed(2)}
-                </td>
-
-                <td>
-                  ${number(
-                    position.credit
-                  ).toFixed(2)}
-                </td>
-
-                <td>
-                  ${escapeHtml(
-                    cumulativeStatusLabel(
-                      position.status
-                    )
-                  )}
-                </td>
-              </tr>
-            `
-          )
-          .join("")
-      : "";
-
-  const html = `
-<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8">
-
-  <title>
-    CHAMA LIVE Report
-  </title>
-
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-    }
-
-    h1,
-    h2 {
-      margin-bottom: 8px;
-    }
-
-    p {
-      margin: 4px 0;
-    }
-
-    table {
-      border-collapse: collapse;
-      width: 100%;
-      margin-bottom: 24px;
-    }
-
-    th,
-    td {
-      border: 1px solid #999;
-      padding: 7px;
-      text-align: left;
-    }
-
-    th {
-      font-weight: bold;
-      background: #eee;
-    }
-  </style>
-</head>
-
-<body>
-
-  <h1>
-    CHAMA LIVE —
-    ${escapeHtml(
-      currentGroup?.name ||
-      "Group"
-    )}
-  </h1>
-
-  <p>
-    Period:
-    ${escapeHtml(
-      selectedPeriod().from
-    )}
-    —
-    ${escapeHtml(
-      selectedPeriod().to
-    )}
-  </p>
-
-  <p>
-    Accounting Month:
-    ${escapeHtml(
-      selectedAccountingMonth()
-    )}
-  </p>
-
-  <h2>
-    Contributions
-  </h2>
-
-  <table>
-    <thead>
-      <tr>
-        <th>Date</th>
-        <th>Member</th>
-        <th>Member Number</th>
-        <th>Type</th>
-        <th>Payment Method</th>
-        <th>Amount</th>
-      </tr>
-    </thead>
-
-    <tbody>
-      ${
-        contributionHtml ||
-        `
-          <tr>
-            <td colspan="6">
-              No contribution records.
-            </td>
-          </tr>
-        `
-      }
-    </tbody>
-  </table>
-
-  <h2>
-    Expenses
-  </h2>
-
-  <table>
-    <thead>
-      <tr>
-        <th>Date</th>
-        <th>Description</th>
-        <th>Category</th>
-        <th>Status</th>
-        <th>Amount</th>
-      </tr>
-    </thead>
-
-    <tbody>
-      ${
-        expenseHtml ||
-        `
-          <tr>
-            <td colspan="5">
-              No expense records.
-            </td>
-          </tr>
-        `
-      }
-    </tbody>
-  </table>
-
-  <h2>
-    Meetings
-  </h2>
-
-  <table>
-    <thead>
-      <tr>
-        <th>Date</th>
-        <th>Title</th>
-        <th>Venue</th>
-        <th>Status</th>
-      </tr>
-    </thead>
-
-    <tbody>
-      ${
-        meetingHtml ||
-        `
-          <tr>
-            <td colspan="4">
-              No meetings.
-            </td>
-          </tr>
-        `
-      }
-    </tbody>
-  </table>
-
-  ${
-    cumulativePositionsLoaded
-      ? `
-        <h2>
-          Cumulative Contribution Position
-        </h2>
-
-        <table>
-          <thead>
-            <tr>
-              <th>Member</th>
-              <th>Member Number</th>
-              <th>Total Due</th>
-              <th>Total Allocated</th>
-              <th>Cumulative Arrears</th>
-              <th>Cumulative Credit</th>
-              <th>Cumulative Status</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            ${
-              cumulativeHtml ||
-              `
-                <tr>
-                  <td colspan="7">
-                    No cumulative member records.
-                  </td>
-                </tr>
-              `
-            }
-          </tbody>
-        </table>
-      `
-      : ""
-  }
-
-</body>
-</html>
-`;
-
-  downloadBlob(
-    html,
-    `chama-live-report-${today()}.xls`,
-    "application/vnd.ms-excel;charset=utf-8"
+function excelEscape(value) {
+  return escapeHTML(
+    String(value ?? "")
   );
 }
+
+function exportExcel() {
+  try {
+    const contributionRows =
+      filteredContributions();
+
+    const expenseRows =
+      filteredExpenses();
+
+    const meetingRows =
+      filteredMeetings();
+
+    const cumulativeRows =
+      filteredCumulativePositions();
+
+    const canonicalRows =
+      filteredCanonicalStatus();
+
+    const reportName =
+      REPORT_TYPE_LABELS[
+        $("reportType")?.value ||
+        DEFAULT_REPORT_TYPE
+      ] || "Report";
+
+    const html = `
+      <html>
+        <head>
+          <meta charset="UTF-8">
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+            }
+
+            h1, h2 {
+              margin-bottom: 8px;
+            }
+
+            table {
+              border-collapse: collapse;
+              width: 100%;
+              margin-bottom: 24px;
+            }
+
+            th, td {
+              border: 1px solid #999;
+              padding: 6px;
+              text-align: left;
+            }
+
+            th {
+              font-weight: bold;
+            }
+          </style>
+        </head>
+
+        <body>
+
+          <h1>
+            CHAMA LIVE — ${excelEscape(reportName)}
+          </h1>
+
+          <p>
+            Group:
+            ${excelEscape(
+              currentGroup?.name ||
+              "Group"
+            )}
+          </p>
+
+          <p>
+            Accounting Month:
+            ${excelEscape(
+              getAccountingMonth()
+            )}
+          </p>
+
+          <h2>Monthly Member Accounting</h2>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Member</th>
+                <th>Member Number</th>
+                <th>Due</th>
+                <th>Applied</th>
+                <th>Outstanding</th>
+                <th>Credit</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              ${canonicalRows.map(row => `
+                <tr>
+                  <td>${excelEscape(
+                    getMemberName(row.member_id)
+                  )}</td>
+
+                  <td>${excelEscape(
+                    getMemberNumber(row.member_id)
+                  )}</td>
+
+                  <td>${excelEscape(
+                    canonicalDue(row)
+                  )}</td>
+
+                  <td>${excelEscape(
+                    canonicalApplied(row)
+                  )}</td>
+
+                  <td>${excelEscape(
+                    canonicalOutstanding(row)
+                  )}</td>
+
+                  <td>${excelEscape(
+                    canonicalCredit(row)
+                  )}</td>
+
+                  <td>${excelEscape(
+                    getStatusLabel(
+                      canonicalRowStatus(row)
+                    )
+                  )}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+
+          <h2>Contributions</h2>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Member</th>
+                <th>Member Number</th>
+                <th>Contribution Type</th>
+                <th>Payment Method</th>
+                <th>Amount</th>
+                <th>ID</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              ${contributionRows.map(row => `
+                <tr>
+                  <td>${excelEscape(
+                    formatDate(
+                      row.contribution_date ||
+                      row.created_at
+                    )
+                  )}</td>
+
+                  <td>${excelEscape(
+                    getMemberName(row.member_id)
+                  )}</td>
+
+                  <td>${excelEscape(
+                    getMemberNumber(row.member_id)
+                  )}</td>
+
+                  <td>${excelEscape(
+                    row.contribution_type
+                  )}</td>
+
+                  <td>${excelEscape(
+                    row.payment_method
+                  )}</td>
+
+                  <td>${excelEscape(
+                    row.amount
+                  )}</td>
+
+                  <td>${excelEscape(
+                    row.id
+                  )}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+
+          <h2>Expenses</h2>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Category</th>
+                <th>Amount</th>
+                <th>Approval Status</th>
+                <th>Recorded By</th>
+                <th>Receipt</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              ${expenseRows.map(row => `
+                <tr>
+                  <td>${excelEscape(
+                    formatDate(
+                      row.date ||
+                      row.created_at
+                    )
+                  )}</td>
+
+                  <td>${excelEscape(
+                    row.description
+                  )}</td>
+
+                  <td>${excelEscape(
+                    row.category
+                  )}</td>
+
+                  <td>${excelEscape(
+                    row.amount
+                  )}</td>
+
+                  <td>${excelEscape(
+                    row.approval_status
+                  )}</td>
+
+                  <td>${excelEscape(
+                    row.recorded_by
+                  )}</td>
+
+                  <td>${excelEscape(
+                    row.receipt_url
+                  )}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+
+          <h2>Cumulative Member Position</h2>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Member</th>
+                <th>Member Number</th>
+                <th>Total Due</th>
+                <th>Total Allocated</th>
+                <th>Arrears</th>
+                <th>Credit</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              ${cumulativeRows.map(row => `
+                <tr>
+                  <td>${excelEscape(
+                    getMemberName(row.member_id)
+                  )}</td>
+
+                  <td>${excelEscape(
+                    getMemberNumber(row.member_id)
+                  )}</td>
+
+                  <td>${excelEscape(
+                    row.total_due
+                  )}</td>
+
+                  <td>${excelEscape(
+                    row.total_allocated
+                  )}</td>
+
+                  <td>${excelEscape(
+                    row.arrears
+                  )}</td>
+
+                  <td>${excelEscape(
+                    row.credit
+                  )}</td>
+
+                  <td>${excelEscape(
+                    getStatusLabel(row.status)
+                  )}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+
+          <h2>Meetings</h2>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Meeting</th>
+                <th>Venue</th>
+                <th>Status</th>
+                <th>Agenda</th>
+                <th>Resolution</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              ${meetingRows.map(row => `
+                <tr>
+                  <td>${excelEscape(
+                    formatDate(row.date)
+                  )}</td>
+
+                  <td>${excelEscape(
+                    row.title
+                  )}</td>
+
+                  <td>${excelEscape(
+                    row.venue
+                  )}</td>
+
+                  <td>${excelEscape(
+                    row.status
+                  )}</td>
+
+                  <td>${excelEscape(
+                    row.agenda
+                  )}</td>
+
+                  <td>${excelEscape(
+                    row.resolution
+                  )}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+
+        </body>
+      </html>
+    `;
+
+    const blob =
+      new Blob(
+        [html],
+        {
+          type:
+            "application/vnd.ms-excel;charset=utf-8"
+        }
+      );
+
+    downloadBlob(
+      blob,
+      reportFilename("xls")
+    );
+
+    setStatus(
+      "Excel-compatible report downloaded."
+    );
+  } catch (error) {
+    console.error(
+      "[Reports] Excel export failed:",
+      error
+    );
+
+    showError(
+      "Unable to download the Excel report."
+    );
+  }
+}
+
 
 /* =========================================================
    PRINT
-========================================================= */
+   ========================================================= */
 
 function printReport() {
-  setText(
-    "printGeneratedAt",
-    new Date().toLocaleString(
-      "en-KE"
-    )
-  );
+  try {
+    window.print();
+  } catch (error) {
+    console.error(
+      "[Reports] Print failed:",
+      error
+    );
 
-  window.print();
+    showError(
+      "Unable to open the print dialog."
+    );
+  }
 }
+
 
 /* =========================================================
    EVENT BINDING
-========================================================= */
+   ========================================================= */
 
 function bindEvents() {
-  $("customContributionMemberStatusSelect")
-    ?.addEventListener(
-      "change",
-      event => {
-        selectedCustomContributionId =
-          event.target.value || "all";
+  const generateButton =
+    $("applyFilters");
 
-        renderCustomMemberStatus();
-      }
-    );
-
-  $("applyFilters")
-    ?.addEventListener(
+  if (generateButton) {
+    generateButton.addEventListener(
       "click",
-      async event => {
-        const button = event.currentTarget;
-
-        button.disabled = true;
-        button.textContent = "Generating…";
-
-        try {
-          await generateReport();
-        }
-        catch (error) {
-          reportError(error);
-        }
-        finally {
-          button.disabled = false;
-          button.textContent = "Generate Report";
-        }
-      }
+      generateReport
     );
+  }
 
-  $("resetFilters")
-    ?.addEventListener(
+  const resetButton =
+    $("resetFilters");
+
+  if (resetButton) {
+    resetButton.addEventListener(
       "click",
       resetFilters
     );
+  }
 
-  $("printReport")
-    ?.addEventListener(
+  const printButton =
+    $("printReport");
+
+  if (printButton) {
+    printButton.addEventListener(
       "click",
       printReport
     );
+  }
 
-  $("csvButton")
-    ?.addEventListener(
+  const csvButton =
+    $("csvButton");
+
+  if (csvButton) {
+    csvButton.addEventListener(
       "click",
       exportCSV
     );
+  }
 
-  $("excelButton")
-    ?.addEventListener(
+  const excelButton =
+    $("excelButton");
+
+  if (excelButton) {
+    excelButton.addEventListener(
       "click",
       exportExcel
     );
+  }
 
-  $("periodPreset")
-    ?.addEventListener(
+  const periodPreset =
+    $("periodPreset");
+
+  if (periodPreset) {
+    periodPreset.addEventListener(
       "change",
-      event => {
-        const value =
-          event.target.value;
-
-        if (
-          value !== "custom"
-        ) {
-          setPeriodFromPreset(
-            value
-          );
-        }
-
-        generateReport()
-          .catch(reportError);
+      () => {
+        applyPeriodPreset();
+        generateReport();
       }
     );
+  }
 
-  [
+  const accountingMonth =
+    $("accountingMonth");
+
+  if (accountingMonth) {
+    accountingMonth.addEventListener(
+      "change",
+      generateReport
+    );
+  }
+
+  const regularFilters = [
+    "reportType",
     "fromDate",
     "toDate",
-    "accountingMonth",
     "memberFilter",
     "contributionTypeFilter",
     "paymentMethodFilter",
-    "groupBy",
-    "reportType"
-  ].forEach(id => {
-    $(id)?.addEventListener(
+    "statusFilter",
+    "groupBy"
+  ];
+
+  for (const id of regularFilters) {
+    const el = $(id);
+
+    if (!el) continue;
+
+    el.addEventListener(
       "change",
+      generateReport
+    );
+  }
+
+  queryAll(
+    "[data-report-quick-filter]"
+  ).forEach(button => {
+    button.addEventListener(
+      "click",
       () => {
-        /*
-         * A normal filter change supersedes
-         * an active quick-filter mode.
-         */
-        activeQuickFilter = "all";
-
-        document
-          .querySelectorAll(
-            ".quick-filter"
-          )
-          .forEach(button => {
-            button.classList.toggle(
-              "active",
-              button.dataset.quick ===
-                "all"
-            );
-          });
-
-        generateReport()
-          .catch(reportError);
+        applyQuickFilter(
+          button.dataset.reportQuickFilter
+        );
       }
     );
   });
 
-  /*
-   * Status filter has its own listener because it must
-   * remain independent from the quick-filter semantics.
-   */
-  $("statusFilter")
-    ?.addEventListener(
+  const customSelector =
+    $("customContributionMemberStatusSelect");
+
+  if (customSelector) {
+    customSelector.addEventListener(
       "change",
-      () => {
-        activeQuickFilter =
-          "all";
-
-        document
-          .querySelectorAll(
-            ".quick-filter"
-          )
-          .forEach(button => {
-            button.classList.toggle(
-              "active",
-              button.dataset.quick ===
-                "all"
-            );
-          });
-
-        generateReport()
-          .catch(reportError);
-      }
+      refreshSelectedCustomContribution
     );
+  }
 
-  document
-    .querySelectorAll(
-      ".quick-filter"
-    )
-    .forEach(button => {
-      button.addEventListener(
-        "click",
-        () =>
-          applyQuickFilter(
-            button.dataset.quick
-          )
+  /*
+   * Redraw native canvas charts after a layout resize.
+   * ResizeObserver is preferred, but window resize is also
+   * supported for older browsers.
+   */
+  let resizeTimer = null;
+
+  window.addEventListener(
+    "resize",
+    () => {
+      clearTimeout(resizeTimer);
+
+      resizeTimer = setTimeout(
+        () => {
+          if (!$(VISUALS_ID)) {
+            return;
+          }
+
+          renderVisualInsights(
+            filteredContributions(),
+            filteredExpenses(),
+            filteredCanonicalStatus(),
+            filteredCumulativePositions()
+          );
+        },
+        150
       );
-    });
+    },
+    { passive: true }
+  );
 }
 
+
 /* =========================================================
-   INITIALISATION
+   INITIAL FILTERS
+   ========================================================= */
 
-   Page boot ownership is external.
+function initializeFilters() {
+  if ($("reportType") &&
+      !$("reportType").value) {
+    $("reportType").value =
+      DEFAULT_REPORT_TYPE;
+  }
 
-   This module:
-   - exports initPage()
-   - does not import admin-layout.js
-   - does not call initPage()
-   - does not auto-boot
-========================================================= */
+  if ($("periodPreset") &&
+      !$("periodPreset").value) {
+    $("periodPreset").value =
+      DEFAULT_PERIOD_PRESET;
+  }
+
+  applyPeriodPreset();
+
+  activeQuickFilter = "all";
+
+  queryAll(
+    "[data-report-quick-filter]"
+  ).forEach(button => {
+    const active =
+      button.dataset.reportQuickFilter ===
+      "all";
+
+    button.classList.toggle(
+      "active",
+      active
+    );
+
+    button.setAttribute(
+      "aria-pressed",
+      active ? "true" : "false"
+    );
+  });
+}
+
+
+/* =========================================================
+   INIT
+   ========================================================= */
 
 export async function initPage() {
-  try {
-    clearError();
+  clearError();
+  setStatus("Loading reports…");
 
-    setDefaultFilters();
+  try {
+    initializeFilters();
 
     bindEvents();
-
-    showStatus(
-      "Loading report centre…"
-    );
 
     await loadContext();
 
@@ -4512,22 +5981,27 @@ export async function initPage() {
 
     await generateReport();
 
+    console.log(
+      "[Reports] Ready — canonical read-only reporting + visual insights."
+    );
   } catch (error) {
-    reportError(error);
+    console.error(
+      "[Reports] Initialization failed:",
+      error
+    );
+
+    showError(
+      friendlyError(error)
+    );
+
+    setStatus("");
   }
 }
 
+
 /* =========================================================
-   PUBLIC ALIAS
-========================================================= */
+   BACKWARD-COMPATIBLE EXPORT
+   ========================================================= */
 
 export const initReports =
   initPage;
-
-/* =========================================================
-   NO AUTO BOOT
-========================================================= */
-
-console.log(
-  "CHAMA LIVE: reports.js ready"
-);
