@@ -563,12 +563,9 @@ async function loadContext() {
     currentGroup =
       demo?.group || null;
 
-    currentGroupId =
-      currentGroup?.id ||
-      currentMember?.group_id ||
-      null;
+    currentGroupId = null;
 
-    if (!currentMember || !currentGroupId) {
+    if (!currentMember || !currentGroup?.name) {
       throw new Error(
         "The demo group context could not be verified."
       );
