@@ -1600,96 +1600,63 @@ function renderRecentGroupExpenses() {
    ========================================================= */
 
 async function loadMeetings() {
-  const container =
-    byId(
-      "memberMeetings"
-    );
+  const container = byId("memberMeetings");
 
-  if (!container) {
-    return;
-  }
+  if (!container) return;
 
-  const {
-    data,
-    error
-  } = await supabase
+  const { data, error } = await supabase
     .from("meetings")
-    .select(
-      "id, date, title, venue, status"
-    )
-    .eq(
-      "group_id",
-      groupId
-    )
-    .gte(
-      "date",
-      todayIso()
-    )
-    .order(
-      "date",
-      {
-        ascending: true
-      }
-    )
+    .select("id, date, start_time, end_time, title, venue, type, status")
+    .eq("group_id", groupId)
+    .gte("date", todayIso())
+    .neq("status", "cancelled")
+    .order("date", { ascending: true })
+    .order("start_time", { ascending: true, nullsFirst: false })
     .limit(5);
 
-  if (error) {
-    throw error;
-  }
+  if (error) throw error;
 
-  const meetings =
-    Array.isArray(data)
-      ? data
-      : [];
+  const meetings = Array.isArray(data) ? data : [];
 
   if (!meetings.length) {
-    container.innerHTML =
-      "<p>No upcoming meetings recorded.</p>";
-
+    container.innerHTML = "<p>No upcoming meetings recorded.</p>";
     return;
   }
 
-  container.innerHTML =
-    meetings
-      .map(
-        meeting => `
-          <div class="member-dashboard-list-item">
-            <div>
-              <strong>
-                ${escapeHtml(
-                  meeting.title ||
-                  "Meeting"
-                )}
-              </strong>
+  const formatTime = value => {
+    if (!value) return "";
+    const parts = String(value).split(":");
+    const hour = Number(parts[0]);
+    const minute = parts[1] || "00";
+    if (!Number.isFinite(hour)) return String(value);
+    const suffix = hour >= 12 ? "PM" : "AM";
+    const displayHour = hour % 12 || 12;
+    return displayHour + ":" + minute + " " + suffix;
+  };
 
-              <small>
-                ${escapeHtml(
-                  formatDate(
-                    meeting.date
-                  )
-                )}
-                ${
-                  meeting.venue
-                    ? ` · ${escapeHtml(
-                        meeting.venue
-                      )}`
-                    : ""
-                }
-              </small>
-            </div>
+  const formatType = value => ({
+    regular: "Regular",
+    AGM: "AGM",
+    special: "Special",
+    committee: "Committee"
+  }[String(value || "regular")] || "Meeting");
 
-            <span>
-              ${escapeHtml(
-                meeting.status ||
-                "Scheduled"
-              )}
-            </span>
-          </div>
-        `
-      )
-      .join("");
+  container.innerHTML = meetings.map(meeting => `
+    <div class="member-dashboard-list-item">
+      <div>
+        <strong>${escapeHtml(meeting.title || "Meeting")}</strong>
+        <small>
+          ${escapeHtml(formatDate(meeting.date))}
+          · ${escapeHtml(formatTime(meeting.start_time) || "Time not specified")}
+          ${meeting.end_time ? `– ${escapeHtml(formatTime(meeting.end_time))}` : ""}
+          ${meeting.venue ? ` · ${escapeHtml(meeting.venue)}` : ""}
+          · ${escapeHtml(formatType(meeting.type))}
+        </small>
+      </div>
+      <span>Scheduled</span>
+    </div>
+  `).join("");
 }
-
 
 /* =========================================================
    GROUP ACTIVITIES
