@@ -50,7 +50,9 @@ const ADMIN_ROLES = new Set([
   "admin",
   "chairperson",
   "secretary",
-  "treasurer"
+  "treasurer",
+  "vice chairperson",
+  "vice secretary"
 ]);
 
 
