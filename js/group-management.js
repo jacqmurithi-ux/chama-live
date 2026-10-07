@@ -702,74 +702,55 @@ function getCheckedValue(name) {
 
 
 function syncContributionRuleUI(kind) {
-    const isMonthly =
-        kind === "monthly";
+    const isMonthly = kind === "monthly";
+    const graceMode = getCheckedValue(
+        isMonthly ? "monthlyGraceMode" : "customGraceMode"
+    );
+    const graceDays = isMonthly ? elements.monthlyGraceDays : elements.customGraceDays;
+    const fineEnabled = isFineEnabled(isMonthly ? "monthly" : "custom");
+    const fineAmount = isMonthly ? elements.monthlyFineAmount : elements.customFineAmount;
+    const summary = isMonthly ? elements.monthlyRuleSummary : elements.customRuleSummary;
 
-    const graceMode =
-        getCheckedValue(
+    if (!graceDays || !fineAmount || !summary) return;
+
+    graceDays.disabled = graceMode !== "days" || !canEditContributionSettings;
+    fineAmount.disabled = !fineEnabled || !canEditContributionSettings;
+
+    const days = Number(graceDays.value || 0);
+    const graceText =
+        graceMode === "days" && Number.isInteger(days) && days > 0
+            ? `${days} day${days === 1 ? "" : "s"} grace period`
+            : "No grace period";
+
+    if (!fineEnabled) {
+        summary.textContent =
             isMonthly
-                ? "monthlyGraceMode"
-                : "customGraceMode"
-        );
-
-    const graceDays =
-        isMonthly
-            ? elements.monthlyGraceDays
-            : elements.customGraceDays;
-
-    const fineEnabled =
-        isFineEnabled(
-            isMonthly
-                ? "monthly"
-                : "custom"
-        );
-
-    const fineAmount =
-        isMonthly
-            ? elements.monthlyFineAmount
-            : elements.customFineAmount;
-
-    const summary =
-        isMonthly
-            ? elements.monthlyRuleSummary
-            : elements.customRuleSummary;
-
-    if (
-        !graceDays ||
-        !fineAmount ||
-        !summary
-    ) {
+                ? graceMode === "days" && days > 0
+                    ? `Payment is due by the closing day. A ${days}-day grace period is allowed. No late-payment fine applies.`
+                    : "Payment is due by the closing day. No late-payment fine applies."
+                : `${graceText}. No fine applies.`;
         return;
     }
 
-    graceDays.disabled =
-        graceMode !== "days" ||
-        !canEditContributionSettings;
+    const amount = Number(fineAmount.value || 0);
+    const amountText =
+        Number.isFinite(amount) && amount > 0
+            ? `KSh ${amount.toLocaleString("en-KE")}`
+            : "the configured amount";
 
-    fineAmount.disabled =
-        !fineEnabled ||
-        !canEditContributionSettings;
-
-    const graceText =
-        graceMode === "days"
-            ? `${graceDays.value || "0"} day${
-                Number(graceDays.value) === 1
-                    ? ""
-                    : "s"
-            } grace period`
-            : "No grace period";
-
-    const fineText =
-        fineEnabled
-            ? `Fine KSh ${
-                fineAmount.value || "0"
-            } after grace period`
-            : "No fine applies";
+    if (isMonthly) {
+        summary.textContent =
+            graceMode === "days" && days > 0
+                ? `Payment is due by the closing day. A ${days}-day grace period is allowed. A fine of ${amountText} applies to payments made after the grace period ends.`
+                : `Payment is due by the closing day. A fine of ${amountText} applies to payments made after the closing day.`;
+        return;
+    }
 
     summary.textContent =
-        `${graceText}. ${fineText}.`;
+        graceMode === "days" && days > 0
+            ? `A ${days}-day grace period applies. A fine of ${amountText} applies after the grace period ends.`
+            : `A fine of ${amountText} applies after the closing date.`;
 }
-
 
 function validateContributionRuleUI(kind) {
     const isMonthly =
@@ -848,51 +829,115 @@ function showContributionStatus(
 ================================================================ */
 
 async function loadContributionSettings() {
-    if (!currentGroup?.id) {
-        return;
+    if (!currentGroup?.id) return;
+
+    const { data, error } = await groupManagementApi.rpc(
+        "get_group_contribution_settings",
+        { p_group_id: currentGroup.id }
+    );
+
+    if (error) throw error;
+
+    contributionSettings = Array.isArray(data) ? data[0] || null : data || null;
+
+    if (elements.monthlyClosingDay && contributionSettings) {
+        elements.monthlyClosingDay.value =
+            contributionSettings.monthly_closing_day ?? "";
     }
 
     const {
-        data,
-        error
-    } =
-        await groupManagementApi.rpc(
-            "get_group_contribution_settings",
-            {
-                p_group_id:
-                    currentGroup.id
-            }
+        data: monthlyTypes,
+        error: monthlyTypeError
+    } = await supabase
+        .from("contribution_types")
+        .select("id")
+        .eq("group_id", currentGroup.id)
+        .eq("code", "monthly")
+        .limit(1);
+
+    if (monthlyTypeError) throw monthlyTypeError;
+
+    const monthlyTypeId = monthlyTypes?.[0]?.id || null;
+    let activeFineRule = null;
+
+    if (monthlyTypeId) {
+        const { data: links, error: linkError } = await supabase
+            .from("fine_rule_contribution_types")
+            .select("rule_id")
+            .eq("contribution_type_id", monthlyTypeId);
+
+        if (linkError) throw linkError;
+
+        const ruleIds = Array.from(
+            new Set((links || []).map((row) => row.rule_id).filter(Boolean))
         );
 
-    if (error) {
-        throw error;
+        if (ruleIds.length) {
+            const { data: rules, error: ruleError } = await supabase
+                .from("fine_rules")
+                .select("id,fixed_amount,grace_period_value,grace_period_unit,effective_from,effective_until,status,trigger_type,applicability_mode")
+                .in("id", ruleIds)
+                .eq("group_id", currentGroup.id)
+                .eq("trigger_type", "missed_contribution")
+                .eq("applicability_mode", "SELECTED")
+                .eq("status", "active")
+                .lte("effective_from", new Date().toISOString());
+
+            if (ruleError) throw ruleError;
+
+            const now = Date.now();
+            activeFineRule = (rules || [])
+                .filter(
+                    (rule) =>
+                        !rule.effective_until ||
+                        new Date(rule.effective_until).getTime() >= now
+                )
+                .sort(
+                    (a, b) =>
+                        new Date(b.effective_from).getTime() -
+                        new Date(a.effective_from).getTime()
+                )[0] || null;
+        }
     }
 
-    contributionSettings =
-        Array.isArray(data)
-            ? data[0] || null
-            : data || null;
+    const graceDays = Number(
+        contributionSettings?.monthly_grace_days || 0
+    );
 
-    if (
-        elements.openingDay &&
-        contributionSettings
-    ) {
-        elements.openingDay.value =
-            contributionSettings.monthly_opening_day ??
-            "";
+    document
+        .querySelectorAll('input[name="monthlyGraceMode"]')
+        .forEach((radio) => {
+            radio.checked =
+                radio.value === (graceDays > 0 ? "days" : "none");
+        });
+
+    if (elements.monthlyGraceDays) {
+        elements.monthlyGraceDays.value = String(graceDays);
     }
 
+    document
+        .querySelectorAll('input[name="monthlyFineMode"]')
+        .forEach((radio) => {
+            radio.checked =
+                radio.value === (activeFineRule ? "yes" : "no");
+        });
+
+    if (elements.monthlyFineAmount) {
+        elements.monthlyFineAmount.value =
+            activeFineRule?.fixed_amount != null
+                ? String(activeFineRule.fixed_amount)
+                : "";
+    }
+
+    syncContributionRuleUI("monthly");
     renderContributionCycleSummary();
 }
-
 
 async function saveMonthlyContribution(event) {
     event?.preventDefault();
 
     if (!currentGroup?.id) {
-        throw new Error(
-            "No active group is available."
-        );
+        throw new Error("No active group is available.");
     }
 
     if (!canEditContributionSettings) {
@@ -901,77 +946,82 @@ async function saveMonthlyContribution(event) {
         );
     }
 
-    const amount =
-        Number(
-            elements.monthlyContribution?.value ||
-            0
-        );
+    const amount = Number(elements.monthlyContribution?.value || 0);
+    const rawClosingDay = elements.monthlyClosingDay?.value?.trim();
+    const closingDay = Number(rawClosingDay);
 
-    const rawOpeningDay =
-        elements.openingDay?.value?.trim();
-
-    const openingDay =
-        Number(rawOpeningDay);
-
-    if (
-        !Number.isFinite(amount) ||
-        amount < 0
-    ) {
+    if (!Number.isFinite(amount) || amount < 0) {
         throw new Error(
             "Monthly contribution must be a valid non-negative number."
         );
     }
 
     if (
-        !rawOpeningDay ||
-        !Number.isInteger(openingDay) ||
-        openingDay < 1 ||
-        openingDay > 28
+        !rawClosingDay ||
+        !Number.isInteger(closingDay) ||
+        closingDay < 1 ||
+        closingDay > 28
     ) {
         throw new Error(
-            "Opening day must be a whole number between 1 and 28."
+            "Closing day must be a whole number between 1 and 28."
         );
     }
 
-    validateContributionRuleUI(
-        "monthly"
-    );
+    validateContributionRuleUI("monthly");
 
-    const settingsResult =
+    const graceDays = getGraceDays("monthly");
+    const applyFine = isFineEnabled("monthly");
+    const fineAmount = Number(elements.monthlyFineAmount?.value || 0);
+
+    if (Number(currentGroup?.monthly_contribution ?? 0) !== amount) {
+        const { error: amountError } =
+            await groupManagementApi.updateGroup(
+                currentGroup.id,
+                { monthly_contribution: amount }
+            );
+
+        if (amountError) throw amountError;
+    }
+
+    const { data, error } =
         await groupManagementApi.rpc(
-            "update_group_contribution_settings",
+            "update_group_monthly_contribution_settings",
             {
-                p_group_id:
-                    currentGroup.id,
-
-                p_monthly_contribution:
-                    amount,
-
-                p_monthly_opening_day:
-                    openingDay
+                p_group_id: currentGroup.id,
+                p_monthly_closing_day: closingDay,
+                p_monthly_grace_days: graceDays,
+                p_fine_applies: applyFine,
+                p_fine_amount: applyFine ? fineAmount : 0
             }
         );
 
-    if (settingsResult.error) {
-        throw settingsResult.error;
+    if (error) throw error;
+
+    const result = Array.isArray(data) ? data[0] || null : data || null;
+
+    if (!result?.ok) {
+        throw new Error(
+            "The backend did not return a successful Monthly settings result."
+        );
     }
 
     currentGroup = {
         ...currentGroup,
-        monthly_contribution:
-            amount
+        monthly_contribution: amount
     };
 
     await loadContributionSettings();
-
     renderGroup();
 
     showContributionStatus(
-        "Monthly contribution amount and opening day saved. Rule/fine values remain UI-only until the backend rule contract is approved.",
+        applyFine
+            ? `Monthly contribution saved: KSh ${amount.toLocaleString("en-KE")}, closes day ${closingDay}, grace ${graceDays} day${graceDays === 1 ? "" : "s"}, fine KSh ${fineAmount.toLocaleString("en-KE")}.`
+            : `Monthly contribution saved: KSh ${amount.toLocaleString("en-KE")}, closes day ${closingDay}, grace ${graceDays} day${graceDays === 1 ? "" : "s"}, no Monthly-specific fine.`,
         "success"
     );
-}
 
+    return result;
+}
 
 /* ================================================================
    CREATE CUSTOM CONTRIBUTION
