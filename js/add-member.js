@@ -1237,9 +1237,10 @@ function buildContributionPlan() {
     state.monthlyType
       ?.contribution_type_id;
 
-  return {
-    contribution_type_id:
-      contributionTypeId,
+  return [
+    {
+      contribution_type_id:
+        contributionTypeId,
 
     amount:
       numericValue(
@@ -1265,10 +1266,11 @@ function buildContributionPlan() {
       ) ||
       "full_period",
 
-    status:
-      value("addMemberRuleStatus") ||
-      "active",
-  };
+      status:
+        value("addMemberRuleStatus") ||
+        "active",
+    },
+  ];
 }
 
 /* =========================================================
