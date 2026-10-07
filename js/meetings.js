@@ -26,6 +26,13 @@
 import { supabase } from "./supabase.js";
 
 import {
+  getDemoMeetings,
+  getDemoMembers,
+  getDemoAttendance,
+  isDemoMode
+} from "./demo-client.js";
+
+import {
   requireAuth,
   getMyMember
 } from "./auth.js";
@@ -522,14 +529,16 @@ function setEditMode(meeting) {
 
 async function loadMeetings() {
 
-  if (!groupId) {
+  if (isDemoMode()) {
+    meetings = await getDemoMeetings();
+    return;
+  }
 
+  if (!groupId) {
     throw new Error(
       "No group is associated with this account."
     );
-
   }
-
 
   const {
     data,
@@ -569,13 +578,9 @@ async function loadMeetings() {
         }
       );
 
-
   if (error) {
-
     throw error;
-
   }
-
 
   meetings =
     data || [];
@@ -1143,11 +1148,57 @@ function renderAttendanceList() {
 
 async function loadMeetingAttendance() {
 
-  if (
-    !selectedMeeting ||
-    !groupId ||
-    !meetingAttendance
-  ) {
+  if (!selectedMeeting || !meetingAttendance) {
+    return;
+  }
+
+  if (isDemoMode()) {
+
+    const [memberRows, attendance] =
+      await Promise.all([
+        getDemoMembers(),
+        getDemoAttendance()
+      ]);
+
+    attendanceMembers =
+      memberRows.filter(
+        member =>
+          String(member.status || "").toLowerCase() === "active"
+      );
+
+    const rowsForMeeting =
+      attendance.filter(
+        row =>
+          String(row.meeting_id) ===
+          String(selectedMeeting.id)
+      );
+
+    attendanceRsvps =
+      new Map();
+
+    attendanceRows =
+      new Map(
+        rowsForMeeting.map(
+          row => [row.member_id, row]
+        )
+      );
+
+    meetingAttendance.hidden = false;
+
+    if (meetingRsvpSummary) {
+      meetingRsvpSummary.hidden = true;
+    }
+
+    if (saveMeetingAttendance) {
+      saveMeetingAttendance.hidden = true;
+      saveMeetingAttendance.disabled = true;
+    }
+
+    renderAttendanceList();
+    return;
+  }
+
+  if (!groupId) {
     return;
   }
 
@@ -2330,15 +2381,10 @@ function setupButtons() {
 export async function initPage() {
 
   if (initialized) {
-
     return;
-
   }
 
-
-  initialized =
-    true;
-
+  initialized = true;
 
   try {
 
@@ -2348,119 +2394,104 @@ export async function initPage() {
       "Loading meetings..."
     );
 
+    if (isDemoMode()) {
 
-    /* =====================================================
-       AUTH
-    ====================================================== */
+      const demo =
+        window.__CHAMA_LIVE_ADMIN_CONTEXT__;
 
-    await requireAuth();
+      currentMember =
+        demo?.member || null;
 
+      groupId =
+        demo?.group?.id ||
+        currentMember?.group_id ||
+        null;
 
-    /* =====================================================
-       MEMBER
-    ====================================================== */
-
-    currentMember =
-      await getMyMember();
-
-
-    if (!currentMember) {
-
-      throw new Error(
-        "No member record is linked to this account."
-      );
-
-    }
-
-
-    /* =====================================================
-       GROUP
-    ====================================================== */
-
-    groupId =
-      currentMember.group_id;
-
-
-    if (!groupId) {
-
-      throw new Error(
-        "Your member record is not linked to a group."
-      );
-
-    }
-
-
-    console.log(
-      "CHAMA LIVE: meetings context",
-      {
-        memberId:
-          currentMember.id,
-
-        groupId:
-          groupId
+      if (!groupId) {
+        throw new Error(
+          "The demo group could not be determined."
+        );
       }
-    );
 
+      setCreateMode();
 
-    /* =====================================================
-       FORM
-    ====================================================== */
+      if (form) {
+        form.hidden = true;
+      }
 
-    setCreateMode();
+      [
+        editMeeting,
+        completeMeeting,
+        cancelMeeting,
+        restoreMeeting,
+        deleteMeeting,
+        saveMinutes
+      ].forEach(
+        button => {
+          if (button) {
+            button.hidden = true;
+          }
+        }
+      );
 
+    } else {
 
-    if (dateInput) {
+      await requireAuth();
 
-      dateInput.value =
-        getToday();
+      currentMember =
+        await getMyMember();
+
+      if (!currentMember) {
+        throw new Error(
+          "No member record is linked to this account."
+        );
+      }
+
+      groupId =
+        currentMember.group_id;
+
+      if (!groupId) {
+        throw new Error(
+          "Your member record is not linked to a group."
+        );
+      }
+
+      setCreateMode();
+
+      if (dateInput) {
+        dateInput.value =
+          getToday();
+      }
+
+      form?.addEventListener(
+        "submit",
+        saveMeetingForm
+      );
+
+      setupButtons();
+      setupTableActions();
 
     }
-
-
-    form?.addEventListener(
-      "submit",
-      saveMeetingForm
-    );
-
-
-    setupButtons();
-
-    setupTableActions();
-
-
-    /* =====================================================
-       DATA
-    ====================================================== */
 
     await loadMeetings();
 
     renderMetrics();
-
     renderMeetings();
-
     renderDetails();
-
 
     showStatus(
       "Meetings ready."
     );
-
 
     setTimeout(
       () => showStatus(""),
       2000
     );
 
-
-    console.log(
-      "CHAMA LIVE: meetings initialized"
-    );
-
   }
   catch (error) {
 
-    initialized =
-      false;
+    initialized = false;
 
     showStatus("");
 
