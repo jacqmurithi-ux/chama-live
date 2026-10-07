@@ -1,3 +1,8 @@
+/* Native hidden state must always win over component display rules. */
+[hidden] {
+  display: none !important;
+}
+
 /* =========================================================
    CHAMA LIVE — ADD MEMBER
    Page-specific styling only.
