@@ -1930,7 +1930,7 @@ export async function boot() {
         const group =
           await getDemoGroup();
 
-        if (!group?.id) {
+        if (!group?.name) {
           throw new Error(
             "The demo group could not be loaded."
           );
@@ -1941,7 +1941,6 @@ export async function boot() {
           user: null,
           member: {
             id: "demo-viewer",
-            group_id: group.id,
             name: demo.visitor_name || "Demo Visitor",
             role: "viewer",
             status: "active",
