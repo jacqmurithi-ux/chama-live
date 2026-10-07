@@ -1609,7 +1609,7 @@ async async function loadMeetings() {
     .select("id, date, start_time, end_time, title, venue, agenda, type, status")
     .eq("group_id", groupId)
     .gte("date", todayIso())
-    .neq("status", "cancelled")
+    .eq("status", "upcoming")
     .order("date", { ascending: true })
     .order("start_time", { ascending: true, nullsFirst: false })
     .limit(5);
