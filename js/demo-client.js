@@ -13,7 +13,7 @@ export const DEMO_TOKEN_KEY = "chama_live_demo_token";
 
 export function getDemoToken() {
   try {
-    const token = window.localStorage.getItem(DEMO_TOKEN_KEY);
+    const token = window.sessionStorage.getItem(DEMO_TOKEN_KEY);
     return String(token || "").trim() || null;
   } catch {
     return null;
@@ -68,7 +68,7 @@ export async function getDemoAttendance() {
 
 export function clearDemoSession() {
   try {
-    window.localStorage.removeItem(DEMO_TOKEN_KEY);
+    window.sessionStorage.removeItem(DEMO_TOKEN_KEY);
   } catch {
     /* Ignore storage failures. */
   }
