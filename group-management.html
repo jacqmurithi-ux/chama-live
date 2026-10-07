@@ -1219,24 +1219,20 @@
               </div>
 
 
-              <!-- OPENING DAY -->
+              <!-- CLOSING DAY -->
 
               <div class="form-field">
 
-                <label for="openingDay">
-                  Opening day
+                <label for="monthlyClosingDay">
+                  Closing day
                 </label>
 
                 <select
-                  id="openingDay"
-                  name="openingDay"
+                  id="monthlyClosingDay"
+                  name="monthlyClosingDay"
                   required
                 >
-
-                  <option value="">
-                    Select opening day
-                  </option>
-
+                  <option value="">Select closing day</option>
                   <option value="1">1</option>
                   <option value="2">2</option>
                   <option value="3">3</option>
@@ -1265,11 +1261,32 @@
                   <option value="26">26</option>
                   <option value="27">27</option>
                   <option value="28">28</option>
-
                 </select>
 
                 <div class="field-help">
-                  Monthly opening day is limited to 1–28 for deterministic month handling.
+                  Choose the day the monthly contribution cycle closes. The next cycle opens automatically the following day.
+                </div>
+
+              </div>
+
+              <!-- DERIVED OPENING DAY -->
+
+              <div class="form-field">
+
+                <label for="monthlyOpeningDayDerived">
+                  Next cycle opening day
+                </label>
+
+                <input
+                  id="monthlyOpeningDayDerived"
+                  type="text"
+                  value="—"
+                  readonly
+                  aria-readonly="true"
+                >
+
+                <div class="field-help">
+                  Automatically derived as closing day + 1. It is not a second setting.
                 </div>
 
               </div>
@@ -1396,6 +1413,14 @@
                 No grace period. No fine applies.
               </div>
 
+              <div
+                id="monthlyCycleSummary"
+                class="rule-summary"
+                style="margin-top:10px;"
+              >
+                Current monthly cycle: loading…
+              </div>
+
             </div>
 
 
@@ -1418,8 +1443,8 @@
 
             <div class="backend-pending-note">
 
-              Rule and fine persistence remains backend-controlled.
-              This UI does not write contribution rule or accounting tables directly.
+              The closing day and grace period are saved to the canonical cycle settings.
+              The fine controls remain separate until the approved monthly fine contract is connected.
 
             </div>
 
