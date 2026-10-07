@@ -1,48 +1,77 @@
 /* =========================================================
-   CHAMA LIVE — ADD MEMBER ERROR MAP
+   CHAMA LIVE — ADD MEMBER ERROR MAPPING
+   ---------------------------------------------------------
+   Frontend-only error presentation.
+
+   Raw Supabase/PostgreSQL errors are ALWAYS logged.
+   Known application errors receive friendly messages.
+   Unknown errors retain their raw message in Details.
 ========================================================= */
 
-const FRIENDLY_MESSAGES = new Map([
+const ERROR_MESSAGES = new Map([
 
-  [
-    "MEMBER_INPUT_INVALID",
-    "The member information is not in a valid format."
-  ],
-
-  [
-    "CONTRIBUTION_PLAN_INVALID",
-    "The Monthly contribution plan is not valid."
-  ],
+  /* Authentication / authorisation */
 
   [
     "AUTHENTICATION_REQUIRED",
-    "Your session is no longer valid. Please sign in again."
-  ],
-
-  [
-    "Authentication required",
-    "Your session is no longer valid. Please sign in again."
+    "You must be signed in to complete this action."
   ],
 
   [
     "ACTIVE_GROUP_MEMBER_REQUIRED",
-    "An active group membership is required to add a member."
-  ],
-
-  [
-    "Active group membership is required",
-    "An active group membership is required to add a member."
+    "Your account must be an active group member to add a member."
   ],
 
   [
     "MEMBER_MANAGEMENT_NOT_AUTHORIZED",
-    "You do not have permission to add members. Only an authorised group manager can perform this action."
+    "Only an authorised group manager can add members."
+  ],
+
+
+  /* General member validation */
+
+  [
+    "MEMBER_INPUT_INVALID",
+    "The member information entered is invalid."
   ],
 
   [
-    "Member-management authorization required",
-    "You do not have permission to add members. Only an authorised group manager can perform this action."
+    "MEMBER_NUMBER_REQUIRED",
+    "Member number is required."
   ],
+
+  [
+    "MEMBERSHIP_NUMBER_REQUIRED",
+    "Membership number is required."
+  ],
+
+  [
+    "MEMBER_NAME_REQUIRED",
+    "Member name is required."
+  ],
+
+  [
+    "MEMBER_PHONE_REQUIRED",
+    "Member phone number is required."
+  ],
+
+  [
+    "MEMBER_ROLE_INVALID",
+    "The selected member role is not valid."
+  ],
+
+  [
+    "MEMBER_STATUS_INVALID",
+    "The selected member status is not valid."
+  ],
+
+  [
+    "MEMBER_ONBOARDING_STATUS_INVALID",
+    "The selected onboarding status is not valid."
+  ],
+
+
+  /* Duplicate identifiers */
 
   [
     "MEMBER_NUMBER_ALREADY_EXISTS",
@@ -54,89 +83,85 @@ const FRIENDLY_MESSAGES = new Map([
     "That membership number is already in use in this group."
   ],
 
-  [
-    "MEMBER_NUMBER_REQUIRED",
-    "Member number is required."
-  ],
 
-  [
-    "Member number is required",
-    "Member number is required."
-  ],
-
-  [
-    "MEMBERSHIP_NUMBER_REQUIRED",
-    "Membership number is required."
-  ],
-
-  [
-    "Membership number is required",
-    "Membership number is required."
-  ],
-
-  [
-    "MEMBER_NAME_REQUIRED",
-    "Member name is required."
-  ],
-
-  [
-    "Member name is required",
-    "Member name is required."
-  ],
-
-  [
-    "MEMBER_PHONE_REQUIRED",
-    "Member phone number is required."
-  ],
-
-  [
-    "Member phone is required",
-    "Member phone number is required."
-  ],
-
-  [
-    "MEMBER_ROLE_INVALID",
-    "Select a valid security role."
-  ],
-
-  [
-    "MEMBER_STATUS_INVALID",
-    "Select a valid member status."
-  ],
-
-  [
-    "MEMBER_ONBOARDING_STATUS_INVALID",
-    "Select a valid onboarding status."
-  ],
+  /* Position */
 
   [
     "ACTUAL_POSITION_INVALID",
-    "Select a valid actual group position."
+    "The selected actual group position is not valid."
   ],
 
   [
     "ACTUAL_POSITION_NAME_REQUIRED",
-    "Enter the position name when Actual Position is Other."
+    "A position name is required when Actual Position is Other."
   ],
 
   [
     "ACTUAL_POSITION_EFFECTIVE_DATE_INVALID",
-    "Enter a valid position effective date."
+    "The actual position effective date is invalid."
   ],
 
   [
     "ACTUAL_POSITION_EFFECTIVE_DATE_BEFORE_JOIN_DATE",
-    "The position effective date cannot be before the member's join date."
+    "The actual position effective date cannot be before the join date."
+  ],
+
+
+  /* Contribution plan */
+
+  [
+    "CONTRIBUTION_PLAN_INVALID",
+    "The contribution plan submitted for this member is invalid."
   ],
 
   [
-    "CONTRIBUTION_TYPE_ID_REQUIRED",
-    "The group's Monthly contribution type could not be resolved."
+    "CONTRIBUTION_PLAN_ITEM_INVALID",
+    "The contribution plan entry is invalid."
   ],
 
   [
     "CONTRIBUTION_TYPE_ID_INVALID",
-    "The group's Monthly contribution type is invalid."
+    "The selected contribution type is invalid."
+  ],
+
+  [
+    "CONTRIBUTION_TYPE_ID_REQUIRED",
+    "A contribution type is required."
+  ],
+
+  [
+    "CONTRIBUTION_AMOUNT_INVALID",
+    "The monthly contribution amount must be greater than zero."
+  ],
+
+  [
+    "CONTRIBUTION_FREQUENCY_NOT_SUPPORTED",
+    "Only monthly contribution plans are supported for member creation."
+  ],
+
+  [
+    "CONTRIBUTION_EFFECTIVE_DATE_BEFORE_JOIN_DATE",
+    "The contribution effective date cannot be before the join date."
+  ],
+
+  [
+    "CONTRIBUTION_EFFECTIVE_DATE_RANGE_INVALID",
+    "The contribution effective date range is invalid."
+  ],
+
+  [
+    "FIRST_PERIOD_RULE_NOT_SUPPORTED",
+    "The selected first-period contribution rule is not supported."
+  ],
+
+  [
+    "CONTRIBUTION_RULE_STATUS_INVALID",
+    "The contribution rule status is not valid."
+  ],
+
+  [
+    "ENDED_RULE_REQUIRES_EFFECTIVE_TO",
+    "An ended contribution rule requires an end date."
   ],
 
   [
@@ -146,521 +171,435 @@ const FRIENDLY_MESSAGES = new Map([
 
   [
     "CONTRIBUTION_TYPE_NOT_SUPPORTED",
-    "This group does not have one unambiguous canonical Monthly contribution type."
-  ],
-
-  [
-    "Canonical Monthly contribution type does not belong to the group",
-    "The group's canonical Monthly contribution type could not be verified."
-  ],
-
-  [
-    "CONTRIBUTION_PLAN_ITEM_INVALID",
-    "The Monthly contribution plan item is invalid."
-  ],
-
-  [
-    "CONTRIBUTION_AMOUNT_INVALID",
-    "Monthly contribution amount must be greater than zero."
-  ],
-
-  [
-    "Invalid contribution amount",
-    "Monthly contribution amount must be greater than zero."
-  ],
-
-  [
-    "Monthly contribution amount must be greater than zero",
-    "Monthly contribution amount must be greater than zero."
-  ],
-
-  [
-    "CONTRIBUTION_FREQUENCY_NOT_SUPPORTED",
-    "Only Monthly contributions are supported by this Add Member workflow."
-  ],
-
-  [
-    "Revision 3.2 supports Monthly contributions only",
-    "Only Monthly contributions are supported by this Add Member workflow."
-  ],
-
-  [
-    "CONTRIBUTION_EFFECTIVE_DATE_BEFORE_JOIN_DATE",
-    "The contribution effective date cannot be before the member's join date."
-  ],
-
-  [
-    "Contribution effective_from cannot precede join_date",
-    "The contribution effective date cannot be before the member's join date."
-  ],
-
-  [
-    "CONTRIBUTION_EFFECTIVE_DATE_RANGE_INVALID",
-    "Contribution Effective To cannot be before Effective From."
-  ],
-
-  [
-    "Contribution effective_to cannot precede effective_from",
-    "Contribution Effective To cannot be before Effective From."
-  ],
-
-  [
-    "FIRST_PERIOD_RULE_NOT_SUPPORTED",
-    "Select a valid first-period rule."
-  ],
-
-  [
-    "Invalid first_period_rule",
-    "Select a valid first-period rule."
-  ],
-
-  [
-    "CONTRIBUTION_RULE_STATUS_INVALID",
-    "Select a valid contribution rule status."
-  ],
-
-  [
-    "ENDED_RULE_REQUIRES_EFFECTIVE_TO",
-    "An ended contribution rule must have an Effective To date."
+    "The selected contribution type is not supported for member creation."
   ],
 
   [
     "CONTRIBUTION_RULE_OVERLAP",
-    "The contribution rule overlaps an existing contribution rule."
+    "The contribution plan overlaps an existing contribution rule."
   ],
+
+
+  /* Idempotency */
 
   [
     "IDEMPOTENCY_CONFLICT",
-    "This retry uses the same request ID with different member data. Reset the form and submit it as a new request."
+    "This member creation request conflicts with an earlier request. Do not submit it again."
+  ],
+
+
+  /* Historical onboarding */
+
+  [
+    "HISTORICAL_INPUT_INVALID",
+    "The historical contribution information is invalid."
   ],
 
   [
-    "Request idempotency key is required",
-    "The submission request ID is missing. Reset the form and try again."
-  ],
-
-  [
-    "Member payload must be a JSON object",
-    "The member information is not valid."
-  ],
-
-  [
-    "Contribution plan must be a JSON array",
-    "The Monthly contribution plan is not valid."
-  ],
-
-  [
-    "Historical onboarding must be explicitly enabled",
-    "Historical onboarding was not enabled correctly."
-  ],
-
-  [
-    "Revision 3.2 requires exactly one Monthly contribution rule",
-    "Historical onboarding requires exactly one Monthly contribution rule."
-  ],
-
-  [
-    "Contribution plan item must be a JSON object",
-    "The Monthly contribution plan is not valid."
-  ],
-
-  [
-    "Invalid contribution_type_id",
-    "The group's Monthly contribution type is invalid."
-  ],
-
-  [
-    "Contribution type is required",
-    "The group's Monthly contribution type is required."
-  ],
-
-  [
-    "Invalid first_period_rule",
-    "Select a valid first-period rule."
-  ],
-
-  [
-    "Invalid historical monthly_amount",
+    "HISTORICAL_MONTHLY_AMOUNT_INVALID",
     "The historical monthly amount is invalid."
   ],
 
   [
-    "Historical monthly amount must be greater than zero",
-    "The historical monthly amount must be greater than zero."
+    "HISTORICAL_PAYMENT_METHOD_INVALID",
+    "The selected historical payment method is invalid."
   ],
 
   [
-    "Historical monthly amount must equal current Monthly amount",
-    "The historical monthly amount must equal the current Monthly contribution amount."
+    "HISTORICAL_PAID_THROUGH_INVALID",
+    "The historical Paid Through month is invalid."
+  ],
+
+
+  /* Accounting integrity */
+
+  [
+    "ALLOCATION_INTEGRITY_ERROR",
+    "The member was not created because the accounting allocation could not be completed safely."
   ],
 
   [
-    "Invalid historical paid_through",
-    "Enter a valid historical Paid Through month."
-  ],
-
-  [
-    "paid_through is required",
-    "Historical Paid Through is required."
-  ],
-
-  [
-    "Historical paid_through cannot be in the future",
-    "Historical Paid Through cannot be in the future."
-  ],
-
-  [
-    "Invalid historical payment method",
-    "Select M-Pesa, Cash or Bank transfer."
-  ],
-
-  [
-    "paid_through does not reach the first historical obligation month",
-    "Paid Through must reach the first historical obligation month."
-  ],
-
-  [
-    "Member number is required",
-    "Member number is required."
-  ],
-
-  [
-    "Membership number is required",
-    "Membership number is required."
-  ],
-
-  [
-    "Invalid join_date",
-    "Enter a valid join date."
-  ],
-
-  [
-    "Financial month",
-    "The selected historical period contains a closed financial month and cannot be modified."
-  ],
-
-  [
-    "Cross-member/group allocation detected",
-    "The backend detected an invalid cross-member or cross-group allocation. No accounting change should be accepted."
-  ],
-
-  [
-    "Payment over-allocation detected",
-    "The backend detected a payment allocated above its available amount. No accounting change should be accepted."
-  ],
-
-  [
-    "Obligation over-allocation detected",
-    "The backend detected an obligation allocated above its due amount. No accounting change should be accepted."
+    "CONTRIBUTION_ALLOCATION_INTEGRITY_ERROR",
+    "The member was not created because the accounting allocation could not be completed safely."
   ]
 
 ]);
 
 
 /* =========================================================
-   RAW ERROR TEXT
+   NORMALISE RAW ERROR
 ========================================================= */
 
-function getRawMessage(
-  error
-) {
+function extractError(error) {
 
-  return String(
-    error?.message ||
-    ""
-  ).trim();
+  const code =
+    String(
+      error?.code ||
+      error?.error_code ||
+      ""
+    ).trim();
 
-}
+  const message =
+    String(
+      error?.message ||
+      error?.error ||
+      ""
+    ).trim();
 
+  const details =
+    error?.details ??
+    null;
 
-/* =========================================================
-   CLOSED MONTH SPECIAL CASE
-========================================================= */
-
-function mapClosedMonth(
-  message
-) {
-
-  const match =
-    message.match(
-      /Financial month\s+([0-9]{4}-[0-9]{2})\s+is closed/i
-    );
-
-
-  if (!match) {
-
-    return null;
-
-  }
-
+  const hint =
+    error?.hint ??
+    null;
 
   return {
-    message:
-      `Financial month ${match[1]} is closed. Historical onboarding cannot modify it.`,
-
-    details:
-      "Choose a different historical range or contact the group administrator about the closed period."
-
+    code,
+    message,
+    details,
+    hint
   };
 
 }
 
 
 /* =========================================================
-   ERROR CODE NORMALIZATION
+   HISTORICAL PLAIN-TEXT ERROR MAPPING
 ========================================================= */
 
-function normalizeKey(
-  value
+function mapHistoricalMessage(
+  message
 ) {
 
-  return String(
-    value || ""
-  )
-    .trim();
+  const text =
+    String(
+      message || ""
+    ).trim();
+
+  const lower =
+    text.toLowerCase();
+
+
+  if (
+    lower.includes(
+      "historical monthly amount must equal current monthly amount"
+    )
+  ) {
+
+    return {
+      message:
+        "The historical monthly amount must equal the current Monthly contribution amount.",
+      details:
+        text
+    };
+
+  }
+
+
+  if (
+    lower.includes(
+      "invalid historical payment method"
+    )
+  ) {
+
+    return {
+      message:
+        "The selected historical payment method is not supported.",
+      details:
+        text
+    };
+
+  }
+
+
+  if (
+    lower.includes(
+      "financial month"
+    ) &&
+    lower.includes(
+      "closed"
+    )
+  ) {
+
+    return {
+      message:
+        "The selected accounting period is closed. This member cannot be onboarded through that period.",
+      details:
+        text
+    };
+
+  }
+
+
+  if (
+    lower.includes(
+      "historical"
+    ) &&
+    (
+      lower.includes("paid through") ||
+      lower.includes("paid_through")
+    )
+  ) {
+
+    return {
+      message:
+        "The Historical Paid Through month is not valid.",
+      details:
+        text
+    };
+
+  }
+
+
+  if (
+    lower.includes(
+      "allocation"
+    ) &&
+    (
+      lower.includes("integrity") ||
+      lower.includes("mismatch") ||
+      lower.includes("failed")
+    )
+  ) {
+
+    return {
+      message:
+        "The member was not created because the accounting allocation could not be completed safely.",
+      details:
+        text
+    };
+
+  }
+
+
+  return null;
 
 }
 
 
 /* =========================================================
-   MAIN MAP
+   PUBLIC ERROR MAPPER
 ========================================================= */
 
 export function mapRpcError(
   error
 ) {
 
+  /*
+   * REQUIRED DIAGNOSTIC LOGGING.
+   */
   console.error(
-    "CHAMA LIVE: Add Member RPC error — raw error:",
+    "[CHAMA LIVE] Add Member raw RPC error:",
     error
   );
 
 
-  if (!error) {
+  const {
+    code,
+    message,
+    details,
+    hint
+  } =
+    extractError(error);
+
+
+  /* -------------------------------------------------------
+     Known application error code
+  ------------------------------------------------------- */
+
+  if (
+    code &&
+    ERROR_MESSAGES.has(code)
+  ) {
 
     return {
+      code,
       message:
-        "Something went wrong while contacting CHAMA LIVE. Please try again.",
-
+        ERROR_MESSAGES.get(code),
       details:
-        "No error object was returned."
-
+        details ||
+        hint ||
+        null
     };
 
   }
 
 
-  const code =
-    normalizeKey(
-      error.code
-    );
+  /* -------------------------------------------------------
+     Known plain-text database messages
+  ------------------------------------------------------- */
 
-
-  const message =
-    getRawMessage(
-      error
-    );
-
-
-  const details =
-    String(
-      error.details ||
-      ""
-    ).trim();
-
-
-  const hint =
-    String(
-      error.hint ||
-      ""
-    ).trim();
-
-
-  const closed =
-    mapClosedMonth(
+  const historical =
+    mapHistoricalMessage(
       message
     );
 
 
-  if (closed) {
+  if (historical) {
 
-    return closed;
+    return {
+      code:
+        code ||
+        "DATABASE_VALIDATION_ERROR",
+
+      message:
+        historical.message,
+
+      details:
+        historical.details ||
+        details ||
+        hint ||
+        null
+    };
 
   }
 
 
-  const candidates = [
+  /* -------------------------------------------------------
+     PostgreSQL permission failure
+  ------------------------------------------------------- */
 
-    message,
-
-    code,
-
-    details,
-
-    hint
-
-  ].filter(
-    Boolean
-  );
-
-
-  for (
-    const candidate
-    of candidates
+  if (
+    code === "42501"
   ) {
 
-    if (
-      FRIENDLY_MESSAGES.has(
-        candidate
-      )
-    ) {
-
-      return {
-
-        message:
-          FRIENDLY_MESSAGES.get(
-            candidate
-          ),
-
-        details:
-          buildDetails(
-            error,
-            candidate
-          )
-
-      };
-
-    }
+    return {
+      code,
+      message:
+        "You do not have permission to complete this action.",
+      details:
+        details ||
+        hint ||
+        null
+    };
 
   }
 
 
-  /*
-   * Some PostgreSQL/PostgREST responses contain the
-   * application error code in the message rather than
-   * error.code.
-   */
+  /* -------------------------------------------------------
+     Unique constraint
+  ------------------------------------------------------- */
 
-  for (
-    const [
-      key,
-      friendly
-    ]
-    of FRIENDLY_MESSAGES
+  if (
+    code === "23505"
   ) {
 
-    if (
-      message
-        .toLowerCase()
-        .includes(
-          key.toLowerCase()
-        )
-    ) {
-
-      return {
-
-        message:
-          friendly,
-
-        details:
-          buildDetails(
-            error,
-            key
-          )
-
-      };
-
-    }
+    return {
+      code,
+      message:
+        "A member with the same member or membership number already exists in this group.",
+      details:
+        details ||
+        hint ||
+        null
+    };
 
   }
 
+
+  /* -------------------------------------------------------
+     Contribution-rule exclusion overlap
+  ------------------------------------------------------- */
+
+  if (
+    code === "23P01"
+  ) {
+
+    return {
+      code,
+      message:
+        "The contribution plan overlaps an existing contribution rule.",
+      details:
+        details ||
+        hint ||
+        null
+    };
+
+  }
+
+
+  /* -------------------------------------------------------
+     Check constraints
+  ------------------------------------------------------- */
+
+  if (
+    code === "23514" &&
+    message.includes(
+      "members_membership_number_format_ck"
+    )
+  ) {
+
+    return {
+      code,
+      message:
+        "Membership Number must be exactly 4 digits, for example 0002.",
+      details:
+        details ||
+        hint ||
+        null
+    };
+
+  }
+
+
+  if (
+    code === "23514"
+  ) {
+
+    return {
+      code,
+      message:
+        "One of the entered values is not allowed. Check the form and try again.",
+      details:
+        details ||
+        hint ||
+        null
+    };
+
+  }
+
+
+  /* -------------------------------------------------------
+     Undefined function/operator
+  ------------------------------------------------------- */
+
+  if (
+    code === "42883"
+  ) {
+
+    return {
+      code,
+      message:
+        "The Add Member backend operation is temporarily unavailable. Refresh and try again.",
+      details:
+        message ||
+        details ||
+        hint ||
+        null
+    };
+
+  }
+
+
+  /* -------------------------------------------------------
+     Unknown database/application error
+     Keep raw message as Details.
+  ------------------------------------------------------- */
 
   return {
+    code:
+      code ||
+      "UNKNOWN_ERROR",
 
     message:
-      "Something went wrong while contacting CHAMA LIVE. Please try again.",
+      "The Add Member operation could not be completed.",
 
     details:
-      buildDetails(
-        error,
-        "unknown"
-      )
-
+      message ||
+      details ||
+      hint ||
+      null
   };
-
-}
-
-
-/* =========================================================
-   DETAILS
-========================================================= */
-
-function buildDetails(
-  error,
-  matched
-) {
-
-  const parts = [];
-
-
-  if (
-    error?.message
-  ) {
-
-    parts.push(
-      `Raw message: ${String(error.message)}`
-    );
-
-  }
-
-
-  if (
-    error?.code
-  ) {
-
-    parts.push(
-      `Code: ${String(error.code)}`
-    );
-
-  }
-
-
-  if (
-    error?.details
-  ) {
-
-    parts.push(
-      `Details: ${String(error.details)}`
-    );
-
-  }
-
-
-  if (
-    error?.hint
-  ) {
-
-    parts.push(
-      `Hint: ${String(error.hint)}`
-    );
-
-  }
-
-
-  if (
-    matched &&
-    matched !== "unknown"
-  ) {
-
-    parts.push(
-      `Matched: ${matched}`
-    );
-
-  }
-
-
-  return parts.join(
-    " • "
-  );
 
 }
