@@ -1287,8 +1287,10 @@ function buildHistoricalPayload() {
       ),
 
     paid_through:
-      value(
-        "addMemberHistoricalPaidThrough"
+      monthStart(
+        value(
+          "addMemberHistoricalPaidThrough"
+        )
       ),
 
     payment_method:
