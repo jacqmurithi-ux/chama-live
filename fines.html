@@ -289,6 +289,64 @@
       font-size: 0.88rem;
     }
 
+
+    .fine-status.automatic {
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+
+    .fine-status.manual {
+      background: #f5f3ff;
+      color: #6d28d9;
+    }
+
+    .fine-status.outstanding {
+      background: #fff7ed;
+      color: #c2410c;
+    }
+
+    .fine-status.settled {
+      background: #ecfdf5;
+      color: #047857;
+    }
+
+    .fine-config-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      padding: 18px;
+    }
+
+    .fine-config-grid .full {
+      grid-column: 1 / -1;
+    }
+
+    .fine-config-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 0 18px 18px;
+    }
+
+    .fine-officer-note {
+      margin: 0 18px 18px;
+      padding: 11px 13px;
+      border-radius: 10px;
+      background: #f8fafc;
+      color: #475569;
+      font-size: 0.84rem;
+    }
+
+    @media (max-width: 760px) {
+      .fine-config-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .fine-config-grid .full {
+        grid-column: auto;
+      }
+    }
+
     .fine-hidden {
       display: none !important;
     }
@@ -597,6 +655,174 @@
       </section>
 
 
+        <article class="fine-summary-card">
+          <div class="fine-summary-label">Manual fines</div>
+          <div id="manualFineCount" class="fine-summary-value">0</div>
+        </article>
+
+        <article class="fine-summary-card">
+          <div class="fine-summary-label">Contribution fines</div>
+          <div id="contributionFineCount" class="fine-summary-value">0</div>
+        </article>
+
+
+
+      <!-- ================================================
+           MANUAL MEMBER FINE
+           ================================================ -->
+
+      <section class="fine-section">
+
+        <div class="fine-section-header">
+          <div>
+            <h2>Apply a member fine</h2>
+            <p>
+              Use this for attendance, lateness, disciplinary actions,
+              missed activities, or other member-specific incidents.
+              Contribution fines remain automatic.
+            </p>
+          </div>
+        </div>
+
+        <div class="fine-card">
+          <div id="fineOfficerNote" class="fine-officer-note">
+            Checking fine-management permissions…
+          </div>
+
+          <form id="manualFineForm" class="fine-config-grid" hidden>
+
+            <div class="field">
+              <label for="manualFineMember">Member</label>
+              <select id="manualFineMember" required>
+                <option value="">Select member</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="manualFineType">Fine type</label>
+              <select id="manualFineType" required>
+                <option value="">Select fine type</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="manualFineAmount">Amount (KSh)</label>
+              <input
+                id="manualFineAmount"
+                type="number"
+                min="0.01"
+                step="0.01"
+                required
+              >
+            </div>
+
+            <div class="field">
+              <label for="manualFineDate">Incident date</label>
+              <input
+                id="manualFineDate"
+                type="date"
+              >
+            </div>
+
+            <div class="field full">
+              <label for="manualFineReason">Reason / incident</label>
+              <textarea
+                id="manualFineReason"
+                rows="3"
+                maxlength="1000"
+                required
+                placeholder="Explain why the fine was imposed."
+              ></textarea>
+            </div>
+
+            <div class="fine-config-actions full">
+              <button
+                id="applyManualFineButton"
+                type="submit"
+                class="button"
+              >
+                Apply fine
+              </button>
+            </div>
+
+          </form>
+        </div>
+
+      </section>
+
+
+      <!-- ================================================
+           FINE TYPE CONFIGURATION
+           ================================================ -->
+
+      <section class="fine-section">
+
+        <div class="fine-section-header">
+          <div>
+            <h2>Manual fine types</h2>
+            <p>
+              Configure reusable member-fine reasons such as meeting
+              absence, lateness, missed activity, or disciplinary action.
+            </p>
+          </div>
+        </div>
+
+        <div class="fine-card">
+          <form id="fineTypeForm" class="fine-config-grid" hidden>
+
+            <div class="field">
+              <label for="fineTypeName">Fine type</label>
+              <input
+                id="fineTypeName"
+                type="text"
+                maxlength="120"
+                required
+                placeholder="e.g. Meeting Absence"
+              >
+            </div>
+
+            <div class="field">
+              <label for="fineTypeAmount">Default amount (KSh)</label>
+              <input
+                id="fineTypeAmount"
+                type="number"
+                min="0.01"
+                step="0.01"
+                required
+              >
+            </div>
+
+            <div class="field full">
+              <label for="fineTypeDescription">Description</label>
+              <textarea
+                id="fineTypeDescription"
+                rows="2"
+                maxlength="500"
+                placeholder="Describe when this fine type is used."
+              ></textarea>
+            </div>
+
+            <div class="fine-config-actions full">
+              <button
+                id="createFineTypeButton"
+                type="submit"
+                class="button secondary"
+              >
+                Add fine type
+              </button>
+            </div>
+
+          </form>
+
+          <div class="fine-readonly-note">
+            Fine types are stored as backend fine rules. Historical fine
+            records retain their original type and reason.
+          </div>
+        </div>
+
+      </section>
+
+
       <!-- ================================================
            FINE LEDGER
            ================================================ -->
@@ -612,7 +838,7 @@
             </h2>
 
             <p>
-              Authoritative fine records generated by the Fine Ledger.
+              Automatic contribution fines and manual member fines in one auditable ledger.
             </p>
 
           </div>
@@ -638,15 +864,19 @@
                   </th>
 
                   <th>
-                    Trigger
+                    Source
                   </th>
 
                   <th>
-                    Month
+                    Fine type
                   </th>
 
                   <th>
-                    Fine
+                    Reason
+                  </th>
+
+                  <th>
+                    Amount
                   </th>
 
                   <th>
@@ -658,7 +888,11 @@
                   </th>
 
                   <th>
-                    Triggered
+                    Status
+                  </th>
+
+                  <th>
+                    Date
                   </th>
 
                 </tr>
