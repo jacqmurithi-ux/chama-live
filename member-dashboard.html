@@ -1276,8 +1276,12 @@
     import {
       boot
     } from "./js/member-layout.js";
+    import {
+      initMemberMonthlyCycle
+    } from "./js/member-monthly-cycle.js";
 
-    boot();
+    await boot();
+    await initMemberMonthlyCycle();
 
   </script>
 
