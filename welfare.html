@@ -1,0 +1,2632 @@
+<!doctype html>
+
+<html lang="en">
+
+<head>
+
+  <meta charset="utf-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <meta
+    name="theme-color"
+    content="#075c38"
+  >
+
+  <title>
+    Welfare &amp; Welfare — CHAMA LIVE
+  </title>
+
+  <link
+    rel="stylesheet"
+    href="css/app.css"
+  >
+
+  <style>
+
+    /* =====================================================
+       CHAMA LIVE
+       GROUP OPERATIONS — SUPPORT & WELFARE
+    ===================================================== */
+
+    :root {
+      --cl-green: #075c38;
+      --cl-green-dark: #043d26;
+      --cl-green-mid: #087443;
+      --cl-green-light: #eaf7f0;
+
+      --cl-gold: #d6a928;
+      --cl-gold-light: #fff8dc;
+
+      --cl-ink: #10271c;
+      --cl-text: #263b31;
+      --cl-muted: #718078;
+
+      --cl-bg: #f4f8f5;
+      --cl-card: #ffffff;
+      --cl-border: #dfe9e3;
+
+      --cl-blue: #285bb5;
+      --cl-blue-bg: #edf4ff;
+
+      --cl-danger: #a52319;
+      --cl-danger-bg: #fff0ee;
+
+      --cl-warning: #9a6800;
+      --cl-warning-bg: #fff8e1;
+
+      --cl-success: #087443;
+      --cl-success-bg: #e9f8f0;
+
+      --cl-shadow-sm:
+        0 5px 18px rgba(4, 61, 38, .055);
+
+      --cl-shadow-md:
+        0 14px 38px rgba(4, 61, 38, .095);
+
+      --cl-radius-xl: 24px;
+      --cl-radius-lg: 19px;
+      --cl-radius-md: 14px;
+      --cl-radius-sm: 10px;
+    }
+
+
+    /* =====================================================
+       PAGE
+    ===================================================== */
+
+    .welfare-page {
+      width: min(1440px, calc(100% - 30px));
+      max-width: 100%;
+      min-width: 0;
+      margin: 0 auto;
+      padding: 24px 0 60px;
+      box-sizing: border-box;
+    }
+
+
+    /* =====================================================
+       HERO
+    ===================================================== */
+
+    .welfare-hero {
+      position: relative;
+      overflow: hidden;
+      min-width: 0;
+
+      margin-bottom: 18px;
+      padding: 34px;
+      border-radius: var(--cl-radius-xl);
+
+      background:
+        radial-gradient(
+          circle at 92% 18%,
+          rgba(214,169,40,.20),
+          transparent 25%
+        ),
+        radial-gradient(
+          circle at 80% 110%,
+          rgba(255,255,255,.08),
+          transparent 28%
+        ),
+        linear-gradient(
+          135deg,
+          var(--cl-green-dark) 0%,
+          var(--cl-green) 58%,
+          #0b8250 100%
+        );
+
+      color: #fff;
+
+      box-shadow: var(--cl-shadow-md);
+    }
+
+
+    .welfare-hero::before {
+      content: "";
+      position: absolute;
+      width: 300px;
+      height: 300px;
+      right: -125px;
+      top: -150px;
+
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: 50%;
+
+      box-shadow:
+        0 0 0 35px rgba(255,255,255,.025),
+        0 0 0 70px rgba(255,255,255,.018);
+    }
+
+
+    .welfare-hero::after {
+      content: "";
+      position: absolute;
+      width: 180px;
+      height: 180px;
+      right: 160px;
+      bottom: -140px;
+
+      border-radius: 50%;
+      background: rgba(214,169,40,.12);
+    }
+
+
+    .welfare-hero-content {
+      position: relative;
+      z-index: 2;
+      max-width: 900px;
+      min-width: 0;
+    }
+
+
+    .welfare-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+
+      max-width: 100%;
+
+      margin-bottom: 13px;
+      padding: 7px 12px;
+
+      border:
+        1px solid rgba(255,255,255,.16);
+
+      border-radius: 999px;
+
+      background:
+        rgba(255,255,255,.09);
+
+      color: #f6fbf8;
+
+      font-size: 11px;
+      font-weight: 850;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+
+    .welfare-hero h1 {
+      margin: 0;
+
+      color: #fff;
+
+      font-size:
+        clamp(30px, 4vw, 46px);
+
+      line-height: 1.06;
+      letter-spacing: -.035em;
+      font-weight: 900;
+    }
+
+
+    .welfare-hero h1 .hero-accent {
+      color: #f2d36a;
+    }
+
+
+    .welfare-hero p {
+      max-width: 760px;
+
+      margin:
+        13px 0 0;
+
+      color:
+        rgba(255,255,255,.82);
+
+      font-size: 15px;
+      line-height: 1.7;
+    }
+
+
+    .welfare-context {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+
+      max-width: 100%;
+      box-sizing: border-box;
+
+      margin-top: 18px;
+      padding: 8px 12px;
+
+      border:
+        1px solid rgba(255,255,255,.13);
+
+      border-radius: 10px;
+
+      background:
+        rgba(0,0,0,.10);
+
+      color:
+        rgba(255,255,255,.74);
+
+      font-size: 12px;
+    }
+
+
+    .welfare-context strong {
+      min-width: 0;
+
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+
+      color: #fff;
+      font-weight: 850;
+    }
+
+
+    /* =====================================================
+       LIVE GROUP STRIP
+    ===================================================== */
+
+    .welfare-group-strip {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+
+      min-width: 0;
+
+      margin-bottom: 20px;
+      padding: 13px 16px;
+
+      border:
+        1px solid var(--cl-border);
+
+      border-radius: var(--cl-radius-md);
+
+      background:
+        rgba(255,255,255,.96);
+
+      box-shadow: var(--cl-shadow-sm);
+
+      box-sizing: border-box;
+    }
+
+
+    .welfare-group-info {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+
+      min-width: 0;
+    }
+
+
+    .welfare-group-icon {
+      display: grid;
+      place-items: center;
+
+      flex: 0 0 auto;
+
+      width: 39px;
+      height: 39px;
+
+      border-radius: 11px;
+
+      background:
+        var(--cl-green-light);
+
+      color:
+        var(--cl-green);
+
+      font-size: 18px;
+    }
+
+
+    .welfare-group-label {
+      display: block;
+
+      color: var(--cl-muted);
+
+      font-size: 10px;
+      font-weight: 850;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+
+    .welfare-group-name {
+      display: block;
+
+      max-width: 100%;
+
+      margin-top: 2px;
+
+      color: var(--cl-ink);
+
+      font-size: 15px;
+      font-weight: 850;
+
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+
+    .welfare-live {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+
+      flex: 0 0 auto;
+
+      color: var(--cl-green);
+
+      font-size: 11px;
+      font-weight: 850;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+
+
+    .welfare-live-dot {
+      width: 8px;
+      height: 8px;
+
+      flex: 0 0 auto;
+
+      border-radius: 50%;
+
+      background: #19b76c;
+
+      box-shadow:
+        0 0 0 5px rgba(25,183,108,.10);
+    }
+
+
+    /* =====================================================
+       STATUS / ERROR
+    ===================================================== */
+
+    .welfare-status {
+      margin-bottom: 18px;
+      padding: 13px 16px;
+
+      border:
+        1px solid var(--cl-border);
+
+      border-radius: var(--cl-radius-md);
+
+      background:
+        var(--cl-green-light);
+
+      color:
+        var(--cl-green-dark);
+
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.5;
+
+      box-sizing: border-box;
+    }
+
+
+    .welfare-error {
+      margin-bottom: 18px;
+    }
+
+
+    .welfare-hidden {
+      display: none !important;
+    }
+
+
+    /* =====================================================
+       ACCESS DENIED
+    ===================================================== */
+
+    .welfare-access-denied {
+      position: relative;
+
+      margin-bottom: 20px;
+      padding: 17px 18px 17px 52px;
+
+      border:
+        1px solid #f2c7c2;
+
+      border-radius: var(--cl-radius-md);
+
+      background:
+        var(--cl-danger-bg);
+
+      color:
+        #8f2118;
+
+      line-height: 1.6;
+
+      box-sizing: border-box;
+    }
+
+
+    .welfare-access-denied::before {
+      content: "🔒";
+
+      position: absolute;
+      left: 18px;
+      top: 17px;
+
+      font-size: 19px;
+    }
+
+
+    .welfare-access-denied strong {
+      display: block;
+      margin-bottom: 2px;
+      font-weight: 850;
+    }
+
+
+    /* =====================================================
+       SUMMARY
+    ===================================================== */
+
+    .welfare-summary {
+      display: grid;
+
+      grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+
+      gap: 15px;
+
+      min-width: 0;
+
+      margin-bottom: 22px;
+    }
+
+
+    .welfare-kpi {
+      position: relative;
+      overflow: hidden;
+
+      min-width: 0;
+      min-height: 142px;
+
+      padding: 19px;
+
+      border:
+        1px solid var(--cl-border);
+
+      border-radius: var(--cl-radius-lg);
+
+      background:
+        var(--cl-card);
+
+      box-shadow:
+        var(--cl-shadow-sm);
+
+      transition:
+        transform .18s ease,
+        box-shadow .18s ease;
+
+      box-sizing: border-box;
+    }
+
+
+    .welfare-kpi:hover {
+      transform:
+        translateY(-3px);
+
+      box-shadow:
+        var(--cl-shadow-md);
+    }
+
+
+    .welfare-kpi::after {
+      content: "";
+
+      position: absolute;
+
+      width: 105px;
+      height: 105px;
+
+      right: -42px;
+      bottom: -47px;
+
+      border-radius: 50%;
+
+      background:
+        rgba(8,116,67,.055);
+    }
+
+
+    .welfare-kpi:nth-child(2)::after {
+      background:
+        rgba(214,169,40,.075);
+    }
+
+
+    .welfare-kpi:nth-child(3)::after {
+      background:
+        rgba(40,91,181,.055);
+    }
+
+
+    .welfare-kpi:nth-child(4)::after {
+      background:
+        rgba(119,64,170,.055);
+    }
+
+
+    .welfare-kpi-label {
+      position: relative;
+      z-index: 2;
+
+      display: block;
+
+      color:
+        var(--cl-muted);
+
+      font-size: 10px;
+      font-weight: 850;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+
+    .welfare-kpi-value {
+      position: relative;
+      z-index: 2;
+
+      display: block;
+
+      margin-top: 9px;
+
+      color:
+        var(--cl-ink);
+
+      font-size: 29px;
+      line-height: 1;
+
+      font-weight: 900;
+
+      letter-spacing: -.035em;
+
+      overflow-wrap: anywhere;
+    }
+
+
+    /* =====================================================
+       MAIN GRID
+    ===================================================== */
+
+    .welfare-grid {
+      display: grid;
+
+      grid-template-columns:
+        minmax(330px, .82fr)
+        minmax(0, 1.6fr);
+
+      gap: 20px;
+
+      align-items: start;
+
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+
+      box-sizing: border-box;
+    }
+
+
+    .welfare-grid > * {
+      min-width: 0;
+      max-width: 100%;
+    }
+
+
+    /* =====================================================
+       CARDS
+    ===================================================== */
+
+    .welfare-card {
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+
+      padding: 24px;
+
+      border:
+        1px solid var(--cl-border);
+
+      border-radius: var(--cl-radius-lg);
+
+      background:
+        rgba(255,255,255,.97);
+
+      box-shadow:
+        var(--cl-shadow-sm);
+
+      box-sizing: border-box;
+    }
+
+
+    .welfare-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 14px;
+
+      min-width: 0;
+
+      margin-bottom: 20px;
+    }
+
+
+    .welfare-card-title {
+      display: flex;
+      align-items: flex-start;
+      gap: 11px;
+
+      min-width: 0;
+    }
+
+
+    .welfare-card-title > div:last-child {
+      min-width: 0;
+    }
+
+
+    .welfare-card-icon {
+      display: grid;
+      place-items: center;
+
+      flex: 0 0 auto;
+
+      width: 39px;
+      height: 39px;
+
+      border-radius: 11px;
+
+      background:
+        var(--cl-green-light);
+
+      color:
+        var(--cl-green);
+
+      font-size: 18px;
+    }
+
+
+    .welfare-card-header h2 {
+      margin: 0 0 4px;
+
+      color:
+        var(--cl-ink);
+
+      font-size: 19px;
+      font-weight: 900;
+      letter-spacing: -.02em;
+    }
+
+
+    .welfare-card-header p {
+      margin: 0;
+
+      color:
+        var(--cl-muted);
+
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+
+    .welfare-section-chip {
+      flex: 0 0 auto;
+
+      display: inline-flex;
+      align-items: center;
+
+      padding: 6px 9px;
+
+      border-radius: 999px;
+
+      background:
+        var(--cl-gold-light);
+
+      color:
+        #806000;
+
+      font-size: 10px;
+      font-weight: 850;
+
+      white-space: nowrap;
+    }
+
+
+    /* =====================================================
+       FORM
+    ===================================================== */
+
+    .welfare-form-grid {
+      display: grid;
+
+      grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+      gap: 16px;
+
+      min-width: 0;
+    }
+
+
+    .welfare-full {
+      grid-column: 1 / -1;
+      min-width: 0;
+    }
+
+
+    .welfare-form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+
+      min-width: 0;
+    }
+
+
+    .welfare-form-group label {
+      color:
+        var(--cl-text);
+
+      font-size: 12px;
+      font-weight: 850;
+    }
+
+
+    .welfare-form-group input,
+    .welfare-form-group select,
+    .welfare-form-group textarea {
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+
+      border:
+        1px solid #d2dfd7;
+
+      border-radius:
+        var(--cl-radius-sm);
+
+      background:
+        #fff;
+
+      color:
+        var(--cl-ink);
+
+      font: inherit;
+      font-size: 13px;
+
+      outline: none;
+
+      box-sizing: border-box;
+
+      transition:
+        border-color .18s ease,
+        box-shadow .18s ease;
+    }
+
+
+    .welfare-form-group input,
+    .welfare-form-group select {
+      min-height: 43px;
+      padding: 10px 12px;
+    }
+
+
+    .welfare-form-group textarea {
+      min-height: 118px;
+      padding: 11px 12px;
+      resize: vertical;
+    }
+
+
+    .welfare-form-group input::placeholder,
+    .welfare-form-group textarea::placeholder {
+      color:
+        #9ba8a1;
+    }
+
+
+    .welfare-form-group input:focus,
+    .welfare-form-group select:focus,
+    .welfare-form-group textarea:focus {
+      border-color:
+        var(--cl-green);
+
+      box-shadow:
+        0 0 0 4px rgba(8,116,67,.09);
+    }
+
+
+    .welfare-help {
+      margin: 0;
+
+      color:
+        var(--cl-muted);
+
+      font-size: 10px;
+      line-height: 1.5;
+    }
+
+
+    .welfare-form-actions {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      flex-wrap: wrap;
+
+      margin-top: 21px;
+      padding-top: 18px;
+
+      border-top:
+        1px solid #edf2ee;
+    }
+
+
+    /* =====================================================
+       BUTTONS
+    ===================================================== */
+
+    .welfare-btn {
+      min-height: 41px;
+
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+
+      padding: 10px 15px;
+
+      border-radius:
+        var(--cl-radius-sm);
+
+      font: inherit;
+      font-size: 12px;
+      font-weight: 850;
+
+      cursor: pointer;
+
+      transition:
+        transform .15s ease,
+        box-shadow .15s ease,
+        opacity .15s ease;
+    }
+
+
+    .welfare-btn:hover:not(:disabled) {
+      transform:
+        translateY(-1px);
+    }
+
+
+    .welfare-btn:disabled {
+      opacity: .55;
+      cursor: not-allowed;
+    }
+
+
+    .welfare-btn-primary {
+      border:
+        1px solid var(--cl-green);
+
+      background:
+        linear-gradient(
+          135deg,
+          var(--cl-green-mid),
+          var(--cl-green-dark)
+        );
+
+      color: #fff;
+
+      box-shadow:
+        0 7px 16px rgba(7,92,56,.17);
+    }
+
+
+    .welfare-btn-primary:hover:not(:disabled) {
+      box-shadow:
+        0 10px 22px rgba(7,92,56,.23);
+    }
+
+
+    .welfare-btn-secondary {
+      border:
+        1px solid #d6e1da;
+
+      background:
+        #f7faf8;
+
+      color:
+        var(--cl-text);
+    }
+
+
+    .welfare-btn-secondary:hover:not(:disabled) {
+      background:
+        #edf4ef;
+    }
+
+
+    /* =====================================================
+       FILTERS
+    ===================================================== */
+
+    .welfare-filter {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      flex-wrap: wrap;
+
+      min-width: 0;
+
+      margin:
+        17px 0 15px;
+
+      padding: 10px;
+
+      border:
+        1px solid #e6eee9;
+
+      border-radius:
+        var(--cl-radius-md);
+
+      background:
+        #f8faf9;
+
+      box-sizing: border-box;
+    }
+
+
+    .welfare-filter select,
+    .welfare-filter input {
+      min-height: 40px;
+      min-width: 0;
+
+      border:
+        1px solid #d6e2da;
+
+      border-radius:
+        9px;
+
+      background:
+        #fff;
+
+      color:
+        var(--cl-text);
+
+      font: inherit;
+      font-size: 12px;
+
+      outline: none;
+
+      box-sizing: border-box;
+    }
+
+
+    .welfare-filter select {
+      min-width: 160px;
+      padding: 8px 10px;
+    }
+
+
+    .welfare-filter input {
+      flex:
+        1 1 240px;
+
+      min-width: 180px;
+
+      padding: 8px 11px;
+    }
+
+
+    .welfare-filter input:focus,
+    .welfare-filter select:focus {
+      border-color:
+        var(--cl-green);
+
+      box-shadow:
+        0 0 0 3px rgba(8,116,67,.08);
+    }
+
+
+    /* =====================================================
+       TABLE
+    ===================================================== */
+
+    .welfare-table-wrap {
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+
+      overflow-x: auto;
+      overflow-y: hidden;
+
+      border:
+        1px solid #e2ebe5;
+
+      border-radius:
+        var(--cl-radius-md);
+
+      -webkit-overflow-scrolling: touch;
+
+      box-sizing: border-box;
+    }
+
+
+    .welfare-table {
+      width: 100%;
+      min-width: 1050px;
+
+      border-collapse:
+        separate;
+
+      border-spacing:
+        0;
+
+      background:
+        #fff;
+    }
+
+
+    .welfare-table th,
+    .welfare-table td {
+      padding:
+        12px 11px;
+
+      border-bottom:
+        1px solid #e8efeb;
+
+      text-align:
+        left;
+
+      vertical-align:
+        middle;
+
+      font-size:
+        12px;
+    }
+
+
+    .welfare-table th {
+      background:
+        #f5f9f6;
+
+      color:
+        #617168;
+
+      font-size:
+        10px;
+
+      font-weight:
+        900;
+
+      letter-spacing:
+        .07em;
+
+      text-transform:
+        uppercase;
+
+      white-space:
+        nowrap;
+    }
+
+
+    .welfare-table tbody tr {
+      transition:
+        background .15s ease;
+    }
+
+
+    .welfare-table tbody tr:hover td {
+      background:
+        #fbfdfc;
+    }
+
+
+    .welfare-table tbody tr:last-child td {
+      border-bottom:
+        0;
+    }
+
+
+    .welfare-amount {
+      text-align:
+        right !important;
+
+      white-space:
+        nowrap;
+
+      font-variant-numeric:
+        tabular-nums;
+
+      font-weight:
+        850;
+
+      color:
+        var(--cl-green-dark);
+    }
+
+
+    .welfare-secondary {
+      margin-top:
+        3px;
+
+      color:
+        var(--cl-muted);
+
+      font-size:
+        10px;
+    }
+
+
+    /* =====================================================
+       STATUS BADGES
+    ===================================================== */
+
+    .welfare-status-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+
+      min-width:
+        68px;
+
+      padding:
+        5px 9px;
+
+      border-radius:
+        999px;
+
+      font-size:
+        10px;
+
+      font-weight:
+        850;
+
+      white-space:
+        nowrap;
+
+      text-transform:
+        capitalize;
+    }
+
+
+    .welfare-status-requested {
+      background:
+        var(--cl-warning-bg);
+
+      color:
+        var(--cl-warning);
+    }
+
+
+    .welfare-status-approved {
+      background:
+        var(--cl-blue-bg);
+
+      color:
+        var(--cl-blue);
+    }
+
+
+    .welfare-status-paid,
+    .welfare-status-completed {
+      background:
+        var(--cl-success-bg);
+
+      color:
+        var(--cl-success);
+    }
+
+
+    .welfare-status-rejected,
+    .welfare-status-cancelled {
+      background:
+        var(--cl-danger-bg);
+
+      color:
+        var(--cl-danger);
+    }
+
+
+    /* =====================================================
+       ROW ACTIONS
+    ===================================================== */
+
+    .welfare-actions {
+      display:
+        flex;
+
+      gap:
+        5px;
+
+      flex-wrap:
+        wrap;
+    }
+
+
+    .welfare-action-btn {
+      padding:
+        6px 9px;
+
+      border:
+        1px solid #d7e1db;
+
+      border-radius:
+        8px;
+
+      background:
+        #fff;
+
+      color:
+        var(--cl-text);
+
+      cursor:
+        pointer;
+
+      font:
+        inherit;
+
+      font-size:
+        10px;
+
+      font-weight:
+        800;
+
+      transition:
+        border-color .15s ease,
+        background .15s ease,
+        color .15s ease;
+    }
+
+
+    .welfare-action-btn:hover:not(:disabled) {
+      border-color:
+        var(--cl-green);
+
+      background:
+        var(--cl-green-light);
+
+      color:
+        var(--cl-green-dark);
+    }
+
+
+    .welfare-action-btn:disabled {
+      opacity:
+        .55;
+
+      cursor:
+        not-allowed;
+    }
+
+
+    /* =====================================================
+       EMPTY STATE
+    ===================================================== */
+
+    .welfare-empty {
+      padding:
+        48px 18px !important;
+
+      text-align:
+        center !important;
+
+      color:
+        var(--cl-muted);
+
+      background:
+        linear-gradient(
+          135deg,
+          #fcfefd,
+          #f5f9f6
+        );
+    }
+
+
+    .welfare-empty::before {
+      content:
+        "🤝";
+
+      display:
+        block;
+
+      margin-bottom:
+        10px;
+
+      font-size:
+        31px;
+
+      opacity:
+        .70;
+    }
+
+
+    /* =====================================================
+       BRAND FOOTER
+    ===================================================== */
+
+    .welfare-brand-footer {
+      display:
+        flex;
+
+      align-items:
+        center;
+
+      justify-content:
+        space-between;
+
+      gap:
+        16px;
+
+      min-width:
+        0;
+
+      margin-top:
+        22px;
+
+      padding:
+        18px 20px;
+
+      border:
+        1px solid var(--cl-border);
+
+      border-radius:
+        var(--cl-radius-lg);
+
+      background:
+        linear-gradient(
+          135deg,
+          #eef8f2,
+          #fffaf0
+        );
+
+      box-sizing:
+        border-box;
+    }
+
+
+    .welfare-brand {
+      display:
+        flex;
+
+      align-items:
+        center;
+
+      gap:
+        11px;
+
+      min-width:
+        0;
+    }
+
+
+    .welfare-brand-mark {
+      display:
+        grid;
+
+      place-items:
+        center;
+
+      flex:
+        0 0 auto;
+
+      width:
+        40px;
+
+      height:
+        40px;
+
+      border-radius:
+        11px;
+
+      background:
+        var(--cl-green);
+
+      color:
+        #fff;
+
+      font-size:
+        12px;
+
+      font-weight:
+        950;
+
+      letter-spacing:
+        -.03em;
+    }
+
+
+    .welfare-brand strong {
+      display:
+        block;
+
+      color:
+        var(--cl-green-dark);
+
+      font-size:
+        13px;
+
+      font-weight:
+        900;
+    }
+
+
+    .welfare-brand span {
+      display:
+        block;
+
+      margin-top:
+        2px;
+
+      color:
+        var(--cl-muted);
+
+      font-size:
+        10px;
+    }
+
+
+    .welfare-footer-tag {
+      color:
+        var(--cl-muted);
+
+      font-size:
+        10px;
+
+      font-weight:
+        800;
+
+      text-align:
+        right;
+    }
+
+
+    /* =====================================================
+       RESPONSIVE
+    ===================================================== */
+
+    @media (max-width: 1100px) {
+
+      .welfare-summary {
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
+      }
+
+      .welfare-grid {
+        grid-template-columns:
+          minmax(0, 1fr);
+      }
+
+    }
+
+
+    @media (max-width: 720px) {
+
+      /*
+       * Mobile containment:
+       * prevent grid/card/table content from expanding
+       * the entire page horizontally.
+       */
+
+      html,
+      body {
+        max-width: 100%;
+        overflow-x: hidden;
+      }
+
+
+      .layout,
+      .main {
+        min-width: 0;
+        max-width: 100%;
+      }
+
+
+      .main {
+        overflow-x: hidden;
+
+        padding-bottom:
+          78px !important;
+      }
+
+
+      .welfare-page {
+        width:
+          calc(100% - 18px);
+
+        max-width:
+          100%;
+
+        min-width:
+          0;
+
+        padding:
+          16px 0 18px;
+
+        overflow-x:
+          hidden;
+
+        box-sizing:
+          border-box;
+      }
+
+
+      .welfare-hero {
+        width:
+          100%;
+
+        max-width:
+          100%;
+
+        min-width:
+          0;
+
+        padding:
+          24px 20px;
+
+        border-radius:
+          19px;
+
+        box-sizing:
+          border-box;
+      }
+
+
+      .welfare-hero h1 {
+        font-size:
+          31px;
+      }
+
+
+      .welfare-hero p {
+        max-width:
+          100%;
+
+        font-size:
+          13px;
+      }
+
+
+      .welfare-context {
+        max-width:
+          100%;
+      }
+
+
+      .welfare-group-strip {
+        width:
+          100%;
+
+        max-width:
+          100%;
+
+        min-width:
+          0;
+
+        align-items:
+          flex-start;
+
+        flex-direction:
+          column;
+
+        box-sizing:
+          border-box;
+      }
+
+
+      .welfare-group-info {
+        width:
+          100%;
+
+        max-width:
+          100%;
+      }
+
+
+      .welfare-group-name {
+        max-width:
+          calc(100vw - 100px);
+      }
+
+
+      .welfare-live {
+        padding-left:
+          50px;
+      }
+
+
+      .welfare-summary {
+        width:
+          100%;
+
+        max-width:
+          100%;
+
+        min-width:
+          0;
+
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
+      }
+
+
+      .welfare-kpi {
+        width:
+          100%;
+
+        min-width:
+          0;
+
+        max-width:
+          100%;
+      }
+
+
+      .welfare-grid {
+        width:
+          100%;
+
+        max-width:
+          100%;
+
+        min-width:
+          0;
+
+        grid-template-columns:
+          minmax(0, 1fr);
+      }
+
+
+      .welfare-grid > * {
+        width:
+          100%;
+
+        min-width:
+          0;
+
+        max-width:
+          100%;
+      }
+
+
+      .welfare-card {
+        width:
+          100%;
+
+        min-width:
+          0;
+
+        max-width:
+          100%;
+
+        padding:
+          18px;
+
+        box-sizing:
+          border-box;
+      }
+
+
+      .welfare-card-header {
+        min-width:
+          0;
+
+        flex-direction:
+          column;
+      }
+
+
+      .welfare-card-title {
+        width:
+          100%;
+
+        min-width:
+          0;
+      }
+
+
+      .welfare-section-chip {
+        align-self:
+          flex-start;
+      }
+
+
+      .welfare-form-grid {
+        width:
+          100%;
+
+        min-width:
+          0;
+
+        grid-template-columns:
+          minmax(0, 1fr);
+      }
+
+
+      .welfare-form-group,
+      .welfare-full {
+        width:
+          100%;
+
+        min-width:
+          0;
+
+        max-width:
+          100%;
+      }
+
+
+      .welfare-full {
+        grid-column:
+          auto;
+      }
+
+
+      .welfare-form-actions {
+        flex-direction:
+          column;
+
+        align-items:
+          stretch;
+      }
+
+
+      .welfare-btn {
+        width:
+          100%;
+
+        max-width:
+          100%;
+
+        box-sizing:
+          border-box;
+      }
+
+
+      .welfare-filter {
+        width:
+          100%;
+
+        max-width:
+          100%;
+
+        min-width:
+          0;
+
+        flex-direction:
+          column;
+
+        align-items:
+          stretch;
+
+        box-sizing:
+          border-box;
+      }
+
+
+      .welfare-filter select,
+      .welfare-filter input {
+        width:
+          100%;
+
+        max-width:
+          100%;
+
+        min-width:
+          0;
+
+        box-sizing:
+          border-box;
+      }
+
+
+      /*
+       * The table intentionally remains wide enough for all
+       * management columns. It scrolls inside this wrapper
+       * rather than expanding the page itself.
+       */
+
+      .welfare-table-wrap {
+        width:
+          100%;
+
+        max-width:
+          100%;
+
+        min-width:
+          0;
+
+        overflow-x:
+          auto;
+
+        overflow-y:
+          hidden;
+      }
+
+
+      .welfare-table {
+        min-width:
+          1050px;
+      }
+
+
+      .welfare-brand-footer {
+        width:
+          100%;
+
+        max-width:
+          100%;
+
+        min-width:
+          0;
+
+        align-items:
+          flex-start;
+
+        flex-direction:
+          column;
+      }
+
+
+      .welfare-footer-tag {
+        text-align:
+          left;
+      }
+
+    }
+
+
+    @media (max-width: 470px) {
+
+      .welfare-summary {
+        grid-template-columns:
+          minmax(0, 1fr);
+      }
+
+
+      .welfare-kpi {
+        min-height:
+          115px;
+      }
+
+
+      .welfare-kpi-value {
+        font-size:
+          27px;
+      }
+
+
+      .welfare-filter {
+        flex-direction:
+          column;
+
+        align-items:
+          stretch;
+      }
+
+
+      .welfare-filter select,
+      .welfare-filter input {
+        width:
+          100%;
+
+        min-width:
+          0;
+      }
+
+    }
+
+  </style>
+
+</head>
+
+<body>
+
+<!-- =====================================================
+     GLOBAL TOP BAR
+===================================================== -->
+
+<header class="topbar">
+
+  <div class="brand">
+    CHAMA <span>LIVE</span>
+  </div>
+
+  <button
+    class="btn btn-secondary"
+    id="logout"
+    type="button"
+  >
+    Sign out
+  </button>
+
+</header>
+
+
+<div class="layout">
+
+  <!-- ===================================================
+       MAIN
+  =================================================== -->
+
+  <main class="main">
+
+    <div class="welfare-page">
+
+
+      <!-- ===============================================
+           HERO
+      ================================================ -->
+
+      <section class="welfare-hero">
+
+        <div class="welfare-hero-content">
+
+          <div class="welfare-badge">
+            🤝 CHAMA LIVE
+            <span>•</span>
+            Group Operations
+          </div>
+
+
+          <h1>
+            Welfare &amp;
+            <span class="hero-accent">
+              Welfare
+            </span>
+          </h1>
+
+
+          <p>
+            Manage member welfare cases, welfare requests
+            and approval decisions in one secure group
+            workspace — while keeping financial records
+            and accounting controls safely separated.
+          </p>
+
+
+          <div class="welfare-context">
+
+            <span>
+              👥
+            </span>
+
+            <span>
+              Current group:
+            </span>
+
+            <strong id="groupName">
+              Loading…
+            </strong>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- ===============================================
+           GROUP CONTEXT
+      ================================================ -->
+
+      <section class="welfare-group-strip">
+
+        <div class="welfare-group-info">
+
+          <div class="welfare-group-icon">
+            👥
+          </div>
+
+          <div>
+
+            <span class="welfare-group-label">
+              Active group workspace
+            </span>
+
+            <strong
+              id="welfareGroupDisplay"
+              class="welfare-group-name"
+              data-group-name
+            >
+              Loading…
+            </strong>
+
+          </div>
+
+        </div>
+
+
+        <div class="welfare-live">
+
+          <span class="welfare-live-dot"></span>
+
+          Live group context
+
+        </div>
+
+      </section>
+
+
+      <!-- ===============================================
+           STATUS
+      ================================================ -->
+
+      <div
+        id="status"
+        class="welfare-status welfare-hidden"
+        role="status"
+        aria-live="polite"
+      ></div>
+
+
+      <!-- ===============================================
+           ERROR
+      ================================================ -->
+
+      <div
+        id="error"
+        class="error welfare-error welfare-hidden"
+        role="alert"
+        aria-live="assertive"
+      ></div>
+
+
+      <!-- ===============================================
+           ACCESS DENIED
+      ================================================ -->
+
+      <div
+        id="accessDenied"
+        class="welfare-access-denied welfare-hidden"
+      >
+
+        <strong>
+          Management access required.
+        </strong>
+
+        <div>
+          Welfare &amp; Welfare management is restricted
+          to the group's admin, chairperson, secretary or
+          treasurer role.
+        </div>
+
+      </div>
+
+
+      <!-- ===============================================
+           MAIN CONTENT
+      ================================================ -->
+
+      <section
+        id="welfareContent"
+        class="welfare-hidden"
+      >
+
+
+        <!-- =============================================
+             KPI SUMMARY
+        ============================================== -->
+
+        <section class="welfare-summary">
+
+
+          <div class="welfare-kpi">
+
+            <span class="welfare-kpi-label">
+              Total cases
+            </span>
+
+            <strong
+              id="totalCases"
+              class="welfare-kpi-value"
+            >
+              0
+            </strong>
+
+          </div>
+
+
+          <div class="welfare-kpi">
+
+            <span class="welfare-kpi-label">
+              Open requests
+            </span>
+
+            <strong
+              id="openCases"
+              class="welfare-kpi-value"
+            >
+              0
+            </strong>
+
+          </div>
+
+
+          <div class="welfare-kpi">
+
+            <span class="welfare-kpi-label">
+              Approved / paid
+            </span>
+
+            <strong
+              id="approvedCases"
+              class="welfare-kpi-value"
+            >
+              0
+            </strong>
+
+          </div>
+
+
+          <div class="welfare-kpi">
+
+            <span class="welfare-kpi-label">
+              Total welfare
+            </span>
+
+            <strong
+              id="totalAmount"
+              class="welfare-kpi-value"
+            >
+              KSh 0
+            </strong>
+
+          </div>
+
+
+        </section>
+
+
+        <!-- =============================================
+             FORM + REGISTER
+        ============================================== -->
+
+        <div class="welfare-grid">
+
+
+          <!-- ===========================================
+               RECORD SUPPORT
+          ============================================ -->
+
+          <section class="card welfare-card">
+
+
+            <div class="welfare-card-header">
+
+              <div class="welfare-card-title">
+
+                <div class="welfare-card-icon">
+                  🤝
+                </div>
+
+                <div>
+
+                  <h2>
+                    Record Welfare Case
+                  </h2>
+
+                  <p>
+                    Capture a new welfare or welfare
+                    request for a group member.
+                  </p>
+
+                </div>
+
+              </div>
+
+
+              <div class="welfare-section-chip">
+                New case
+              </div>
+
+            </div>
+
+
+            <form id="welfareForm">
+
+
+              <div class="welfare-form-grid">
+
+
+                <!-- MEMBER -->
+
+                <div class="welfare-form-group welfare-full">
+
+                  <label for="memberId">
+                    Member
+                  </label>
+
+                  <select
+                    id="memberId"
+                    required
+                  >
+
+                    <option value="">
+                      Select member
+                    </option>
+
+                  </select>
+
+                </div>
+
+
+                <!-- SUPPORT TYPE -->
+
+                <div class="welfare-form-group">
+
+                  <label for="welfareType">
+                    Welfare type
+                  </label>
+
+                  <select
+                    id="welfareType"
+                    required
+                  >
+
+                    <option value="welfare">
+                      Welfare
+                    </option>
+
+                    <option value="hospital">
+                      Hospital
+                    </option>
+
+                    <option value="bereavement">
+                      Bereavement
+                    </option>
+
+                    <option value="education">
+                      Education
+                    </option>
+
+                    <option value="emergency">
+                      Emergency
+                    </option>
+
+                    <option value="accident">
+                      Accident
+                    </option>
+
+                    <option value="marriage">
+                      Marriage
+                    </option>
+
+                    <option value="new_baby">
+                      New baby
+                    </option>
+
+                    <option value="disaster">
+                      Disaster
+                    </option>
+
+                    <option value="other">
+                      Other
+                    </option>
+
+                  </select>
+
+                </div>
+
+
+                <!-- DATE -->
+
+                <div class="welfare-form-group">
+
+                  <label for="welfareDate">
+                    Welfare date
+                  </label>
+
+                  <input
+                    id="welfareDate"
+                    type="date"
+                    required
+                  >
+
+                </div>
+
+
+                <!-- AMOUNT -->
+
+                <div class="welfare-form-group welfare-full">
+
+                  <label for="amount">
+                    Requested amount (KSh)
+                  </label>
+
+                  <input
+                    id="amount"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value="0"
+                    required
+                  >
+
+                  <p class="welfare-help">
+                    Zero is valid under the live database
+                    contract.
+                  </p>
+
+                </div>
+
+
+                <!-- DESCRIPTION -->
+
+                <div class="welfare-form-group welfare-full">
+
+                  <label for="description">
+                    Description
+                  </label>
+
+                  <textarea
+                    id="description"
+                    rows="5"
+                    maxlength="5000"
+                    placeholder="Brief details of the welfare case..."
+                  ></textarea>
+
+                </div>
+
+
+              </div>
+
+
+              <div class="welfare-form-actions">
+
+                <button
+                  class="welfare-btn welfare-btn-primary"
+                  id="saveWelfare"
+                  type="submit"
+                >
+                  <span>＋</span>
+                  Save Welfare Case
+                </button>
+
+
+                <button
+                  class="welfare-btn welfare-btn-secondary"
+                  id="resetWelfare"
+                  type="button"
+                >
+                  Clear
+                </button>
+
+              </div>
+
+
+            </form>
+
+          </section>
+
+
+          <!-- ===========================================
+               WELFARE REGISTER
+          ============================================ -->
+
+          <section class="card welfare-card">
+
+
+            <div class="welfare-card-header">
+
+              <div class="welfare-card-title">
+
+                <div class="welfare-card-icon">
+                  📋
+                </div>
+
+                <div>
+
+                  <h2>
+                    Welfare Cases
+                  </h2>
+
+                  <p>
+                    Review welfare cases belonging to the
+                    current authenticated group.
+                  </p>
+
+                </div>
+
+              </div>
+
+
+              <button
+                class="welfare-btn welfare-btn-secondary"
+                id="refreshWelfare"
+                type="button"
+              >
+                ↻ Refresh
+              </button>
+
+            </div>
+
+
+            <!-- FILTER BAR -->
+
+            <div class="welfare-filter">
+
+              <select
+                id="statusFilter"
+                aria-label="Filter welfare cases by status"
+              >
+
+                <option value="">
+                  All statuses
+                </option>
+
+                <option value="requested">
+                  Requested
+                </option>
+
+                <option value="approved">
+                  Approved
+                </option>
+
+                <option value="paid">
+                  Paid
+                </option>
+
+                <option value="completed">
+                  Completed
+                </option>
+
+                <option value="rejected">
+                  Rejected
+                </option>
+
+                <option value="cancelled">
+                  Cancelled
+                </option>
+
+              </select>
+
+
+              <input
+                id="caseSearch"
+                type="search"
+                placeholder="Search member or description..."
+                aria-label="Search welfare cases"
+              >
+
+            </div>
+
+
+            <!-- TABLE -->
+
+            <div class="welfare-table-wrap">
+
+              <table class="welfare-table">
+
+                <thead>
+
+                  <tr>
+
+                    <th>
+                      Date
+                    </th>
+
+                    <th>
+                      Member
+                    </th>
+
+                    <th>
+                      Type
+                    </th>
+
+                    <th>
+                      Amount
+                    </th>
+
+                    <th>
+                      Status
+                    </th>
+
+                    <th>
+                      Expense
+                    </th>
+
+                    <th>
+                      Actions
+                    </th>
+
+                  </tr>
+
+                </thead>
+
+
+                <tbody id="welfareRows">
+
+                  <tr>
+
+                    <td
+                      colspan="7"
+                      class="welfare-empty"
+                    >
+                      Loading welfare cases…
+
+                    </td>
+
+                  </tr>
+
+                </tbody>
+
+              </table>
+
+            </div>
+
+
+          </section>
+
+
+        </div>
+
+
+        <!-- =============================================
+             BRAND FOOTER
+        ============================================== -->
+
+        <section class="welfare-brand-footer">
+
+          <div class="welfare-brand">
+
+            <div class="welfare-brand-mark">
+              CL
+            </div>
+
+            <div>
+
+              <strong>
+                CHAMA LIVE
+              </strong>
+
+              <span>
+                Better groups. Better records.
+                Better decisions.
+              </span>
+
+            </div>
+
+          </div>
+
+
+          <div class="welfare-footer-tag">
+            Group Operations • Welfare &amp; Welfare
+          </div>
+
+        </section>
+
+
+      </section>
+
+    </div>
+
+  </main>
+
+</div>
+
+
+<!-- =====================================================
+     ADMIN PORTAL BOOT
+===================================================== -->
+
+<script type="module">
+
+  import {
+    boot
+  } from "./js/admin-layout.js";
+
+  boot();
+
+</script>
+
+</body>
+
+</html>
