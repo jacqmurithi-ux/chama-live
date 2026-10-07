@@ -1994,6 +1994,15 @@ export async function boot() {
     window.__CHAMA_LIVE_LAYOUT_LOADING__ =
       true;
 
+    /*
+     * Expose the already-resolved admin context to the
+     * page feature without importing admin-layout.js back
+     * from the feature module. This prevents a circular
+     * ES-module dependency during dynamic page loading.
+     */
+    window.__CHAMA_LIVE_ADMIN_CONTEXT__ =
+      context;
+
 
     /* -------------------------------------------------------
        ADMIN NAVIGATION
