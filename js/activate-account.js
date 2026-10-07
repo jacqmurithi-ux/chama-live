@@ -79,7 +79,7 @@ const successBox =
  * if this file is accidentally served from another origin.
  */
 
-const LOGIN_URL =
+const DEFAULT_LOGIN_URL =
   "https://chamalive.co.ke/login.html";
 
 
@@ -854,8 +854,12 @@ else {
         setTimeout(
           () => {
 
+            const redirectTo =
+              response?.redirect_to ||
+              DEFAULT_LOGIN_URL;
+
             window.location.replace(
-              LOGIN_URL
+              redirectTo
             );
 
           },
