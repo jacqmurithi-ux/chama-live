@@ -1962,6 +1962,7 @@
   <script type="module">
 
     import { boot } from "./js/admin-layout.js";
+    import { initMonthlyContributionCycle } from "./js/monthly-contribution-cycle.js";
 
     /*
      * =========================================================
@@ -1985,6 +1986,7 @@
     try {
 
       await boot();
+      await initMonthlyContributionCycle();
 
     } catch (error) {
 
