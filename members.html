@@ -1,6 +1,8 @@
 <!doctype html>
 <html lang="en">
+
 <head>
+
   <meta charset="utf-8">
 
   <meta
@@ -13,25 +15,29 @@
     content="CHAMA LIVE member management"
   >
 
-  <title>Members — CHAMA LIVE</title>
+  <title>
+    Members — CHAMA LIVE
+  </title>
 
-  <link rel="stylesheet" href="css/app.css">
+  <link
+    rel="stylesheet"
+    href="css/app.css"
+  >
 
   <style>
-    /* =========================================================
-       MEMBERS PAGE
-    ========================================================= */
 
     .members-page {
       padding: 24px;
+      max-width: 1600px;
+      margin: 0 auto;
     }
 
     .members-page-header {
       display: flex;
       justify-content: space-between;
-      align-items: flex-start;
       gap: 20px;
-      margin-bottom: 24px;
+      align-items: flex-start;
+      margin-bottom: 20px;
     }
 
     .members-page-header h1 {
@@ -40,90 +46,75 @@
 
     .members-page-header p {
       margin: 0;
-      color: var(--muted, #667085);
+      color: #667085;
+      max-width: 900px;
     }
 
-    .members-header-actions {
+    .members-header-actions,
+    .action-row {
       display: flex;
-      gap: 10px;
+      gap: 8px;
       flex-wrap: wrap;
     }
 
-    /* =========================================================
-       PAGE ACTIONS
-    ========================================================= */
-
-    .members-header-actions .btn {
-      min-height: 40px;
-      padding: 8px 13px;
-      border: 1px solid transparent;
-      border-radius: 10px;
-      font: inherit;
-      font-size: 12px;
-      font-weight: 750;
-      cursor: pointer;
-      transition: background .18s ease, border-color .18s ease, transform .18s ease, opacity .18s ease;
-    }
-
-    .members-header-actions .btn-primary {
-      background: var(--primary, #0f766e);
-      border-color: var(--primary, #0f766e);
-      color: #ffffff;
-    }
-
-    .members-header-actions .btn-primary:hover {
-      background: var(--primary-dark, #115e59);
-      border-color: var(--primary-dark, #115e59);
-    }
-
-    .members-header-actions .btn-secondary {
-      background: #ffffff;
-      border-color: #d0d5dd;
+    .btn {
+      border: 1px solid #d0d5dd;
+      background: #fff;
       color: #344054;
+      border-radius: 9px;
+      padding: 9px 13px;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
     }
 
-    .members-header-actions .btn-secondary:hover {
+    .btn:hover {
       background: #f8fafc;
-      border-color: #98a2b3;
     }
 
-    .members-header-actions .btn:active {
-      transform: translateY(1px);
+    .btn-primary {
+      background: #0f766e;
+      color: #fff;
+      border-color: #0f766e;
     }
 
-    .members-header-actions .btn:disabled {
+    .btn-primary:hover {
+      background: #115e59;
+    }
+
+    .btn-small {
+      padding: 6px 9px;
+      font-size: 12px;
+    }
+
+    .btn:disabled {
       opacity: .55;
       cursor: not-allowed;
-      transform: none;
     }
-
-    /* =========================================================
-       STATUS
-    ========================================================= */
 
     .members-status,
     .members-error,
     .members-success {
-      margin-bottom: 18px;
-      padding: 12px 14px;
-      border-radius: 10px;
-      border: 1px solid var(--border, #e5e7eb);
-      background: #fff;
+      padding: 11px 14px;
+      border-radius: 9px;
+      margin-bottom: 15px;
+      border: 1px solid #eaecf0;
     }
 
     .members-status {
+      background: #f8fafc;
       color: #475467;
     }
 
     .members-error {
-      color: #b42318;
       background: #fff5f5;
+      color: #b42318;
       border-color: #fecdca;
     }
 
     .members-success {
-      color: #027a48;
       background: #ecfdf3;
+      color: #027a48;
       border-color: #abefc6;
     }
 
@@ -131,250 +122,216 @@
       display: none !important;
     }
 
-    /* =========================================================
-       STATISTICS
-    ========================================================= */
-
     .members-stats {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 16px;
-      margin-bottom: 22px;
+      grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 18px;
     }
 
-    .member-stat-card {
+    .stat-card {
       background: #fff;
-      border: 1px solid var(--border, #e5e7eb);
-      border-radius: 14px;
-      padding: 18px;
-      box-shadow: 0 1px 2px rgba(16, 24, 40, .04);
+      border: 1px solid #eaecf0;
+      border-radius: 13px;
+      padding: 17px;
     }
 
-    .member-stat-label {
+    .stat-card span {
       display: block;
       color: #667085;
-      font-size: 13px;
+      font-size: 12px;
       margin-bottom: 8px;
     }
 
-    .member-stat-value {
-      font-size: 28px;
-      line-height: 1;
-      font-weight: 700;
+    .stat-card strong {
+      font-size: 26px;
       color: #101828;
     }
 
-    /* =========================================================
-       SEARCH
-    ========================================================= */
-
-    .members-toolbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 16px;
-      flex-wrap: wrap;
-      margin-bottom: 16px;
+    .member-form-panel,
+    .members-table-card {
+      background: #fff;
+      border: 1px solid #eaecf0;
+      border-radius: 14px;
+      box-shadow:
+        0 1px 2px
+        rgba(16, 24, 40, .04);
     }
-
-    .member-search-wrap {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex: 1;
-      min-width: 260px;
-    }
-
-    .member-search-wrap input {
-      width: 100%;
-    }
-
-    .member-result-count {
-      color: #667085;
-      font-size: 14px;
-      white-space: nowrap;
-    }
-
-    /* =========================================================
-       FORM PANEL
-    ========================================================= */
 
     .member-form-panel {
-      background: #fff;
-      border: 1px solid var(--border, #e5e7eb);
-      border-radius: 14px;
-      padding: 22px;
-      margin-bottom: 22px;
-      box-shadow: 0 1px 2px rgba(16, 24, 40, .04);
+      padding: 20px;
+      margin-bottom: 18px;
     }
 
-    .member-form-header {
+    .form-head {
       display: flex;
       justify-content: space-between;
-      align-items: flex-start;
-      gap: 16px;
-      margin-bottom: 20px;
+      gap: 15px;
+      margin-bottom: 18px;
     }
 
-    .member-form-header h2 {
-      margin: 0 0 5px;
-      font-size: 20px;
+    .form-head h2 {
+      margin: 0 0 4px;
     }
 
-    .member-form-header p {
+    .form-head p {
       margin: 0;
       color: #667085;
-      font-size: 14px;
+      font-size: 13px;
     }
 
     .member-form-grid {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 16px;
+      grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+      gap: 14px;
     }
 
-    .member-form-field {
+    .form-section {
+      grid-column: 1 / -1;
+      border-top: 1px solid #eaecf0;
+      padding-top: 16px;
+      margin-top: 5px;
+    }
+
+    .form-section:first-child {
+      border-top: 0;
+      padding-top: 0;
+    }
+
+    .form-section h3 {
+      margin: 0 0 4px;
+      font-size: 15px;
+    }
+
+    .form-section p {
+      margin: 0;
+      color: #667085;
+      font-size: 12px;
+    }
+
+    .field {
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 5px;
     }
 
-    .member-form-field.full-width {
-      grid-column: 1 / -1;
-    }
-
-    .member-form-field label {
-      font-size: 13px;
-      font-weight: 600;
+    .field label {
+      font-size: 12px;
+      font-weight: 650;
       color: #344054;
     }
 
-    .member-form-field input,
-    .member-form-field select,
-    .member-form-field textarea {
-      width: 100%;
-      min-height: 42px;
+    .field input,
+    .field select {
+      min-height: 40px;
       border: 1px solid #d0d5dd;
       border-radius: 8px;
-      padding: 9px 11px;
+      padding: 8px 10px;
+      box-sizing: border-box;
       background: #fff;
       color: #101828;
-      box-sizing: border-box;
     }
 
-    .member-form-field input:disabled,
-    .member-form-field select:disabled {
+    .field small {
+      font-size: 11px;
+      color: #667085;
+    }
+
+    .field input:disabled,
+    .field select:disabled {
       background: #f2f4f7;
-      color: #667085;
-      cursor: not-allowed;
     }
 
-    .member-form-hint {
-      color: #667085;
-      font-size: 12px;
-      line-height: 1.4;
-    }
-
-    .member-form-section {
+    .full {
       grid-column: 1 / -1;
-      border-top: 1px solid #eaecf0;
-      padding-top: 20px;
-      margin-top: 4px;
     }
 
-    .member-form-section h3 {
-      margin: 0 0 5px;
-      font-size: 16px;
-    }
-
-    .member-form-section-description {
-      margin: 0 0 16px;
-      color: #667085;
-      font-size: 13px;
-    }
-
-    .member-preview {
-      grid-column: 1 / -1;
-      margin-top: 8px;
-      padding: 10px 12px;
+    .preview,
+    .notice {
+      padding: 11px 12px;
       border-radius: 8px;
       background: #f8fafc;
       border: 1px solid #eaecf0;
-      font-size: 13px;
       color: #475467;
+      font-size: 12px;
     }
 
-    .member-form-message {
-      margin-top: 16px;
+    .notice {
+      grid-column: 1 / -1;
+      background: #fffaeb;
+      color: #b54708;
+      border-color: #fedf89;
     }
 
-    .member-form-actions {
+    .form-message {
+      grid-column: 1 / -1;
+      margin-top: 5px;
+      color: #b42318;
+      font-size: 13px;
+    }
+
+    .form-actions {
       display: flex;
       justify-content: flex-end;
-      gap: 10px;
-      margin-top: 22px;
-      padding-top: 18px;
+      gap: 8px;
       border-top: 1px solid #eaecf0;
+      margin-top: 18px;
+      padding-top: 15px;
     }
 
-    /* =========================================================
-       HISTORICAL CONTRIBUTIONS
-    ========================================================= */
-
-    .historical-controls {
-      grid-column: 1 / -1;
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 16px;
-      margin-top: 14px;
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
     }
 
-    .historical-preview {
-      grid-column: 1 / -1;
-      padding: 12px;
+    .search {
+      display: flex;
+      gap: 8px;
+      flex: 1;
+      max-width: 700px;
+    }
+
+    .search input {
+      width: 100%;
+      min-height: 40px;
+      border: 1px solid #d0d5dd;
       border-radius: 8px;
-      background: #f8fafc;
-      border: 1px solid #eaecf0;
-      color: #475467;
-      font-size: 13px;
+      padding: 8px 10px;
     }
 
-    /* =========================================================
-       TABLE
-    ========================================================= */
-
-    .members-table-card {
-      background: #fff;
-      border: 1px solid var(--border, #e5e7eb);
-      border-radius: 14px;
-      overflow: hidden;
-      box-shadow: 0 1px 2px rgba(16, 24, 40, .04);
+    .result-count {
+      color: #667085;
+      font-size: 13px;
+      white-space: nowrap;
     }
 
     .members-table-wrap {
-      width: 100%;
-      overflow-x: auto;
+      overflow: auto;
     }
 
     .members-table {
       width: 100%;
+      min-width: 1250px;
       border-collapse: collapse;
-      min-width: 1200px;
     }
 
     .members-table th,
     .members-table td {
-      padding: 13px 14px;
-      text-align: left;
+      padding: 11px 12px;
       border-bottom: 1px solid #eaecf0;
+      text-align: left;
+      font-size: 12px;
       vertical-align: middle;
-      font-size: 13px;
     }
 
     .members-table th {
       background: #f9fafb;
       color: #475467;
-      font-weight: 600;
       white-space: nowrap;
     }
 
@@ -386,425 +343,355 @@
       background: #f9fafb;
     }
 
-    .members-loading {
-      text-align: center !important;
-      padding: 28px !important;
-      color: #667085 !important;
+    .member-name-cell {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 150px;
     }
 
-    /* =========================================================
-       BADGES
-    ========================================================= */
+    .member-name-cell strong {
+      color: #101828;
+    }
 
-    .member-status-badge,
-    .member-onboarding-badge,
-    .member-position-badge,
-    .member-contribution-badge {
+    .member-name-cell small {
+      display: block;
+      color: #667085;
+      margin-top: 2px;
+    }
+
+    .avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #ecfdf3;
+      color: #027a48;
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      flex: 0 0 auto;
+    }
+
+    .subtext {
+      display: block;
+      color: #667085;
+      font-size: 10px;
+      margin-top: 2px;
+    }
+
+    .badge {
       display: inline-flex;
       align-items: center;
-      gap: 5px;
       border-radius: 999px;
-      padding: 4px 9px;
-      font-size: 11px;
-      font-weight: 600;
+      padding: 4px 8px;
+      font-size: 10px;
+      font-weight: 650;
       white-space: nowrap;
       background: #f2f4f7;
-      color: #344054;
+      color: #475467;
     }
 
-    .member-status-active {
+    .badge-active,
+    .badge-paid {
       background: #ecfdf3;
       color: #027a48;
     }
 
-    .member-status-inactive {
+    .badge-inactive,
+    .badge-none {
       background: #f2f4f7;
       color: #475467;
     }
 
-    .member-onboarding-active {
-      background: #ecfdf3;
-      color: #027a48;
-    }
-
-    .member-onboarding-pending,
-    .member-onboarding-invited {
+    .badge-pending,
+    .badge-invited {
       background: #fffaeb;
       color: #b54708;
     }
 
-    .member-onboarding-blocked {
+    .badge-suspended,
+    .badge-arrears {
       background: #fef3f2;
       color: #b42318;
     }
 
-    .member-contribution-paid {
-      background: #ecfdf3;
-      color: #027a48;
+    .badge-credit {
+      background: #eff6ff;
+      color: #1d4ed8;
     }
 
-    .member-contribution-partial {
-      background: #fffaeb;
-      color: #b54708;
-    }
-
-    .member-contribution-outstanding {
-      background: #fef3f2;
-      color: #b42318;
-    }
-
-    .member-contribution-neutral {
+    .badge-unknown {
       background: #f2f4f7;
-      color: #475467;
+      color: #667085;
     }
 
-    /* =========================================================
-       MOBILE CARDS
-    ========================================================= */
+    .empty-state {
+      text-align: center;
+      padding: 28px;
+      color: #667085;
+    }
+
+    .compact {
+      padding: 14px;
+    }
 
     .member-cards {
       display: none;
-      padding: 14px;
+      padding: 12px;
       gap: 12px;
     }
 
     .member-card {
       border: 1px solid #eaecf0;
       border-radius: 12px;
-      padding: 15px;
+      padding: 14px;
       background: #fff;
     }
 
-    .member-card-header {
+    .card-head {
       display: flex;
       justify-content: space-between;
       gap: 10px;
       margin-bottom: 12px;
     }
 
-    .member-card-name {
-      font-weight: 700;
-      color: #101828;
-    }
-
-    .member-card-meta {
+    .card-details {
       display: grid;
-      gap: 7px;
-      font-size: 13px;
-      color: #475467;
-    }
-
-    .member-card-actions {
-      margin-top: 14px;
-      display: flex;
+      grid-template-columns:
+        1fr 1fr;
       gap: 8px;
-      flex-wrap: wrap;
+      margin: 0;
     }
 
-    /* =========================================================
-       MEMBER MODAL
-    ========================================================= */
+    .card-details div {
+      padding: 8px;
+      border: 1px solid #eaecf0;
+      border-radius: 8px;
+    }
 
-    .member-modal {
+    .card-details dt {
+      font-size: 10px;
+      color: #667085;
+      margin-bottom: 3px;
+    }
+
+    .card-details dd {
+      margin: 0;
+      font-size: 12px;
+      color: #101828;
+      font-weight: 600;
+      word-break: break-word;
+    }
+
+    .member-card .action-row {
+      margin-top: 12px;
+    }
+
+    .modal {
       position: fixed;
       inset: 0;
+      background: rgba(16, 24, 40, .55);
       z-index: 1000;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 20px;
-      background: rgba(16, 24, 40, .55);
+      padding: 15px;
     }
 
-    .member-modal[hidden] {
-      display: none;
-    }
-
-    .member-modal-dialog {
-      width: min(900px, 100%);
-      max-height: 90vh;
-      overflow-y: auto;
+    .modal-dialog {
       background: #fff;
-      border-radius: 16px;
-      box-shadow: 0 20px 50px rgba(16, 24, 40, .25);
+      width: min(900px, 100%);
+      max-height: 92vh;
+      overflow: auto;
+      border-radius: 15px;
     }
 
-    .member-modal-header {
+    .modal-head {
       display: flex;
       justify-content: space-between;
-      align-items: flex-start;
-      gap: 16px;
-      padding: 20px 22px;
+      gap: 15px;
+      padding: 18px 20px;
       border-bottom: 1px solid #eaecf0;
     }
 
-    .member-profile-heading {
+    .profile {
       display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .member-initials {
-      width: 46px;
-      height: 46px;
-      border-radius: 50%;
-      display: grid;
-      place-items: center;
-      background: #ecfdf3;
-      color: #027a48;
-      font-weight: 700;
-    }
-
-    .member-profile-heading h2 {
-      margin: 0 0 4px;
-      font-size: 20px;
-    }
-
-    .member-profile-heading p {
-      margin: 0;
-      color: #667085;
-      font-size: 13px;
-    }
-
-    .member-modal-body {
-      padding: 22px;
-    }
-
-    .member-detail-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 14px;
-    }
-
-    .member-detail {
-      padding: 12px;
-      border: 1px solid #eaecf0;
-      border-radius: 10px;
-      background: #fff;
-    }
-
-    .member-detail-label {
-      display: block;
-      margin-bottom: 5px;
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: .03em;
-      color: #667085;
-    }
-
-    .member-detail-value {
-      display: block;
-      color: #101828;
-      font-weight: 500;
-      word-break: break-word;
-    }
-
-    .member-modal-section {
-      margin-top: 22px;
-      padding-top: 20px;
-      border-top: 1px solid #eaecf0;
-    }
-
-    .member-modal-section:first-child {
-      margin-top: 0;
-      padding-top: 0;
-      border-top: 0;
-    }
-
-    .member-modal-section h3 {
-      margin: 0 0 5px;
-      font-size: 16px;
-    }
-
-    .member-modal-section-description {
-      margin: 0 0 14px;
-      color: #667085;
-      font-size: 13px;
-    }
-
-    /* =========================================================
-       CONTRIBUTION RULES
-    ========================================================= */
-
-    .member-rules-list {
-      display: grid;
       gap: 10px;
+      align-items: center;
     }
 
-    .member-rule-card {
-      border: 1px solid #eaecf0;
-      border-radius: 10px;
-      padding: 14px;
-      background: #f9fafb;
+    .profile h2 {
+      margin: 0 0 3px;
+      font-size: 19px;
     }
 
-    .member-rule-card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 12px;
-      margin-bottom: 12px;
-    }
-
-    .member-rule-card-title {
+    .profile p {
       margin: 0;
-      font-size: 14px;
-      font-weight: 700;
-      color: #101828;
-    }
-
-    .member-rule-card-type {
-      margin-top: 3px;
       color: #667085;
       font-size: 12px;
     }
 
-    .member-rule-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 8px;
-      font-size: 13px;
+    .modal-body {
+      padding: 20px;
     }
 
-    .member-rule-item {
-      padding: 8px 10px;
-      border-radius: 8px;
-      background: #fff;
-      border: 1px solid #eaecf0;
+    .modal-section {
+      border-top: 1px solid #eaecf0;
+      padding-top: 18px;
+      margin-top: 18px;
     }
 
-    .member-rule-item strong {
-      display: block;
+    .modal-section:first-child {
+      border-top: 0;
+      padding-top: 0;
+      margin-top: 0;
+    }
+
+    .modal-section h3 {
+      margin: 0 0 4px;
+      font-size: 15px;
+    }
+
+    .modal-section > p {
+      margin: 0 0 12px;
       color: #667085;
-      font-size: 11px;
-      margin-bottom: 2px;
+      font-size: 12px;
     }
 
-    .member-rule-item span {
-      color: #101828;
-      font-weight: 500;
-    }
-
-    /* =========================================================
-       CONTRIBUTION ACCOUNTING
-    ========================================================= */
-
-    .member-accounting-grid {
+    .detail-grid {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 10px;
+      grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+      gap: 9px;
     }
 
-    .member-accounting-card {
-      padding: 12px;
-      border-radius: 10px;
-      background: #f9fafb;
+    .detail {
       border: 1px solid #eaecf0;
+      border-radius: 9px;
+      padding: 10px;
     }
 
-    .member-accounting-card span {
+    .detail span {
       display: block;
+    }
+
+    .detail-label {
+      font-size: 10px;
       color: #667085;
-      font-size: 11px;
+      text-transform: uppercase;
       margin-bottom: 4px;
     }
 
-    .member-accounting-card strong {
-      font-size: 16px;
-      color: #101828;
-    }
-
-    /* =========================================================
-       MEMBER CONTRIBUTION STATUS
-    ========================================================= */
-
-    .member-contribution-status-panel {
-      margin-top: 14px;
-      border: 1px solid #eaecf0;
-      border-radius: 10px;
-      overflow: hidden;
-    }
-
-    .member-contribution-status-header {
-      padding: 11px 13px;
-      background: #f9fafb;
-      border-bottom: 1px solid #eaecf0;
-      font-size: 13px;
-      font-weight: 600;
-      color: #344054;
-    }
-
-    .member-contribution-status-list {
-      display: grid;
-    }
-
-    .member-contribution-status-row {
-      display: grid;
-      grid-template-columns: minmax(150px, 1.5fr) repeat(4, minmax(80px, 1fr));
-      gap: 10px;
-      align-items: center;
-      padding: 11px 13px;
-      border-bottom: 1px solid #eaecf0;
+    .detail-value {
       font-size: 12px;
-    }
-
-    .member-contribution-status-row:last-child {
-      border-bottom: 0;
-    }
-
-    .member-contribution-status-name {
+      color: #101828;
       font-weight: 600;
+      word-break: break-word;
+    }
+
+    .account-grid {
+      display: grid;
+      grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+      gap: 9px;
+    }
+
+    .account {
+      padding: 11px;
+      border: 1px solid #eaecf0;
+      border-radius: 9px;
+      background: #f9fafb;
+    }
+
+    .account span {
+      display: block;
+      color: #667085;
+      font-size: 10px;
+      margin-bottom: 4px;
+    }
+
+    .account strong {
+      font-size: 15px;
       color: #101828;
     }
 
-    .member-contribution-status-value {
+    .rule-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .rule-card {
+      display: grid;
+      grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      padding: 10px;
+      border: 1px solid #eaecf0;
+      border-radius: 9px;
+      background: #f9fafb;
+    }
+
+    .rule-card > * {
+      font-size: 11px;
       color: #475467;
     }
 
-    /* =========================================================
-       MODAL FOOTER
-    ========================================================= */
-
-    .member-modal-footer {
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-      padding: 16px 22px;
-      border-top: 1px solid #eaecf0;
+    .rule-card strong {
+      color: #101828;
     }
 
-    /* =========================================================
-       RESPONSIVE
-    ========================================================= */
+    .position-grid {
+      display: grid;
+      grid-template-columns:
+        1fr 1fr;
+      gap: 10px;
+    }
+
+    .position-grid .field {
+      min-width: 0;
+    }
+
+    .modal-foot {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      border-top: 1px solid #eaecf0;
+      padding: 14px 20px;
+    }
 
     @media (max-width: 900px) {
 
       .members-stats {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns:
+          1fr 1fr;
       }
 
       .member-form-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns:
+          1fr;
       }
 
-      .historical-controls {
-        grid-template-columns: 1fr;
+      .full,
+      .form-section,
+      .notice {
+        grid-column: 1;
       }
 
-      .member-accounting-grid {
-        grid-template-columns: 1fr;
+      .account-grid {
+        grid-template-columns:
+          1fr 1fr;
       }
 
-      .member-contribution-status-row {
-        grid-template-columns: 1fr 1fr;
+      .rule-card {
+        grid-template-columns:
+          1fr 1fr;
       }
     }
 
     @media (max-width: 700px) {
 
       .members-page {
-        padding: 15px;
+        padding: 14px;
       }
 
       .members-page-header {
@@ -815,33 +702,8 @@
         width: 100%;
       }
 
-      .members-header-actions {
-        width: 100%;
-      }
-
       .members-header-actions .btn {
         flex: 1;
-      }
-
-      .members-toolbar {
-        align-items: stretch;
-      }
-
-      .member-search-wrap {
-        min-width: 100%;
-      }
-
-      .members-stats {
-        grid-template-columns: 1fr 1fr;
-        gap: 10px;
-      }
-
-      .member-stat-card {
-        padding: 14px;
-      }
-
-      .member-stat-value {
-        font-size: 23px;
       }
 
       .members-table-wrap {
@@ -852,69 +714,76 @@
         display: grid;
       }
 
-      .member-detail-grid {
-        grid-template-columns: 1fr;
+      .toolbar {
+        align-items: stretch;
+        flex-direction: column;
       }
 
-      .member-rule-grid {
-        grid-template-columns: 1fr;
+      .search {
+        max-width: none;
       }
 
-      .member-contribution-status-row {
-        grid-template-columns: 1fr 1fr;
+      .result-count {
+        align-self: flex-end;
       }
 
-      .member-modal {
-        padding: 10px;
+      .account-grid,
+      .detail-grid,
+      .position-grid {
+        grid-template-columns:
+          1fr;
       }
 
-      .member-modal-dialog {
-        max-height: 95vh;
+      .card-details {
+        grid-template-columns:
+          1fr;
+      }
+
+      .modal {
+        padding: 8px;
       }
     }
+
   </style>
+
 </head>
+
 
 <body>
 
-  <!-- =======================================================
-       ADMIN LAYOUT
-  ======================================================== -->
-
   <main class="members-page">
-
-    <!-- =====================================================
-         PAGE HEADER
-    ====================================================== -->
 
     <header class="members-page-header">
 
       <div>
 
-        <h1>Members</h1>
+        <h1>
+          Members
+        </h1>
 
         <p>
-          Add and manage group members, review membership details,
-          assign actual group positions, check login/onboarding status,
-          and review each member's contribution setup and accounting position.
+          Manage group membership, governance positions,
+          login status and authoritative contribution
+          accounting without bypassing the backend
+          accounting workflow.
         </p>
 
       </div>
 
+
       <div class="members-header-actions">
 
         <button
-          type="button"
           id="refreshMembers"
-          class="btn btn-secondary"
-          title="Reload the latest member information"
+          type="button"
+          class="btn"
         >
           Refresh
         </button>
 
         <button
-          type="button"
           id="addMemberButton"
+          type="button"
           class="btn btn-primary"
         >
           Add Member
@@ -925,10 +794,6 @@
     </header>
 
 
-    <!-- =====================================================
-         STATUS
-    ====================================================== -->
-
     <div
       id="membersStatus"
       class="members-status"
@@ -937,12 +802,14 @@
       aria-live="polite"
     ></div>
 
+
     <div
       id="membersError"
       class="members-error"
       hidden
       role="alert"
     ></div>
+
 
     <div
       id="membersSuccess"
@@ -953,7 +820,7 @@
 
 
     <!-- =====================================================
-         STATISTICS
+         MEMBER STATISTICS
     ====================================================== -->
 
     <section
@@ -961,64 +828,52 @@
       aria-label="Member statistics"
     >
 
-      <article class="member-stat-card">
+      <article class="stat-card">
 
-        <span class="member-stat-label">
+        <span>
           Group Members
         </span>
 
-        <strong
-          id="memberCount"
-          class="member-stat-value"
-        >
+        <strong id="memberCount">
           0
         </strong>
 
       </article>
 
 
-      <article class="member-stat-card">
+      <article class="stat-card">
 
-        <span class="member-stat-label">
+        <span>
           Status: Active
         </span>
 
-        <strong
-          id="activeMembers"
-          class="member-stat-value"
-        >
+        <strong id="activeMembers">
           0
         </strong>
 
       </article>
 
 
-      <article class="member-stat-card">
+      <article class="stat-card">
 
-        <span class="member-stat-label">
+        <span>
           Login Enabled
         </span>
 
-        <strong
-          id="loginMembers"
-          class="member-stat-value"
-        >
+        <strong id="loginMembers">
           0
         </strong>
 
       </article>
 
 
-      <article class="member-stat-card">
+      <article class="stat-card">
 
-        <span class="member-stat-label">
+        <span>
           No Login
         </span>
 
-        <strong
-          id="noLoginMembers"
-          class="member-stat-value"
-        >
+        <strong id="noLoginMembers">
           0
         </strong>
 
@@ -1035,10 +890,9 @@
       id="addMemberPanel"
       class="member-form-panel"
       hidden
-      aria-labelledby="memberFormTitle"
     >
 
-      <div class="member-form-header">
+      <div class="form-head">
 
         <div>
 
@@ -1047,17 +901,17 @@
           </h2>
 
           <p id="memberFormDescription">
-            Create a member record and configure the
-            member's initial contribution plan.
+            Create the member and establish the initial
+            Monthly contribution plan.
           </p>
 
         </div>
 
+
         <button
-          type="button"
           id="closeAddMember"
-          class="btn btn-secondary"
-          aria-label="Close member form"
+          type="button"
+          class="btn"
         >
           Close
         </button>
@@ -1076,81 +930,66 @@
                IDENTITY
           ================================================== -->
 
-          <div class="member-form-section">
+          <div class="form-section">
 
-            <h3>Member Identity</h3>
+            <h3>
+              Member Identity
+            </h3>
 
-            <p class="member-form-section-description">
-              Official membership identifiers and personal
-              information.
+            <p>
+              Membership identifiers and personal information.
             </p>
 
           </div>
 
 
-          <div class="member-form-field">
+          <div class="field">
 
-            <label
-              for="memberNumber"
-              class="form-section-label"
-            >
+            <label for="memberNumber">
               Member Number
             </label>
 
             <input
               id="memberNumber"
-              name="memberNumber"
               type="text"
               maxlength="50"
               required
               autocomplete="off"
             >
 
-            <small class="member-form-hint">
-              Internal member number used by the group.
+            <small>
+              When Membership Number is blank, this value
+              is used and must therefore be four digits.
             </small>
 
           </div>
 
 
-          <div class="member-form-field">
+          <div class="field">
 
-            <label
-              for="memberMembershipNumber"
-              class="form-section-label"
-            >
+            <label for="memberMembershipNumber">
               Membership Number
             </label>
 
             <input
               id="memberMembershipNumber"
-              name="memberMembershipNumber"
               type="text"
               maxlength="50"
               autocomplete="off"
-              placeholder="Defaults to Member Number"
+              placeholder="Four digits, e.g. 0001"
             >
-
-            <small class="member-form-hint">
-              Official membership number. If blank, the
-              Member Number is used.
-            </small>
 
           </div>
 
 
-          <div class="member-form-field">
+          <div class="field">
 
-            <label
-              for="memberName"
-              class="form-section-label"
-            >
+            <label for="memberName">
               Full Name
             </label>
 
             <input
               id="memberName"
-              name="memberName"
               type="text"
               maxlength="200"
               required
@@ -1160,18 +999,14 @@
           </div>
 
 
-          <div class="member-form-field">
+          <div class="field">
 
-            <label
-              for="memberNationalId"
-              class="form-section-label"
-            >
+            <label for="memberNationalId">
               National ID
             </label>
 
             <input
               id="memberNationalId"
-              name="memberNationalId"
               type="text"
               maxlength="50"
               autocomplete="off"
@@ -1180,38 +1015,31 @@
           </div>
 
 
-          <div class="member-form-field">
+          <div class="field">
 
-            <label
-              for="memberPhone"
-              class="form-section-label"
-            >
+            <label for="memberPhone">
               Phone
             </label>
 
             <input
               id="memberPhone"
-              name="memberPhone"
               type="tel"
               maxlength="30"
+              required
               autocomplete="tel"
             >
 
           </div>
 
 
-          <div class="member-form-field">
+          <div class="field">
 
-            <label
-              for="memberEmail"
-              class="form-section-label"
-            >
+            <label for="memberEmail">
               Email
             </label>
 
             <input
               id="memberEmail"
-              name="memberEmail"
               type="email"
               maxlength="255"
               autocomplete="email"
@@ -1220,18 +1048,14 @@
           </div>
 
 
-          <div class="member-form-field">
+          <div class="field">
 
-            <label
-              for="memberRole"
-              class="form-section-label"
-            >
+            <label for="memberRole">
               Security Role
             </label>
 
             <select
               id="memberRole"
-              name="memberRole"
             >
 
               <option value="member">
@@ -1246,44 +1070,32 @@
                 Chairperson
               </option>
 
-              <option value="secretary">
-                Secretary
-              </option>
-
               <option value="treasurer">
                 Treasurer
               </option>
 
-              <option value="vice_chairperson">
-                Vice Chairperson
-              </option>
-
-              <option value="vice_secretary">
-                Vice Secretary
+              <option value="secretary">
+                Secretary
               </option>
 
             </select>
 
-            <small class="member-form-hint">
-              Security role controls system permissions.
-              It is separate from the actual group position.
+            <small>
+              System permission role. It is separate from
+              the actual group position.
             </small>
 
           </div>
 
 
-          <div class="member-form-field">
+          <div class="field">
 
-            <label
-              for="memberStatus"
-              class="form-section-label"
-            >
+            <label for="memberStatus">
               Member Status
             </label>
 
             <select
               id="memberStatus"
-              name="memberStatus"
             >
 
               <option value="active">
@@ -1296,27 +1108,17 @@
 
             </select>
 
-            <small class="member-form-hint">
-              Administrative status only. This does not
-              remove the member from the group's membership
-              population.
-            </small>
-
           </div>
 
 
-          <div class="member-form-field">
+          <div class="field">
 
-            <label
-              for="memberJoinDate"
-              class="form-section-label"
-            >
+            <label for="memberJoinDate">
               Join Date
             </label>
 
             <input
               id="memberJoinDate"
-              name="memberJoinDate"
               type="date"
               required
             >
@@ -1328,32 +1130,29 @@
                ACTUAL POSITION
           ================================================== -->
 
-          <div class="member-form-section">
+          <div class="form-section">
 
-            <h3>Actual Group Position</h3>
+            <h3>
+              Actual Group Position
+            </h3>
 
-            <p class="member-form-section-description">
-              This records the member's actual position in
-              the group. It is separate from the security role.
-              Position changes are governed by backend
-              position-history rules.
+            <p>
+              The actual position is separate from the
+              security role. Existing-member changes use
+              the canonical position-history RPC.
             </p>
 
           </div>
 
 
-          <div class="member-form-field">
+          <div class="field">
 
-            <label
-              for="memberActualPosition"
-              class="form-section-label"
-            >
+            <label for="memberActualPosition">
               Actual Position
             </label>
 
             <select
               id="memberActualPosition"
-              name="memberActualPosition"
             >
 
               <option value="">
@@ -1394,92 +1193,70 @@
 
             </select>
 
-            <small class="member-form-hint">
-              Actual group position is not the same as
-              the security role.
-            </small>
-
           </div>
 
 
           <div
             id="memberActualPositionNameField"
-            class="member-form-field"
+            class="field"
             hidden
           >
 
-            <label
-              for="memberActualPositionName"
-              class="form-section-label"
-            >
+            <label for="memberActualPositionName">
               Position Name
             </label>
 
             <input
               id="memberActualPositionName"
-              name="memberActualPositionName"
               type="text"
               maxlength="120"
-              placeholder="Required only for Other"
             >
 
           </div>
 
 
-          <div class="member-form-field">
+          <div class="field">
 
-            <label
-              for="memberActualPositionEffectiveFrom"
-              class="form-section-label"
-            >
+            <label for="memberActualPositionEffectiveFrom">
               Position Effective From
             </label>
 
             <input
               id="memberActualPositionEffectiveFrom"
-              name="memberActualPositionEffectiveFrom"
               type="date"
             >
-
-            <small class="member-form-hint">
-              Date this actual group position became effective.
-            </small>
 
           </div>
 
 
           <!-- =================================================
-               CONTRIBUTION SETUP
+               MONTHLY CONTRIBUTION
           ================================================== -->
 
-          <div class="member-form-section">
+          <div class="form-section">
 
-            <h3>Contribution Setup</h3>
+            <h3>
+              Monthly Contribution Setup
+            </h3>
 
-            <p class="member-form-section-description">
-              Configure the member's initial monthly contribution
-              obligation. Active custom contribution rules are
-              managed separately and remain visible in the
-              member's contribution rules and accounting status.
+            <p>
+              Only the canonical member-creation RPC creates
+              the initial obligation/accounting state.
             </p>
 
           </div>
 
 
-          <div class="member-form-field">
+          <div class="field">
 
-            <label
-              for="memberContributionAmount"
-              class="form-section-label"
-            >
+            <label for="memberContributionAmount">
               Monthly Contribution Amount
             </label>
 
             <input
               id="memberContributionAmount"
-              name="memberContributionAmount"
               type="number"
-              min="0"
+              min="0.01"
               step="0.01"
               required
             >
@@ -1487,18 +1264,14 @@
           </div>
 
 
-          <div class="member-form-field">
+          <div class="field">
 
-            <label
-              for="memberFirstPeriodRule"
-              class="form-section-label"
-            >
+            <label for="memberFirstPeriodRule">
               First Period Rule
             </label>
 
             <select
               id="memberFirstPeriodRule"
-              name="memberFirstPeriodRule"
             >
 
               <option value="full_period">
@@ -1514,18 +1287,14 @@
           </div>
 
 
-          <div class="member-form-field">
+          <div class="field">
 
-            <label
-              for="memberContributionEffectiveFrom"
-              class="form-section-label"
-            >
+            <label for="memberContributionEffectiveFrom">
               Contribution Effective From
             </label>
 
             <input
               id="memberContributionEffectiveFrom"
-              name="memberContributionEffectiveFrom"
               type="date"
               required
             >
@@ -1535,46 +1304,52 @@
 
           <div
             id="memberContributionPreview"
-            class="member-preview"
+            class="preview full"
           >
-            Monthly contribution obligation preview will appear
-            here. Active custom contribution rules, if any,
-            are displayed separately from the monthly rule.
-            Final obligations are created and controlled by the
-            backend accounting workflow.
+            Final obligations are created and controlled by
+            the canonical accounting workflow.
+          </div>
+
+
+          <div
+            id="memberFormAccountingNotice"
+            class="notice"
+            hidden
+          >
+            Editing an existing member changes profile
+            fields only. It does not directly change
+            contribution rules, obligations, allocations
+            or position history.
           </div>
 
 
           <!-- =================================================
-               HISTORICAL CONTRIBUTIONS
+               HISTORICAL CONTRIBUTION ONBOARDING
           ================================================== -->
 
-          <div class="member-form-section">
+          <div class="form-section">
 
-            <h3>Historical Contributions</h3>
+            <h3>
+              Historical Contribution Onboarding
+            </h3>
 
-            <p class="member-form-section-description">
-              Use this only when onboarding a member with
-              historical contribution information. Historical
-              accounting must be processed through the
-              controlled backend workflow.
+            <p>
+              Use only when creating a new member with
+              historical monthly payment information.
+              Paid Through cannot be in the future.
             </p>
 
           </div>
 
 
-          <div class="member-form-field">
+          <div class="field">
 
-            <label
-              for="memberHistoricalEnabled"
-              class="form-section-label"
-            >
+            <label for="memberHistoricalEnabled">
               Historical Contributions
             </label>
 
             <select
               id="memberHistoricalEnabled"
-              name="memberHistoricalEnabled"
             >
 
               <option value="false">
@@ -1592,106 +1367,92 @@
 
           <div
             id="historicalContributionControls"
-            class="historical-controls"
+            class="field full"
             hidden
           >
 
-            <div class="member-form-field">
+            <div class="member-form-grid">
 
-              <label
-                for="memberHistoricalPaidThrough"
-                class="form-section-label"
+              <div class="field">
+
+                <label for="memberHistoricalPaidThrough">
+                  Paid Through
+                </label>
+
+                <input
+                  id="memberHistoricalPaidThrough"
+                  type="date"
+                >
+
+              </div>
+
+
+              <div class="field">
+
+                <label for="memberHistoricalPaymentMethod">
+                  Payment Method
+                </label>
+
+                <select
+                  id="memberHistoricalPaymentMethod"
+                >
+
+                  <option value="">
+                    Select method
+                  </option>
+
+                  <option value="cash">
+                    Cash
+                  </option>
+
+                  <option value="mpesa">
+                    M-Pesa
+                  </option>
+
+                  <option value="bank_transfer">
+                    Bank transfer
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              <div
+                id="memberHistoricalPreview"
+                class="preview full"
               >
-                Paid Through
-              </label>
+                No historical contribution onboarding selected.
+              </div>
 
-              <input
-                id="memberHistoricalPaidThrough"
-                name="memberHistoricalPaidThrough"
-                type="date"
-              >
-
-            </div>
-
-
-            <div class="member-form-field">
-
-              <label
-                for="memberHistoricalPaymentMethod"
-                class="form-section-label"
-              >
-                Historical Payment Method
-              </label>
-
-              <select
-                id="memberHistoricalPaymentMethod"
-                name="memberHistoricalPaymentMethod"
-              >
-
-                <option value="">
-                  Select payment method
-                </option>
-
-                <option value="cash">
-                  Cash
-                </option>
-
-                <option value="mpesa">
-                  M-Pesa
-                </option>
-
-                <option value="bank_transfer">
-                  Bank transfer
-                </option>
-
-              </select>
-
-            </div>
-
-
-            <div
-              id="memberHistoricalPreview"
-              class="historical-preview"
-            >
-              Historical contribution preview will appear here.
-              No contribution record is created by this
-              preview.
             </div>
 
           </div>
 
+
+          <div
+            id="formMessage"
+            class="form-message full"
+            hidden
+            role="alert"
+          ></div>
+
         </div>
 
 
-        <!-- =================================================
-             FORM MESSAGE
-        ================================================== -->
-
-        <div
-          id="formMessage"
-          class="member-form-message"
-          role="status"
-          aria-live="polite"
-        ></div>
-
-
-        <!-- =================================================
-             FORM ACTIONS
-        ================================================== -->
-
-        <div class="member-form-actions">
+        <div class="form-actions">
 
           <button
-            type="button"
             id="cancelAddMember"
-            class="btn btn-secondary"
+            type="button"
+            class="btn"
           >
             Cancel
           </button>
 
           <button
-            type="submit"
             id="saveMemberButton"
+            type="submit"
             class="btn btn-primary"
           >
             Save Member
@@ -1705,34 +1466,35 @@
 
 
     <!-- =====================================================
-         SEARCH / TOOLBAR
+         SEARCH
     ====================================================== -->
 
-    <section class="members-toolbar">
+    <section class="toolbar">
 
-      <div class="member-search-wrap">
+      <div class="search">
 
         <input
           id="memberSearch"
           type="search"
-          placeholder="Search members by name, number, phone or email..."
+          placeholder="Search members by name, number, phone, email or ID..."
           autocomplete="off"
           aria-label="Search members"
         >
 
         <button
-          type="button"
           id="clearMemberSearch"
-          class="btn btn-secondary"
+          type="button"
+          class="btn"
         >
           Clear
         </button>
 
       </div>
 
+
       <div
         id="memberResultCount"
-        class="member-result-count"
+        class="result-count"
         aria-live="polite"
       >
         0 members
@@ -1742,7 +1504,7 @@
 
 
     <!-- =====================================================
-         MEMBERS LIST
+         MEMBER TABLE
     ====================================================== -->
 
     <section
@@ -1758,23 +1520,62 @@
 
             <tr>
 
-              <th>Member No.</th>
-              <th>Membership No.</th>
-              <th>Member</th>
-              <th>National ID</th>
-              <th>Phone</th>
-              <th>Email</th>
-              <th>Role</th>
-              <th>Actual Position</th>
-              <th>Status</th>
-              <th>Onboarding</th>
-              <th>Contribution Status</th>
-              <th>Login</th>
-              <th>Actions</th>
+              <th>
+                Member No.
+              </th>
+
+              <th>
+                Membership No.
+              </th>
+
+              <th>
+                Member
+              </th>
+
+              <th>
+                National ID
+              </th>
+
+              <th>
+                Phone
+              </th>
+
+              <th>
+                Email
+              </th>
+
+              <th>
+                Role
+              </th>
+
+              <th>
+                Actual Position
+              </th>
+
+              <th>
+                Status
+              </th>
+
+              <th>
+                Onboarding
+              </th>
+
+              <th>
+                Contribution Status
+              </th>
+
+              <th>
+                Login
+              </th>
+
+              <th>
+                Actions
+              </th>
 
             </tr>
 
           </thead>
+
 
           <tbody id="memberRows">
 
@@ -1782,7 +1583,7 @@
 
               <td
                 colspan="13"
-                class="members-loading"
+                class="empty-state"
               >
                 Loading members...
               </td>
@@ -1797,7 +1598,7 @@
 
 
       <!-- ===================================================
-           MOBILE MEMBER CARDS
+           MOBILE CARDS
       ==================================================== -->
 
       <div
@@ -1805,7 +1606,7 @@
         class="member-cards"
       >
 
-        <div class="members-loading">
+        <div class="empty-state">
           Loading members...
         </div>
 
@@ -1822,26 +1623,22 @@
 
   <div
     id="memberModal"
-    class="member-modal"
+    class="modal"
     hidden
     role="dialog"
     aria-modal="true"
     aria-labelledby="viewMemberName"
   >
 
-    <div class="member-modal-dialog">
+    <div class="modal-dialog">
 
-      <!-- ===================================================
-           MODAL HEADER
-      ==================================================== -->
+      <header class="modal-head">
 
-      <header class="member-modal-header">
-
-        <div class="member-profile-heading">
+        <div class="profile">
 
           <div
             id="viewMemberInitials"
-            class="member-initials"
+            class="avatar"
           >
             —
           </div>
@@ -1862,10 +1659,9 @@
 
 
         <button
-          type="button"
           id="closeMemberModal"
-          class="btn btn-secondary"
-          aria-label="Close member details"
+          type="button"
+          class="btn"
         >
           Close
         </button>
@@ -1873,37 +1669,35 @@
       </header>
 
 
-      <div class="member-modal-body">
+      <div class="modal-body">
 
         <!-- =================================================
-             MEMBER PROFILE
+             PROFILE
         ================================================== -->
 
-        <section
-          class="member-modal-section"
-          data-member-profile
-        >
+        <section class="modal-section">
 
           <h3>
             Member Profile
           </h3>
 
-          <p class="member-modal-section-description">
-            Membership identity, governance and onboarding state.
+          <p>
+            Membership identity, governance and onboarding
+            state.
           </p>
 
 
-          <div class="member-detail-grid">
+          <div class="detail-grid">
 
-            <div class="member-detail">
+            <div class="detail">
 
-              <span class="member-detail-label">
+              <span class="detail-label">
                 Member Number
               </span>
 
               <span
-                class="member-detail-value"
                 id="viewMemberNumberDetail"
+                class="detail-value"
               >
                 —
               </span>
@@ -1911,15 +1705,15 @@
             </div>
 
 
-            <div class="member-detail">
+            <div class="detail">
 
-              <span class="member-detail-label">
+              <span class="detail-label">
                 Membership Number
               </span>
 
               <span
-                class="member-detail-value"
                 id="viewMemberMembershipNumber"
+                class="detail-value"
               >
                 —
               </span>
@@ -1927,15 +1721,15 @@
             </div>
 
 
-            <div class="member-detail">
+            <div class="detail">
 
-              <span class="member-detail-label">
+              <span class="detail-label">
                 National ID
               </span>
 
               <span
-                class="member-detail-value"
                 id="viewMemberNationalId"
+                class="detail-value"
               >
                 —
               </span>
@@ -1943,15 +1737,15 @@
             </div>
 
 
-            <div class="member-detail">
+            <div class="detail">
 
-              <span class="member-detail-label">
+              <span class="detail-label">
                 Phone
               </span>
 
               <span
-                class="member-detail-value"
                 id="viewMemberPhone"
+                class="detail-value"
               >
                 —
               </span>
@@ -1959,15 +1753,15 @@
             </div>
 
 
-            <div class="member-detail">
+            <div class="detail">
 
-              <span class="member-detail-label">
+              <span class="detail-label">
                 Email
               </span>
 
               <span
-                class="member-detail-value"
                 id="viewMemberEmail"
+                class="detail-value"
               >
                 —
               </span>
@@ -1975,15 +1769,15 @@
             </div>
 
 
-            <div class="member-detail">
+            <div class="detail">
 
-              <span class="member-detail-label">
+              <span class="detail-label">
                 Security Role
               </span>
 
               <span
-                class="member-detail-value"
                 id="viewMemberRole"
+                class="detail-value"
               >
                 —
               </span>
@@ -1991,15 +1785,15 @@
             </div>
 
 
-            <div class="member-detail">
+            <div class="detail">
 
-              <span class="member-detail-label">
+              <span class="detail-label">
                 Actual Position
               </span>
 
               <span
-                class="member-detail-value"
                 id="viewMemberActualPosition"
+                class="detail-value"
               >
                 —
               </span>
@@ -2007,15 +1801,15 @@
             </div>
 
 
-            <div class="member-detail">
+            <div class="detail">
 
-              <span class="member-detail-label">
+              <span class="detail-label">
                 Status
               </span>
 
               <span
-                class="member-detail-value"
                 id="viewMemberStatus"
+                class="detail-value"
               >
                 —
               </span>
@@ -2023,15 +1817,15 @@
             </div>
 
 
-            <div class="member-detail">
+            <div class="detail">
 
-              <span class="member-detail-label">
+              <span class="detail-label">
                 Onboarding Status
               </span>
 
               <span
-                class="member-detail-value"
                 id="viewMemberOnboardingStatus"
+                class="detail-value"
               >
                 —
               </span>
@@ -2039,15 +1833,15 @@
             </div>
 
 
-            <div class="member-detail">
+            <div class="detail">
 
-              <span class="member-detail-label">
+              <span class="detail-label">
                 Join Date
               </span>
 
               <span
-                class="member-detail-value"
                 id="viewMemberJoinDate"
+                class="detail-value"
               >
                 —
               </span>
@@ -2055,15 +1849,15 @@
             </div>
 
 
-            <div class="member-detail">
+            <div class="detail">
 
-              <span class="member-detail-label">
+              <span class="detail-label">
                 Activated At
               </span>
 
               <span
-                class="member-detail-value"
                 id="viewMemberActivatedAt"
+                class="detail-value"
               >
                 —
               </span>
@@ -2079,117 +1873,33 @@
              CONTRIBUTION RULES
         ================================================== -->
 
-        <section
-          class="member-modal-section"
-          aria-label="Member contribution rules"
-        >
+        <section class="modal-section">
 
           <h3>
             Contribution Rules
           </h3>
 
-          <p class="member-modal-section-description">
-            All currently applicable contribution rules are
-            displayed here, including the monthly contribution
-            and any active custom contribution rules. Rules are
-            read-only on this page.
+          <p>
+            Currently applicable contribution rules are
+            displayed here. Rules remain controlled by the
+            canonical backend accounting workflow.
           </p>
+
 
           <div
             id="memberContributionRules"
-            data-member-contribution-rules
-            class="member-rules-list"
+            class="rule-list"
           >
 
-            <div class="member-rule-card">
+            <div class="rule-card">
 
-              <div class="member-rule-card-header">
+              <strong>
+                Loading...
+              </strong>
 
-                <div>
-
-                  <h4 class="member-rule-card-title">
-                    Contribution Rules
-                  </h4>
-
-                  <div class="member-rule-card-type">
-                    Loading authoritative contribution rules...
-                  </div>
-
-                </div>
-
-                <span class="member-contribution-badge">
-                  Loading
-                </span>
-
-              </div>
-
-            </div>
-
-          </div>
-
-        </section>
-
-
-        <!-- =================================================
-             CONTRIBUTION STATUS BY TYPE
-        ================================================== -->
-
-        <section
-          class="member-modal-section"
-          aria-label="Contribution status by type"
-        >
-
-          <h3>
-            Contribution Status
-          </h3>
-
-          <p class="member-modal-section-description">
-            Each active contribution type is shown separately.
-            A member can therefore be Paid or Outstanding for
-            one contribution type without changing the status
-            of another contribution type.
-          </p>
-
-
-          <div class="member-contribution-status-panel">
-
-            <div class="member-contribution-status-header">
-
-              Active contribution obligations
-
-            </div>
-
-
-            <div
-              id="memberContributionStatusRows"
-              class="member-contribution-status-list"
-            >
-
-              <div class="member-contribution-status-row">
-
-                <div class="member-contribution-status-name">
-                  Loading...
-                </div>
-
-                <div class="member-contribution-status-value">
-                  Due: —
-                </div>
-
-                <div class="member-contribution-status-value">
-                  Paid: —
-                </div>
-
-                <div class="member-contribution-status-value">
-                  Outstanding: —
-                </div>
-
-                <div>
-                  <span class="member-contribution-badge member-contribution-neutral">
-                    —
-                  </span>
-                </div>
-
-              </div>
+              <span>
+                Contribution rules
+              </span>
 
             </div>
 
@@ -2202,85 +1912,105 @@
              CONTRIBUTION ACCOUNTING
         ================================================== -->
 
-        <section
-          class="member-modal-section"
-          aria-label="Contribution accounting"
-        >
+        <section class="modal-section">
 
           <h3>
             Contribution Accounting
           </h3>
 
-          <p class="member-modal-section-description">
-            Accounting values are read from the group's
-            authoritative accounting system. This page does
-            not directly create, edit or delete accounting
-            records.
+          <p>
+            Values below are read from the authoritative
+            accounting position. The page does not directly
+            create, update or delete accounting records.
           </p>
 
 
-          <div class="member-accounting-grid">
+          <div class="account-grid">
 
-            <div class="member-accounting-card">
+            <div class="account">
 
-              <span>Status</span>
+              <span>
+                Status
+              </span>
 
-              <strong id="viewContributionStatus">
+              <strong
+                id="viewContributionStatus"
+              >
                 —
               </strong>
 
             </div>
 
 
-            <div class="member-accounting-card">
+            <div class="account">
 
-              <span>Total</span>
+              <span>
+                Total Due
+              </span>
 
-              <strong id="viewContributionTotal">
+              <strong
+                id="viewContributionTotal"
+              >
                 —
               </strong>
 
             </div>
 
 
-            <div class="member-accounting-card">
+            <div class="account">
 
-              <span>Due</span>
+              <span>
+                Due
+              </span>
 
-              <strong id="viewContributionDue">
+              <strong
+                id="viewContributionDue"
+              >
                 —
               </strong>
 
             </div>
 
 
-            <div class="member-accounting-card">
+            <div class="account">
 
-              <span>Allocated</span>
+              <span>
+                Allocated
+              </span>
 
-              <strong id="viewContributionAllocated">
+              <strong
+                id="viewContributionAllocated"
+              >
                 —
               </strong>
 
             </div>
 
 
-            <div class="member-accounting-card">
+            <div class="account">
 
-              <span>Arrears</span>
+              <span>
+                Arrears
+              </span>
 
-              <strong id="viewContributionArrears">
+              <strong
+                id="viewContributionArrears"
+              >
                 —
               </strong>
 
             </div>
 
 
-            <div class="member-accounting-card">
+            <div class="account">
 
-              <span>Credit</span>
+              <span>
+                Credit
+              </span>
 
-              <strong id="viewContributionCredit">
+              <strong
+                id="viewContributionCredit"
+              >
                 —
               </strong>
 
@@ -2288,13 +2018,134 @@
 
           </div>
 
+        </section>
 
-          <div style="margin-top:14px;">
+
+        <!-- =================================================
+             POSITION CHANGE
+        ================================================== -->
+
+        <section
+          id="positionChangeSection"
+          class="modal-section"
+        >
+
+          <h3>
+            Change Actual Group Position
+          </h3>
+
+          <p>
+            Position changes are recorded through the canonical
+            position-history workflow. The security role is not
+            changed here.
+          </p>
+
+
+          <div class="position-grid">
+
+            <div class="field">
+
+              <label for="positionChangeValue">
+                Actual Position
+              </label>
+
+              <select
+                id="positionChangeValue"
+              >
+
+                <option value="">
+                  Select position
+                </option>
+
+                <option value="chairperson">
+                  Chairperson
+                </option>
+
+                <option value="vice_chairperson">
+                  Vice Chairperson
+                </option>
+
+                <option value="treasurer">
+                  Treasurer
+                </option>
+
+                <option value="secretary">
+                  Secretary
+                </option>
+
+                <option value="vice_secretary">
+                  Vice Secretary
+                </option>
+
+                <option value="committee_member">
+                  Committee Member
+                </option>
+
+                <option value="member">
+                  Member
+                </option>
+
+                <option value="other">
+                  Other
+                </option>
+
+              </select>
+
+            </div>
+
+
+            <div
+              id="positionChangeNameField"
+              class="field"
+              hidden
+            >
+
+              <label for="positionChangeName">
+                Position Name
+              </label>
+
+              <input
+                id="positionChangeName"
+                type="text"
+                maxlength="120"
+              >
+
+            </div>
+
+
+            <div class="field">
+
+              <label for="positionChangeEffectiveFrom">
+                Effective From
+              </label>
+
+              <input
+                id="positionChangeEffectiveFrom"
+                type="date"
+              >
+
+            </div>
+
+          </div>
+
+
+          <div
+            class="action-row"
+            style="margin-top:12px"
+          >
 
             <button
+              id="savePositionChange"
               type="button"
+              class="btn btn-primary"
+            >
+              Save Position Change
+            </button>
+
+            <button
               id="reconcileHistoricalPayments"
-              class="btn btn-secondary"
+              type="button"
+              class="btn"
             >
               Reconcile Historical Payments
             </button>
@@ -2306,16 +2157,12 @@
       </div>
 
 
-      <!-- ===================================================
-           MODAL FOOTER
-      ==================================================== -->
-
-      <footer class="member-modal-footer">
+      <footer class="modal-foot">
 
         <button
-          type="button"
           id="closeMemberModalFooter"
-          class="btn btn-secondary"
+          type="button"
+          class="btn"
         >
           Done
         </button>
@@ -2342,4 +2189,5 @@
   </script>
 
 </body>
+
 </html>
