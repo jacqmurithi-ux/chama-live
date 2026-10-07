@@ -100,6 +100,7 @@ async function submitMember(event) {
   const nationalId = $("nationalId")?.value.trim() || null;
   const phone = $("memberPhone")?.value.trim();
   const email = $("memberEmail")?.value.trim() || null;
+  const sendInvitation = Boolean($("sendInvitation")?.checked && email);
   const role = $("memberRole")?.value || "member";
   const status = $("memberStatus")?.value || "active";
   const joinDate = $("joinDate")?.value;
@@ -231,6 +232,16 @@ async function submitMember(event) {
         $("contributionEffectiveFrom").value = $("joinDate")?.value;
       }
       updateHistoricalVisibility();
+      if (sendInvitation) {
+        try {
+          await sendLoginInvitation(historicalRow.member_id);
+        } catch (inviteError) {
+          console.warn("Member created but login invitation failed:", inviteError);
+          setStatus(`${name} added — accounting completed, but the login invitation could not be sent.`);
+          return;
+        }
+      }
+
       setStatus(`${name} added — opening contribution position: ${position}.`);
       return;
     }
@@ -266,6 +277,14 @@ async function submitMember(event) {
     if (createError) throw createError;
     const createdRow = Array.isArray(created) ? created[0] : created;
     if (!createdRow?.member_id) throw new Error("Member was not created.");
+
+    if (sendInvitation) {
+      try {
+        await sendLoginInvitation(createdRow.member_id);
+      } catch (inviteError) {
+        console.warn("Member created but login invitation failed:", inviteError);
+      }
+    }
 
     let accountingResult = createdRow;
 
@@ -365,6 +384,20 @@ function buildHistoricalPayments(paidMonths, paidThrough, monthlyAmount, totalPa
   }
   return payments;
 }
+
+async function sendLoginInvitation(memberId) {
+  if (!memberId) throw new Error("Member ID is required for invitation.");
+  const { data, error } = await supabase.functions.invoke(
+    "send-member-invitation",
+    { body: { member_id: memberId } }
+  );
+  if (error) throw error;
+  if (data?.email_sent === false) {
+    throw new Error(data?.error || "The login invitation email was not sent.");
+  }
+  return data;
+}
+
 
 function clearError() {
   const e = $("error");
