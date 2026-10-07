@@ -8,7 +8,7 @@ import {
 ========================================================= */
 
 const SUPABASE_URL =
-  "https://ptktftwyltxmtcodyzoa.supabase.co";
+  "https://onzaonflquipqmhgslxi.supabase.co";
 
 
 const SUPABASE_PUBLISHABLE_KEY =
