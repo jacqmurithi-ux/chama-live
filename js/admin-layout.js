@@ -42,6 +42,29 @@
    Fines F1 is read-only.
    No accounting mutations are performed by this layout.
 
+   ADD MEMBER
+   ---------------------------------------------------------
+   add-member.html is a dedicated admin page.
+
+   It MUST NOT load members.js.
+
+   add-member.js is the sole feature module for the
+   Add Member page and must export:
+
+     addMemberInit()
+
+   The Add Member feature owns:
+   - member form state
+   - validation
+   - contribution-plan UI
+   - historical-contribution UI
+   - RPC submission
+   - RPC error mapping
+   - success result
+   - retry / reset handling
+
+   The backend remains authoritative for all writes.
+
    GETTING STARTED
    ---------------------------------------------------------
    Admin Getting Started is currently a shell-only admin
@@ -80,6 +103,15 @@ const ADMIN_ROLES = new Set([
 const ADMIN_PAGES = new Set([
   "dashboard.html",
   "members.html",
+
+  /*
+   * Dedicated Add Member page.
+   *
+   * This is intentionally separate from members.html.
+   * It has its own page module and does NOT load members.js.
+   */
+  "add-member.html",
+
   "contributions.html",
   "expenses.html",
   "fines.html",
@@ -114,6 +146,16 @@ const ADMIN_PAGES = new Set([
 
    Shell-only pages remain in ADMIN_PAGES but do not need
    a PAGE_SCRIPTS entry.
+
+   ADD MEMBER
+   ---------------------------------------------------------
+   add-member.html deliberately points to add-member.js.
+
+   It does NOT point to members.js.
+
+   The expected exported initializer is:
+
+     addMemberInit()
 ========================================================= */
 
 const PAGE_SCRIPTS = {
@@ -126,6 +168,11 @@ const PAGE_SCRIPTS = {
   "members.html": [
     "./members.js",
     "init"
+  ],
+
+  "add-member.html": [
+    "./add-member.js",
+    "addMemberInit"
   ],
 
   "contributions.html": [
@@ -331,6 +378,10 @@ const NAVIGATION_GROUPS = [
       [
         "members.html",
         "Members"
+      ],
+      [
+        "add-member.html",
+        "Add Member"
       ]
     ]
   ],
@@ -1500,6 +1551,18 @@ function renderMobileBottomNavigation() {
    This allows a browser syntax/import error to be traced
    to the actual page module instead of making it appear
    that admin-layout.js itself is malformed.
+
+   ADD MEMBER
+   ---------------------------------------------------------
+   add-member.html resolves exclusively to:
+
+     ./add-member.js
+
+   with initializer:
+
+     addMemberInit
+
+   No members.js import occurs here.
 ========================================================= */
 
 async function loadCurrentPageFeature() {
