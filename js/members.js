@@ -1,3 +1,4 @@
+/* CHAMA LIVE MEMBERS — syntax/deployment refresh 2026-10-07 */
 /* =========================================================
    CHAMA LIVE — MEMBERS
    FRESH CANONICAL FRONTEND
