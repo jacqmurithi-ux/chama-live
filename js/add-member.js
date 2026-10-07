@@ -2401,6 +2401,45 @@ function resetForAnotherMember(
 
 
 /* =========================================================
+   FORM EVENTS
+========================================================= */
+
+function bindFormEvents() {
+
+  const form = $("addMemberForm");
+
+  if (!form) {
+    return;
+  }
+
+  if (form.dataset.addMemberEventsBound === "true") {
+    return;
+  }
+
+  form.dataset.addMemberEventsBound = "true";
+
+  form.addEventListener("submit", handleSubmit);
+
+  form.addEventListener("input", updateFormPreview);
+
+  form.addEventListener("change", updateFormPreview);
+
+  const historical = $("addMemberHistoricalDetails");
+
+  if (historical) {
+    historical.addEventListener("toggle", updateFormPreview);
+  }
+
+  const another = $("addMemberAnother");
+
+  if (another) {
+    another.addEventListener("click", resetForAnotherMember);
+  }
+
+}
+
+
+/* =========================================================
    SUBMIT
 ========================================================= */
 
@@ -2817,15 +2856,6 @@ export async function addMemberInit() {
   }
 
 
-  state.initialised =
-    true;
-
-
-  document.body.dataset
-    .addMemberInitialised =
-    "true";
-
-
   /*
    * IMPORTANT:
    * Clear any stale success state BEFORE loading the page.
@@ -2908,6 +2938,13 @@ export async function addMemberInit() {
 
 
     showWorkspace();
+
+    state.initialised =
+      true;
+
+    document.body.dataset
+      .addMemberInitialised =
+      "true";
 
   }
 
