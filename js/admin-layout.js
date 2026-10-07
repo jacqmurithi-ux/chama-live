@@ -1921,7 +1921,7 @@ export async function boot() {
         const demo =
           await getDemoContext();
 
-        if (!demo?.demo || !demo?.group_id) {
+        if (!demo?.demo || !demo?.group_name) {
           throw new Error(
             "The demo session is invalid or expired."
           );
@@ -1977,8 +1977,8 @@ export async function boot() {
 
 
     if (
-      !context?.member?.group_id ||
-      (!demoMode && !context?.user)
+      !demoMode &&
+      (!context?.member?.group_id || !context?.user)
     ) {
 
       throw new Error(
