@@ -91,6 +91,23 @@ function safeError(error, scope) {
     };
   }
 
+  if (
+    code === "23514" &&
+    rawMessage.includes("members_membership_number_format_ck")
+  ) {
+    return {
+      code,
+      message: "Membership Number must be exactly 4 digits, for example 0002."
+    };
+  }
+
+  if (code === "23514") {
+    return {
+      code,
+      message: "One of the values entered is not allowed. Check the form and try again."
+    };
+  }
+
   if (/^PGRST|^42/.test(code)) {
     return {
       code: code || "CLIENT_ERROR",
