@@ -1487,6 +1487,19 @@ function renderMobileBottomNavigation() {
 
 /* =========================================================
    CURRENT PAGE FEATURE
+   ---------------------------------------------------------
+   IMPORTANT DIAGNOSTIC VERSION
+
+   This function deliberately separates:
+
+   1. Module resolution
+   2. Module import
+   3. Initializer resolution
+   4. Initializer execution
+
+   This allows a browser syntax/import error to be traced
+   to the actual page module instead of making it appear
+   that admin-layout.js itself is malformed.
 ========================================================= */
 
 async function loadCurrentPageFeature() {
@@ -1507,18 +1520,101 @@ async function loadCurrentPageFeature() {
    */
 
   if (!entry) {
+
+    console.info(
+      "CHAMA LIVE: Shell-only admin page:",
+      page
+    );
+
     return;
+
   }
 
 
-  const module =
-    await import(
-      entry[0]
+  const modulePath =
+    entry[0];
+
+
+  const initializerName =
+    entry[1];
+
+
+  /* ---------------------------------------------------------
+     MODULE LOAD DIAGNOSTIC
+  --------------------------------------------------------- */
+
+  console.info(
+    "CHAMA LIVE: Loading page module:",
+    {
+      page,
+      modulePath,
+      initializerName
+    }
+  );
+
+
+  let module;
+
+
+  /* ---------------------------------------------------------
+     MODULE IMPORT
+  --------------------------------------------------------- */
+
+  try {
+
+    module =
+      await import(
+        modulePath
+      );
+
+  }
+
+  catch (error) {
+
+    console.error(
+      "CHAMA LIVE: Page module import failed:",
+      {
+        page,
+        modulePath,
+        initializerName,
+        name:
+          error?.name,
+        message:
+          error?.message,
+        stack:
+          error?.stack,
+        error
+      }
     );
 
 
+    /*
+     * Re-throw the ORIGINAL error.
+     *
+     * The outer boot() catch will display the same
+     * diagnostic without masking the actual problem.
+     */
+
+    throw error;
+
+  }
+
+
+  console.info(
+    "CHAMA LIVE: Page module imported successfully:",
+    {
+      page,
+      modulePath
+    }
+  );
+
+
+  /* ---------------------------------------------------------
+     INITIALIZER RESOLUTION
+  --------------------------------------------------------- */
+
   const initializer =
-    module?.[entry[1]] ||
+    module?.[initializerName] ||
     module?.initPage ||
     module?.init;
 
@@ -1528,6 +1624,27 @@ async function loadCurrentPageFeature() {
     "function"
   ) {
 
+    const exportedNames =
+      module
+        ? Object.keys(
+            module
+          )
+        : [];
+
+
+    console.error(
+      "CHAMA LIVE: Page initializer missing:",
+      {
+        page,
+        modulePath,
+        expected:
+          initializerName,
+        exports:
+          exportedNames
+      }
+    );
+
+
     throw new Error(
       `No initializer exported for ${page}.`
     );
@@ -1535,7 +1652,57 @@ async function loadCurrentPageFeature() {
   }
 
 
-  await initializer();
+  /* ---------------------------------------------------------
+     INITIALIZER EXECUTION
+  --------------------------------------------------------- */
+
+  console.info(
+    "CHAMA LIVE: Starting page initializer:",
+    {
+      page,
+      modulePath,
+      initializerName
+    }
+  );
+
+
+  try {
+
+    await initializer();
+
+  }
+
+  catch (error) {
+
+    console.error(
+      "CHAMA LIVE: Page initializer failed:",
+      {
+        page,
+        modulePath,
+        initializerName,
+        name:
+          error?.name,
+        message:
+          error?.message,
+        stack:
+          error?.stack,
+        error
+      }
+    );
+
+
+    throw error;
+
+  }
+
+
+  console.info(
+    "CHAMA LIVE: Page initializer completed:",
+    {
+      page,
+      initializerName
+    }
+  );
 
 }
 
@@ -1801,8 +1968,8 @@ export async function boot() {
 
     hideAdminLoaders();
 
-  }
 
+  }
 
   catch (error) {
 
@@ -1810,26 +1977,40 @@ export async function boot() {
       "CHAMA LIVE Admin Portal boot failed:",
       {
         stage,
-        error
+        error,
+        name:
+          error?.name,
+        message:
+          error?.message,
+        stack:
+          error?.stack
       }
     );
+
 
     let message =
       error?.message ||
       "Unable to load the Admin Portal.";
+
 
     /*
      * Browser fetch failures often surface only as
      * "Failed to fetch". Give the user a useful next
      * step without hiding the original diagnostic.
      */
+
     if (
-      String(message).trim().toLowerCase() ===
+      String(message)
+        .trim()
+        .toLowerCase() ===
       "failed to fetch"
     ) {
+
       message =
         "CHAMA LIVE could not reach the authentication service. Check your internet connection and try again. If the problem continues, refresh the page before signing in again.";
+
     }
+
 
     showBootError(
       message,
