@@ -2088,6 +2088,124 @@ async function loadAssets() {
 }
 
 
+
+/* =========================================================
+   MEMBER FINE POSITION — READ ONLY
+   ========================================================= */
+
+async function loadMyFinePosition() {
+  const container = byId("myFinePosition");
+  if (!container || !groupId || !memberId) return;
+
+  try {
+    const { data, error } = await supabase
+      .from("fines")
+      .select(
+        "id,rule_id,trigger_type,accounting_month,original_amount,calculated_amount,triggered_at,source_type,fine_type,reason,imposed_at"
+      )
+      .eq("group_id", groupId)
+      .eq("member_id", memberId)
+      .order("triggered_at", { ascending: false });
+
+    if (error) throw error;
+
+    const fines = Array.isArray(data) ? data : [];
+    const balances = new Map();
+
+    await Promise.all(fines.map(async fine => {
+      const result = await supabase.rpc("cl_fine_balance", {
+        p_fine_id: fine.id
+      });
+
+      if (result.error) throw result.error;
+
+      const row = Array.isArray(result.data)
+        ? result.data[0]
+        : result.data;
+
+      if (row) balances.set(String(fine.id), row);
+    }));
+
+    const outstanding = fines.reduce(
+      (sum, fine) =>
+        sum + Number(
+          balances.get(String(fine.id))?.outstanding_amount || 0
+        ),
+      0
+    );
+
+    const total = fines.reduce(
+      (sum, fine) =>
+        sum + Number(fine.original_amount ?? fine.calculated_amount ?? 0),
+      0
+    );
+
+    const status = outstanding > 0
+      ? "FINES OUTSTANDING"
+      : fines.length
+        ? "NO OUTSTANDING FINES"
+        : "NO FINES";
+
+    const rows = fines.slice(0, 5).map(fine => {
+      const balance = balances.get(String(fine.id)) || {};
+      const source =
+        String(fine.source_type || "").toUpperCase() === "MANUAL_MEMBER_FINE"
+          ? "Manual"
+          : "Contribution";
+
+      const type =
+        fine.fine_type ||
+        (source === "Manual" ? "Manual fine" : "Contribution fine");
+
+      const reason =
+        fine.reason ||
+        (source === "Manual"
+          ? "Member fine"
+          : "Contribution-related fine");
+
+      return `
+        <div class="member-fine-item">
+          <div>
+            <strong>${escapeHtml(type)}</strong>
+            <small>
+              ${escapeHtml(source)}
+              · ${escapeHtml(reason)}
+              · ${escapeHtml(formatDate(fine.imposed_at || fine.triggered_at))}
+            </small>
+          </div>
+          <span>
+            ${escapeHtml(formatMoney(balance.outstanding_amount || 0))}
+          </span>
+        </div>
+      `;
+    }).join("");
+
+    container.innerHTML = `
+      <div class="member-fine-summary">
+        <div>
+          <span>Total fines</span>
+          <strong>${escapeHtml(formatMoney(total))}</strong>
+        </div>
+        <div>
+          <span>Outstanding</span>
+          <strong>${escapeHtml(formatMoney(outstanding))}</strong>
+        </div>
+        <div>
+          <span>Status</span>
+          <strong>${escapeHtml(status)}</strong>
+        </div>
+      </div>
+      <div class="member-fine-list">
+        ${rows || '<p class="member-muted">No fines have been recorded against your account.</p>'}
+      </div>
+    `;
+  } catch (error) {
+    console.warn("Member fine position could not be loaded:", error);
+    container.innerHTML =
+      '<p class="member-muted">Fine information could not be loaded.</p>';
+  }
+}
+
 /* =========================================================
    DASHBOARD LOAD
    ---------------------------------------------------------
@@ -2140,6 +2258,7 @@ async function loadDashboard() {
       await Promise.allSettled([
         loadMyContributionPosition(),
         loadMyActiveContributions(),
+        loadMyFinePosition(),
         loadMyContributionActivity(),
         loadGroupReadData(),
         loadGroupMonthlyAccountingSummary(),

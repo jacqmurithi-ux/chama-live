@@ -24,6 +24,51 @@
 
   <style>
 
+    .member-fine-summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .member-fine-stat {
+      padding: 14px;
+      border: 1px solid var(--cl-border, #e5e7eb);
+      border-radius: 12px;
+      background: var(--cl-surface-soft, #f8fafc);
+    }
+    .member-fine-stat span {
+      display: block;
+      color: var(--cl-muted, #667085);
+      font-size: .76rem;
+      font-weight: 700;
+    }
+    .member-fine-stat strong {
+      display: block;
+      margin-top: 5px;
+      font-size: 1rem;
+    }
+    .member-fine-status.outstanding { color: #b42318; }
+    .member-fine-status.settled { color: #067647; }
+    .member-fine-table-wrap { overflow-x: auto; }
+    .member-fine-table { width: 100%; min-width: 760px; border-collapse: collapse; }
+    .member-fine-table th, .member-fine-table td {
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--cl-border, #e5e7eb);
+      text-align: left;
+      vertical-align: top;
+      font-size: .82rem;
+    }
+    .member-fine-table th {
+      background: var(--cl-surface-soft, #f8fafc);
+      color: var(--cl-muted, #667085);
+      font-size: .72rem;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    @media (max-width: 700px) {
+      .member-fine-summary { grid-template-columns: 1fr; }
+    }
+
     .member-accounting-page {
       width: min(1180px, 100%);
       margin: 0 auto;

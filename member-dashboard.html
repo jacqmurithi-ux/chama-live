@@ -80,6 +80,52 @@
       line-height: 1.5;
     }
 
+    .member-fine-summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .member-fine-summary > div {
+      padding: 12px;
+      border-radius: 10px;
+      background: #f8fafc;
+    }
+    .member-fine-summary span,
+    .member-fine-item small {
+      display: block;
+      color: #64748b;
+      font-size: 11px;
+    }
+    .member-fine-summary strong {
+      display: block;
+      margin-top: 5px;
+      font-size: 15px;
+      color: #334155;
+    }
+    .member-fine-list {
+      margin-top: 12px;
+    }
+    .member-fine-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 11px 0;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .member-fine-item:last-child {
+      border-bottom: 0;
+    }
+    .member-fine-item strong {
+      display: block;
+      color: #334155;
+    }
+    .member-fine-item > span {
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
     /* =====================================================
        MEMBER FINANCE SUMMARY
     ====================================================== */
@@ -519,6 +565,23 @@
 
         </div>
 
+      </article>
+
+
+      <!-- ===================================================
+           MY FINES
+      ==================================================== -->
+
+      <article class="member-card member-card-wide">
+        <div class="eyebrow">MY FINES</div>
+        <h2>Fine Account</h2>
+        <p class="member-muted">
+          Contribution fines are generated automatically. Other fines are shown
+          here with their type, reason, date and outstanding balance.
+        </p>
+        <div id="myFinePosition">
+          <p class="member-muted">Loading your fine account...</p>
+        </div>
       </article>
 
 
