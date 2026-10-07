@@ -35,7 +35,7 @@
    ========================================================= */
 
 import { supabase } from "./supabase.js";
-import { getMyApplicationContext } from "./auth.js";
+import { getLayoutState } from "./admin-layout.js";
 
 /* =========================================================
    DOM
@@ -1826,20 +1826,29 @@ function bindFormEvents() {
    ========================================================= */
 
 async function loadApplicationContext() {
-  const context =
-    await getMyApplicationContext();
+  /*
+    admin-layout.js has already authenticated the user,
+    resolved the member, resolved the group and authorised
+    the current admin page before this feature module loads.
 
-  if (!context) {
+    Reuse that exact context instead of running the complete
+    Auth/member/group resolution a second time.
+  */
+
+  const layoutState =
+    getLayoutState();
+
+  const context =
+    layoutState || null;
+
+  if (!context?.user || !context?.member) {
     throw new Error(
-      "Unable to load your CHAMA LIVE application context."
+      "Your authenticated group context could not be resolved."
     );
   }
 
-  state.context =
-    context;
-
   const groupId =
-    context.group_id ||
+    context.member?.group_id ||
     context.group?.id;
 
   if (!groupId) {
@@ -1848,11 +1857,13 @@ async function loadApplicationContext() {
     );
   }
 
-  return {
+  state.context = {
     ...context,
     group_id:
       groupId,
   };
+
+  return state.context;
 }
 
 /* =========================================================
@@ -1963,11 +1974,25 @@ export async function addMemberInit() {
   showLoading();
 
   try {
+    console.info(
+      "CHAMA LIVE Add Member: starting feature initialization."
+    );
+
     state.requestId =
       createRequestId();
 
     const context =
       await loadApplicationContext();
+
+    console.info(
+      "CHAMA LIVE Add Member: admin context resolved.",
+      {
+        groupId:
+          context.group_id,
+        role:
+          context.role
+      }
+    );
 
     const groupId =
       context.group_id;
@@ -1977,6 +2002,11 @@ export async function addMemberInit() {
         groupId
       );
 
+    console.info(
+      "CHAMA LIVE Add Member: can_manage_members result:",
+      canManage
+    );
+
     if (!canManage) {
       showAccessError(
         "Only a group admin or chairperson can add members."
@@ -1985,8 +2015,17 @@ export async function addMemberInit() {
       return;
     }
 
+    console.info(
+      "CHAMA LIVE Add Member: loading Monthly contribution type."
+    );
+
     await loadMonthlyContributionType(
       groupId
+    );
+
+    console.info(
+      "CHAMA LIVE Add Member: Monthly contribution type loaded.",
+      state.monthlyType
     );
 
     applyDefaults();
@@ -2004,6 +2043,10 @@ export async function addMemberInit() {
 
     state.initialised =
       true;
+
+    console.info(
+      "CHAMA LIVE Add Member: feature initialization completed."
+    );
   } catch (error) {
     console.error(
       "CHAMA LIVE Add Member initialization failed:",
