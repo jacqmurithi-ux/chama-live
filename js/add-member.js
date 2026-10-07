@@ -1,27 +1,30 @@
 /* =========================================================
    CHAMA LIVE — ADD MEMBER
-   ---------------------------------------------------------
-   Dedicated member-creation page.
+   Canonical member creation frontend
+   =========================================================
+   FILE:
+     /js/add-member.js
 
-   IMPORTANT ACCOUNTING BOUNDARY
-   ---------------------------------------------------------
-   This file NEVER directly inserts/updates:
+   DEPENDENCIES:
+     ./supabase.js
+     ./auth.js
+     ./add-member-rpc.js
+     ./add-member-errors.js
 
+   ACCOUNTING BOUNDARY
+   -------------------
+   This page never directly writes to:
      contributions
      contribution_allocations
      contribution_obligations
 
    Member/accounting creation is delegated to the canonical
-   backend RPCs.
+   backend RPCs exposed by add-member-rpc.js.
 
-   Historical OFF:
-     create_member_with_contribution_plan()
-
-   Historical ON:
-     create_member_with_historical_contributions()
-
-   No members.js dependency.
-========================================================= */
+   IMPORTANT
+   ---------
+   This file does NOT import or depend on the old members.js.
+   ========================================================= */
 
 import {
   getMyApplicationContext,
@@ -29,10 +32,10 @@ import {
 } from "./auth.js";
 
 import {
-  loadContributionTypes,
-  findMonthlyContributionType,
-  canManageMembers,
-  createMember
+  loadMonthlyContributionType,
+  checkCanManageMembers,
+  createMember,
+  createMemberWithHistorical
 } from "./add-member-rpc.js";
 
 import {
@@ -45,11 +48,12 @@ import {
 ========================================================= */
 
 const state = {
-  context: null,
+  initialized: false,
+  submitting: false,
   groupId: null,
+  userId: null,
   monthlyType: null,
-  requestId: null,
-  submitting: false
+  requestId: null
 };
 
 
@@ -57,39 +61,1852 @@ const state = {
    DOM
 ========================================================= */
 
-const $ = (
-  id
-) =>
-  document.getElementById(id);
+const dom = {};
 
 
 /* =========================================================
-   TEXT
+   INITIALIZATION
 ========================================================= */
 
-function text(
-  element,
-  value
-) {
+export async function addMemberInit() {
+  cacheDom();
 
-  if (!element) {
-    return;
+  /*
+   * Always normalize the page before doing anything else.
+   *
+   * This is important when the browser restores the page from
+   * bfcache/history after a previous successful submission.
+   */
+  resetPageState();
+
+  state.initialized = true;
+
+  bindEvents();
+
+  setDefaultDates();
+
+  try {
+    await initializePage();
+  } catch (error) {
+    console.error("CHAMA LIVE Add Member initialization error:", error);
+
+    showAccessError(
+      mapRpcError(error)
+    );
   }
+}
 
-  element.textContent =
-    value == null
-      ? ""
-      : String(value);
 
+/*
+ * Compatibility export.
+ *
+ * admin-layout.js currently resolves addMemberInit, but keeping
+ * initPage makes this module safe if the shared loader falls
+ * back to the standard initializer name.
+ */
+export const initPage = addMemberInit;
+
+
+/* =========================================================
+   DOM CACHE
+========================================================= */
+
+function cacheDom() {
+  dom.loading = document.getElementById("addMemberLoading");
+  dom.accessError = document.getElementById("addMemberAccessError");
+  dom.workspace = document.getElementById("addMemberWorkspace");
+
+  dom.message = document.getElementById("addMemberMessage");
+
+  dom.form = document.getElementById("addMemberForm");
+
+  dom.memberNumber = document.getElementById("addMemberNumber");
+  dom.membershipNumber = document.getElementById(
+    "addMembershipNumber"
+  );
+  dom.name = document.getElementById("addMemberName");
+  dom.phone = document.getElementById("addMemberPhone");
+  dom.email = document.getElementById("addMemberEmail");
+  dom.nationalId = document.getElementById("addMemberNationalId");
+  dom.joinDate = document.getElementById("addMemberJoinDate");
+
+  dom.role = document.getElementById("addMemberRole");
+  dom.status = document.getElementById("addMemberStatus");
+  dom.onboardingStatus = document.getElementById(
+    "addMemberOnboardingStatus"
+  );
+
+  dom.actualPosition = document.getElementById(
+    "addMemberActualPosition"
+  );
+
+  dom.positionNameWrap = document.getElementById(
+    "addMemberPositionNameWrap"
+  );
+
+  dom.actualPositionName = document.getElementById(
+    "addMemberActualPositionName"
+  );
+
+  dom.positionEffectiveFrom = document.getElementById(
+    "addMemberPositionEffectiveFrom"
+  );
+
+  dom.monthlyTypeStatus = document.getElementById(
+    "addMemberMonthlyTypeStatus"
+  );
+
+  dom.monthlyTypeName = document.getElementById(
+    "addMemberMonthlyTypeName"
+  );
+
+  dom.monthlyTypeId = document.getElementById(
+    "addMemberMonthlyTypeId"
+  );
+
+  dom.contributionAmount = document.getElementById(
+    "addMemberContributionAmount"
+  );
+
+  dom.frequency = document.getElementById(
+    "addMemberFrequency"
+  );
+
+  dom.contributionEffectiveFrom = document.getElementById(
+    "addMemberContributionEffectiveFrom"
+  );
+
+  dom.contributionEffectiveTo = document.getElementById(
+    "addMemberContributionEffectiveTo"
+  );
+
+  dom.firstPeriodRule = document.getElementById(
+    "addMemberFirstPeriodRule"
+  );
+
+  dom.ruleStatus = document.getElementById(
+    "addMemberRuleStatus"
+  );
+
+  dom.obligationPreview = document.getElementById(
+    "addMemberObligationPreview"
+  );
+
+  dom.historicalDetails = document.getElementById(
+    "addMemberHistoricalDetails"
+  );
+
+  dom.historicalPaidThrough = document.getElementById(
+    "addMemberHistoricalPaidThrough"
+  );
+
+  dom.historicalPaymentMethod = document.getElementById(
+    "addMemberHistoricalPaymentMethod"
+  );
+
+  dom.historicalAmount = document.getElementById(
+    "addMemberHistoricalAmount"
+  );
+
+  dom.historicalPreview = document.getElementById(
+    "addMemberHistoricalPreview"
+  );
+
+  dom.review = document.getElementById(
+    "addMemberReview"
+  );
+
+  dom.submit = document.getElementById(
+    "addMemberSubmit"
+  );
+
+  dom.success = document.getElementById(
+    "addMemberSuccess"
+  );
+
+  dom.successSummary = document.getElementById(
+    "addMemberSuccessSummary"
+  );
+
+  dom.another = document.getElementById(
+    "addMemberAnother"
+  );
 }
 
 
 /* =========================================================
-   TODAY
+   EVENT BINDING
 ========================================================= */
 
-function todayDate() {
+function bindEvents() {
+  if (!dom.form) {
+    throw new Error(
+      "Add Member form was not found."
+    );
+  }
 
+  dom.form.addEventListener(
+    "submit",
+    handleSubmit
+  );
+
+  dom.another?.addEventListener(
+    "click",
+    handleAddAnother
+  );
+
+  dom.actualPosition?.addEventListener(
+    "change",
+    handlePositionChange
+  );
+
+  dom.joinDate?.addEventListener(
+    "change",
+    handleDateChanges
+  );
+
+  dom.contributionEffectiveFrom?.addEventListener(
+    "change",
+    handleDateChanges
+  );
+
+  dom.contributionEffectiveTo?.addEventListener(
+    "change",
+    handleDateChanges
+  );
+
+  dom.firstPeriodRule?.addEventListener(
+    "change",
+    updatePreviews
+  );
+
+  dom.contributionAmount?.addEventListener(
+    "input",
+    handleAmountChange
+  );
+
+  dom.historicalPaidThrough?.addEventListener(
+    "change",
+    updatePreviews
+  );
+
+  dom.historicalPaymentMethod?.addEventListener(
+    "change",
+    updateReview
+  );
+
+  /*
+   * Recalculate review and button state as the user types.
+   */
+  dom.form.addEventListener(
+    "input",
+    handleFormInput
+  );
+
+  dom.form.addEventListener(
+    "change",
+    handleFormInput
+  );
+
+  /*
+   * Browser bfcache can restore the old success state.
+   * pageshow fires when a page is restored from history.
+   */
+  window.addEventListener(
+    "pageshow",
+    handlePageShow
+  );
+}
+
+
+/* =========================================================
+   PAGE SHOW / BFCACHE
+========================================================= */
+
+function handlePageShow(event) {
+  /*
+   * persisted === true means the browser restored this page
+   * from its back-forward cache.
+   */
+  if (event.persisted) {
+    resetPageState();
+
+    setDefaultDates();
+
+    if (state.monthlyType) {
+      populateMonthlyType(state.monthlyType);
+    }
+
+    updatePreviews();
+    updateReview();
+    updateSubmitState();
+  }
+}
+
+
+/* =========================================================
+   PAGE RESET
+========================================================= */
+
+function resetPageState() {
+  /*
+   * Never leave a previous success result visible when the
+   * Add Member page starts or is reused.
+   */
+  dom.success?.setAttribute(
+    "hidden",
+    ""
+  );
+
+  dom.accessError?.setAttribute(
+    "hidden",
+    ""
+  );
+
+  dom.message?.setAttribute(
+    "hidden",
+    ""
+  );
+
+  dom.message?.classList.remove(
+    "add-member-alert-error",
+    "add-member-alert-success"
+  );
+
+  dom.successSummary &&
+    (dom.successSummary.innerHTML = "");
+
+  dom.review &&
+    (dom.review.innerHTML = "");
+
+  if (dom.form) {
+    dom.form.hidden = false;
+  }
+
+  dom.workspace?.removeAttribute(
+    "hidden"
+  );
+
+  if (dom.loading) {
+    dom.loading.removeAttribute(
+      "hidden"
+    );
+  }
+
+  state.submitting = false;
+
+  /*
+   * A new form session gets a new idempotency request ID.
+   * This is the only automatic generation during initial
+   * form opening.
+   */
+  state.requestId =
+    typeof crypto !== "undefined" &&
+    typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : generateFallbackRequestId();
+
+  setSubmitDisabled(true);
+}
+
+
+/* =========================================================
+   INITIAL PAGE LOAD
+========================================================= */
+
+async function initializePage() {
+  clearMessage();
+
+  /*
+   * Authentication.
+   */
+  const user = await requireAuth();
+
+  if (!user?.id) {
+    throw new Error(
+      "AUTHENTICATION_REQUIRED"
+    );
+  }
+
+  state.userId = user.id;
+
+  /*
+   * Application/group context.
+   */
+  const context =
+    await getMyApplicationContext();
+
+  const groupId =
+    context?.group_id ||
+    context?.groupId ||
+    context?.group?.id ||
+    null;
+
+  if (!groupId) {
+    throw new Error(
+      "ACTIVE_GROUP_MEMBER_REQUIRED"
+    );
+  }
+
+  state.groupId = groupId;
+
+  /*
+   * Backend authorization.
+   */
+  const canManage =
+    await checkCanManageMembers(
+      groupId
+    );
+
+  if (!canManage) {
+    throw new Error(
+      "MEMBER_MANAGEMENT_NOT_AUTHORIZED"
+    );
+  }
+
+  /*
+   * Load canonical Monthly contribution type.
+   */
+  state.monthlyType =
+    await loadMonthlyContributionType(
+      groupId
+    );
+
+  if (!state.monthlyType?.id) {
+    throw new Error(
+      "CONTRIBUTION_TYPE_NOT_IN_GROUP"
+    );
+  }
+
+  populateMonthlyType(
+    state.monthlyType
+  );
+
+  /*
+   * Set defaults after backend data has loaded.
+   */
+  setDefaultDates();
+
+  updateHistoricalAmount();
+
+  updatePreviews();
+
+  updateReview();
+
+  updateSubmitState();
+
+  dom.loading?.setAttribute(
+    "hidden",
+    ""
+  );
+
+  dom.workspace?.removeAttribute(
+    "hidden"
+  );
+}
+
+
+/* =========================================================
+   DEFAULTS
+========================================================= */
+
+function setDefaultDates() {
+  const today = localDateString();
+
+  if (
+    dom.joinDate &&
+    !dom.joinDate.value
+  ) {
+    dom.joinDate.value = today;
+  }
+
+  if (
+    dom.contributionEffectiveFrom &&
+    !dom.contributionEffectiveFrom.value
+  ) {
+    dom.contributionEffectiveFrom.value =
+      dom.joinDate?.value || today;
+  }
+
+  if (
+    dom.positionEffectiveFrom &&
+    !dom.positionEffectiveFrom.value
+  ) {
+    dom.positionEffectiveFrom.value =
+      dom.joinDate?.value || today;
+  }
+
+  /*
+   * Do NOT invent an amount.
+   *
+   * The backend/group configuration determines the amount,
+   * but this UI requires the manager to enter the member's
+   * actual Monthly amount.
+   */
+}
+
+
+/* =========================================================
+   MONTHLY TYPE
+========================================================= */
+
+function populateMonthlyType(type) {
+  dom.monthlyTypeStatus.textContent =
+    "Available";
+
+  dom.monthlyTypeName.textContent =
+    type.name || "Monthly";
+
+  dom.monthlyTypeId.textContent =
+    type.id;
+
+  dom.monthlyTypeStatus.classList.remove(
+    "is-error"
+  );
+}
+
+
+/* =========================================================
+   POSITION
+========================================================= */
+
+function handlePositionChange() {
+  const value =
+    dom.actualPosition?.value || "";
+
+  const isOther =
+    value === "other";
+
+  if (dom.positionNameWrap) {
+    dom.positionNameWrap.hidden =
+      !isOther;
+  }
+
+  if (!isOther && dom.actualPositionName) {
+    dom.actualPositionName.value = "";
+  }
+
+  if (
+    value &&
+    dom.positionEffectiveFrom &&
+    !dom.positionEffectiveFrom.value
+  ) {
+    dom.positionEffectiveFrom.value =
+      dom.joinDate?.value ||
+      localDateString();
+  }
+
+  updateReview();
+  updateSubmitState();
+}
+
+
+/* =========================================================
+   FORM INPUT
+========================================================= */
+
+function handleFormInput() {
+  updateHistoricalAmount();
+  updatePreviews();
+  updateReview();
+  updateSubmitState();
+}
+
+
+/* =========================================================
+   AMOUNT
+========================================================= */
+
+function handleAmountChange() {
+  updateHistoricalAmount();
+  updatePreviews();
+  updateReview();
+  updateSubmitState();
+}
+
+function updateHistoricalAmount() {
+  if (!dom.historicalAmount) {
+    return;
+  }
+
+  dom.historicalAmount.value =
+    dom.contributionAmount?.value || "";
+}
+
+
+/* =========================================================
+   DATE HANDLING
+========================================================= */
+
+function handleDateChanges() {
+  /*
+   * Contribution effective_from defaults to join_date, but
+   * once the manager changes it deliberately, do not silently
+   * overwrite it.
+   */
+  updatePreviews();
+  updateReview();
+  updateSubmitState();
+}
+
+
+/* =========================================================
+   PREVIEWS
+========================================================= */
+
+function updatePreviews() {
+  updateObligationPreview();
+  updateHistoricalPreview();
+}
+
+
+/*
+ * Backend rule reflected in the UI:
+ *
+ * full_period:
+ *   first obligation month = effective_from month
+ *
+ * next_full_period:
+ *   first obligation month = month after effective_from
+ */
+function getFirstObligationMonth() {
+  const effectiveFrom =
+    dom.contributionEffectiveFrom?.value;
+
+  if (!effectiveFrom) {
+    return null;
+  }
+
+  const firstDate =
+    parseLocalDate(
+      effectiveFrom
+    );
+
+  if (!firstDate) {
+    return null;
+  }
+
+  if (
+    dom.firstPeriodRule?.value ===
+    "next_full_period"
+  ) {
+    firstDate.setMonth(
+      firstDate.getMonth() + 1
+    );
+  }
+
+  return monthString(
+    firstDate
+  );
+}
+
+
+function updateObligationPreview() {
+  if (!dom.obligationPreview) {
+    return;
+  }
+
+  const joinDate =
+    dom.joinDate?.value || "";
+
+  const effectiveFrom =
+    dom.contributionEffectiveFrom?.value || "";
+
+  const amount =
+    numberValue(
+      dom.contributionAmount?.value
+    );
+
+  if (!joinDate || !effectiveFrom) {
+    dom.obligationPreview.textContent =
+      "Enter the member's join date and contribution settings to preview the first obligation month.";
+
+    return;
+  }
+
+  if (!amount || amount <= 0) {
+    dom.obligationPreview.textContent =
+      "Enter a Monthly amount greater than KSh 0.00 to preview the obligation.";
+
+    return;
+  }
+
+  const firstMonth =
+    getFirstObligationMonth();
+
+  if (!firstMonth) {
+    dom.obligationPreview.textContent =
+      "Enter a valid contribution effective date.";
+
+    return;
+  }
+
+  dom.obligationPreview.innerHTML =
+    `<strong>First obligation month:</strong> ${escapeHtml(firstMonth)}
+     <br>
+     <strong>Monthly obligation:</strong> ${formatCurrency(amount)}`;
+}
+
+
+function updateHistoricalPreview() {
+  if (!dom.historicalPreview) {
+    return;
+  }
+
+  const paidThrough =
+    dom.historicalPaidThrough?.value || "";
+
+  if (!paidThrough) {
+    dom.historicalPreview.textContent =
+      "Enable this section by choosing a Paid Through month.";
+
+    return;
+  }
+
+  const firstMonth =
+    getFirstObligationMonth();
+
+  if (!firstMonth) {
+    dom.historicalPreview.textContent =
+      "Complete the Monthly contribution plan first.";
+
+    return;
+  }
+
+  const first =
+    parseMonth(firstMonth);
+
+  const through =
+    parseMonth(paidThrough);
+
+  if (!first || !through) {
+    dom.historicalPreview.textContent =
+      "Enter a valid historical Paid Through month.";
+
+    return;
+  }
+
+  if (
+    through.getTime() <
+    first.getTime()
+  ) {
+    dom.historicalPreview.textContent =
+      "Paid Through must reach at least the first obligation month.";
+
+    return;
+  }
+
+  const months =
+    monthsInclusive(
+      first,
+      through
+    );
+
+  const amount =
+    numberValue(
+      dom.contributionAmount?.value
+    );
+
+  const total =
+    amount > 0
+      ? amount * months
+      : 0;
+
+  dom.historicalPreview.innerHTML =
+    `<strong>Historical months:</strong> ${months}
+     <br>
+     <strong>Historical monthly amount:</strong> ${formatCurrency(amount)}
+     <br>
+     <strong>Historical amount:</strong> ${formatCurrency(total)}`;
+}
+
+
+/* =========================================================
+   VALIDATION
+========================================================= */
+
+function validateForm() {
+  const errors = [];
+
+  const memberNumber =
+    clean(dom.memberNumber?.value);
+
+  const membershipNumber =
+    clean(dom.membershipNumber?.value);
+
+  const name =
+    clean(dom.name?.value);
+
+  const phone =
+    clean(dom.phone?.value);
+
+  const joinDate =
+    dom.joinDate?.value;
+
+  const role =
+    dom.role?.value;
+
+  const status =
+    dom.status?.value;
+
+  const onboardingStatus =
+    dom.onboardingStatus?.value;
+
+  const position =
+    dom.actualPosition?.value || "";
+
+  const positionName =
+    clean(dom.actualPositionName?.value);
+
+  const positionEffective =
+    dom.positionEffectiveFrom?.value;
+
+  const amount =
+    numberValue(
+      dom.contributionAmount?.value
+    );
+
+  const effectiveFrom =
+    dom.contributionEffectiveFrom?.value;
+
+  const effectiveTo =
+    dom.contributionEffectiveTo?.value;
+
+  const firstPeriodRule =
+    dom.firstPeriodRule?.value;
+
+  const ruleStatus =
+    dom.ruleStatus?.value;
+
+  if (!memberNumber) {
+    errors.push(
+      "Member Number is required."
+    );
+  }
+
+  if (!membershipNumber) {
+    errors.push(
+      "Membership Number is required."
+    );
+  }
+
+  if (!name) {
+    errors.push(
+      "Full Name is required."
+    );
+  }
+
+  if (!phone) {
+    errors.push(
+      "Phone is required."
+    );
+  }
+
+  if (!joinDate) {
+    errors.push(
+      "Join Date is required."
+    );
+  }
+
+  if (!role) {
+    errors.push(
+      "Security Role is required."
+    );
+  }
+
+  if (!status) {
+    errors.push(
+      "Member Status is required."
+    );
+  }
+
+  if (!onboardingStatus) {
+    errors.push(
+      "Onboarding Status is required."
+    );
+  }
+
+  if (
+    !amount ||
+    !Number.isFinite(amount) ||
+    amount <= 0
+  ) {
+    errors.push(
+      "Monthly Amount must be greater than KSh 0.00."
+    );
+  }
+
+  if (!effectiveFrom) {
+    errors.push(
+      "Contribution Effective From is required."
+    );
+  }
+
+  if (
+    joinDate &&
+    effectiveFrom &&
+    effectiveFrom < joinDate
+  ) {
+    errors.push(
+      "Contribution Effective From cannot be before Join Date."
+    );
+  }
+
+  if (
+    effectiveTo &&
+    effectiveFrom &&
+    effectiveTo < effectiveFrom
+  ) {
+    errors.push(
+      "Contribution Effective To cannot be before Effective From."
+    );
+  }
+
+  if (
+    position &&
+    !positionName &&
+    position === "other"
+  ) {
+    errors.push(
+      "Position Name is required when Actual Position is Other."
+    );
+  }
+
+  if (
+    position &&
+    positionEffective &&
+    joinDate &&
+    positionEffective < joinDate
+  ) {
+    errors.push(
+      "Position Effective From cannot be before Join Date."
+    );
+  }
+
+  if (
+    ruleStatus === "ended" &&
+    !effectiveTo
+  ) {
+    errors.push(
+      "An ended contribution rule requires Effective To."
+    );
+  }
+
+  if (
+    !firstPeriodRule
+  ) {
+    errors.push(
+      "First Period Rule is required."
+    );
+  }
+
+  /*
+   * Historical validation only applies when the section
+   * contains a Paid Through value.
+   */
+  const historicalEnabled =
+    Boolean(
+      dom.historicalPaidThrough?.value
+    );
+
+  if (historicalEnabled) {
+    const paidThrough =
+      dom.historicalPaidThrough.value;
+
+    const currentMonth =
+      monthString(
+        new Date()
+      );
+
+    if (
+      paidThrough > currentMonth
+    ) {
+      errors.push(
+        "Historical Paid Through cannot be in the future."
+      );
+    }
+
+    const firstMonth =
+      getFirstObligationMonth();
+
+    if (
+      firstMonth &&
+      paidThrough < firstMonth
+    ) {
+      errors.push(
+        "Historical Paid Through must reach at least the first obligation month."
+      );
+    }
+
+    const paymentMethod =
+      dom.historicalPaymentMethod?.value;
+
+    if (!paymentMethod) {
+      errors.push(
+        "Historical Payment Method is required."
+      );
+    }
+  }
+
+  return errors;
+}
+
+
+/* =========================================================
+   SUBMIT STATE
+========================================================= */
+
+function updateSubmitState() {
+  if (!dom.submit) {
+    return;
+  }
+
+  if (state.submitting) {
+    setSubmitDisabled(
+      true
+    );
+
+    return;
+  }
+
+  /*
+   * Do not use HTML form.checkValidity() as the only test
+   * because the form has custom accounting validation.
+   */
+  const errors =
+    validateForm();
+
+  const ready =
+    Boolean(
+      state.groupId &&
+      state.monthlyType?.id &&
+      errors.length === 0
+    );
+
+  setSubmitDisabled(
+    !ready
+  );
+}
+
+
+function setSubmitDisabled(disabled) {
+  if (!dom.submit) {
+    return;
+  }
+
+  dom.submit.disabled =
+    Boolean(disabled);
+
+  dom.submit.setAttribute(
+    "aria-disabled",
+    String(Boolean(disabled))
+  );
+}
+
+
+/* =========================================================
+   SUBMIT
+========================================================= */
+
+async function handleSubmit(event) {
+  event.preventDefault();
+
+  if (state.submitting) {
+    return;
+  }
+
+  clearMessage();
+
+  const errors =
+    validateForm();
+
+  if (errors.length > 0) {
+    showValidationErrors(
+      errors
+    );
+
+    updateReview();
+    updateSubmitState();
+
+    return;
+  }
+
+  if (!state.groupId) {
+    showMessage(
+      "Your group session could not be resolved. Please reload the page.",
+      "error"
+    );
+
+    return;
+  }
+
+  if (!state.monthlyType?.id) {
+    showMessage(
+      "The group's Monthly contribution type could not be loaded.",
+      "error"
+    );
+
+    return;
+  }
+
+  /*
+   * The same request ID is reused if the RPC fails and the user
+   * retries the same form.
+   */
+  if (!state.requestId) {
+    state.requestId =
+      typeof crypto !== "undefined" &&
+      typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : generateFallbackRequestId();
+  }
+
+  state.submitting = true;
+
+  setSubmitDisabled(true);
+
+  setSubmitText(
+    "Creating Member…"
+  );
+
+  try {
+    const payload =
+      buildPayload();
+
+    const historicalEnabled =
+      Boolean(
+        payload.p_historical?.enabled
+      );
+
+    let result;
+
+    if (historicalEnabled) {
+      result =
+        await createMemberWithHistorical(
+          state.groupId,
+          payload.p_member,
+          payload.p_contribution_plan,
+          payload.p_historical,
+          state.requestId
+        );
+    } else {
+      result =
+        await createMember(
+          state.groupId,
+          payload.p_member,
+          payload.p_contribution_plan
+        );
+    }
+
+    handleSuccess(
+      result
+    );
+
+  } catch (error) {
+    console.error(
+      "CHAMA LIVE Add Member submission failed:",
+      error
+    );
+
+    showMessage(
+      mapRpcError(error),
+      "error",
+      error
+    );
+
+  } finally {
+    state.submitting = false;
+
+    if (!dom.success || dom.success.hidden) {
+      setSubmitText(
+        "Add Member"
+      );
+
+      updateSubmitState();
+    }
+  }
+}
+
+
+/* =========================================================
+   PAYLOAD BUILDING
+========================================================= */
+
+function buildPayload() {
+  const member = {
+    member_number:
+      clean(dom.memberNumber.value),
+
+    membership_number:
+      clean(dom.membershipNumber.value),
+
+    name:
+      clean(dom.name.value),
+
+    phone:
+      clean(dom.phone.value),
+
+    email:
+      clean(dom.email?.value),
+
+    national_id:
+      clean(dom.nationalId?.value),
+
+    role:
+      dom.role.value,
+
+    status:
+      dom.status.value,
+
+    onboarding_status:
+      dom.onboardingStatus.value,
+
+    join_date:
+      dom.joinDate.value
+  };
+
+  /*
+   * Position information belongs to the member payload because
+   * it is part of the member creation contract.
+   */
+  if (dom.actualPosition?.value) {
+    member.actual_position =
+      dom.actualPosition.value;
+
+    if (
+      dom.actualPosition.value === "other"
+    ) {
+      member.actual_position_name =
+        clean(
+          dom.actualPositionName.value
+        );
+    }
+
+    if (
+      dom.positionEffectiveFrom?.value
+    ) {
+      member.actual_position_effective_from =
+        dom.positionEffectiveFrom.value;
+    }
+  }
+
+  const contributionPlan = [
+    {
+      contribution_type_id:
+        state.monthlyType.id,
+
+      amount:
+        numberValue(
+          dom.contributionAmount.value
+        ),
+
+      frequency:
+        "monthly",
+
+      effective_from:
+        dom.contributionEffectiveFrom.value,
+
+      effective_to:
+        dom.contributionEffectiveTo.value ||
+        null,
+
+      first_period_rule:
+        dom.firstPeriodRule.value,
+
+      status:
+        dom.ruleStatus.value
+    }
+  ];
+
+  const historicalPaidThrough =
+    dom.historicalPaidThrough?.value ||
+    null;
+
+  const historicalEnabled =
+    Boolean(
+      historicalPaidThrough
+    );
+
+  const historical = {
+    enabled:
+      historicalEnabled,
+
+    monthly_amount:
+      numberValue(
+        dom.contributionAmount.value
+      ),
+
+    paid_through:
+      historicalPaidThrough,
+
+    payment_method:
+      historicalEnabled
+        ? dom.historicalPaymentMethod.value
+        : null
+  };
+
+  return {
+    p_member: member,
+    p_contribution_plan: contributionPlan,
+    p_historical: historical
+  };
+}
+
+
+/* =========================================================
+   SUCCESS
+========================================================= */
+
+function handleSuccess(result) {
+  /*
+   * Hide the form immediately so the old Add Member submit
+   * controls cannot remain active behind the success state.
+   */
+  if (dom.form) {
+    dom.form.hidden = true;
+  }
+
+  if (dom.message) {
+    dom.message.hidden = true;
+  }
+
+  if (dom.success) {
+    dom.success.removeAttribute(
+      "hidden"
+    );
+  }
+
+  renderSuccessSummary(
+    result
+  );
+
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth"
+  });
+
+  setSubmitDisabled(
+    true
+  );
+}
+
+
+/* =========================================================
+   SUCCESS SUMMARY
+========================================================= */
+
+function renderSuccessSummary(result) {
+  if (!dom.successSummary) {
+    return;
+  }
+
+  /*
+   * RPC A returns a table row.
+   * RPC B returns JSONB.
+   *
+   * Normalize both without assuming additional backend fields.
+   */
+  const row =
+    normalizeResult(result);
+
+  const values = [
+    [
+      "Member Number",
+      row.member_id !== undefined
+        ? row.member_number
+        : row.member_number
+    ],
+
+    [
+      "Membership Number",
+      row.membership_number
+    ],
+
+    [
+      "Obligations Created",
+      row.obligations_created
+    ],
+
+    [
+      "Total Due",
+      currencyOrDash(
+        row.total_due
+      )
+    ],
+
+    [
+      "Total Allocated",
+      currencyOrDash(
+        row.total_allocated
+      )
+    ],
+
+    [
+      "Arrears",
+      currencyOrDash(
+        row.arrears
+      )
+    ],
+
+    [
+      "Credit",
+      currencyOrDash(
+        row.credit
+      )
+    ],
+
+    [
+      "Contribution Status",
+      row.contribution_status
+    ]
+  ];
+
+  dom.successSummary.innerHTML =
+    values
+      .filter(
+        ([, value]) =>
+          value !== undefined &&
+          value !== null &&
+          value !== ""
+      )
+      .map(
+        ([label, value]) =>
+          `<div class="add-member-result-item">
+             <span class="label">${escapeHtml(label)}</span>
+             <strong>${escapeHtml(String(value))}</strong>
+           </div>`
+      )
+      .join("");
+}
+
+
+function normalizeResult(result) {
+  /*
+   * The RPC wrapper may return:
+   *   { data, error }
+   * or directly return data.
+   */
+  const data =
+    result?.data !== undefined
+      ? result.data
+      : result;
+
+  /*
+   * Table-returning RPC normally arrives as an array with one
+   * row.
+   */
+  if (Array.isArray(data)) {
+    return data[0] || {};
+  }
+
+  /*
+   * Historical RPC returns jsonb.
+   */
+  if (
+    data &&
+    typeof data === "object"
+  ) {
+    return data;
+  }
+
+  return {};
+}
+
+
+/* =========================================================
+   ADD ANOTHER MEMBER
+========================================================= */
+
+function handleAddAnother() {
+  /*
+   * Start a genuinely new form session.
+   *
+   * This generates a NEW request ID, which is correct because
+   * this is a new member rather than a retry of the previous
+   * request.
+   */
+  state.requestId =
+    typeof crypto !== "undefined" &&
+    typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : generateFallbackRequestId();
+
+  state.submitting = false;
+
+  /*
+   * Hide success and restore form.
+   */
+  dom.success?.setAttribute(
+    "hidden",
+    ""
+  );
+
+  dom.form?.removeAttribute(
+    "hidden"
+  );
+
+  dom.message?.setAttribute(
+    "hidden",
+    ""
+  );
+
+  dom.message?.classList.remove(
+    "add-member-alert-error",
+    "add-member-alert-success"
+  );
+
+  /*
+   * Reset user-entered values.
+   */
+  dom.form?.reset();
+
+  /*
+   * Restore required smart defaults.
+   */
+  setDefaultDates();
+
+  /*
+   * Restore UI-only fields.
+   */
+  if (dom.positionNameWrap) {
+    dom.positionNameWrap.hidden =
+      true;
+  }
+
+  if (dom.actualPositionName) {
+    dom.actualPositionName.value = "";
+  }
+
+  if (dom.historicalAmount) {
+    dom.historicalAmount.value = "";
+  }
+
+  if (dom.successSummary) {
+    dom.successSummary.innerHTML = "";
+  }
+
+  /*
+   * The historical section must start closed.
+   */
+  if (dom.historicalDetails) {
+    dom.historicalDetails.open =
+      false;
+  }
+
+  /*
+   * Preserve the canonical Monthly type loaded from the group.
+   */
+  if (state.monthlyType) {
+    populateMonthlyType(
+      state.monthlyType
+    );
+  }
+
+  updateHistoricalAmount();
+  updatePreviews();
+  updateReview();
+
+  setSubmitText(
+    "Add Member"
+  );
+
+  updateSubmitState();
+
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth"
+  });
+
+  dom.memberNumber?.focus();
+}
+
+
+/* =========================================================
+   REVIEW
+========================================================= */
+
+function updateReview() {
+  if (!dom.review) {
+    return;
+  }
+
+  const memberNumber =
+    clean(dom.memberNumber?.value) ||
+    "—";
+
+  const membershipNumber =
+    clean(dom.membershipNumber?.value) ||
+    "—";
+
+  const name =
+    clean(dom.name?.value) ||
+    "—";
+
+  const phone =
+    clean(dom.phone?.value) ||
+    "—";
+
+  const joinDate =
+    dom.joinDate?.value ||
+    "—";
+
+  const role =
+    dom.role?.value ||
+    "—";
+
+  const status =
+    dom.status?.value ||
+    "—";
+
+  const onboarding =
+    dom.onboardingStatus?.value ||
+    "—";
+
+  const position =
+    dom.actualPosition?.value
+      ? positionLabel(
+          dom.actualPosition.value
+        )
+      : "—";
+
+  const positionEffective =
+    dom.positionEffectiveFrom?.value ||
+    "—";
+
+  const contributionType =
+    state.monthlyType?.name ||
+    "—";
+
+  const amount =
+    numberValue(
+      dom.contributionAmount?.value
+    );
+
+  const effectiveFrom =
+    dom.contributionEffectiveFrom?.value ||
+    "—";
+
+  const effectiveTo =
+    dom.contributionEffectiveTo?.value ||
+    "Open-ended";
+
+  const firstPeriodRule =
+    dom.firstPeriodRule?.value ||
+    "—";
+
+  const ruleStatus =
+    dom.ruleStatus?.value ||
+    "—";
+
+  const firstObligation =
+    getFirstObligationMonth() ||
+    "—";
+
+  const historicalEnabled =
+    Boolean(
+      dom.historicalPaidThrough?.value
+    );
+
+  const rows = [
+    ["Member Number", memberNumber],
+    ["Membership Number", membershipNumber],
+    ["Name", name],
+    ["Phone", phone],
+    ["Join Date", joinDate],
+    ["Security Role", role],
+    ["Member Status", status],
+    ["Onboarding", onboarding],
+    ["Position", position],
+    [
+      "Position Effective",
+      positionEffective
+    ],
+    [
+      "Contribution Type",
+      contributionType
+    ],
+    [
+      "Monthly Amount",
+      formatCurrency(amount)
+    ],
+    [
+      "Effective From",
+      effectiveFrom
+    ],
+    [
+      "Effective To",
+      effectiveTo
+    ],
+    [
+      "First Period Rule",
+      firstPeriodRule
+    ],
+    [
+      "Rule Status",
+      ruleStatus
+    ],
+    [
+      "First Obligation Month",
+      firstObligation
+    ],
+    [
+      "Historical",
+      historicalEnabled
+        ? "Enabled"
+        : "Disabled"
+    ]
+  ];
+
+  dom.review.innerHTML =
+    rows
+      .map(
+        ([label, value]) =>
+          `<div class="add-member-review-item">
+             <span class="label">${escapeHtml(label)}</span>
+             <strong>${escapeHtml(String(value))}</strong>
+           </div>`
+      )
+      .join("");
+}
+
+
+/* =========================================================
+   VALIDATION DISPLAY
+========================================================= */
+
+function showValidationErrors(errors) {
+  const unique =
+    [...new Set(errors)];
+
+  const message =
+    unique.length === 1
+      ? unique[0]
+      : `Please correct the following before submitting:
+         <br><br>
+         <ul>
+           ${unique
+             .map(
+               error =>
+                 `<li>${escapeHtml(error)}</li>`
+             )
+             .join("")}
+         </ul>`;
+
+  showMessage(
+    message,
+    "error"
+  );
+}
+
+
+/* =========================================================
+   ACCESS ERROR
+========================================================= */
+
+function showAccessError(message) {
+  if (dom.loading) {
+    dom.loading.setAttribute(
+      "hidden",
+      ""
+    );
+  }
+
+  if (dom.workspace) {
+    dom.workspace.setAttribute(
+      "hidden",
+      ""
+    );
+  }
+
+  if (dom.accessError) {
+    dom.accessError.innerHTML =
+      escapeHtml(
+        message ||
+        "You cannot access Add Member."
+      );
+
+    dom.accessError.removeAttribute(
+      "hidden"
+    );
+  }
+}
+
+
+/* =========================================================
+   MESSAGES
+========================================================= */
+
+function showMessage(
+  message,
+  type = "error",
+  rawError = null
+) {
+  if (!dom.message) {
+    return;
+  }
+
+  if (rawError) {
+    console.error(
+      "CHAMA LIVE raw Add Member error:",
+      rawError
+    );
+  }
+
+  dom.message.classList.toggle(
+    "add-member-alert-error",
+    type === "error"
+  );
+
+  dom.message.classList.toggle(
+    "add-member-alert-success",
+    type === "success"
+  );
+
+  dom.message.innerHTML =
+    message || "Unable to complete the request.";
+
+  dom.message.removeAttribute(
+    "hidden"
+  );
+}
+
+
+function clearMessage() {
+  if (!dom.message) {
+    return;
+  }
+
+  dom.message.setAttribute(
+    "hidden",
+    ""
+  );
+
+  dom.message.textContent = "";
+
+  dom.message.classList.remove(
+    "add-member-alert-error",
+    "add-member-alert-success"
+  );
+}
+
+
+/* =========================================================
+   SUBMIT BUTTON TEXT
+========================================================= */
+
+function setSubmitText(text) {
+  if (dom.submit) {
+    dom.submit.textContent =
+      text;
+  }
+}
+
+
+/* =========================================================
+   DATE HELPERS
+========================================================= */
+
+function localDateString() {
   const now =
     new Date();
 
@@ -113,133 +1930,77 @@ function todayDate() {
     );
 
   return `${year}-${month}-${day}`;
-
 }
 
 
-/* =========================================================
-   DATE PARSING
-========================================================= */
-
-function parseDate(
-  value
-) {
-
+function parseLocalDate(value) {
   if (!value) {
     return null;
   }
 
+  const parts =
+    value.split("-").map(
+      Number
+    );
+
+  if (parts.length !== 3) {
+    return null;
+  }
+
+  const [
+    year,
+    month,
+    day
+  ] = parts;
+
   const date =
     new Date(
-      `${value}T00:00:00`
+      year,
+      month - 1,
+      day
     );
 
   if (
-    Number.isNaN(
-      date.getTime()
-    )
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
   ) {
-
     return null;
-
   }
 
   return date;
-
 }
 
 
-/* =========================================================
-   DATE COMPARISON
-========================================================= */
-
-function dateOnly(
-  date
-) {
-
-  return new Date(
-    date.getFullYear(),
-    date.getMonth(),
-    date.getDate()
-  );
-
-}
-
-
-function compareDates(
-  a,
-  b
-) {
-
-  const da =
-    dateOnly(a).getTime();
-
-  const db =
-    dateOnly(b).getTime();
-
-  if (da < db) {
-    return -1;
-  }
-
-  if (da > db) {
-    return 1;
-  }
-
-  return 0;
-
-}
-
-
-/* =========================================================
-   MONTH HELPERS
-========================================================= */
-
-function monthFromDate(
-  value
-) {
-
-  const date =
-    parseDate(value);
-
-  if (!date) {
-    return "";
-  }
-
-  return [
-    date.getFullYear(),
-    String(
-      date.getMonth() + 1
-    ).padStart(
-      2,
-      "0"
-    )
-  ].join("-");
-
-}
-
-
-function monthToDate(
-  value
-) {
-
-  if (
-    !/^\d{4}-\d{2}$/.test(
-      value || ""
-    )
-  ) {
-
+function monthString(date) {
+  if (!(date instanceof Date)) {
     return null;
+  }
 
+  return `${date.getFullYear()}-${String(
+    date.getMonth() + 1
+  ).padStart(2, "0")}`;
+}
+
+
+function parseMonth(value) {
+  if (!value) {
+    return null;
+  }
+
+  const parts =
+    value.split("-").map(
+      Number
+    );
+
+  if (parts.length !== 2) {
+    return null;
   }
 
   const [
     year,
     month
-  ] =
-    value
-      .split("-")
-      .map(Number);
-
+  ] = parts;
 
   const date =
     new Date(
@@ -248,2421 +2009,147 @@ function monthToDate(
       1
     );
 
-
   if (
     date.getFullYear() !== year ||
     date.getMonth() !== month - 1
   ) {
-
     return null;
-
   }
 
   return date;
-
 }
 
 
-function nextMonth(
-  month
+function monthsInclusive(
+  start,
+  end
 ) {
-
-  const date =
-    monthToDate(
-      month
-    );
-
-  if (!date) {
-    return "";
-  }
-
-  date.setMonth(
-    date.getMonth() + 1
+  return (
+    (end.getFullYear() -
+      start.getFullYear()) *
+      12 +
+    (end.getMonth() -
+      start.getMonth()) +
+    1
   );
-
-  return [
-    date.getFullYear(),
-    String(
-      date.getMonth() + 1
-    ).padStart(
-      2,
-      "0"
-    )
-  ].join("-");
-
 }
 
 
 /* =========================================================
-   CURRENT MONTH
+   VALUE HELPERS
 ========================================================= */
 
-function currentMonth() {
-
-  return monthFromDate(
-    todayDate()
-  );
-
+function clean(value) {
+  return String(
+    value ?? ""
+  ).trim();
 }
 
 
-/* =========================================================
-   MONEY
-========================================================= */
-
-function formatMoney(
-  value
-) {
-
+function numberValue(value) {
   const number =
     Number(value);
 
-  if (
-    !Number.isFinite(
-      number
-    )
-  ) {
+  return Number.isFinite(number)
+    ? number
+    : 0;
+}
 
-    return "KSh 0.00";
 
-  }
+function formatCurrency(value) {
+  const amount =
+    numberValue(value);
 
-  return `KSh ${number.toLocaleString(
+  return `KSh ${amount.toLocaleString(
     "en-KE",
     {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     }
   )}`;
+}
 
+
+function currencyOrDash(value) {
+  if (
+    value === undefined ||
+    value === null ||
+    value === ""
+  ) {
+    return "—";
+  }
+
+  return formatCurrency(value);
 }
 
 
 /* =========================================================
-   UUID
+   LABEL HELPERS
 ========================================================= */
 
-function createRequestId() {
-
-  if (
-    !globalThis.crypto ||
-    typeof globalThis.crypto.randomUUID !==
-      "function"
-  ) {
-
-    throw new Error(
-      "This browser cannot create the required secure member-creation request ID."
-    );
-
-  }
-
-  return globalThis.crypto.randomUUID();
-
-}
-
-
-/* =========================================================
-   ERROR UI
-========================================================= */
-
-function clearMessage() {
-
-  const box =
-    $("addMemberMessage");
-
-  if (!box) {
-    return;
-  }
-
-  box.hidden =
-    true;
-
-  box.className =
-    "add-member-alert";
-
-  box.replaceChildren();
-
-}
-
-
-function showMessage(
-  message,
-  details = null,
-  type = "error"
-) {
-
-  const box =
-    $("addMemberMessage");
-
-  if (!box) {
-    return;
-  }
-
-
-  box.hidden =
-    false;
-
-  box.className =
-    `add-member-alert add-member-alert-${type}`;
-
-
-  const main =
-    document.createElement(
-      "div"
-    );
-
-  main.textContent =
-    message;
-
-
-  box.appendChild(
-    main
-  );
-
-
-  if (details) {
-
-    const detail =
-      document.createElement(
-        "small"
-      );
-
-    detail.className =
-      "details";
-
-    detail.textContent =
-      `Details: ${details}`;
-
-    box.appendChild(
-      detail
-    );
-
-  }
-
-
-  box.scrollIntoView({
-    behavior:
-      "smooth",
-    block:
-      "nearest"
-  });
-
-}
-
-
-function showAccessError(
-  error
-) {
-
-  const box =
-    $("addMemberAccessError");
-
-  if (!box) {
-    return;
-  }
-
-
-  box.hidden =
-    false;
-
-  box.textContent =
-    error?.message ||
-    "You cannot access Add Member.";
-
-}
-
-
-/* =========================================================
-   LOADING
-========================================================= */
-
-function setPageLoading(
-  loading
-) {
-
-  const box =
-    $("addMemberLoading");
-
-  if (!box) {
-    return;
-  }
-
-  box.hidden =
-    !loading;
-
-}
-
-
-/* =========================================================
-   WORKSPACE
-========================================================= */
-
-function showWorkspace() {
-
-  const workspace =
-    $("addMemberWorkspace");
-
-  if (!workspace) {
-    return;
-  }
-
-  workspace.hidden =
-    false;
-
-}
-
-
-/* =========================================================
-   MEMBER DEFAULTS
-========================================================= */
-
-function applyDefaults() {
-
-  const today =
-    todayDate();
-
-
-  const joinDate =
-    $("addMemberJoinDate");
-
-  const effectiveFrom =
-    $("addMemberContributionEffectiveFrom");
-
-  const firstPeriod =
-    $("addMemberFirstPeriodRule");
-
-  const frequency =
-    $("addMemberFrequency");
-
-  const memberStatus =
-    $("addMemberStatus");
-
-  const onboardingStatus =
-    $("addMemberOnboardingStatus");
-
-  const role =
-    $("addMemberRole");
-
-  const ruleStatus =
-    $("addMemberRuleStatus");
-
-
-  if (joinDate) {
-    joinDate.value =
-      today;
-  }
-
-  if (effectiveFrom) {
-    effectiveFrom.value =
-      today;
-  }
-
-  if (firstPeriod) {
-    firstPeriod.value =
-      "full_period";
-  }
-
-  if (frequency) {
-    frequency.value =
-      "monthly";
-  }
-
-  if (memberStatus) {
-    memberStatus.value =
-      "active";
-  }
-
-  if (onboardingStatus) {
-    onboardingStatus.value =
-      "pending";
-  }
-
-  if (role) {
-    role.value =
-      "member";
-  }
-
-  if (ruleStatus) {
-    ruleStatus.value =
-      "active";
-  }
-
-}
-
-
-/* =========================================================
-   MONTHLY TYPE DISPLAY
-========================================================= */
-
-function renderMonthlyType() {
-
-  const type =
-    state.monthlyType;
-
-  if (!type) {
-    return;
-  }
-
-
-  text(
-    $("addMemberMonthlyTypeName"),
-    type.name ||
-    "Monthly"
-  );
-
-
-  text(
-    $("addMemberMonthlyTypeId"),
-    type.id ||
-    "—"
-  );
-
-
-  const status =
-    $("addMemberMonthlyTypeStatus");
-
-
-  if (status) {
-
-    status.textContent =
-      "Available";
-
-    status.className =
-      "add-member-badge";
-
-  }
-
-}
-
-
-/* =========================================================
-   MONTHLY TYPE ERROR
-========================================================= */
-
-function renderMonthlyTypeError(
-  error
-) {
-
-  text(
-    $("addMemberMonthlyTypeName"),
-    "Monthly type unavailable"
-  );
-
-  text(
-    $("addMemberMonthlyTypeId"),
-    "—"
-  );
-
-
-  const status =
-    $("addMemberMonthlyTypeStatus");
-
-
-  if (status) {
-
-    status.textContent =
-      "Unavailable";
-
-    status.className =
-      "add-member-badge";
-
-  }
-
-
-  showMessage(
-    error?.message ||
-    "The group's Monthly contribution type could not be loaded.",
-    error?.message
-  );
-
-}
-
-
-/* =========================================================
-   FIRST OBLIGATION MONTH
-========================================================= */
-
-function getFirstObligationMonth() {
-
-  const effectiveFrom =
-    $("addMemberContributionEffectiveFrom")
-      ?.value;
-
-  const rule =
-    $("addMemberFirstPeriodRule")
-      ?.value;
-
-
-  const effectiveMonth =
-    monthFromDate(
-      effectiveFrom
-    );
-
-
-  if (!effectiveMonth) {
-    return "";
-  }
-
-
-  if (
-    rule ===
-    "next_full_period"
-  ) {
-
-    return nextMonth(
-      effectiveMonth
-    );
-
-  }
-
-
-  return effectiveMonth;
-
-}
-
-
-/* =========================================================
-   HISTORICAL ENABLED
-========================================================= */
-
-function isHistoricalEnabled() {
-
-  return (
-    $("addMemberHistoricalDetails")
-      ?.open === true
-  );
-
-}
-
-
-/* =========================================================
-   HISTORICAL MONTH COUNT
-========================================================= */
-
-function monthDistanceInclusive(
-  startMonth,
-  endMonth
-) {
-
-  const start =
-    monthToDate(
-      startMonth
-    );
-
-  const end =
-    monthToDate(
-      endMonth
-    );
-
-
-  if (!start || !end) {
-    return 0;
-  }
-
-
-  if (
-    start > end
-  ) {
-
-    return 0;
-
-  }
-
-
-  return (
-    (
-      end.getFullYear() -
-      start.getFullYear()
-    ) *
-    12
-  ) +
-  (
-    end.getMonth() -
-    start.getMonth()
-  ) +
-  1;
-
-}
-
-
-/* =========================================================
-   OBLIGATION PREVIEW
-========================================================= */
-
-function renderObligationPreview() {
-
-  const box =
-    $("addMemberObligationPreview");
-
-  if (!box) {
-    return;
-  }
-
-
-  const firstMonth =
-    getFirstObligationMonth();
-
-  const amount =
-    Number(
-      $("addMemberContributionAmount")
-        ?.value
-    );
-
-
-  if (
-    !firstMonth ||
-    !Number.isFinite(amount) ||
-    amount <= 0
-  ) {
-
-    box.textContent =
-      "Enter the member's join date and contribution settings to preview the first obligation month.";
-
-    return;
-
-  }
-
-
-  const effectiveTo =
-    $("addMemberContributionEffectiveTo")
-      ?.value;
-
-
-  if (
-    effectiveTo &&
-    firstMonth >
-      monthFromDate(effectiveTo)
-  ) {
-
-    box.innerHTML =
-      "<strong>Plan check:</strong> The first obligation month falls after the rule's effective end date.";
-
-    return;
-
-  }
-
-
-  box.innerHTML =
-    `<strong>First obligation month:</strong> ${firstMonth}<br>` +
-    `<strong>Monthly obligation:</strong> ${formatMoney(amount)}<br>` +
-    `<strong>Frequency:</strong> Monthly`;
-
-}
-
-
-/* =========================================================
-   HISTORICAL PREVIEW
-========================================================= */
-
-function renderHistoricalPreview() {
-
-  const box =
-    $("addMemberHistoricalPreview");
-
-  const amountInput =
-    $("addMemberHistoricalAmount");
-
-  if (!box) {
-    return;
-  }
-
-
-  const amount =
-    Number(
-      $("addMemberContributionAmount")
-        ?.value
-    );
-
-
-  if (
-    amountInput
-  ) {
-
-    amountInput.value =
-      Number.isFinite(amount) &&
-      amount > 0
-        ? amount.toFixed(2)
-        : "";
-
-  }
-
-
-  if (
-    !isHistoricalEnabled()
-  ) {
-
-    box.textContent =
-      "Historical onboarding is disabled. The normal member-creation RPC will be used.";
-
-    return;
-
-  }
-
-
-  const paidThrough =
-    $("addMemberHistoricalPaidThrough")
-      ?.value;
-
-  const firstMonth =
-    getFirstObligationMonth();
-
-
-  if (!paidThrough) {
-
-    box.textContent =
-      "Choose the Paid Through month to preview historical coverage.";
-
-    return;
-
-  }
-
-
-  const paidThroughDate =
-    monthToDate(
-      paidThrough
-    );
-
-
-  if (!paidThroughDate) {
-
-    box.textContent =
-      "Enter a valid Paid Through month.";
-
-    return;
-
-  }
-
-
-  const today =
-    monthToDate(
-      currentMonth()
-    );
-
-
-  if (
-    paidThroughDate >
-    today
-  ) {
-
-    box.innerHTML =
-      "<strong>Historical check:</strong> Paid Through cannot be in the future.";
-
-    return;
-
-  }
-
-
-  if (
-    firstMonth &&
-    paidThrough <
-    firstMonth
-  ) {
-
-    box.innerHTML =
-      `<strong>Historical check:</strong> Paid Through must reach the first obligation month (${firstMonth}).`;
-
-    return;
-
-  }
-
-
-  const months =
-    monthDistanceInclusive(
-      firstMonth,
-      paidThrough
-    );
-
-
-  const total =
-    months *
-    amount;
-
-
-  box.innerHTML =
-    `<strong>Historical months:</strong> ${months}<br>` +
-    `<strong>Historical amount:</strong> ${formatMoney(total)}<br>` +
-    `<strong>Paid Through:</strong> ${paidThrough}`;
-
-}
-
-
-/* =========================================================
-   POSITION UI
-========================================================= */
-
-function updatePositionFields() {
-
-  const position =
-    $("addMemberActualPosition")
-      ?.value;
-
-  const wrap =
-    $("addMemberPositionNameWrap");
-
-  const name =
-    $("addMemberActualPositionName");
-
-  if (!wrap || !name) {
-    return;
-  }
-
-
-  const other =
-    position ===
-    "other";
-
-
-  wrap.hidden =
-    !other;
-
-  name.required =
-    other;
-
-
-  if (!other) {
-
-    name.value =
-      "";
-
-  }
-
-}
-
-
-/* =========================================================
-   REVIEW
-========================================================= */
-
-function reviewItem(
-  label,
-  value
-) {
-
-  const wrapper =
-    document.createElement(
-      "div"
-    );
-
-  wrapper.className =
-    "add-member-review-item";
-
-
-  const labelElement =
-    document.createElement(
-      "span"
-    );
-
-  labelElement.textContent =
-    label;
-
-
-  const valueElement =
-    document.createElement(
-      "strong"
-    );
-
-  valueElement.textContent =
-    value ||
-    "—";
-
-
-  wrapper.append(
-    labelElement,
-    valueElement
-  );
-
-
-  return wrapper;
-
-}
-
-
-function renderReview() {
-
-  const review =
-    $("addMemberReview");
-
-  if (!review) {
-    return;
-  }
-
-
-  review.replaceChildren();
-
-
-  const historical =
-    isHistoricalEnabled();
-
-
-  const position =
-    $("addMemberActualPosition")
-      ?.value;
-
-
-  const positionName =
-    $("addMemberActualPositionName")
-      ?.value
-      ?.trim();
-
-
-  const positionDisplay =
-    position === "other"
-      ? positionName
-      : position;
-
-
-  const type =
-    state.monthlyType;
-
-
-  const items = [
-
-    [
-      "Member Number",
-      $("addMemberNumber")?.value?.trim()
-    ],
-
-    [
-      "Membership Number",
-      $("addMembershipNumber")?.value?.trim()
-    ],
-
-    [
-      "Name",
-      $("addMemberName")?.value?.trim()
-    ],
-
-    [
-      "Phone",
-      $("addMemberPhone")?.value?.trim()
-    ],
-
-    [
-      "Join Date",
-      $("addMemberJoinDate")?.value
-    ],
-
-    [
-      "Security Role",
-      $("addMemberRole")?.value
-    ],
-
-    [
-      "Member Status",
-      $("addMemberStatus")?.value
-    ],
-
-    [
-      "Onboarding",
-      $("addMemberOnboardingStatus")?.value
-    ],
-
-    [
-      "Position",
-      positionDisplay
-    ],
-
-    [
-      "Position Effective",
-      $("addMemberPositionEffectiveFrom")?.value
-    ],
-
-    [
-      "Contribution Type",
-      type?.name
-    ],
-
-    [
-      "Monthly Amount",
-      formatMoney(
-        $("addMemberContributionAmount")
-          ?.value
-      )
-    ],
-
-    [
-      "Effective From",
-      $("addMemberContributionEffectiveFrom")?.value
-    ],
-
-    [
-      "Effective To",
-      $("addMemberContributionEffectiveTo")?.value ||
-      "Open-ended"
-    ],
-
-    [
-      "First Period Rule",
-      $("addMemberFirstPeriodRule")?.value
-    ],
-
-    [
-      "Rule Status",
-      $("addMemberRuleStatus")?.value
-    ],
-
-    [
-      "First Obligation Month",
-      getFirstObligationMonth()
-    ],
-
-    [
-      "Historical",
-      historical
-        ? "Enabled"
-        : "Disabled"
-    ]
-
-  ];
-
-
-  if (historical) {
-
-    items.push(
-      [
-        "Paid Through",
-        $("addMemberHistoricalPaidThrough")
-          ?.value
-      ],
-      [
-        "Payment Method",
-        $("addMemberHistoricalPaymentMethod")
-          ?.value
-      ]
-    );
-
-  }
-
-
-  for (
-    const [
-      label,
-      value
-    ]
-    of items
-  ) {
-
-    review.appendChild(
-      reviewItem(
-        label,
-        value
-      )
-    );
-
-  }
-
-}
-
-
-/* =========================================================
-   FORM VALIDATION
-========================================================= */
-
-function validateForm() {
-
-  const memberNumber =
-    $("addMemberNumber")
-      ?.value
-      ?.trim();
-
-  const membershipNumber =
-    $("addMembershipNumber")
-      ?.value
-      ?.trim();
-
-  const name =
-    $("addMemberName")
-      ?.value
-      ?.trim();
-
-  const phone =
-    $("addMemberPhone")
-      ?.value
-      ?.trim();
-
-  const joinDate =
-    $("addMemberJoinDate")
-      ?.value;
-
-  const role =
-    $("addMemberRole")
-      ?.value;
-
-  const status =
-    $("addMemberStatus")
-      ?.value;
-
-  const onboardingStatus =
-    $("addMemberOnboardingStatus")
-      ?.value;
-
-  const position =
-    $("addMemberActualPosition")
-      ?.value;
-
-  const positionName =
-    $("addMemberActualPositionName")
-      ?.value
-      ?.trim();
-
-  const positionEffective =
-    $("addMemberPositionEffectiveFrom")
-      ?.value;
-
-  const amount =
-    Number(
-      $("addMemberContributionAmount")
-        ?.value
-    );
-
-  const effectiveFrom =
-    $("addMemberContributionEffectiveFrom")
-      ?.value;
-
-  const effectiveTo =
-    $("addMemberContributionEffectiveTo")
-      ?.value;
-
-  const firstPeriodRule =
-    $("addMemberFirstPeriodRule")
-      ?.value;
-
-  const ruleStatus =
-    $("addMemberRuleStatus")
-      ?.value;
-
-
-  if (!memberNumber) {
-    return "Member number is required.";
-  }
-
-  if (!membershipNumber) {
-    return "Membership number is required.";
-  }
-
-  if (!name) {
-    return "Member name is required.";
-  }
-
-  if (!phone) {
-    return "Member phone number is required.";
-  }
-
-  if (!joinDate) {
-    return "Join date is required.";
-  }
-
-  if (!role) {
-    return "Security role is required.";
-  }
-
-  if (!status) {
-    return "Member status is required.";
-  }
-
-  if (!onboardingStatus) {
-    return "Onboarding status is required.";
-  }
-
-
-  const joinDateObject =
-    parseDate(
-      joinDate
-    );
-
-
-  if (!joinDateObject) {
-    return "The join date is invalid.";
-  }
-
-
-  if (
-    position === "other" &&
-    !positionName
-  ) {
-
-    return "A position name is required when Actual Position is Other.";
-
-  }
-
-
-  if (positionEffective) {
-
-    const positionDate =
-      parseDate(
-        positionEffective
-      );
-
-
-    if (!positionDate) {
-      return "The actual position effective date is invalid.";
-    }
-
-
-    if (
-      compareDates(
-        positionDate,
-        joinDateObject
-      ) < 0
-    ) {
-
-      return "The actual position effective date cannot be before the join date.";
-
-    }
-
-  }
-
-
-  if (
-    !state.monthlyType?.id
-  ) {
-
-    return "The group's Monthly contribution type has not loaded.";
-
-  }
-
-
-  if (
-    !Number.isFinite(amount) ||
-    amount <= 0
-  ) {
-
-    return "The monthly contribution amount must be greater than zero.";
-
-  }
-
-
-  if (!effectiveFrom) {
-    return "Contribution effective date is required.";
-  }
-
-
-  const effectiveFromDate =
-    parseDate(
-      effectiveFrom
-    );
-
-
-  if (!effectiveFromDate) {
-    return "The contribution effective date is invalid.";
-  }
-
-
-  if (
-    compareDates(
-      effectiveFromDate,
-      joinDateObject
-    ) < 0
-  ) {
-
-    return "The contribution effective date cannot be before the join date.";
-
-  }
-
-
-  if (effectiveTo) {
-
-    const effectiveToDate =
-      parseDate(
-        effectiveTo
-      );
-
-
-    if (!effectiveToDate) {
-      return "The contribution effective end date is invalid.";
-    }
-
-
-    if (
-      compareDates(
-        effectiveToDate,
-        effectiveFromDate
-      ) < 0
-    ) {
-
-      return "The contribution effective end date cannot be before the effective-from date.";
-
-    }
-
-  }
-
-
-  if (
-    firstPeriodRule !==
-      "full_period" &&
-    firstPeriodRule !==
-      "next_full_period"
-  ) {
-
-    return "The selected first-period contribution rule is not supported.";
-
-  }
-
-
-  if (
-    ruleStatus !== "active" &&
-    ruleStatus !== "inactive" &&
-    ruleStatus !== "ended"
-  ) {
-
-    return "The contribution rule status is not valid.";
-
-  }
-
-
-  if (
-    ruleStatus === "ended" &&
-    !effectiveTo
-  ) {
-
-    return "An ended contribution rule requires an end date.";
-
-  }
-
-
-  if (
-    isHistoricalEnabled()
-  ) {
-
-    const paidThrough =
-      $("addMemberHistoricalPaidThrough")
-        ?.value;
-
-    const paymentMethod =
-      $("addMemberHistoricalPaymentMethod")
-        ?.value;
-
-
-    if (!paidThrough) {
-      return "Choose the Historical Paid Through month.";
-    }
-
-
-    const paidThroughDate =
-      monthToDate(
-        paidThrough
-      );
-
-
-    if (!paidThroughDate) {
-      return "The Historical Paid Through month is invalid.";
-    }
-
-
-    const now =
-      monthToDate(
-        currentMonth()
-      );
-
-
-    if (
-      paidThroughDate >
-      now
-    ) {
-
-      return "Historical Paid Through cannot be in the future.";
-
-    }
-
-
-    const firstMonth =
-      getFirstObligationMonth();
-
-
-    if (
-      firstMonth &&
-      paidThrough <
-      firstMonth
-    ) {
-
-      return `Historical Paid Through must reach the first obligation month (${firstMonth}).`;
-
-    }
-
-
-    const allowedMethods =
-      new Set([
-        "M-Pesa",
-        "Cash",
-        "Bank transfer"
-      ]);
-
-
-    if (
-      !allowedMethods.has(
-        paymentMethod
-      )
-    ) {
-
-      return "The selected historical payment method is invalid.";
-
-    }
-
-  }
-
-
-  return null;
-
-}
-
-
-/* =========================================================
-   BUILD MEMBER JSON
-========================================================= */
-
-function buildMemberPayload() {
-
-  const payload = {
-
-    member_number:
-      $("addMemberNumber")
-        .value
-        .trim(),
-
-    membership_number:
-      $("addMembershipNumber")
-        .value
-        .trim(),
-
-    name:
-      $("addMemberName")
-        .value
-        .trim(),
-
-    phone:
-      $("addMemberPhone")
-        .value
-        .trim(),
-
-    role:
-      $("addMemberRole")
-        .value,
-
-    status:
-      $("addMemberStatus")
-        .value,
-
-    onboarding_status:
-      $("addMemberOnboardingStatus")
-        .value,
-
-    join_date:
-      $("addMemberJoinDate")
-        .value
-
+function positionLabel(value) {
+  const labels = {
+    chairperson: "Chairperson",
+    vice_chairperson: "Vice Chairperson",
+    treasurer: "Treasurer",
+    secretary: "Secretary",
+    vice_secretary: "Vice Secretary",
+    committee_member: "Committee Member",
+    member: "Member",
+    other: clean(
+      dom.actualPositionName?.value
+    ) || "Other"
   };
 
-
-  const email =
-    $("addMemberEmail")
-      ?.value
-      ?.trim();
-
-  const nationalId =
-    $("addMemberNationalId")
-      ?.value
-      ?.trim();
-
-
-  if (email) {
-    payload.email =
-      email;
-  }
-
-  if (nationalId) {
-    payload.national_id =
-      nationalId;
-  }
-
-
-  const position =
-    $("addMemberActualPosition")
-      ?.value;
-
-
-  if (position) {
-
-    payload.actual_position =
-      position;
-
-
-    if (
-      position === "other"
-    ) {
-
-      payload.actual_position_name =
-        $("addMemberActualPositionName")
-          .value
-          .trim();
-
-    }
-
-
-    const effectiveFrom =
-      $("addMemberPositionEffectiveFrom")
-        ?.value;
-
-
-    if (effectiveFrom) {
-
-      payload.actual_position_effective_from =
-        effectiveFrom;
-
-    }
-
-  }
-
-
-  return payload;
-
-}
-
-
-/* =========================================================
-   BUILD CONTRIBUTION PLAN
-========================================================= */
-
-function buildContributionPlan() {
-
-  return [
-    {
-
-      contribution_type_id:
-        state.monthlyType.id,
-
-      amount:
-        Number(
-          $("addMemberContributionAmount")
-            .value
-        ),
-
-      frequency:
-        "monthly",
-
-      effective_from:
-        $("addMemberContributionEffectiveFrom")
-          .value,
-
-      effective_to:
-        $("addMemberContributionEffectiveTo")
-          .value ||
-        null,
-
-      first_period_rule:
-        $("addMemberFirstPeriodRule")
-          .value,
-
-      status:
-        $("addMemberRuleStatus")
-          .value
-
-    }
-  ];
-
-}
-
-
-/* =========================================================
-   BUILD HISTORICAL JSON
-========================================================= */
-
-function buildHistoricalPayload() {
-
-  if (
-    !isHistoricalEnabled()
-  ) {
-
-    return null;
-
-  }
-
-
-  const paidThrough =
-    $("addMemberHistoricalPaidThrough")
-      .value;
-
-
-  /*
-   * The UI stores a month (YYYY-MM).
-   *
-   * The backend historical contract operates on a date-like
-   * paid-through boundary. The first day of the selected
-   * month is therefore sent as the canonical JSON date.
-   */
-
-  return {
-
-    enabled:
-      true,
-
-    monthly_amount:
-      Number(
-        $("addMemberContributionAmount")
-          .value
-      ),
-
-    paid_through:
-      `${paidThrough}-01`,
-
-    payment_method:
-      $("addMemberHistoricalPaymentMethod")
-        .value
-
-  };
-
-}
-
-
-/* =========================================================
-   SUCCESS RESULT NORMALISATION
-========================================================= */
-
-function normaliseRpcResult(
-  data
-) {
-
-  /*
-   * create_member_with_contribution_plan()
-   * returns a table, therefore Supabase normally returns
-   * an array with one row.
-   *
-   * Historical creation returns jsonb, therefore it may
-   * arrive as an object.
-   */
-
-  if (
-    Array.isArray(data)
-  ) {
-
-    return data[0] ||
-      null;
-
-  }
-
-
-  if (
-    data &&
-    typeof data === "object"
-  ) {
-
-    return data;
-
-  }
-
-
-  return null;
-
-}
-
-
-/* =========================================================
-   RESULT VALUE
-========================================================= */
-
-function resultValue(
-  result,
-  ...keys
-) {
-
-  for (
-    const key
-    of keys
-  ) {
-
-    if (
-      result &&
-      result[key] !== undefined &&
-      result[key] !== null
-    ) {
-
-      return result[key];
-
-    }
-
-  }
-
-  return null;
-
-}
-
-
-/* =========================================================
-   SUCCESS SUMMARY
-========================================================= */
-
-function renderSuccess(
-  result
-) {
-
-  const summary =
-    $("addMemberSuccessSummary");
-
-  if (!summary) {
-    return;
-  }
-
-
-  summary.replaceChildren();
-
-
-  const values = [
-
-    [
-      "Member Number",
-      resultValue(
-        result,
-        "member_number"
-      )
-    ],
-
-    [
-      "Membership Number",
-      resultValue(
-        result,
-        "membership_number"
-      )
-    ],
-
-    [
-      "Obligations Created",
-      resultValue(
-        result,
-        "obligations_created"
-      )
-    ],
-
-    [
-      "Total Due",
-      formatMoney(
-        resultValue(
-          result,
-          "total_due"
-        )
-      )
-    ],
-
-    [
-      "Total Allocated",
-      formatMoney(
-        resultValue(
-          result,
-          "total_allocated"
-        )
-      )
-    ],
-
-    [
-      "Arrears",
-      formatMoney(
-        resultValue(
-          result,
-          "arrears"
-        )
-      )
-    ],
-
-    [
-      "Credit",
-      formatMoney(
-        resultValue(
-          result,
-          "credit"
-        )
-      )
-    ],
-
-    [
-      "Status",
-      resultValue(
-        result,
-        "contribution_status",
-        "status"
-      ) ||
-      "Created"
-    ]
-
-  ];
-
-
-  for (
-    const [
-      label,
-      value
-    ]
-    of values
-  ) {
-
-    const item =
-      document.createElement(
-        "div"
-      );
-
-    item.className =
-      "add-member-result-item";
-
-
-    const labelElement =
-      document.createElement(
-        "span"
-      );
-
-    labelElement.textContent =
-      label;
-
-
-    const valueElement =
-      document.createElement(
-        "strong"
-      );
-
-    valueElement.textContent =
-      value == null
-        ? "—"
-        : String(value);
-
-
-    item.append(
-      labelElement,
-      valueElement
-    );
-
-
-    summary.appendChild(
-      item
-    );
-
-  }
-
-
-  $("addMemberForm")
-    .hidden =
-    true;
-
-  $("addMemberSuccess")
-    .hidden =
-    false;
-
-  $("addMemberSuccess")
-    .scrollIntoView({
-      behavior:
-        "smooth",
-      block:
-        "start"
-    });
-
-}
-
-
-/* =========================================================
-   SUBMIT BUTTON
-========================================================= */
-
-function setSubmitting(
-  submitting
-) {
-
-  state.submitting =
-    submitting;
-
-
-  const button =
-    $("addMemberSubmit");
-
-
-  if (!button) {
-    return;
-  }
-
-
-  button.disabled =
-    submitting;
-
-
-  button.textContent =
-    submitting
-      ? "Adding Member…"
-      : "Add Member";
-
-}
-
-
-/* =========================================================
-   SUBMIT ENABLEMENT
-========================================================= */
-
-function updateSubmitState() {
-
-  const button =
-    $("addMemberSubmit");
-
-
-  if (!button) {
-    return;
-  }
-
-
-  const validation =
-    validateForm();
-
-
-  button.disabled =
-    state.submitting ||
-    Boolean(validation) ||
-    !state.monthlyType;
-
-}
-
-
-/* =========================================================
-   LIVE FORM UPDATE
-========================================================= */
-
-function updateFormPreview() {
-
-  updatePositionFields();
-
-  renderObligationPreview();
-
-  renderHistoricalPreview();
-
-  renderReview();
-
-  updateSubmitState();
-
-}
-
-
-/* =========================================================
-   BIND INPUT EVENTS
-========================================================= */
-
-function bindFormEvents() {
-
-  const form =
-    $("addMemberForm");
-
-  if (!form) {
-    return;
-  }
-
-
-  if (
-    form.dataset
-      .addMemberBound ===
-    "true"
-  ) {
-
-    return;
-
-  }
-
-
-  form.dataset
-    .addMemberBound =
-    "true";
-
-
-  form.addEventListener(
-    "input",
-    () => {
-
-      clearMessage();
-
-      updateFormPreview();
-
-    }
+  return (
+    labels[value] ||
+    value
   );
-
-
-  form.addEventListener(
-    "change",
-    () => {
-
-      clearMessage();
-
-      updateFormPreview();
-
-    }
-  );
-
-
-  $("addMemberHistoricalDetails")
-    ?.addEventListener(
-      "toggle",
-      () => {
-
-        clearMessage();
-
-        renderHistoricalPreview();
-
-        renderReview();
-
-        updateSubmitState();
-
-      }
-    );
-
-
-  form.addEventListener(
-    "submit",
-    handleSubmit
-  );
-
-
-  $("addMemberAnother")
-    ?.addEventListener(
-      "click",
-      resetForAnotherMember
-    );
-
 }
 
 
 /* =========================================================
-   RESET FORM
+   SECURITY / HTML ESCAPING
 ========================================================= */
 
-function resetForAnotherMember() {
-
-  const form =
-    $("addMemberForm");
-
-  if (!form) {
-    return;
-  }
-
-
-  form.reset();
-
-
-  $("addMemberSuccess")
-    .hidden =
-    true;
-
-
-  form.hidden =
-    false;
-
-
-  clearMessage();
-
-
-  /*
-   * New request ID is generated only after the previous
-   * member creation succeeded and the user chooses
-   * Add Another Member.
-   */
-
-  state.requestId =
-    createRequestId();
-
-
-  applyDefaults();
-
-  updatePositionFields();
-
-  renderHistoricalPreview();
-
-  renderObligationPreview();
-
-  renderReview();
-
-  updateSubmitState();
-
-
-  window.scrollTo({
-    top:
-      0,
-    behavior:
-      "smooth"
-  });
-
-}
-
-
-/* =========================================================
-   SUBMIT
-========================================================= */
-
-async function handleSubmit(
-  event
-) {
-
-  event.preventDefault();
-
-
-  if (
-    state.submitting
-  ) {
-
-    return;
-
-  }
-
-
-  clearMessage();
-
-
-  const validation =
-    validateForm();
-
-
-  if (validation) {
-
-    showMessage(
-      validation
-    );
-
-    return;
-
-  }
-
-
-  if (
-    !state.requestId
-  ) {
-
-    state.requestId =
-      createRequestId();
-
-  }
-
-
-  const pMember =
-    buildMemberPayload();
-
-
-  const pContributionPlan =
-    buildContributionPlan();
-
-
-  const historicalEnabled =
-    isHistoricalEnabled();
-
-
-  const pHistorical =
-    historicalEnabled
-      ? buildHistoricalPayload()
-      : null;
-
-
-  setSubmitting(
-    true
-  );
-
-
-  try {
-
-    const {
-      data,
-      error
-    } =
-      await createMember({
-
-        pMember,
-
-        pContributionPlan,
-
-        historicalEnabled,
-
-        pHistorical,
-
-        requestId:
-          state.requestId
-
-      });
-
-
-    if (error) {
-
-      throw error;
-
-    }
-
-
-    const result =
-      normaliseRpcResult(
-        data
-      );
-
-
-    if (!result) {
-
-      throw new Error(
-        "The member creation RPC completed without returning the expected member result."
-      );
-
-    }
-
-
-    /*
-     * IMPORTANT:
-     * Do NOT generate another request ID here until the
-     * user chooses Add Another Member.
-     */
-
-    setSubmitting(
-      false
-    );
-
-
-    renderSuccess(
-      result
-    );
-
-
-    /*
-     * A successful request consumes this form state.
-     * The existing request ID is retained only until
-     * resetForAnotherMember() creates the next one.
-     */
-
-  }
-
-  catch (error) {
-
-    setSubmitting(
-      false
-    );
-
-
-    const mapped =
-      mapRpcError(
-        error
-      );
-
-
-    showMessage(
-      mapped.message,
-      mapped.details
-    );
-
-  }
-
-}
-
-
-/* =========================================================
-   LOAD MONTHLY TYPE
-========================================================= */
-
-async function initialiseMonthlyType() {
-
-  const types =
-    await loadContributionTypes(
-      state.groupId
-    );
-
-
-  state.monthlyType =
-    findMonthlyContributionType(
-      types
-    );
-
-
-  renderMonthlyType();
-
-}
-
-
-/* =========================================================
-   AUTHORISATION
-========================================================= */
-
-async function initialiseAccess() {
-
-  await requireAuth();
-
-
-  const context =
-    await getMyApplicationContext();
-
-
-  if (!context?.user?.id) {
-
-    throw new Error(
-      "AUTHENTICATION_REQUIRED"
-    );
-
-  }
-
-
-  if (!context?.group?.id) {
-
-    throw new Error(
-      "Your group could not be resolved."
-    );
-
-  }
-
-
-  const memberStatus =
-    String(
-      context?.member?.status ||
-      ""
+function escapeHtml(value) {
+  return String(
+    value ?? ""
+  )
+    .replaceAll(
+      "&",
+      "&amp;"
     )
-      .trim()
-      .toLowerCase();
-
-
-  if (
-    memberStatus !==
-    "active"
-  ) {
-
-    const error =
-      new Error(
-        "ACTIVE_GROUP_MEMBER_REQUIRED"
-      );
-
-    error.code =
-      "ACTIVE_GROUP_MEMBER_REQUIRED";
-
-    throw error;
-
-  }
-
-
-  state.context =
-    context;
-
-  state.groupId =
-    context.group.id;
-
-
-  const allowed =
-    await canManageMembers(
-      state.groupId
+    .replaceAll(
+      "<",
+      "&lt;"
+    )
+    .replaceAll(
+      ">",
+      "&gt;"
+    )
+    .replaceAll(
+      '"',
+      "&quot;"
+    )
+    .replaceAll(
+      "'",
+      "&#039;"
     );
-
-
-  if (!allowed) {
-
-    const error =
-      new Error(
-        "MEMBER_MANAGEMENT_NOT_AUTHORIZED"
-      );
-
-    error.code =
-      "MEMBER_MANAGEMENT_NOT_AUTHORIZED";
-
-    throw error;
-
-  }
-
-
-  return context;
-
 }
 
 
 /* =========================================================
-   INIT
-   ---------------------------------------------------------
-   admin-layout.js calls this function.
+   FALLBACK REQUEST ID
 ========================================================= */
 
-export async function addMemberInit() {
-
-  if (
-    document.body.dataset
-      .addMemberInitialised ===
-    "true"
-  ) {
-
-    return;
-
-  }
-
-
-  document.body.dataset
-    .addMemberInitialised =
-    "true";
-
-
-  setPageLoading(
-    true
+function generateFallbackRequestId() {
+  return (
+    "add-member-" +
+    Date.now().toString(36) +
+    "-" +
+    Math.random()
+      .toString(36)
+      .slice(2, 14)
   );
-
-
-  try {
-
-    await initialiseAccess();
-
-
-    state.requestId =
-      createRequestId();
-
-
-    applyDefaults();
-
-
-    try {
-
-      await initialiseMonthlyType();
-
-    }
-
-    catch (error) {
-
-      console.error(
-        "[CHAMA LIVE] Monthly contribution type initialisation failed:",
-        error
-      );
-
-
-      renderMonthlyTypeError(
-        mapRpcError(
-          error
-        )
-      );
-
-    }
-
-
-    bindFormEvents();
-
-    updatePositionFields();
-
-    renderObligationPreview();
-
-    renderHistoricalPreview();
-
-    renderReview();
-
-    updateSubmitState();
-
-
-    showWorkspace();
-
-  }
-
-  catch (error) {
-
-    console.error(
-      "[CHAMA LIVE] Add Member access initialisation failed:",
-      error
-    );
-
-
-    const mapped =
-      mapRpcError(
-        error
-      );
-
-
-    showAccessError(
-      mapped
-    );
-
-  }
-
-  finally {
-
-    setPageLoading(
-      false
-    );
-
-  }
-
 }
