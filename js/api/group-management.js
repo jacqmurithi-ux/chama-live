@@ -8,6 +8,7 @@ const api = createApiClient(supabase, {
   allowedRpcs: [
     "get_group_contribution_settings",
     "update_group_contribution_settings",
+    "update_group_monthly_contribution_settings",
     "get_group_subscription",
     "create_custom_contribution",
     "activate_custom_contribution",
