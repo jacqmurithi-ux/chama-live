@@ -1599,14 +1599,14 @@ function renderRecentGroupExpenses() {
    MEETINGS
    ========================================================= */
 
-async function loadMeetings() {
+async async function loadMeetings() {
   const container = byId("memberMeetings");
 
   if (!container) return;
 
   const { data, error } = await supabase
     .from("meetings")
-    .select("id, date, start_time, end_time, title, venue, type, status")
+    .select("id, date, start_time, end_time, title, venue, agenda, type, status")
     .eq("group_id", groupId)
     .gte("date", todayIso())
     .neq("status", "cancelled")
@@ -1622,6 +1622,22 @@ async function loadMeetings() {
     container.innerHTML = "<p>No upcoming meetings recorded.</p>";
     return;
   }
+
+  const summaries = await Promise.all(
+    meetings.map(async meeting => {
+      const result = await supabase.rpc("get_meeting_rsvp_summary", {
+        p_meeting_id: meeting.id
+      });
+
+      if (result.error) throw result.error;
+
+      return result.data?.[0] || {
+        attending_count: 0,
+        apology_count: 0,
+        my_status: null
+      };
+    })
+  );
 
   const formatTime = value => {
     if (!value) return "";
@@ -1641,21 +1657,99 @@ async function loadMeetings() {
     committee: "Committee"
   }[String(value || "regular")] || "Meeting");
 
-  container.innerHTML = meetings.map(meeting => `
-    <div class="member-dashboard-list-item">
-      <div>
-        <strong>${escapeHtml(meeting.title || "Meeting")}</strong>
-        <small>
-          ${escapeHtml(formatDate(meeting.date))}
-          · ${escapeHtml(formatTime(meeting.start_time) || "Time not specified")}
-          ${meeting.end_time ? `– ${escapeHtml(formatTime(meeting.end_time))}` : ""}
-          ${meeting.venue ? ` · ${escapeHtml(meeting.venue)}` : ""}
-          · ${escapeHtml(formatType(meeting.type))}
-        </small>
+  const agendaText = agenda => {
+    const items = Array.isArray(agenda)
+      ? agenda.filter(Boolean)
+      : [];
+    return items.length ? items.join(" · ") : "No agenda recorded";
+  };
+
+  container.innerHTML = meetings.map((meeting, index) => {
+    const summary = summaries[index] || {};
+    const myStatus = summary.my_status || "";
+    const attending = Number(summary.attending_count || 0);
+    const apologies = Number(summary.apology_count || 0);
+
+    return `
+      <div class="member-dashboard-list-item member-meeting-item">
+        <div>
+          <strong>${escapeHtml(meeting.title || "Meeting")}</strong>
+          <small>
+            ${escapeHtml(formatDate(meeting.date))}
+            · ${escapeHtml(formatTime(meeting.start_time) || "Time not specified")}
+            ${meeting.end_time ? `– ${escapeHtml(formatTime(meeting.end_time))}` : ""}
+            ${meeting.venue ? ` · ${escapeHtml(meeting.venue)}` : ""}
+            · ${escapeHtml(formatType(meeting.type))}
+          </small>
+          <small>
+            ${escapeHtml(agendaText(meeting.agenda))}
+          </small>
+          <small>
+            Attending: ${attending} · Apologies: ${apologies}
+          </small>
+        </div>
+
+        <div class="member-meeting-rsvp-actions">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            data-meeting-rsvp="attending"
+            data-meeting-id="${escapeHtml(meeting.id)}"
+            ${myStatus === "attending" ? "disabled" : ""}
+          >
+            ${myStatus === "attending" ? "I’ll attend ✓" : "I’ll attend"}
+          </button>
+
+          <button
+            type="button"
+            class="btn btn-secondary"
+            data-meeting-rsvp="apology"
+            data-meeting-id="${escapeHtml(meeting.id)}"
+            ${myStatus === "apology" ? "disabled" : ""}
+          >
+            ${myStatus === "apology" ? "Apology sent ✓" : "Send apology"}
+          </button>
+        </div>
       </div>
-      <span>Scheduled</span>
-    </div>
-  `).join("");
+    `;
+  }).join("");
+
+  container.onclick = async event => {
+    const button = event.target.closest("button[data-meeting-rsvp]");
+
+    if (!button || !container.contains(button)) return;
+
+    const meetingId = button.dataset.meetingId;
+    const status = button.dataset.meetingRsvp;
+
+    if (!meetingId || !["attending", "apology"].includes(status)) return;
+
+    button.disabled = true;
+
+    try {
+      const { error: rsvpError } = await supabase
+        .from("meeting_rsvps")
+        .upsert(
+          {
+            meeting_id: meetingId,
+            member_id: memberId,
+            status,
+            responded_at: new Date().toISOString()
+          },
+          { onConflict: "meeting_id,member_id" }
+        );
+
+      if (rsvpError) throw rsvpError;
+
+      await loadMeetings();
+    }
+    catch (rsvpError) {
+      console.error("CHAMA LIVE meeting RSVP:", rsvpError);
+    }
+    finally {
+      if (button.isConnected) button.disabled = false;
+    }
+  };
 }
 
 /* =========================================================
