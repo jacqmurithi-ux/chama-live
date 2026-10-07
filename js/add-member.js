@@ -35,8 +35,6 @@
    ========================================================= */
 
 import { supabase } from "./supabase.js";
-import { getLayoutState } from "./admin-layout.js";
-
 /* =========================================================
    DOM
    ========================================================= */
@@ -1835,11 +1833,7 @@ async function loadApplicationContext() {
     Auth/member/group resolution a second time.
   */
 
-  const layoutState =
-    getLayoutState();
-
-  const context =
-    layoutState || null;
+  const context = window.__CHAMA_LIVE_ADMIN_CONTEXT__ || null;
 
   if (!context?.user || !context?.member) {
     throw new Error(
