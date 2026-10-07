@@ -159,6 +159,8 @@ function formatRole(value) {
     chairperson: "Chairperson",
     treasurer: "Treasurer",
     secretary: "Secretary",
+    "vice chairperson": "Vice Chairperson",
+    "vice secretary": "Vice Secretary",
     member: "Member"
   };
 
@@ -200,6 +202,25 @@ function isManager() {
     role === "admin" ||
     role === "chairperson"
   );
+}
+
+function isOfficialPortalRole(role) {
+  return new Set([
+    "admin",
+    "chairperson",
+    "secretary",
+    "treasurer",
+    "vice chairperson",
+    "vice secretary"
+  ]).has(
+    normalize(role)
+  );
+}
+
+function portalLabelForMember(member) {
+  return isOfficialPortalRole(member?.role)
+    ? "Admin Portal"
+    : "Member Portal";
 }
 
 function setHidden(element, hidden) {
@@ -1245,7 +1266,7 @@ function ensureProfileActions() {
       "btn btn-primary";
 
     button.textContent =
-      "Invite to Member Portal";
+      "Invite to Portal";
 
     button.addEventListener(
       "click",
@@ -1295,10 +1316,13 @@ function updateProfileActionVisibility() {
       !isManager() ||
       !hasEmail;
 
+    const portalLabel =
+      portalLabelForMember(member);
+
     invite.textContent =
       hasLogin
-        ? "Resend Portal Email"
-        : "Invite to Member Portal";
+        ? "Resend " + portalLabel + " Email"
+        : "Invite to " + portalLabel;
   }
 }
 
@@ -2300,7 +2324,7 @@ async function inviteMember(memberId) {
 
   if (!isManager()) {
     showError(
-      "Only an admin or chairperson can send member portal invitations."
+      "Only an admin or chairperson can send portal invitations."
     );
     return;
   }
@@ -2315,9 +2339,18 @@ async function inviteMember(memberId) {
     return;
   }
 
+  const portalLabel =
+    portalLabelForMember(member);
+
   const confirmed =
     window.confirm(
-      `Send a CHAMA LIVE member portal invitation to ${email}?`
+      "Send a CHAMA LIVE " +
+      portalLabel +
+      " invitation to " +
+      email +
+      " for " +
+      (member.name || "this member") +
+      "?"
     );
 
   if (!confirmed) {
@@ -2390,7 +2423,7 @@ async function inviteMember(memberId) {
 
     showSuccess(
       data.message ||
-      `Invitation sent to ${email}.`
+      (portalLabel + " invitation sent to " + email + ".")
     );
 
     /*
@@ -2421,11 +2454,14 @@ async function inviteMember(memberId) {
       const refreshed =
         memberById(memberId);
 
+      const refreshedPortalLabel =
+        portalLabelForMember(refreshed);
+
       button.textContent =
         refreshed?.auth_user_id ||
         refreshed?.user_id
-          ? "Resend Portal Email"
-          : "Invite to Member Portal";
+          ? "Resend " + refreshedPortalLabel + " Email"
+          : "Invite to " + refreshedPortalLabel;
     }
   }
 }
