@@ -93,7 +93,10 @@ async function submitMember(event) {
   const button = $("saveMemberButton");
   const name = $("memberName")?.value.trim();
   const memberNumber = $("memberNumber")?.value.trim();
-  const membershipNumber = $("membershipNumber")?.value.trim() || memberNumber;
+  const rawMembershipNumber = $("membershipNumber")?.value.trim() || "";
+  const membershipNumber = /^\d{4}$/.test(rawMembershipNumber)
+    ? rawMembershipNumber
+    : memberNumber;
   const nationalId = $("nationalId")?.value.trim() || null;
   const phone = $("memberPhone")?.value.trim();
   const email = $("memberEmail")?.value.trim() || null;
@@ -168,6 +171,69 @@ async function submitMember(event) {
     );
     if (!monthlyType) throw new Error("The group's Monthly contribution type could not be found.");
 
+    if (historical) {
+      const requestId = crypto.randomUUID();
+      const paidThroughDate = getEndOfMonthDate(historicalPaidThrough);
+
+      const { data: historicalResult, error: historicalError } = await supabase.rpc(
+        "create_member_with_historical_contributions",
+        {
+          p_member: {
+            member_number: memberNumber,
+            membership_number: membershipNumber,
+            name, phone, email, national_id: nationalId, role, status,
+            onboarding_status: "active",
+            join_date: joinDate,
+            actual_position: actualPosition,
+            actual_position_name: actualPositionName,
+            actual_position_effective_from: positionEffectiveFrom
+          },
+          p_contribution_plan: [{
+            contribution_type_id: monthlyType.id,
+            amount: monthlyAmount,
+            frequency: "monthly",
+            effective_from: contributionEffectiveFrom,
+            first_period_rule: firstPeriodRule,
+            status: "active"
+          }],
+          p_historical: {
+            enabled: true,
+            monthly_amount: monthlyAmount,
+            paid_through: paidThroughDate,
+            payment_method: historicalPaymentMethod
+          },
+          p_request_id: requestId
+        }
+      );
+
+      if (historicalError) throw historicalError;
+
+      const historicalRow = historicalResult?.result || historicalResult;
+      if (!historicalRow?.member_id) {
+        throw new Error("Historical member onboarding did not return a member ID.");
+      }
+
+      const position = String(
+        historicalRow.contribution_status || "up_to_date"
+      ).replace(/_/g, " ").toUpperCase();
+
+      const msg = $("formMessage");
+      if (msg) {
+        msg.hidden = false;
+        msg.textContent = `${name} was added. Historical accounting completed: ${position}.`;
+        msg.style.background = "#ecfdf5";
+        msg.style.color = "#166534";
+      }
+
+      $("addMemberForm")?.reset();
+      if ($("joinDate")) $("joinDate").value = new Date().toISOString().slice(0, 10);
+      if ($("contributionEffectiveFrom")) {
+        $("contributionEffectiveFrom").value = $("joinDate")?.value;
+      }
+      updateHistoricalVisibility();
+      setStatus(`${name} added — opening contribution position: ${position}.`);
+      return;
+    }
     const { data: created, error: createError } = await supabase.rpc(
       "create_member_with_contribution_plan",
       {
@@ -203,25 +269,6 @@ async function submitMember(event) {
 
     let accountingResult = createdRow;
 
-    if (historical) {
-      const requestId = crypto.randomUUID();
-      const { data: historicalResult, error: historicalError } = await supabase.rpc(
-        "record_existing_member_historical_payments",
-        {
-          p_request_id: requestId,
-          p_member_id: createdRow.member_id,
-          p_monthly_amount: monthlyAmount,
-          p_effective_from: historicalEffectiveFrom,
-          p_effective_to: null,
-          p_first_period_rule: firstPeriodRule,
-          p_payments: historicalPayments
-        }
-      );
-
-      if (historicalError) throw historicalError;
-      accountingResult = historicalResult || createdRow;
-    }
-
     const position = String(accountingResult.position_status || createdRow.contribution_status || "")
       .replaceAll("_", " ")
       .toUpperCase();
@@ -246,12 +293,35 @@ async function submitMember(event) {
         : `${name} was added successfully.`
     );
   } catch (e) {
-    console.error("Add member error:", e);
-    showError(e);
+    console.error("Add member error:", {
+      message: e?.message,
+      details: e?.details,
+      hint: e?.hint,
+      code: e?.code,
+      error: e
+    });
+
+    const diagnostic = [
+      e?.code ? `Code: ${e.code}` : "",
+      e?.message || "",
+      e?.details ? `Details: ${e.details}` : "",
+      e?.hint ? `Hint: ${e.hint}` : ""
+    ].filter(Boolean).join(" — ");
+
+    showError(diagnostic || "Unable to add member.");
   } finally {
     button.disabled = false;
     button.textContent = "Save Member";
   }
+}
+
+function getEndOfMonthDate(monthValue) {
+  const value = String(monthValue || "").trim();
+  const match = /^(\d{4})-(\d{2})$/.exec(value);
+  if (!match) throw new Error("Invalid historical Paid Through month.");
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  return new Date(Date.UTC(year, month, 0)).toISOString().slice(0, 10);
 }
 
 function buildHistoricalPayments(paidMonths, paidThrough, monthlyAmount, totalPaid, effectiveFrom, paymentMethod) {
