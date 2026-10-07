@@ -118,6 +118,21 @@ const minutesInput =
 const resolutionInput =
   document.getElementById("resolution");
 
+const meetingRsvpSummary =
+  document.getElementById("meetingRsvpSummary");
+
+const meetingAttendance =
+  document.getElementById("meetingAttendance");
+
+const meetingAttendanceStats =
+  document.getElementById("meetingAttendanceStats");
+
+const meetingAttendanceList =
+  document.getElementById("meetingAttendanceList");
+
+const saveMeetingAttendance =
+  document.getElementById("saveMeetingAttendance");
+
 const saveMinutes =
   document.getElementById("saveMinutes");
 
@@ -135,6 +150,12 @@ let meetings = [];
 let selectedMeeting = null;
 
 let editingMeetingId = null;
+
+let attendanceMembers = [];
+
+let attendanceRsvps = new Map();
+
+let attendanceRows = new Map();
 
 let initialized = false;
 
@@ -824,232 +845,464 @@ function renderMeetings() {
 
 function renderDetails() {
 
-  if (
-    !detailsCard ||
-    !meetingDetails
-  ) {
-
+  if (!detailsCard || !meetingDetails) {
     return;
-
   }
-
 
   if (!selectedMeeting) {
-
-    detailsCard.hidden =
-      true;
-
+    detailsCard.hidden = true;
+    if (meetingAttendance) meetingAttendance.hidden = true;
+    if (meetingRsvpSummary) meetingRsvpSummary.hidden = true;
     return;
-
   }
 
+  const status = normalizeStatus(selectedMeeting.status);
 
-  const status =
-    normalizeStatus(
-      selectedMeeting.status
-    );
+  const agenda = agendaToArray(selectedMeeting.agenda);
 
-
-  const agenda =
-    agendaToArray(
-      selectedMeeting.agenda
-    );
-
-
-  const agendaHtml =
-    agenda.length
-      ? `
-        <ol class="meeting-agenda-list">
-          ${agenda
-            .map(
-              item => `
-                <li>
-                  ${escapeHtml(item)}
-                </li>
-              `
-            )
-            .join("")}
-        </ol>
-      `
-      : `
-        <div class="meeting-empty-text">
-          No agenda recorded.
-        </div>
-      `;
-
+  const agendaHtml = agenda.length
+    ? `
+      <ol class="meeting-agenda-list">
+        ${agenda.map(item => `
+          <li>${escapeHtml(item)}</li>
+        `).join("")}
+      </ol>
+    `
+    : `
+      <div class="meeting-empty-text">
+        No agenda recorded.
+      </div>
+    `;
 
   meetingDetails.innerHTML = `
-
     <div class="meeting-detail-header">
-
       <div>
-
         <h2 class="meeting-detail-title">
-          ${escapeHtml(
-            selectedMeeting.title ||
-            "Untitled Meeting"
-          )}
+          ${escapeHtml(selectedMeeting.title || "Untitled Meeting")}
         </h2>
-
         <div class="muted">
           Meeting details and official record
         </div>
-
       </div>
-
       <div>
         ${statusBadge(status)}
       </div>
-
     </div>
-
 
     <div class="meeting-detail-meta">
 
       <div class="meeting-meta-box">
-
-        <span class="meeting-meta-label">
-          Date
-        </span>
-
+        <span class="meeting-meta-label">Date</span>
         <span class="meeting-meta-value">
-          ${escapeHtml(
-            formatDate(
-              selectedMeeting.date
-            )
-          )}
+          ${escapeHtml(formatDate(selectedMeeting.date))}
         </span>
-
       </div>
 
-
       <div class="meeting-meta-box">
-
-        <span class="meeting-meta-label">
-          Venue
-        </span>
-
+        <span class="meeting-meta-label">Venue</span>
         <span class="meeting-meta-value">
-          ${escapeHtml(
-            selectedMeeting.venue ||
-            "Not specified"
-          )}
+          ${escapeHtml(selectedMeeting.venue || "Not specified")}
         </span>
-
       </div>
 
-
       <div class="meeting-meta-box">
-
-        <span class="meeting-meta-label">
-          Time
-        </span>
-
+        <span class="meeting-meta-label">Time</span>
         <span class="meeting-meta-value">
           ${escapeHtml(formatTime(selectedMeeting.start_time))}
           ${selectedMeeting.end_time ? "– " + escapeHtml(formatTime(selectedMeeting.end_time)) : ""}
         </span>
-
       </div>
 
-
       <div class="meeting-meta-box">
-
-        <span class="meeting-meta-label">
-          Type
-        </span>
-
+        <span class="meeting-meta-label">Type</span>
         <span class="meeting-meta-value">
           ${escapeHtml(formatMeetingType(selectedMeeting.type))}
         </span>
-
       </div>
 
-
-        <span class="meeting-meta-label">
-          Status
-        </span>
-
+      <div class="meeting-meta-box">
+        <span class="meeting-meta-label">Status</span>
         <span class="meeting-meta-value">
           ${escapeHtml(status)}
         </span>
-
       </div>
 
     </div>
-
 
     <div class="meeting-agenda-box">
-
-      <div class="meeting-subtitle">
-        Agenda
-      </div>
-
+      <div class="meeting-subtitle">Agenda</div>
       ${agendaHtml}
-
     </div>
-
   `;
 
-
   if (minutesInput) {
-
-    minutesInput.value =
-      selectedMeeting.minutes ||
-      "";
-
+    minutesInput.value = selectedMeeting.minutes || "";
   }
-
 
   if (resolutionInput) {
-
-    resolutionInput.value =
-      selectedMeeting.resolution ||
-      "";
-
+    resolutionInput.value = selectedMeeting.resolution || "";
   }
 
-
-  detailsCard.hidden =
-    false;
-
-
-  /* =======================================================
-     BUTTON VISIBILITY
-  ====================================================== */
+  detailsCard.hidden = false;
 
   if (completeMeeting) {
-
-    completeMeeting.hidden =
-      status !== "upcoming";
-
+    completeMeeting.hidden = status !== "upcoming";
   }
 
-
   if (cancelMeeting) {
-
     cancelMeeting.hidden =
       status === "cancelled" ||
       status === "completed";
-
   }
-
 
   if (restoreMeeting) {
-
-    restoreMeeting.hidden =
-      status !== "cancelled";
-
+    restoreMeeting.hidden = status !== "cancelled";
   }
-
 
   if (deleteMeeting) {
-
-    deleteMeeting.hidden =
-      false;
-
+    deleteMeeting.hidden = false;
   }
 
+  loadMeetingAttendance().catch(showError);
+}
+
+
+/* =========================================================
+   RSVP / ATTENDANCE / QUORUM
+========================================================= */
+
+function quorumRequired(memberCount) {
+  return Math.floor(Number(memberCount || 0) / 2) + 1;
+}
+
+
+function renderAttendanceStats() {
+
+  if (!meetingAttendanceStats) {
+    return;
+  }
+
+  const total =
+    attendanceMembers.length;
+
+  const attending =
+    [...attendanceRows.values()]
+      .filter(row =>
+        row.status === "present" ||
+        row.status === "late"
+      ).length;
+
+  const late =
+    [...attendanceRows.values()]
+      .filter(row => row.status === "late")
+      .length;
+
+  const apologies =
+    [...attendanceRows.values()]
+      .filter(row => row.status === "apology")
+      .length;
+
+  const absent =
+    Math.max(
+      0,
+      total - attending - apologies
+    );
+
+  const required =
+    quorumRequired(total);
+
+  const quorumMet =
+    total > 0 &&
+    attending >= required;
+
+  const rsvpAttending =
+    [...attendanceRsvps.values()]
+      .filter(row => row.status === "attending")
+      .length;
+
+  const rsvpApologies =
+    [...attendanceRsvps.values()]
+      .filter(row => row.status === "apology")
+      .length;
+
+  const noResponse =
+    Math.max(
+      0,
+      total - rsvpAttending - rsvpApologies
+    );
+
+  meetingAttendanceStats.innerHTML = `
+    <div class="meeting-meta-box">
+      <span class="meeting-meta-label">RSVP</span>
+      <span class="meeting-meta-value">
+        Attending ${rsvpAttending} · Apologies ${rsvpApologies} · No response ${noResponse}
+      </span>
+    </div>
+
+    <div class="meeting-meta-box">
+      <span class="meeting-meta-label">Attendance</span>
+      <span class="meeting-meta-value">
+        Present ${attending} · Late ${late} · Apologies ${apologies} · Absent ${absent}
+      </span>
+    </div>
+
+    <div class="meeting-meta-box">
+      <span class="meeting-meta-label">Quorum</span>
+      <span class="meeting-meta-value">
+        ${attending} / ${required}
+        · ${quorumMet ? "Quorum met" : "Quorum not met"}
+      </span>
+    </div>
+  `;
+
+  if (meetingRsvpSummary) {
+    meetingRsvpSummary.hidden = false;
+    meetingRsvpSummary.innerHTML = `
+      <div class="meeting-meta-box">
+        <span class="meeting-meta-label">Member RSVP</span>
+        <span class="meeting-meta-value">
+          Attending ${rsvpAttending} · Apologies ${rsvpApologies} · No response ${noResponse}
+        </span>
+      </div>
+    `;
+  }
+}
+
+
+function renderAttendanceList() {
+
+  if (!meetingAttendanceList) {
+    return;
+  }
+
+  if (!attendanceMembers.length) {
+    meetingAttendanceList.innerHTML =
+      "<p class=\"muted\">No active group members found.</p>";
+    return;
+  }
+
+  meetingAttendanceList.innerHTML =
+    attendanceMembers.map(member => {
+
+      const row =
+        attendanceRows.get(member.id);
+
+      const checked =
+        row?.status === "present" ||
+        row?.status === "late";
+
+      const late =
+        row?.status === "late";
+
+      const rsvp =
+        attendanceRsvps.get(member.id);
+
+      const defaultStatus =
+        rsvp?.status === "apology"
+          ? "apology"
+          : "absent";
+
+      return `
+        <div class="meeting-attendance-row">
+          <label>
+            <input
+              type="checkbox"
+              data-attendance-member="${escapeHtml(member.id)}"
+              ${checked ? "checked" : ""}
+            >
+            <span>
+              <strong>${escapeHtml(member.name)}</strong>
+              <small>
+                ${escapeHtml(member.member_number || member.membership_number || "")}
+                · RSVP: ${escapeHtml(rsvp?.status || "No response")}
+              </small>
+            </span>
+          </label>
+
+          <select
+            data-attendance-status="${escapeHtml(member.id)}"
+            aria-label="Attendance status for ${escapeHtml(member.name)}"
+            ${checked ? "" : "hidden"}
+          >
+            <option value="present" ${!late ? "selected" : ""}>Present</option>
+            <option value="late" ${late ? "selected" : ""}>Late</option>
+          </select>
+
+          <input
+            type="hidden"
+            data-attendance-default="${escapeHtml(member.id)}"
+            value="${defaultStatus}"
+          >
+        </div>
+      `;
+    }).join("");
+
+  renderAttendanceStats();
+}
+
+
+async function loadMeetingAttendance() {
+
+  if (
+    !selectedMeeting ||
+    !groupId ||
+    !meetingAttendance
+  ) {
+    return;
+  }
+
+  if (normalizeStatus(selectedMeeting.status) === "cancelled") {
+    meetingAttendance.hidden = true;
+    if (meetingRsvpSummary) meetingRsvpSummary.hidden = true;
+    return;
+  }
+
+  const [
+    membersResult,
+    rsvpResult,
+    attendanceResult
+  ] = await Promise.all([
+    supabase
+      .from("members")
+      .select("id, name, member_number, membership_number")
+      .eq("group_id", groupId)
+      .eq("status", "active")
+      .eq("onboarding_status", "active")
+      .order("name", { ascending: true }),
+
+    supabase
+      .from("meeting_rsvps")
+      .select("member_id, status")
+      .eq("meeting_id", selectedMeeting.id),
+
+    supabase
+      .from("attendance")
+      .select("member_id, status")
+      .eq("meeting_id", selectedMeeting.id)
+  ]);
+
+  if (membersResult.error) throw membersResult.error;
+  if (rsvpResult.error) throw rsvpResult.error;
+  if (attendanceResult.error) throw attendanceResult.error;
+
+  attendanceMembers =
+    Array.isArray(membersResult.data)
+      ? membersResult.data
+      : [];
+
+  attendanceRsvps =
+    new Map(
+      (rsvpResult.data || [])
+        .map(row => [row.member_id, row])
+    );
+
+  attendanceRows =
+    new Map(
+      (attendanceResult.data || [])
+        .map(row => [row.member_id, row])
+    );
+
+  meetingAttendance.hidden = false;
+
+  renderAttendanceList();
+}
+
+
+async function saveAttendance() {
+
+  if (!selectedMeeting) {
+    return;
+  }
+
+  if (!attendanceMembers.length) {
+    throw new Error("There are no active members to record.");
+  }
+
+  saveMeetingAttendance.disabled = true;
+  saveMeetingAttendance.textContent = "Saving Attendance...";
+
+  try {
+
+    const rows =
+      attendanceMembers.map(member => {
+
+        const checkbox =
+          meetingAttendanceList.querySelector(
+            `input[data-attendance-member="${CSS.escape(member.id)}"]`
+          );
+
+        const statusSelect =
+          meetingAttendanceList.querySelector(
+            `select[data-attendance-status="${CSS.escape(member.id)}"]`
+          );
+
+        const defaultInput =
+          meetingAttendanceList.querySelector(
+            `input[data-attendance-default="${CSS.escape(member.id)}"]`
+          );
+
+        let status =
+          "absent";
+
+        if (checkbox?.checked) {
+          status =
+            statusSelect?.value === "late"
+              ? "late"
+              : "present";
+        }
+        else if (
+          defaultInput?.value === "apology"
+        ) {
+          status = "apology";
+        }
+
+        return {
+          meeting_id: selectedMeeting.id,
+          member_id: member.id,
+          status
+        };
+      });
+
+    const { error } =
+      await supabase
+        .from("attendance")
+        .upsert(
+          rows,
+          {
+            onConflict: "meeting_id,member_id"
+          }
+        );
+
+    if (error) throw error;
+
+    const { data, error: reloadError } =
+      await supabase
+        .from("attendance")
+        .select("member_id, status")
+        .eq("meeting_id", selectedMeeting.id);
+
+    if (reloadError) throw reloadError;
+
+    attendanceRows =
+      new Map(
+        (data || [])
+          .map(row => [row.member_id, row])
+      );
+
+    renderAttendanceList();
+
+    showStatus("Attendance saved.");
+
+    setTimeout(
+      () => showStatus(""),
+      2000
+    );
+
+  }
+  finally {
+    saveMeetingAttendance.disabled = false;
+    saveMeetingAttendance.textContent = "Save Attendance";
+  }
 }
 
 
@@ -1845,6 +2098,43 @@ function setupButtons() {
   statusFilter?.addEventListener(
     "change",
     renderMeetings
+  );
+
+
+  meetingAttendanceList?.addEventListener(
+    "change",
+    event => {
+      const checkbox =
+        event.target.closest("input[data-attendance-member]");
+
+      if (!checkbox) return;
+
+      const memberId = checkbox.dataset.attendanceMember;
+      const statusSelect =
+        meetingAttendanceList.querySelector(
+          `select[data-attendance-status="${CSS.escape(memberId)}"]`
+        );
+
+      if (statusSelect) {
+        statusSelect.hidden = !checkbox.checked;
+      }
+
+      renderAttendanceStats();
+    }
+  );
+
+
+  saveMeetingAttendance?.addEventListener(
+    "click",
+    async () => {
+      try {
+        clearError();
+        await saveAttendance();
+      }
+      catch (error) {
+        showError(error);
+      }
+    }
   );
 
 
