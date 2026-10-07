@@ -458,7 +458,7 @@ async function createFineType(event) {
       p_name: name,
       p_description: description,
       p_trigger_type: "custom_event",
-      p_specificity_level: 0,
+      p_specificity_level: 1,
       p_priority: 100,
       p_calculation_method: "FIXED",
       p_fixed_amount: amount,
@@ -467,7 +467,7 @@ async function createFineType(event) {
       p_maximum_amount: null,
       p_grace_period_value: 0,
       p_grace_period_unit: "DAY",
-      p_applicability_mode: "ALL",
+      p_applicability_mode: "ALL_MEETINGS",
       p_effective_from: new Date().toISOString(),
       p_effective_until: null,
       p_contribution_type_ids: []
