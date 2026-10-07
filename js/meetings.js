@@ -2438,14 +2438,7 @@ export async function initPage() {
         );
       }
 
-      groupId =
-        currentMember.group_id;
-
-      if (!groupId) {
-        throw new Error(
-          "Your member record is not linked to a group."
-        );
-      }
+      groupId = null;
 
       setCreateMode();
 
