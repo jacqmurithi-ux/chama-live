@@ -1151,6 +1151,25 @@ async function loadMeetingAttendance() {
     return;
   }
 
+  const role =
+    String(currentMember?.role || "")
+      .trim()
+      .toLowerCase();
+
+  const canRecordAttendance =
+    ["admin", "chairperson", "secretary", "treasurer"]
+      .includes(role);
+
+  if (!canRecordAttendance) {
+    meetingAttendance.hidden = true;
+
+    if (meetingRsvpSummary) {
+      meetingRsvpSummary.hidden = true;
+    }
+
+    return;
+  }
+
   if (normalizeStatus(selectedMeeting.status) === "cancelled") {
     meetingAttendance.hidden = true;
     if (meetingRsvpSummary) meetingRsvpSummary.hidden = true;
