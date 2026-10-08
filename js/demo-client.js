@@ -5,9 +5,39 @@
    Browser stores only an opaque bearer token.
    The token is resolved by tightly-scoped demo RPCs.
    The browser NEVER supplies group_id as authorization.
+
+   DEMO DATABASE ISOLATION
+   ---------------------------------------------------------
+   Normal CHAMA LIVE pages continue using the production
+   Supabase client from ./supabase.js.
+
+   Demo pages use a separate browser client pointed at the
+   candidate/test Supabase project. This keeps the opaque
+   demo session in the same project that created it.
 ========================================================= */
 
-import { supabase } from "./supabase.js";
+import {
+  createClient
+} from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+
+const DEMO_SUPABASE_URL =
+  "https://onzaonflquipqmhgslxi.supabase.co";
+
+const DEMO_SUPABASE_PUBLISHABLE_KEY =
+  "sb_publishable_0jhKFtRCnOx0WDcO3PwcMg_GGsnN3kc";
+
+const demoSupabase =
+  createClient(
+    DEMO_SUPABASE_URL,
+    DEMO_SUPABASE_PUBLISHABLE_KEY,
+    {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false
+      }
+    }
+  );
 
 export const DEMO_TOKEN_KEY = "chama_live_demo_token";
 
@@ -31,7 +61,7 @@ async function callDemoRpc(name) {
     throw new Error("No active CHAMA LIVE demo session.");
   }
 
-  const { data, error } = await supabase.rpc(name, {
+  const { data, error } = await demoSupabase.rpc(name, {
     p_token: token
   });
 
