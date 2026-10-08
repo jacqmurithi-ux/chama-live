@@ -514,7 +514,7 @@ function setEditMode(meeting) {
 
 
   if (dateInput) dateInput.value = meeting.date || "";
-  if (startTimeInput) startTimeInput.value = meeting.start_time || "14:00";
+  if (startTimeInput) startTimeInput.value = meeting.start_time || "";
   if (endTimeInput) endTimeInput.value = meeting.end_time || "";
   if (backDatedInput) backDatedInput.checked = Boolean(meeting.back_dated);
   if (backDatedGroup) backDatedGroup.hidden = !isMeetingOfficial();
@@ -2113,7 +2113,7 @@ async function saveMeetingForm(event) {
     if (!date) {
       throw new Error("Please select the meeting date.");
     }
-    if (!startTime) {
+    if (!startTime && !editingMeetingId) {
       throw new Error("Please select the meeting start time.");
     }
     const startMinutes = timeToMinutes(startTime);
