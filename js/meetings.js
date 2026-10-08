@@ -44,13 +44,11 @@
 
    ATTENDANCE SECURITY
    ---------------------------------------------------------
-   Candidate RLS currently permits attendance recording by:
-     chairperson
+   The application authorization contract for attendance recording is:
+     admin
      secretary
-     treasurer
 
-   This frontend intentionally does NOT assume that "admin"
-   is authorized to write attendance.
+   Members may view attendance but may not write it.
 
    No direct database schema changes are performed here.
 
@@ -2977,19 +2975,6 @@ function setupButtons() {
         dateInput.value =
           getToday();
       }
-
-
-      if (startTimeInput) {
-        startTimeInput.value =
-          "";
-      }
-
-
-      if (endTimeInput) {
-        endTimeInput.value =
-          "";
-      }
-
 
 
       setCreateMode();
