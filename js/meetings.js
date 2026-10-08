@@ -583,7 +583,6 @@ const MEETING_SELECT = `
   created_at,
   start_time,
   end_time,
-  back_dated
 `;
 
 
@@ -837,7 +836,6 @@ function renderMeetings() {
                 <span class="meeting-time">
                   ${escapeHtml(formatMeetingDateTime(meeting.date, meeting.start_time, meeting.end_time).split(" · ").slice(1).join(" · ") || "Time not set")}
                 </span>
-                ${meeting.back_dated ? '<span class="meeting-backdated-badge">Back-dated</span>' : ""}
               </td>
 
 
@@ -1041,7 +1039,7 @@ function renderReadableMeeting() {
         "<span>" + escapeHtml(formatMeetingDateTime(selectedMeeting.date, selectedMeeting.start_time, selectedMeeting.end_time)) + "</span>" +
         "<span>" + escapeHtml(selectedMeeting.venue || "Venue not specified") + "</span>" +
       "</div>" +
-      '<div class="meeting-document-status">' + statusBadge(status) + (selectedMeeting.back_dated ? ' <span class="meeting-backdated-badge">Back-dated</span>' : "") + "</div>" +
+      '<div class="meeting-document-status">' + statusBadge(status) + "</div>" +
     "</div>" +
     section("attendance", "Attendance & quorum",
       "<p><strong>Quorum:</strong> " + escapeHtml(quorumText) + "</p>" +
@@ -1098,7 +1096,7 @@ function renderPrintDocument() {
       "<h1>MINUTES OF " + escapeHtml((selectedMeeting.title || "MEETING").toUpperCase()) + "</h1>" +
       "<p><strong>Date / time:</strong> " + escapeHtml(formatMeetingDateTime(selectedMeeting.date, selectedMeeting.start_time, selectedMeeting.end_time)) + "</p>" +
       "<p><strong>Venue:</strong> " + escapeHtml(selectedMeeting.venue || "Not specified") + "</p>" +
-      "<p><strong>Status:</strong> " + escapeHtml(status.toUpperCase()) + (selectedMeeting.back_dated ? " — BACK-DATED" : "") + "</p>" +
+      "<p><strong>Status:</strong> " + escapeHtml(status.toUpperCase()) + "</p>" +
     "</div>" +
     '<section class="print-section"><h2>Attendance and quorum</h2>' +
       "<p><strong>Present:</strong> " + present.length + " · <strong>Late:</strong> " + late.length + " · <strong>Apologies:</strong> " + apologies.length + " · <strong>Absent:</strong> " + absent.length + "</p>" +
@@ -2265,10 +2263,6 @@ async function saveMeetingForm(event) {
     if (endTime && (endMinutes === null || startMinutes === null || endMinutes <= startMinutes)) {
       throw new Error("End time must be after the start time.");
     }
-    const past = isPastSchedule(date, startTime);
-    if (past && (!isMeetingOfficial() || !backDated)) {
-      throw new Error("This meeting is in the past. An official must select Back-date this meeting to record an old meeting.");
-    }
 
     if (saveButton) {
 
@@ -2295,7 +2289,6 @@ async function saveMeetingForm(event) {
       date: date,
       start_time: startTime,
       end_time: endTime || null,
-      back_dated: past ? backDated : false,
 
       venue:
         venue ||
@@ -3401,7 +3394,6 @@ export async function initPage() {
 
     if (dateInput) dateInput.value = getToday();
     if (startTimeInput) startTimeInput.value = "14:00";
-    if (backDatedGroup) backDatedGroup.hidden = !isMeetingOfficial();
 
 
     /*
