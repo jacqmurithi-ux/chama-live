@@ -607,10 +607,12 @@ async function loadMeetings() {
         }
       )
       .order(
+        "start_time",
+        { ascending: true, nullsFirst: false }
+      )
+      .order(
         "created_at",
-        {
-          ascending: false
-        }
+        { ascending: false }
       );
 
 
@@ -818,11 +820,11 @@ function renderMeetings() {
             <tr>
 
               <td class="meeting-date">
-                ${escapeHtml(
-                  formatDate(
-                    meeting.date
-                  )
-                )}
+                ${escapeHtml(formatDate(meeting.date))}
+                <span class="meeting-time">
+                  ${escapeHtml(formatMeetingDateTime(meeting.date, meeting.start_time, meeting.end_time).split(" · ").slice(1).join(" · ") || "Time not set")}
+                </span>
+                ${meeting.back_dated ? '<span class="meeting-backdated-badge">Back-dated</span>' : "")}
               </td>
 
 
@@ -992,9 +994,14 @@ function renderDetails() {
 
 
       <div class="meeting-meta-box">
-        <span class="meeting-meta-label">
-          Venue
+        <span class="meeting-meta-label">Date &amp; time</span>
+        <span class="meeting-meta-value">
+          ${escapeHtml(formatMeetingDateTime(selectedMeeting.date, selectedMeeting.start_time, selectedMeeting.end_time))}
         </span>
+      </div>
+
+      <div class="meeting-meta-box">
+        <span class="meeting-meta-label">Venue</span>
 
         <span class="meeting-meta-value">
           ${escapeHtml(
@@ -1323,15 +1330,9 @@ function renderAttendanceList() {
 
                   ${escapeHtml(
                     memberNumber
-                  )}
-
-                  ${
-                    ?.status
-                      ? " · : " +
-                        escapeHtml(
-                          .status
-                        )
-                      : " · : No response"
+                  )}                  ${row?.status
+                    ? " · " + attendanceLabel(row.status)
+                    : " · No response
                   }
 
                 </small>
@@ -1840,11 +1841,10 @@ async function saveMeetingForm(event) {
       ).trim();
 
 
-    const date =
-      String(
-        dateInput?.value ||
-        ""
-      ).trim();
+    const date = String(dateInput?.value || "").trim();
+    const startTime = String(startTimeInput?.value || "").trim();
+    const endTime = String(endTimeInput?.value || "").trim();
+    const backDated = Boolean(backDatedInput?.checked);
 
 
     const venue =
@@ -1870,13 +1870,20 @@ async function saveMeetingForm(event) {
 
 
     if (!date) {
-
-      throw new Error(
-        "Please select the meeting date."
-      );
-
+      throw new Error("Please select the meeting date.");
     }
-
+    if (!startTime) {
+      throw new Error("Please select the meeting start time.");
+    }
+    const startMinutes = timeToMinutes(startTime);
+    const endMinutes = timeToMinutes(endTime);
+    if (endTime && (endMinutes === null || startMinutes === null || endMinutes <= startMinutes)) {
+      throw new Error("End time must be after the start time.");
+    }
+    const past = isPastSchedule(date, startTime);
+    if (past && (!isMeetingOfficial() || !backDated)) {
+      throw new Error("This meeting is in the past. An official must select Back-date this meeting to record an old meeting.");
+    }
 
     if (saveButton) {
 
@@ -1900,8 +1907,10 @@ async function saveMeetingForm(event) {
       title:
         title,
 
-      date:
-        date,
+      date: date,
+      start_time: startTime,
+      end_time: endTime || null,
+      back_dated: past ? backDated : false,
 
       venue:
         venue ||
