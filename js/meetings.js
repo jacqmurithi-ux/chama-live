@@ -123,8 +123,6 @@ const titleInput =
 const dateInput = document.getElementById("meetingDate");
 const startTimeInput = document.getElementById("meetingStartTime");
 const endTimeInput = document.getElementById("meetingEndTime");
-const backDatedInput = document.getElementById("meetingBackDated");
-const backDatedGroup = document.getElementById("backDatedGroup");
 const meetingReadableView = document.getElementById("meetingReadableView");
 const meetingReadingToolbar = document.getElementById("meetingReadingToolbar");
 const meetingPrintDocument = document.getElementById("meetingPrintDocument");
@@ -493,8 +491,6 @@ function setCreateMode() {
   editingMeetingId = null;
   if (startTimeInput) startTimeInput.value = "14:00";
   if (endTimeInput) endTimeInput.value = "";
-  if (backDatedInput) backDatedInput.checked = false;
-  if (backDatedGroup) backDatedGroup.hidden = !isMeetingOfficial();
 
 
   if (saveButton) {
@@ -535,8 +531,6 @@ function setEditMode(meeting) {
   if (dateInput) dateInput.value = meeting.date || "";
   if (startTimeInput) startTimeInput.value = meeting.start_time || "";
   if (endTimeInput) endTimeInput.value = meeting.end_time || "";
-  if (backDatedInput) backDatedInput.checked = Boolean(meeting.back_dated);
-  if (backDatedGroup) backDatedGroup.hidden = !isMeetingOfficial();
 
   if (venueInput) {
     venueInput.value =
@@ -2237,8 +2231,6 @@ async function saveMeetingForm(event) {
     const date = String((dateInput && dateInput.value) || "").trim();
     const startTime = String((startTimeInput && startTimeInput.value) || "").trim();
     const endTime = String((endTimeInput && endTimeInput.value) || "").trim();
-    const backDated = Boolean((backDatedInput && backDatedInput.checked));
-
 
     const venue =
       String(
