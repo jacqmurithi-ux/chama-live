@@ -40,6 +40,11 @@
 import { supabase } from "./supabase.js";
 
 import {
+  getDemoMembers,
+  isDemoMode
+} from "./demo-client.js";
+
+import {
   requireAuth,
   getMyMember,
   getMyGroup
@@ -324,19 +329,19 @@ function setLoadingState(loading) {
 ========================================================= */
 
 async function loadMembers() {
+
+  if (isDemoMode()) {
+    members = await getDemoMembers();
+    visibleMembers = [...members];
+    return;
+  }
+
   if (!groupId) {
     throw new Error(
       "The current group could not be determined."
     );
   }
 
-  /*
-   * Direct canonical table read.
-   *
-   * This page previously depended on the legacy membersApi
-   * wrapper. The member directory does not need that wrapper
-   * and must not fail because of its cache/RPC layer.
-   */
   const { data, error } = await supabase
     .from("members")
     .select(
@@ -2726,13 +2731,33 @@ export async function init() {
     return;
   }
 
-  initialized =
-    true;
+  initialized = true;
 
   clearMessages();
   bindEvents();
 
   try {
+
+    if (isDemoMode()) {
+
+      const demo =
+        window.__CHAMA_LIVE_ADMIN_CONTEXT__;
+
+      currentUser = null;
+      currentMember = demo?.member || null;
+      currentGroup = demo?.group || null;
+
+      groupId = null;
+
+      if (byId("addMemberButton")) {
+        byId("addMemberButton").hidden = true;
+      }
+
+      await refreshMembers();
+      return;
+
+    }
+
     currentUser =
       await requireAuth();
 
@@ -2754,10 +2779,6 @@ export async function init() {
     }
 
     if (!isManager()) {
-      /*
-       * The admin shell normally redirects non-admin users,
-       * but keep the feature itself safe.
-       */
       window.location.replace(
         "member-dashboard.html"
       );
@@ -2769,6 +2790,7 @@ export async function init() {
     await refreshMembers();
 
   } catch (error) {
+
     console.error(
       "CHAMA LIVE: Members initializer failed:",
       error

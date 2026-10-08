@@ -87,6 +87,12 @@ import {
   getMyApplicationContext
 } from "./auth.js";
 
+import {
+  getDemoMembers,
+  getDemoMeetings,
+  isDemoMode
+} from "./demo-client.js";
+
 
 console.log(
   "CHAMA LIVE: dashboard.js loaded"
@@ -543,105 +549,100 @@ function statusClass(value) {
 
 async function loadContext() {
 
+  if (isDemoMode()) {
+
+    const demo =
+      window.__CHAMA_LIVE_ADMIN_CONTEXT__;
+
+    currentUser =
+      null;
+
+    currentMember =
+      demo?.member || null;
+
+    currentGroup =
+      demo?.group || null;
+
+    currentGroupId = null;
+
+    if (!currentMember || !currentGroup?.name) {
+      throw new Error(
+        "The demo group context could not be verified."
+      );
+    }
+
+    renderContext();
+    return;
+  }
+
   const context =
     await getMyApplicationContext();
 
-
   if (!context) {
-
     throw new Error(
       "Your authenticated group context could not be loaded."
     );
-
   }
-
 
   currentUser =
     context.user ||
     null;
 
-
   currentMember =
     context.member ||
     null;
-
 
   currentGroup =
     context.group ||
     null;
 
-
   if (!currentUser) {
-
     throw new Error(
       "You are not signed in."
     );
-
   }
 
-
   if (!currentMember) {
-
     throw new Error(
       "No member record is linked to this account."
     );
-
   }
 
-
   if (!currentMember.id) {
-
     throw new Error(
       "Your member record has no member ID."
     );
-
   }
 
-
   if (!currentMember.group_id) {
-
     throw new Error(
       "Your member record is not linked to a group."
     );
-
   }
-
 
   currentGroupId =
     currentMember.group_id;
 
-
   if (!currentGroup) {
-
     throw new Error(
       "Group information could not be found."
     );
-
   }
 
-
-  if (
-    !currentGroup.id
-  ) {
-
+  if (!currentGroup.id) {
     throw new Error(
       "Current group information has no group ID."
     );
-
   }
-
 
   if (
     String(currentGroup.id) !==
     String(currentGroupId)
   ) {
-
     throw new Error(
       "Current group context could not be verified."
     );
-
   }
-
 
   renderContext();
 
@@ -702,6 +703,11 @@ function renderContext() {
 
 async function loadMembers() {
 
+  if (isDemoMode()) {
+    members = await getDemoMembers();
+    return;
+  }
+
   const {
     data,
     error
@@ -731,11 +737,9 @@ async function loadMembers() {
         }
       );
 
-
   if (error) {
     throw error;
   }
-
 
   members =
     Array.isArray(data)
@@ -858,6 +862,11 @@ async function loadExpenses() {
 
 async function loadMeetings() {
 
+  if (isDemoMode()) {
+    meetings = await getDemoMeetings();
+    return;
+  }
+
   const {
     data,
     error
@@ -887,11 +896,9 @@ async function loadMeetings() {
         }
       );
 
-
   if (error) {
     throw error;
   }
-
 
   meetings =
     Array.isArray(data)
@@ -2410,6 +2417,34 @@ async function loadCanonicalAccounting() {
 
 async function loadData() {
 
+  if (isDemoMode()) {
+
+    members = [];
+    contributions = [];
+    expenses = [];
+    meetings = [];
+
+    supportCases = 0;
+    plans = 0;
+    activities = 0;
+    milestones = 0;
+    assets = 0;
+    contributionGoals = 0;
+
+    activeContributionTypes = [];
+    monthlyStatus = [];
+    canonicalSummary = null;
+    cumulativePositions = [];
+    cumulativePositionsComplete = false;
+
+    await Promise.all([
+      loadMembers(),
+      loadMeetings()
+    ]);
+
+    return;
+  }
+
   members = [];
   contributions = [];
   expenses = [];
@@ -2423,13 +2458,10 @@ async function loadData() {
   contributionGoals = 0;
 
   activeContributionTypes = [];
-
   monthlyStatus = [];
   canonicalSummary = null;
-
   cumulativePositions = [];
   cumulativePositionsComplete = false;
-
 
   await Promise.all([
     loadMembers(),
@@ -2444,25 +2476,12 @@ async function loadData() {
     loadContributionGoals()
   ]);
 
-
   await loadCanonicalAccounting();
 
-
-  /*
-     Active contribution definitions are deliberately loaded
-     separately from canonical accounting.
-
-     Failure to discover an optional read-only definition source
-     must not corrupt or replace canonical monthly accounting.
-  */
-
   try {
-
     await loadActiveContributionTypes();
-
   }
   catch (error) {
-
     console.warn(
       "CHAMA LIVE: Active contribution definition display unavailable.",
       error
@@ -2479,7 +2498,6 @@ async function loadData() {
     ];
 
     renderActiveContributionTypes();
-
   }
 
 }

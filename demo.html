@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex,nofollow">
+  <title>CHAMA LIVE — E2600 Demo</title>
+  <link rel="stylesheet" href="css/landing.css">
+</head>
+<body>
+  <main class="container" style="max-width:560px;padding:72px 16px;">
+    <section style="background:#fff;border:1px solid #e5ece8;border-radius:24px;padding:32px;box-shadow:0 18px 50px rgba(16,34,27,.08)">
+      <p style="margin:0 0 8px;font-weight:800;color:#0f8a5f;">CHAMA LIVE · E2600 DEMO</p>
+      <h1 id="demoTitle" style="margin:0 0 10px;">Explore the demo</h1>
+      <p id="demoIntro" style="color:#66756e;">Enter your details and verify your email. The demo is read-only and does not create a CHAMA LIVE account.</p>
+
+      <form id="demoRequestForm" style="margin-top:24px;">
+        <label for="visitorName">Name</label>
+        <input id="visitorName" name="name" required maxlength="100" autocomplete="name" style="display:block;width:100%;margin:6px 0 16px;padding:12px;border:1px solid #dfe9e4;border-radius:10px;">
+
+        <label for="visitorEmail">Email</label>
+        <input id="visitorEmail" name="email" type="email" required maxlength="254" autocomplete="email" style="display:block;width:100%;margin:6px 0 16px;padding:12px;border:1px solid #dfe9e4;border-radius:10px;">
+
+        <label for="visitorPhone">Phone <span style="color:#77847e;">(optional)</span></label>
+        <input id="visitorPhone" name="phone" maxlength="40" autocomplete="tel" style="display:block;width:100%;margin:6px 0 16px;padding:12px;border:1px solid #dfe9e4;border-radius:10px;">
+
+        <button id="requestCodeButton" type="submit" style="width:100%;padding:13px;border:0;border-radius:10px;background:#0f8a5f;color:#fff;font-weight:700;cursor:pointer;">Send verification code</button>
+      </form>
+
+      <form id="demoVerifyForm" hidden style="margin-top:24px;">
+        <label for="verificationCode">Verification code</label>
+        <input id="verificationCode" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required style="display:block;width:100%;margin:6px 0 16px;padding:12px;border:1px solid #dfe9e4;border-radius:10px;letter-spacing:6px;text-align:center;font-size:1.25rem;">
+        <button id="verifyCodeButton" type="submit" style="width:100%;padding:13px;border:0;border-radius:10px;background:#0f8a5f;color:#fff;font-weight:700;cursor:pointer;">Verify and enter demo</button>
+      </form>
+
+      <p id="demoMessage" role="status" aria-live="polite" style="margin:18px 0 0;color:#66756e;"></p>
+      <p style="margin:20px 0 0;font-size:.78rem;color:#77847e;">Demo access is read-only. Your verification session expires automatically.</p>
+    </section>
+  </main>
+  <script type="module" src="js/demo-entry.js"></script>
+</body>
+</html>
