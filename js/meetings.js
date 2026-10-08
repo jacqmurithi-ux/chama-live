@@ -94,10 +94,8 @@ const ATTENDANCE_STATUS_LABELS = Object.freeze({
 });
 
 
-const ATTENDANCE_RECORDING_ROLES = Object.freeze([
-  "admin",
-  "secretary"
-]);
+const ATTENDANCE_RECORDING_ROLES = Object.freeze(["admin","secretary"]);
+const MEETING_OFFICIAL_ROLES = Object.freeze(["admin","secretary","chairperson"]);
 
 
 /* =========================================================
@@ -116,8 +114,19 @@ const form =
 const titleInput =
   document.getElementById("title");
 
-const dateInput =
-  document.getElementById("meetingDate");
+const dateInput = document.getElementById("meetingDate");
+const startTimeInput = document.getElementById("meetingStartTime");
+const endTimeInput = document.getElementById("meetingEndTime");
+const backDatedInput = document.getElementById("meetingBackDated");
+const backDatedGroup = document.getElementById("backDatedGroup");
+const meetingReadableView = document.getElementById("meetingReadableView");
+const meetingReadingToolbar = document.getElementById("meetingReadingToolbar");
+const meetingPrintDocument = document.getElementById("meetingPrintDocument");
+const meetingRecordEditor = document.getElementById("meetingRecordEditor");
+const expandAllMeetings = document.getElementById("expandAllMeetings");
+const collapseAllMeetings = document.getElementById("collapseAllMeetings");
+const fullscreenMinutes = document.getElementById("fullscreenMinutes");
+const printMeetingMinutes = document.getElementById("printMeetingMinutes");
 
 const venueInput =
   document.getElementById("venue");
@@ -308,25 +317,47 @@ function formatDate(value) {
 }
 
 
+function getNairobiParts() {
+  const parts = new Intl.DateTimeFormat("en-CA", {timeZone:"Africa/Nairobi",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hour12:false}).formatToParts(new Date());
+  return Object.fromEntries(parts.filter(p => p.type !== "literal").map(p => [p.type,p.value]));
+}
+
 function getToday() {
+  const now = getNairobiParts();
+  return [now.year,now.month,now.day].join("-");
+}
 
-  const date =
-    new Date();
+function formatTime(value) {
+  if (!value) return "Time not set";
+  const parts = String(value).split(":").map(Number);
+  if (!Number.isInteger(parts[0]) || !Number.isInteger(parts[1])) return String(value);
+  return new Date(2000,0,1,parts[0],parts[1]).toLocaleTimeString("en-KE",{hour:"numeric",minute:"2-digit",hour12:true});
+}
 
+function formatMeetingDateTime(dateValue,startTime,endTime) {
+  const dateText = formatDate(dateValue);
+  if (!startTime) return dateText + " · Time not set";
+  return dateText + " · " + formatTime(startTime) + (endTime ? " – " + formatTime(endTime) : "");
+}
 
-  return [
-    date.getFullYear(),
+function timeToMinutes(value) {
+  if (!value) return null;
+  const parts = String(value).split(":").map(Number);
+  if (!Number.isInteger(parts[0]) || !Number.isInteger(parts[1])) return null;
+  return parts[0]*60 + parts[1];
+}
 
-    String(
-      date.getMonth() + 1
-    ).padStart(2, "0"),
+function isPastSchedule(dateValue,startTime) {
+  if (!dateValue || !startTime) return false;
+  const now = getNairobiParts();
+  const today = [now.year,now.month,now.day].join("-");
+  const currentMinutes = Number(now.hour)*60 + Number(now.minute);
+  if (dateValue < today) return true;
+  return dateValue === today && timeToMinutes(startTime) < currentMinutes;
+}
 
-    String(
-      date.getDate()
-    ).padStart(2, "0")
-
-  ].join("-");
-
+function isMeetingOfficial() {
+  return MEETING_OFFICIAL_ROLES.includes(String(currentMember?.role || "").trim().toLowerCase());
 }
 
 
@@ -440,9 +471,11 @@ function showError(error) {
 ========================================================= */
 
 function setCreateMode() {
-
-  editingMeetingId =
-    null;
+  editingMeetingId = null;
+  if (startTimeInput) startTimeInput.value = "14:00";
+  if (endTimeInput) endTimeInput.value = "";
+  if (backDatedInput) backDatedInput.checked = false;
+  if (backDatedGroup) backDatedGroup.hidden = !isMeetingOfficial();
 
 
   if (saveButton) {
@@ -480,12 +513,11 @@ function setEditMode(meeting) {
   }
 
 
-  if (dateInput) {
-    dateInput.value =
-      meeting.date || "";
-  }
-
-
+  if (dateInput) dateInput.value = meeting.date || "";
+  if (startTimeInput) startTimeInput.value = meeting.start_time || "14:00";
+  if (endTimeInput) endTimeInput.value = meeting.end_time || "";
+  if (backDatedInput) backDatedInput.checked = Boolean(meeting.back_dated);
+  if (backDatedGroup) backDatedGroup.hidden = !isMeetingOfficial();
 
   if (venueInput) {
     venueInput.value =
@@ -535,7 +567,10 @@ const MEETING_SELECT = `
   minutes,
   resolution,
   status,
-  created_at
+  created_at,
+  start_time,
+  end_time,
+  back_dated
 `;
 
 
