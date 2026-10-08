@@ -42,14 +42,6 @@ import {
   getMyMember,
   getMyGroup
 } from "./auth.js";
-import {
-  getDemoContext,
-  getDemoGroup,
-  getDemoMembers,
-  getDemoMeetings,
-  isDemoMode
-} from "./demo-client.js";
-
 
 /* =========================================================
    CONSTANTS
@@ -322,70 +314,18 @@ function setStatus(message) {
    ========================================================= */
 
 async function loadContext() {
-  if (isDemoMode()) {
-    const demo = await getDemoContext();
-    const group = await getDemoGroup();
+  currentUser = await requireAuth();
 
-    if (!demo?.demo || !group?.name) {
-      throw new Error("DEMO_SESSION_REQUIRED");
-    }
-
-    currentUser = null;
-    currentMember = {
-      id: "demo-viewer",
-      name: demo.visitor_name || "Demo Visitor",
-      role: "viewer",
-      status: "active",
-      onboarding_status: "active"
-    };
-    currentGroup = group;
-
-  } else {
-    currentUser = await requireAuth();
-
-    if (!currentUser) {
-      throw new Error("AUTHENTICATION_REQUIRED");
-    }
-
-    currentMember = await getMyMember();
-
-    if (!currentMember) {
-      throw new Error("ACTIVE_GROUP_MEMBER_REQUIRED");
-    }
-
-    currentGroup = await getMyGroup();
-
-    if (!currentGroup) {
-      throw new Error("GROUP_CONTEXT_REQUIRED");
-    }
+  if (!currentUser) {
+    throw new Error("AUTHENTICATION_REQUIRED");
   }
 
-  const groupName =
-    currentGroup.name ||
-    currentGroup.group_name ||
-    currentGroup.title ||
-    "Group";
+  currentMember = await getMyMember();
+  currentGroup = await getMyGroup();
 
-  const memberName =
-    currentMember.name ||
-    currentMember.full_name ||
-    "Member";
-
-  setText("groupName", groupName);
-  setText("groupLabel", groupName);
-  setText("groupNameLabel", groupName);
-  setText("reportGroupName", groupName);
-  setText("currentGroupName", groupName);
-  setText("printGroupName", groupName);
-
-  setText("memberName", memberName);
-  setText("currentMemberName", memberName);
-
-  return {
-    user: currentUser,
-    member: currentMember,
-    group: currentGroup
-  };
+  if (!currentMember?.group_id || !currentGroup?.id) {
+    throw new Error("GROUP_CONTEXT_REQUIRED");
+  }
 }
 
 
@@ -394,12 +334,6 @@ async function loadContext() {
    ========================================================= */
 
 async function loadMembers() {
-  if (isDemoMode()) {
-    members = safeArray(await getDemoMembers());
-    populateMemberFilter();
-    return members;
-  }
-
   const groupId = currentGroup?.id;
 
   if (!groupId) {
@@ -542,11 +476,6 @@ async function loadExpenses() {
    ========================================================= */
 
 async function loadMeetings() {
-  if (isDemoMode()) {
-    meetings = safeArray(await getDemoMeetings());
-    return meetings;
-  }
-
   const groupId = currentGroup?.id;
 
   if (!groupId) {
@@ -4749,80 +4678,6 @@ function renderVisualInsights(
 }
 
 
-function renderDemoReport() {
-  const activeMembers =
-    members.filter(member => {
-      const status = lower(member.status);
-      return !status || status === "active" || status === "approved";
-    }).length;
-
-  setText("totalContributions", "—");
-  setText("approvedExpenses", "—");
-  setText("currentBalance", "—");
-  setText("pendingExpenses", "—");
-  setText("rejectedExpenses", "—");
-  setText("activeMembers", formatNumber(activeMembers));
-
-  setText("reportApplied", "—");
-  setText("reportOutstanding", "—");
-  setText("reportCarryForward", "—");
-  setText("reportCollectionRate", "—");
-  setText("reportCumulativeArrears", "—");
-  setText("reportCumulativeCredit", "—");
-
-  setText("reportOutputTitle", "E2600 Demo — financial reports unavailable");
-  setText(
-    "reportOutputSubtitle",
-    "Financial/accounting data is not part of the current E2600 session fixture."
-  );
-
-  setHTML(
-    "reportOutput",
-    `
-      <div class="report-empty">
-        <strong>Financial reporting is unavailable in the E2600 Demo.</strong>
-        <p>
-          This session contains approved member and meeting projections only.
-          No accounting values are fabricated and no production accounting
-          client or RPC is used.
-        </p>
-      </div>
-    `
-  );
-
-  setHTML(
-    "customContributionMemberStatusRows",
-    `
-      <tr>
-        <td colspan="6" class="report-empty">
-          Financial/accounting data is unavailable in the E2600 Demo.
-        </td>
-      </tr>
-    `
-  );
-
-  const customSelect = $("customContributionMemberStatusSelect");
-  if (customSelect) {
-    customSelect.innerHTML =
-      '<option value="">E2600 Demo — accounting unavailable</option>';
-    customSelect.disabled = true;
-  }
-
-  renderContributionBreakdown([]);
-  renderExpenseBreakdown([]);
-  renderContributionEntries([]);
-  renderExpenseEntries([]);
-
-  renderMeetings(meetings);
-
-  setStatus(
-    `E2600 Demo ready • ${formatNumber(members.length)} members • ${formatNumber(
-      meetings.length
-    )} meetings • financial accounting unavailable`
-  );
-}
-
-
 /* =========================================================
    RENDER REPORT
 ========================================================= */
@@ -4962,11 +4817,6 @@ function renderSelectedReport(
    ========================================================= */
 
 async function generateReport() {
-  if (isDemoMode()) {
-    renderDemoReport();
-    return;
-  }
-
   clearError();
 
   try {
@@ -5258,11 +5108,6 @@ function reportFilename(extension) {
 }
 
 function exportCSV() {
-  if (isDemoMode()) {
-    setStatus("CSV export is unavailable for the E2600 Demo because financial accounting is not part of this session fixture.");
-    return;
-  }
-
   try {
     const contributionRows =
       filteredContributions();
@@ -5499,11 +5344,6 @@ function excelEscape(value) {
 }
 
 function exportExcel() {
-  if (isDemoMode()) {
-    setStatus("Excel export is unavailable for the E2600 Demo because financial accounting is not part of this session fixture.");
-    return;
-  }
-
   try {
     const contributionRows =
       filteredContributions();
@@ -6096,30 +5936,6 @@ export async function initPage() {
     bindEvents();
 
     await loadContext();
-
-    if (isDemoMode()) {
-      await Promise.all([
-        loadMembers(),
-        loadMeetings()
-      ]);
-
-      contributions = [];
-      expenses = [];
-      canonicalStatus = [];
-      canonicalSummary = null;
-      cumulativePositions = [];
-      cumulativePositionsLoaded = false;
-      activeCustomContributions = [];
-      customMemberStatusRows = [];
-      selectedCustomContributionId = null;
-
-      renderDemoReport();
-
-      console.log(
-        "[Reports] E2600 Demo ready — candidate member/meeting projection only."
-      );
-      return;
-    }
 
     await Promise.all([
       loadMembers(),
