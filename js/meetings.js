@@ -3250,13 +3250,9 @@ export async function initPage() {
 
     setCreateMode();
 
-
-    if (dateInput) {
-
-      dateInput.value =
-        getToday();
-
-    }
+    if (dateInput) dateInput.value = getToday();
+    if (startTimeInput) startTimeInput.value = "14:00";
+    if (backDatedGroup) backDatedGroup.hidden = !isMeetingOfficial();
 
 
     /*
