@@ -26,13 +26,6 @@
 import { supabase } from "./supabase.js";
 
 import {
-  getDemoMeetings,
-  getDemoMembers,
-  getDemoAttendance,
-  isDemoMode
-} from "./demo-client.js";
-
-import {
   requireAuth,
   getMyMember
 } from "./auth.js";
@@ -528,11 +521,6 @@ function setEditMode(meeting) {
 ========================================================= */
 
 async function loadMeetings() {
-
-  if (isDemoMode()) {
-    meetings = await getDemoMeetings();
-    return;
-  }
 
   if (!groupId) {
     throw new Error(
@@ -1152,188 +1140,7 @@ async function loadMeetingAttendance() {
     return;
   }
 
-  if (isDemoMode()) {
-
-    const [memberRows, attendance] =
-      await Promise.all([
-        getDemoMembers(),
-        getDemoAttendance()
-      ]);
-
-    attendanceMembers =
-      memberRows.filter(
-        member =>
-          String(member.status || "").toLowerCase() === "active"
-      );
-
-    const rowsForMeeting =
-      attendance.filter(
-        row =>
-          String(row.meeting_id) ===
-          String(selectedMeeting.id)
-      );
-
-    attendanceRsvps =
-      new Map();
-
-    attendanceRows =
-      new Map(
-        rowsForMeeting.map(
-          row => [row.member_id, row]
-        )
-      );
-
-    meetingAttendance.hidden = false;
-
-    if (meetingRsvpSummary) {
-      meetingRsvpSummary.hidden = true;
-    }
-
-    if (saveMeetingAttendance) {
-      saveMeetingAttendance.hidden = true;
-      saveMeetingAttendance.disabled = true;
-    }
-
-    renderAttendanceList();
-    return;
-  }
-
-  if (!groupId) {
-    return;
-  }
-
-  const role =
-    String(currentMember?.role || "")
-      .trim()
-      .toLowerCase();
-
-  const canRecordAttendance =
-    ["admin", "chairperson", "secretary", "treasurer"]
-      .includes(role);
-
-  if (!canRecordAttendance) {
-    meetingAttendance.hidden = true;
-
-    if (meetingRsvpSummary) {
-      meetingRsvpSummary.hidden = true;
-    }
-
-    return;
-  }
-
-  if (normalizeStatus(selectedMeeting.status) === "cancelled") {
-    meetingAttendance.hidden = true;
-    if (meetingRsvpSummary) meetingRsvpSummary.hidden = true;
-    return;
-  }
-
-  const [
-    membersResult,
-    rsvpResult,
-    attendanceResult
-  ] = await Promise.all([
-    supabase
-      .from("members")
-      .select("id, name, member_number, membership_number")
-      .eq("group_id", groupId)
-      .eq("status", "active")
-      .eq("onboarding_status", "active")
-      .order("name", { ascending: true }),
-
-    supabase
-      .from("meeting_rsvps")
-      .select("member_id, status")
-      .eq("meeting_id", selectedMeeting.id),
-
-    supabase
-      .from("attendance")
-      .select("member_id, status")
-      .eq("meeting_id", selectedMeeting.id)
-  ]);
-
-  if (membersResult.error) throw membersResult.error;
-  if (rsvpResult.error) throw rsvpResult.error;
-  if (attendanceResult.error) throw attendanceResult.error;
-
-  attendanceMembers =
-    Array.isArray(membersResult.data)
-      ? membersResult.data
-      : [];
-
-  attendanceRsvps =
-    new Map(
-      (rsvpResult.data || [])
-        .map(row => [row.member_id, row])
-    );
-
-  attendanceRows =
-    new Map(
-      (attendanceResult.data || [])
-        .map(row => [row.member_id, row])
-    );
-
-  meetingAttendance.hidden = false;
-
-  renderAttendanceList();
-}
-
-
-async function saveAttendance() {
-
-  if (!selectedMeeting) {
-    return;
-  }
-
-  if (!attendanceMembers.length) {
-    throw new Error("There are no active members to record.");
-  }
-
-  saveMeetingAttendance.disabled = true;
-  saveMeetingAttendance.textContent = "Saving Attendance...";
-
-  try {
-
-    const rows =
-      attendanceMembers.map(member => {
-
-        const checkbox =
-          meetingAttendanceList.querySelector(
-            `input[data-attendance-member="${CSS.escape(member.id)}"]`
-          );
-
-        const statusSelect =
-          meetingAttendanceList.querySelector(
-            `select[data-attendance-status="${CSS.escape(member.id)}"]`
-          );
-
-        const defaultInput =
-          meetingAttendanceList.querySelector(
-            `input[data-attendance-default="${CSS.escape(member.id)}"]`
-          );
-
-        let status =
-          "absent";
-
-        if (checkbox?.checked) {
-          status =
-            statusSelect?.value === "late"
-              ? "late"
-              : "present";
-        }
-        else if (
-          defaultInput?.value === "apology"
-        ) {
-          status = "apology";
-        }
-
-        return {
-          meeting_id: selectedMeeting.id,
-          member_id: member.id,
-          status
-        };
-      });
-
-    const { error } =
+  const { error } =
       await supabase
         .from("attendance")
         .upsert(
@@ -2394,40 +2201,8 @@ export async function initPage() {
       "Loading meetings..."
     );
 
-    if (isDemoMode()) {
+    await requireAuth();
 
-      const demo =
-        window.__CHAMA_LIVE_ADMIN_CONTEXT__;
-
-      currentMember =
-        demo?.member || null;
-
-      groupId = null;
-
-      setCreateMode();
-
-      if (form) {
-        form.hidden = true;
-      }
-
-      [
-        editMeeting,
-        completeMeeting,
-        cancelMeeting,
-        restoreMeeting,
-        deleteMeeting,
-        saveMinutes
-      ].forEach(
-        button => {
-          if (button) {
-            button.hidden = true;
-          }
-        }
-      );
-
-    } else {
-
-      await requireAuth();
 
       currentMember =
         await getMyMember();

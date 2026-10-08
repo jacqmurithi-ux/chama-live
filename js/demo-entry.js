@@ -150,7 +150,7 @@ verifyForm.addEventListener("submit", async (event) => {
     );
 
     window.location.replace(
-      data.redirect || "/dashboard.html"
+      "/demo-dashboard.html"
     );
 
   } catch (error) {

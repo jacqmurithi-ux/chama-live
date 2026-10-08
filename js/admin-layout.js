@@ -80,13 +80,6 @@ import {
   signOut
 } from "./auth.js";
 
-import {
-  getDemoContext,
-  getDemoGroup,
-  isDemoMode,
-  clearDemoSession
-} from "./demo-client.js";
-
 
 /* =========================================================
    ADMIN ROLES
@@ -252,7 +245,6 @@ const PAGE_SCRIPTS = {
 let bootStarted = false;
 
 let context = null;
-let demoMode = false;
 
 
 /* =========================================================
@@ -279,8 +271,7 @@ function getCurrentPage() {
 function isAdminAccount() {
 
   return (
-    demoMode ||
-    context?.isOwner === true ||
+        context?.isOwner === true ||
     ADMIN_ROLES.has(
       String(
         context?.role || ""
@@ -957,12 +948,6 @@ function bindAdminLogout() {
 
       try {
 
-        if (demoMode) {
-          clearDemoSession();
-          window.location.replace("demo.html");
-          return;
-        }
-
         await signOut();
 
       }
@@ -1006,39 +991,6 @@ function bindAdminLogout() {
     }
   );
 
-}
-
-
-/* =========================================================
-   DEMO PORTAL CHROME
-========================================================= */
-
-function renderDemoPortalChrome() {
-  document.documentElement.dataset.chamaLiveDemo = "true";
-  document.body.classList.add("chama-demo-mode");
-
-  if (document.getElementById("chamaDemoBanner")) return;
-
-  const banner = document.createElement("div");
-  banner.id = "chamaDemoBanner";
-  banner.setAttribute("role", "status");
-  banner.innerHTML =
-    '<strong>E2600 Demo</strong>' +
-    '<span>Session-only demo. No real-group data is being changed.</span>' +
-    '<button type="button" id="chamaDemoReset">Exit demo</button>';
-
-  const style = document.createElement("style");
-  style.textContent =
-    "#chamaDemoBanner{position:sticky;top:0;z-index:30000;display:flex;align-items:center;gap:10px;min-height:38px;padding:7px 14px;background:#ecfdf5;border-bottom:1px solid #a7f3d0;color:#065f46;font:12px/1.35 Inter,system-ui,sans-serif}" +
-    "#chamaDemoBanner span{opacity:.85}" +
-    "#chamaDemoReset{margin-left:auto;border:1px solid #86efac;border-radius:8px;background:#fff;color:#065f46;padding:5px 9px;font-weight:700;cursor:pointer}";
-  document.head.appendChild(style);
-  document.body.prepend(banner);
-
-  document.getElementById("chamaDemoReset")?.addEventListener("click", () => {
-    clearDemoSession();
-    window.location.replace("demo.html");
-  });
 }
 
 
@@ -1618,15 +1570,6 @@ async function loadCurrentPageFeature() {
   const page =
     getCurrentPage();
 
-  /*
-   * Demo sessions use the same deployed CHAMA LIVE page shell,
-   * but feature modules must be allowed to run so their approved
-   * demo-client read paths can render the session sandbox.
-   *
-   * Each demo-aware feature decides which reads are permitted.
-   * A demo token is never passed to the production Supabase client
-   * as an authorization credential.
-   */
   const entry =
     PAGE_SCRIPTS[page];
 
@@ -1950,90 +1893,22 @@ export async function boot() {
 
     /* -------------------------------------------------------
        APPLICATION CONTEXT
-       -------------------------------------------------------
-       A valid demo token is an alternate identity boundary.
-       It never creates a Supabase Auth user.
     ------------------------------------------------------- */
 
     stage =
       "application context";
 
-    if (isDemoMode()) {
-
-      stage =
-        "demo session";
-
-      try {
-
-        const demo =
-          await getDemoContext();
-
-        if (!demo?.demo || !demo?.group_name) {
-          throw new Error(
-            "The demo session is invalid or expired."
-          );
-        }
-
-        const group =
-          await getDemoGroup();
-
-        if (!group?.name) {
-          throw new Error(
-            "The demo group could not be loaded."
-          );
-        }
-
-        context = {
-          demo: true,
-          user: null,
-          member: {
-            id: "demo-viewer",
-            name: demo.visitor_name || "Demo Visitor",
-            role: "viewer",
-            status: "active",
-            onboarding_status: "active"
-          },
-          group,
-          isOwner: false,
-          role: "viewer"
-        };
-
-        demoMode = true;
-
-      } catch (demoError) {
-
-        console.warn(
-          "CHAMA LIVE: demo session rejected; clearing demo token.",
-          demoError
-        );
-
-        clearDemoSession();
-
-        throw new Error(
-          "Your CHAMA LIVE demo session is invalid or has expired."
-        );
-
-      }
-
-    } else {
-
-      context =
-        await getMyApplicationContext();
-
-    }
-
+    context =
+      await getMyApplicationContext();
 
     if (
-      !demoMode &&
-      (!context?.member?.group_id || !context?.user)
+      !context?.member?.group_id ||
+      !context?.user
     ) {
-
       throw new Error(
         "Your account is not linked to a group."
       );
-
     }
-
 
     context.role =
       String(
@@ -2134,10 +2009,6 @@ export async function boot() {
     renderMobileNavigation();
 
     renderMobileBottomNavigation();
-
-    if (demoMode) {
-      renderDemoPortalChrome();
-    }
 
     bindAdminLogout();
 
