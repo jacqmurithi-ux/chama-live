@@ -2991,11 +2991,6 @@ function setupButtons() {
       }
 
 
-      if (meetingTypeInput) {
-        meetingTypeInput.value =
-          "regular";
-      }
-
 
       setCreateMode();
 
