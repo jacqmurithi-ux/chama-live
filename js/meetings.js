@@ -824,7 +824,7 @@ function renderMeetings() {
                 <span class="meeting-time">
                   ${escapeHtml(formatMeetingDateTime(meeting.date, meeting.start_time, meeting.end_time).split(" · ").slice(1).join(" · ") || "Time not set")}
                 </span>
-                ${meeting.back_dated ? '<span class="meeting-backdated-badge">Back-dated</span>' : "")}
+                ${meeting.back_dated ? '<span class="meeting-backdated-badge">Back-dated</span>' : ""}
               </td>
 
 
