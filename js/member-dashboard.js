@@ -1599,157 +1599,65 @@ function renderRecentGroupExpenses() {
    MEETINGS
    ========================================================= */
 
-async async function loadMeetings() {
+async function loadMeetings() {
   const container = byId("memberMeetings");
-
   if (!container) return;
 
-  const { data, error } = await supabase
-    .from("meetings")
-    .select("id, date, start_time, end_time, title, venue, agenda, type, status")
-    .eq("group_id", groupId)
-    .gte("date", todayIso())
-    .eq("status", "upcoming")
-    .order("date", { ascending: true })
-    .order("start_time", { ascending: true, nullsFirst: false })
-    .limit(5);
+  const [{ data: upcoming, error: upcomingError }, { data: completed, error: completedError }] = await Promise.all([
+    supabase.from("meetings").select("id,date,start_time,end_time,title,venue,agenda,status").eq("group_id",groupId).eq("status","upcoming").order("date",{ascending:true}).order("start_time",{ascending:true,nullsFirst:false}).limit(5),
+    supabase.from("meetings").select("id,date,start_time,end_time,title,venue,agenda,status").eq("group_id",groupId).eq("status","completed").order("date",{ascending:false}).order("start_time",{ascending:false,nullsFirst:false}).limit(5)
+  ]);
+  if (upcomingError) throw upcomingError;
+  if (completedError) throw completedError;
 
-  if (error) throw error;
-
-  const meetings = Array.isArray(data) ? data : [];
-
-  if (!meetings.length) {
-    container.innerHTML = "<p>No upcoming meetings recorded.</p>";
-    return;
+  const upcomingMeetings = Array.isArray(upcoming) ? upcoming : [];
+  const completedMeetings = Array.isArray(completed) ? completed : [];
+  const completedIds = completedMeetings.map(m => m.id);
+  let documents = [];
+  if (completedIds.length) {
+    const { data, error } = await supabase.from("meeting_documents").select("meeting_id,file_path,file_name,file_type,version,uploaded_at").eq("group_id",groupId).in("meeting_id",completedIds).is("replaced_at",null);
+    if (error) throw error;
+    documents = Array.isArray(data) ? data : [];
   }
-
-  const summaries = await Promise.all(
-    meetings.map(async meeting => {
-      const result = await supabase.rpc("get_meeting_rsvp_summary", {
-        p_meeting_id: meeting.id
-      });
-
-      if (result.error) throw result.error;
-
-      return result.data?.[0] || {
-        attending_count: 0,
-        apology_count: 0,
-        my_status: null
-      };
-    })
-  );
+  const docByMeeting = new Map(documents.map(d => [String(d.meeting_id), d]));
 
   const formatTime = value => {
-    if (!value) return "";
-    const parts = String(value).split(":");
-    const hour = Number(parts[0]);
-    const minute = parts[1] || "00";
+    if (!value) return "Time not set";
+    const p = String(value).split(":"); const hour = Number(p[0]); const minute = p[1] || "00";
     if (!Number.isFinite(hour)) return String(value);
-    const suffix = hour >= 12 ? "PM" : "AM";
-    const displayHour = hour % 12 || 12;
-    return displayHour + ":" + minute + " " + suffix;
+    return (hour % 12 || 12) + ":" + minute + " " + (hour >= 12 ? "PM" : "AM");
   };
+  const agendaText = agenda => Array.isArray(agenda) && agenda.length ? agenda.filter(Boolean).join(" · ") : "No agenda recorded";
+  const dateTime = m => escapeHtml(formatDate(m.date) + " · " + formatTime(m.start_time) + (m.end_time ? " – " + formatTime(m.end_time) : ""));
 
-  const formatType = value => ({
-    regular: "Regular",
-    AGM: "AGM",
-    special: "Special",
-    committee: "Committee"
-  }[String(value || "regular")] || "Meeting");
-
-  const agendaText = agenda => {
-    const items = Array.isArray(agenda)
-      ? agenda.filter(Boolean)
-      : [];
-    return items.length ? items.join(" · ") : "No agenda recorded";
-  };
-
-  container.innerHTML = meetings.map((meeting, index) => {
-    const summary = summaries[index] || {};
-    const myStatus = summary.my_status || "";
-    const attending = Number(summary.attending_count || 0);
-    const apologies = Number(summary.apology_count || 0);
-
-    return `
-      <div class="member-dashboard-list-item member-meeting-item">
-        <div>
-          <strong>${escapeHtml(meeting.title || "Meeting")}</strong>
-          <small>
-            ${escapeHtml(formatDate(meeting.date))}
-            · ${escapeHtml(formatTime(meeting.start_time) || "Time not specified")}
-            ${meeting.end_time ? `– ${escapeHtml(formatTime(meeting.end_time))}` : ""}
-            ${meeting.venue ? ` · ${escapeHtml(meeting.venue)}` : ""}
-            · ${escapeHtml(formatType(meeting.type))}
-          </small>
-          <small>
-            ${escapeHtml(agendaText(meeting.agenda))}
-          </small>
-          <small>
-            Attending: ${attending} · Apologies: ${apologies}
-          </small>
-        </div>
-
-        <div class="member-meeting-rsvp-actions">
-          <button
-            type="button"
-            class="btn btn-secondary"
-            data-meeting-rsvp="attending"
-            data-meeting-id="${escapeHtml(meeting.id)}"
-            ${myStatus === "attending" ? "disabled" : ""}
-          >
-            ${myStatus === "attending" ? "I’ll attend ✓" : "I’ll attend"}
-          </button>
-
-          <button
-            type="button"
-            class="btn btn-secondary"
-            data-meeting-rsvp="apology"
-            data-meeting-id="${escapeHtml(meeting.id)}"
-            ${myStatus === "apology" ? "disabled" : ""}
-          >
-            ${myStatus === "apology" ? "Apology sent ✓" : "Send apology"}
-          </button>
-        </div>
-      </div>
-    `;
-  }).join("");
+  const upcomingHtml = upcomingMeetings.length ? upcomingMeetings.map(m => '<div class="member-dashboard-list-item member-meeting-item"><div><strong>' + escapeHtml(m.title || "Meeting") + '</strong><small>' + dateTime(m) + (m.venue ? " · " + escapeHtml(m.venue) : "") + '</small><small>' + escapeHtml(agendaText(m.agenda)) + '</small></div></div>').join("") : '<p>No upcoming meetings recorded.</p>';
+  const completedHtml = completedMeetings.length ? '<div class="member-meeting-completed-heading">Recent completed meetings</div>' + completedMeetings.map(m => { const d=docByMeeting.get(String(m.id)); return '<div class="member-dashboard-list-item member-meeting-item"><div><strong>' + escapeHtml(m.title || "Meeting") + '</strong><small>' + dateTime(m) + (m.venue ? " · " + escapeHtml(m.venue) : "") + '</small></div><div class="member-meeting-rsvp-actions">' + (d ? '<button type="button" class="btn btn-secondary" data-meeting-minutes="' + escapeHtml(m.id) + '">Minutes</button>' : '<span class="member-muted">Minutes not uploaded</span>') + '</div></div>'; }).join("") : "";
+  container.innerHTML = '<div>' + upcomingHtml + '</div>' + completedHtml + '<div id="memberMinutesViewer" hidden style="margin-top:16px;"></div>';
 
   container.onclick = async event => {
-    const button = event.target.closest("button[data-meeting-rsvp]");
-
-    if (!button || !container.contains(button)) return;
-
-    const meetingId = button.dataset.meetingId;
-    const status = button.dataset.meetingRsvp;
-
-    if (!meetingId || !["attending", "apology"].includes(status)) return;
-
+    const button = event.target.closest("button[data-meeting-minutes]");
+    if (!button) return;
+    const doc = docByMeeting.get(String(button.dataset.meetingMinutes));
+    if (!doc) return;
     button.disabled = true;
-
     try {
-      const { error: rsvpError } = await supabase
-        .from("meeting_rsvps")
-        .upsert(
-          {
-            meeting_id: meetingId,
-            member_id: memberId,
-            status,
-            responded_at: new Date().toISOString()
-          },
-          { onConflict: "meeting_id,member_id" }
-        );
-
-      if (rsvpError) throw rsvpError;
-
-      await loadMeetings();
-    }
-    catch (rsvpError) {
-      console.error("CHAMA LIVE meeting RSVP:", rsvpError);
-    }
-    finally {
-      if (button.isConnected) button.disabled = false;
-    }
+      const { data, error } = await supabase.storage.from("meeting-minutes").createSignedUrl(doc.file_path, 600);
+      if (error) throw error;
+      const viewer = byId("memberMinutesViewer");
+      if (!viewer) return;
+      if (doc.file_type === "application/pdf") {
+        viewer.innerHTML = '<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px;"><strong>' + escapeHtml(doc.file_name) + '</strong><button type="button" class="btn btn-secondary" data-close-member-minutes>Close</button></div><iframe title="Meeting minutes" src="' + escapeHtml(data.signedUrl) + '" style="display:block;width:100%;height:70vh;min-height:520px;border:1px solid #d0d5dd;border-radius:12px;background:#fff;"></iframe>';
+      } else {
+        const download = await supabase.storage.from("meeting-minutes").createSignedUrl(doc.file_path,600,{download:true});
+        if (download.error) throw download.error;
+        viewer.innerHTML = '<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;padding:14px;border:1px solid #d0d5dd;border-radius:12px;background:#f8fafc;"><strong>' + escapeHtml(doc.file_name) + '</strong><span><a class="btn btn-secondary" href="' + escapeHtml(download.data.signedUrl) + '" target="_blank" rel="noopener">Download</a> <button type="button" class="btn btn-secondary" data-close-member-minutes>Close</button></span></div>';
+      }
+      viewer.hidden = false;
+      viewer.scrollIntoView({behavior:"smooth",block:"nearest"});
+    } catch (error) { console.error("CHAMA LIVE meeting minutes:", error); }
+    finally { if (button.isConnected) button.disabled = false; }
   };
+  container.addEventListener("click", event => { if (event.target.closest("[data-close-member-minutes]")) { const viewer=byId("memberMinutesViewer"); if (viewer) { viewer.hidden=true; viewer.innerHTML=""; } } }, { once:false });
 }
 
 /* =========================================================
