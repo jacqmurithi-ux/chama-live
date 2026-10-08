@@ -1,4 +1,3 @@
-
 /* =========================================================
    CHAMA LIVE — MEETINGS
    E2600 CANDIDATE — STABLE MEETINGS + ATTENDANCE
@@ -30,6 +29,19 @@
    ---------------------------------------------------------
    meetings.group_id = currentMember.group_id
 
+   ATTENDANCE DATABASE CONTRACT
+   ---------------------------------------------------------
+   attendance:
+     meeting_id
+     member_id
+     status
+
+   status MUST be one of:
+     present
+     late
+     apology
+     absent
+
    ATTENDANCE SECURITY
    ---------------------------------------------------------
    Candidate RLS currently permits attendance recording by:
@@ -41,6 +53,15 @@
    is authorized to write attendance.
 
    No direct database schema changes are performed here.
+
+   IMPORTANT
+   ---------------------------------------------------------
+   RSVP data is reference information only.
+
+   RSVP NEVER determines or replaces actual attendance.
+
+   Actual attendance is explicitly selected by the authorized
+   officer for every active member.
 ========================================================= */
 
 import { supabase } from "./supabase.js";
@@ -62,6 +83,33 @@ console.log(
 
 const MAX_MINUTES_LENGTH = 10000;
 const MAX_RESOLUTION_LENGTH = 5000;
+
+
+/* =========================================================
+   ATTENDANCE STATES
+========================================================= */
+
+const ATTENDANCE_STATUSES = Object.freeze([
+  "present",
+  "late",
+  "apology",
+  "absent"
+]);
+
+
+const ATTENDANCE_STATUS_LABELS = Object.freeze({
+  present: "Present",
+  late: "Late",
+  apology: "Apology",
+  absent: "Absent"
+});
+
+
+const ATTENDANCE_RECORDING_ROLES = Object.freeze([
+  "chairperson",
+  "secretary",
+  "treasurer"
+]);
 
 
 /* =========================================================
@@ -241,19 +289,11 @@ function normalizeAttendanceStatus(value) {
       .toLowerCase();
 
 
-  if (
-    [
-      "present",
-      "late",
-      "apology",
-      "absent"
-    ].includes(status)
-  ) {
-    return status;
-  }
-
-
-  return "absent";
+  return ATTENDANCE_STATUSES.includes(
+    status
+  )
+    ? status
+    : "absent";
 
 }
 
@@ -781,12 +821,12 @@ function attendanceLabel(status) {
     normalizeAttendanceStatus(status);
 
 
-  return ({
-    present: "Present",
-    late: "Late",
-    apology: "Apology",
-    absent: "Absent"
-  })[normalized];
+  return (
+    ATTENDANCE_STATUS_LABELS[
+      normalized
+    ] ||
+    "Absent"
+  );
 
 }
 
@@ -1207,39 +1247,41 @@ function quorumRequired(memberCount) {
 function getAttendanceCounts() {
 
   const rows =
-    [...attendanceRows.values()]
-      .map(
-        row =>
-          normalizeAttendanceStatus(
-            row.status
-          )
-      );
+    [...attendanceRows.values()];
 
 
   return {
 
     present:
       rows.filter(
-        status =>
-          status === "present"
+        row =>
+          normalizeAttendanceStatus(
+            row.status
+          ) === "present"
       ).length,
 
     late:
       rows.filter(
-        status =>
-          status === "late"
+        row =>
+          normalizeAttendanceStatus(
+            row.status
+          ) === "late"
       ).length,
 
     apology:
       rows.filter(
-        status =>
-          status === "apology"
+        row =>
+          normalizeAttendanceStatus(
+            row.status
+          ) === "apology"
       ).length,
 
     absent:
       rows.filter(
-        status =>
-          status === "absent"
+        row =>
+          normalizeAttendanceStatus(
+            row.status
+          ) === "absent"
       ).length
 
   };
@@ -1292,12 +1334,16 @@ function renderAttendanceStats() {
       ).length;
 
 
+  const rsvpKnown =
+    rsvpAttending +
+    rsvpApologies;
+
+
   const noResponse =
     Math.max(
       0,
       total -
-      rsvpAttending -
-      rsvpApologies
+      rsvpKnown
     );
 
 
@@ -1390,16 +1436,27 @@ function renderAttendanceStats() {
 /* =========================================================
    RENDER ATTENDANCE LIST
    ---------------------------------------------------------
-   IMPORTANT:
-   The database has four authoritative attendance states.
-   Therefore the UI uses an explicit status selector.
+   AUTHORITATIVE MODEL
+   ---------------------------------------------------------
+   Every active member receives exactly one explicit
+   attendance selector.
 
-   This avoids interpreting "unchecked" as multiple possible
-   meanings and allows the officer to distinguish:
-     • Apology
-     • Absent
-     • Present
-     • Late
+   There is NO checkbox semantics.
+
+   There is NO automatic conversion from RSVP to attendance.
+
+   The officer explicitly records one of:
+
+     Present
+     Late
+     Apology
+     Absent
+
+   Existing database attendance, when present, is used.
+   Otherwise the initial UI state is Absent.
+
+   This does NOT write anything to the database until the
+   officer presses "Save Attendance".
 ========================================================= */
 
 function renderAttendanceList() {
@@ -1411,12 +1468,11 @@ function renderAttendanceList() {
 
   if (!attendanceMembers.length) {
 
-    meetingAttendanceList.innerHTML =
-      `
-        <p class="muted">
-          No active group members found.
-        </p>
-      `;
+    meetingAttendanceList.innerHTML = `
+      <p class="muted">
+        No active group members found.
+      </p>
+    `;
 
     renderAttendanceStats();
 
@@ -1427,144 +1483,146 @@ function renderAttendanceList() {
 
   meetingAttendanceList.innerHTML =
     attendanceMembers
-      .map(member => {
+      .map(
+        member => {
 
-        const row =
-          attendanceRows.get(
-            member.id
-          );
-
-
-        const currentStatus =
-          normalizeAttendanceStatus(
-            row?.status
-          );
-
-
-        const rsvp =
-          attendanceRsvps.get(
-            member.id
-          );
-
-
-        const memberNumber =
-          member.member_number ||
-          member.membership_number ||
-          "";
-
-
-        return `
-          <div
-            class="meeting-attendance-row"
-            data-attendance-row="${escapeHtml(
+          const row =
+            attendanceRows.get(
               member.id
-            )}"
-          >
-
-            <div>
-
-              <strong>
-                ${escapeHtml(
-                  member.name ||
-                  "Unnamed member"
-                )}
-              </strong>
+            );
 
 
-              <small class="muted">
-
-                ${escapeHtml(
-                  memberNumber
-                )}
-
-                ${
-                  rsvp?.status
-                    ? " · RSVP: " +
-                      escapeHtml(
-                        rsvp.status
-                      )
-                    : " · RSVP: No response"
-                }
-
-              </small>
-
-            </div>
+          const currentStatus =
+            normalizeAttendanceStatus(
+              row?.status
+            );
 
 
-            <label
-              class="meeting-attendance-status"
+          const rsvp =
+            attendanceRsvps.get(
+              member.id
+            );
+
+
+          const memberNumber =
+            member.member_number ||
+            member.membership_number ||
+            "";
+
+
+          return `
+            <div
+              class="meeting-attendance-row"
+              data-attendance-row="${escapeHtml(
+                member.id
+              )}"
             >
 
-              <span class="muted">
-                Status
-              </span>
+              <div>
+
+                <strong>
+                  ${escapeHtml(
+                    member.name ||
+                    "Unnamed member"
+                  )}
+                </strong>
 
 
-              <select
-                data-attendance-status="${escapeHtml(
-                  member.id
-                )}"
-                aria-label="Attendance status for ${escapeHtml(
-                  member.name ||
-                  "member"
-                )}"
+                <small class="muted">
+
+                  ${escapeHtml(
+                    memberNumber
+                  )}
+
+                  ${
+                    rsvp?.status
+                      ? " · RSVP: " +
+                        escapeHtml(
+                          rsvp.status
+                        )
+                      : " · RSVP: No response"
+                  }
+
+                </small>
+
+              </div>
+
+
+              <label
+                class="meeting-attendance-status"
               >
 
-                <option
-                  value="present"
-                  ${
-                    currentStatus === "present"
-                      ? "selected"
-                      : ""
-                  }
+                <span class="muted">
+                  Attendance
+                </span>
+
+
+                <select
+                  data-attendance-status="${escapeHtml(
+                    member.id
+                  )}"
+                  aria-label="Attendance status for ${escapeHtml(
+                    member.name ||
+                    "member"
+                  )}"
                 >
-                  Present
-                </option>
+
+                  <option
+                    value="present"
+                    ${
+                      currentStatus === "present"
+                        ? "selected"
+                        : ""
+                    }
+                  >
+                    Present
+                  </option>
 
 
-                <option
-                  value="late"
-                  ${
-                    currentStatus === "late"
-                      ? "selected"
-                      : ""
-                  }
-                >
-                  Late
-                </option>
+                  <option
+                    value="late"
+                    ${
+                      currentStatus === "late"
+                        ? "selected"
+                        : ""
+                    }
+                  >
+                    Late
+                  </option>
 
 
-                <option
-                  value="apology"
-                  ${
-                    currentStatus === "apology"
-                      ? "selected"
-                      : ""
-                  }
-                >
-                  Apology
-                </option>
+                  <option
+                    value="apology"
+                    ${
+                      currentStatus === "apology"
+                        ? "selected"
+                        : ""
+                    }
+                  >
+                    Apology
+                  </option>
 
 
-                <option
-                  value="absent"
-                  ${
-                    currentStatus === "absent"
-                      ? "selected"
-                      : ""
-                  }
-                >
-                  Absent
-                </option>
+                  <option
+                    value="absent"
+                    ${
+                      currentStatus === "absent"
+                        ? "selected"
+                        : ""
+                    }
+                  >
+                    Absent
+                  </option>
 
-              </select>
+                </select>
 
-            </label>
+              </label>
 
-          </div>
-        `;
+            </div>
+          `;
 
-      })
+        }
+      )
       .join("");
 
 
@@ -1598,20 +1656,19 @@ async function loadMeetingAttendance() {
 
 
   /*
-   * IMPORTANT:
-   * These are the roles actually authorized by the
-   * candidate attendance RLS policies.
+   * Match the currently verified candidate RLS contract.
    *
-   * Admin is deliberately excluded until/unless the
-   * backend policy is explicitly changed and tested.
+   * IMPORTANT:
+   * admin is intentionally NOT included.
+   *
+   * Do not expand this list unless the backend RLS policy
+   * is separately authorized, changed, and regression-tested.
    */
 
   const canRecordAttendance =
-    [
-      "chairperson",
-      "secretary",
-      "treasurer"
-    ].includes(role);
+    ATTENDANCE_RECORDING_ROLES.includes(
+      role
+    );
 
 
   if (!canRecordAttendance) {
@@ -1631,11 +1688,22 @@ async function loadMeetingAttendance() {
   }
 
 
-  if (
+  const meetingStatus =
     normalizeStatus(
       selectedMeeting.status
-    ) === "cancelled"
-  ) {
+    );
+
+
+  /*
+   * Attendance is an after-meeting workflow.
+   *
+   * The meeting must be completed before actual attendance
+   * is displayed for recording.
+   *
+   * Cancelled meetings do not accept attendance.
+   */
+
+  if (meetingStatus !== "completed") {
 
     meetingAttendance.hidden =
       true;
@@ -1751,7 +1819,15 @@ async function loadMeetingAttendance() {
           row =>
             [
               row.member_id,
-              row
+              {
+                member_id:
+                  row.member_id,
+
+                status:
+                  normalizeAttendanceStatus(
+                    row.status
+                  )
+              }
             ]
         )
     );
@@ -1783,18 +1859,53 @@ function collectAttendanceRows() {
   return attendanceMembers.map(
     member => {
 
+      const selector =
+        `select[data-attendance-status="${CSS.escape(
+          member.id
+        )}"]`;
+
+
       const statusSelect =
         meetingAttendanceList.querySelector(
-          `select[data-attendance-status="${CSS.escape(
-            member.id
-          )}"]`
+          selector
         );
+
+
+      if (!statusSelect) {
+
+        throw new Error(
+          `Attendance selector is missing for ${
+            member.name ||
+            "a group member"
+          }.`
+        );
+
+      }
 
 
       const status =
-        normalizeAttendanceStatus(
-          statusSelect?.value
+        String(
+          statusSelect.value ||
+          ""
+        )
+          .trim()
+          .toLowerCase();
+
+
+      if (
+        !ATTENDANCE_STATUSES.includes(
+          status
+        )
+      ) {
+
+        throw new Error(
+          `Invalid attendance status for ${
+            member.name ||
+            "a group member"
+          }.`
         );
+
+      }
 
 
       return {
@@ -1825,6 +1936,41 @@ async function saveAttendance() {
 
     throw new Error(
       "Select a meeting first."
+    );
+
+  }
+
+
+  if (
+    normalizeStatus(
+      selectedMeeting.status
+    ) !== "completed"
+  ) {
+
+    throw new Error(
+      "Complete the meeting before recording actual attendance."
+    );
+
+  }
+
+
+  const role =
+    String(
+      currentMember?.role ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+
+
+  if (
+    !ATTENDANCE_RECORDING_ROLES.includes(
+      role
+    )
+  ) {
+
+    throw new Error(
+      "You are not authorized to record attendance."
     );
 
   }
@@ -1871,15 +2017,15 @@ async function saveAttendance() {
     }
 
 
+    /*
+     * Every active member must have exactly one valid
+     * attendance state.
+     */
+
     const invalid =
       rows.find(
         row =>
-          ![
-            "present",
-            "late",
-            "apology",
-            "absent"
-          ].includes(
+          !ATTENDANCE_STATUSES.includes(
             row.status
           )
       );
@@ -1901,6 +2047,10 @@ async function saveAttendance() {
      *
      * Therefore upsert is used to create or replace the
      * official attendance record for each member.
+     *
+     * This writes ONLY to public.attendance.
+     *
+     * It does not touch accounting tables.
      */
 
     const {
@@ -1921,6 +2071,14 @@ async function saveAttendance() {
       throw error;
     }
 
+
+    /*
+     * Re-read the authoritative database state after saving.
+     *
+     * This ensures the displayed statistics are based on
+     * what the backend actually accepted, not merely the
+     * browser's local state.
+     */
 
     const {
       data,
@@ -1949,7 +2107,15 @@ async function saveAttendance() {
             row =>
               [
                 row.member_id,
-                row
+                {
+                  member_id:
+                    row.member_id,
+
+                  status:
+                    normalizeAttendanceStatus(
+                      row.status
+                    )
+                }
               ]
           )
       );
@@ -2385,6 +2551,21 @@ function viewMeeting(id) {
     null;
 
 
+  /*
+   * Reset attendance state before loading the newly selected
+   * meeting. This prevents one meeting's records from
+   * temporarily appearing against another meeting.
+   */
+
+  attendanceMembers = [];
+
+  attendanceRsvps =
+    new Map();
+
+  attendanceRows =
+    new Map();
+
+
   renderDetails();
 
 
@@ -2477,6 +2658,26 @@ async function updateMeetingStatus(
 
   selectedMeeting =
     data;
+
+
+  /*
+   * Attendance becomes available immediately after the
+   * meeting is marked completed.
+   */
+
+  if (
+    newStatus !== "completed"
+  ) {
+
+    attendanceMembers = [];
+
+    attendanceRsvps =
+      new Map();
+
+    attendanceRows =
+      new Map();
+
+  }
 
 
   await loadMeetings();
@@ -2706,6 +2907,15 @@ async function removeMeeting() {
     null;
 
 
+  attendanceMembers = [];
+
+  attendanceRsvps =
+    new Map();
+
+  attendanceRows =
+    new Map();
+
+
   await loadMeetings();
 
   renderMetrics();
@@ -2859,8 +3069,14 @@ function setupButtons() {
 
 
   /*
-   * Attendance now uses an explicit four-state selector.
-   * This means there is no checkbox interpretation ambiguity.
+   * =======================================================
+   * EXPLICIT FOUR-STATE ATTENDANCE
+   * =======================================================
+   *
+   * Changing a selector updates local state only.
+   *
+   * Nothing is written to Supabase until the officer presses
+   * "Save Attendance".
    */
 
   meetingAttendanceList?.addEventListener(
@@ -2882,20 +3098,53 @@ function setupButtons() {
         select.dataset.attendanceStatus;
 
 
+      if (!memberId) {
+        return;
+      }
+
+
       const status =
-        normalizeAttendanceStatus(
-          select.value
+        String(
+          select.value ||
+          ""
+        )
+          .trim()
+          .toLowerCase();
+
+
+      if (
+        !ATTENDANCE_STATUSES.includes(
+          status
+        )
+      ) {
+
+        showError(
+          new Error(
+            "Invalid attendance status selected."
+          )
         );
+
+        return;
+
+      }
 
 
       /*
-       * Keep the local state synchronized so the statistics
-       * update immediately before saving.
+       * Preserve any existing row information while changing
+       * only its authoritative attendance status.
        */
+
+      const existing =
+        attendanceRows.get(
+          memberId
+        );
+
 
       attendanceRows.set(
         memberId,
         {
+          ...(existing || {}),
+
           meeting_id:
             selectedMeeting?.id,
 
@@ -3203,6 +3452,7 @@ export async function initPage() {
 
     /*
      * Client-side limits.
+     *
      * These mirror the agreed application limits without
      * requiring a database schema change.
      */
