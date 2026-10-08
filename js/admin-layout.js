@@ -1571,15 +1571,6 @@ async function loadCurrentPageFeature() {
   const page =
     getCurrentPage();
 
-  /*
-   * Demo sessions use the same deployed CHAMA LIVE page shell,
-   * but feature modules must be allowed to run so their approved
-   * demo-client read paths can render the session sandbox.
-   *
-   * Each demo-aware feature decides which reads are permitted.
-   * A demo token is never passed to the production Supabase client
-   * as an authorization credential.
-   */
   const entry =
     PAGE_SCRIPTS[page];
 
