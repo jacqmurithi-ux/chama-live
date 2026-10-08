@@ -225,7 +225,7 @@ let initialized = false;
 
 function escapeHtml(value) {
 
-  return String(value ?? "")
+  return String(value || "")
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
@@ -357,7 +357,7 @@ function isPastSchedule(dateValue,startTime) {
 }
 
 function isMeetingOfficial() {
-  return MEETING_OFFICIAL_ROLES.includes(String(currentMember?.role || "").trim().toLowerCase());
+  return MEETING_OFFICIAL_ROLES.includes(String((currentMember && currentMember.role) || "").trim().toLowerCase());
 }
 
 
@@ -372,7 +372,7 @@ function agendaToArray(value) {
     return value
       .map(
         item =>
-          String(item ?? "").trim()
+          String(item || "").trim()
       )
       .filter(Boolean);
 
@@ -447,7 +447,7 @@ function showError(error) {
 
 
   const message =
-    error?.message ||
+    (error && error.message) ||
     String(error) ||
     "Unable to process meeting.";
 
@@ -545,7 +545,7 @@ function setEditMode(meeting) {
   }
 
 
-  form?.scrollIntoView({
+  form && form.scrollIntoView({
     behavior: "smooth",
     block: "start"
   });
@@ -691,7 +691,7 @@ function getFilteredMeetings() {
 
   const filter =
     String(
-      statusFilter?.value ||
+      (statusFilter && statusFilter.value) ||
       "all"
     )
       .trim()
@@ -960,7 +960,7 @@ function resolutionItems(value) {
 
 function attendancePeople(status) {
   return attendanceMembers
-    .filter(member => normalizeAttendanceStatus(attendanceRows.get(member.id)?.status) === status)
+    .filter(member => normalizeAttendanceStatus((attendanceRows.get(member.id) && attendanceRows.get(member.id).status)) === status)
     .map(member => member.name || "Unnamed member");
 }
 
@@ -1540,7 +1540,7 @@ function renderAttendanceList() {
 
           const currentStatus =
             normalizeAttendanceStatus(
-              row?.status
+              (row && row.status)
             );
 
 
@@ -1574,7 +1574,7 @@ function renderAttendanceList() {
                     memberNumber
                   )}
 
-                  ${row?.status
+                  ${(row && row.status)
                     ? " · " + attendanceLabel(row.status)
                     : " · No response"
                   }
@@ -1678,7 +1678,7 @@ async function loadMeetingAttendance() {
   }
 
   const role =
-    String(currentMember?.role || "").trim().toLowerCase();
+    String((currentMember && currentMember.role) || "").trim().toLowerCase();
 
   const official = MEETING_OFFICIAL_ROLES.includes(role);
 
@@ -1851,7 +1851,7 @@ async function saveAttendance() {
 
   const role =
     String(
-      currentMember?.role ||
+      (currentMember && currentMember.role) ||
       ""
     )
       .trim()
@@ -2068,7 +2068,7 @@ async function saveMeetingForm(event) {
     }
 
 
-    if (!currentMember?.id) {
+    if (!(currentMember && currentMember.id)) {
 
       throw new Error(
         "Your member record could not be found."
@@ -2079,27 +2079,27 @@ async function saveMeetingForm(event) {
 
     const title =
       String(
-        titleInput?.value ||
+        (titleInput && titleInput.value) ||
         ""
       ).trim();
 
 
-    const date = String(dateInput?.value || "").trim();
-    const startTime = String(startTimeInput?.value || "").trim();
-    const endTime = String(endTimeInput?.value || "").trim();
-    const backDated = Boolean(backDatedInput?.checked);
+    const date = String((dateInput && dateInput.value) || "").trim();
+    const startTime = String((startTimeInput && startTimeInput.value) || "").trim();
+    const endTime = String((endTimeInput && endTimeInput.value) || "").trim();
+    const backDated = Boolean((backDatedInput && backDatedInput.checked));
 
 
     const venue =
       String(
-        venueInput?.value ||
+        (venueInput && venueInput.value) ||
         ""
       ).trim();
 
 
     const agenda =
       agendaToArray(
-        agendaInput?.value
+        (agendaInput && agendaInput.value)
       );
 
 
@@ -2273,7 +2273,7 @@ async function saveMeetingForm(event) {
        RESET FORM
     ====================================================== */
 
-    form?.reset();
+    if (form) form.reset();
 
 
     if (dateInput) {
@@ -2384,7 +2384,7 @@ function viewMeeting(id) {
 
   if (selectedMeeting) {
 
-    detailsCard?.scrollIntoView({
+    detailsCard && detailsCard.scrollIntoView({
       behavior: "smooth",
       block: "start"
     });
@@ -2529,14 +2529,14 @@ async function saveMeetingMinutes() {
 
   const minutes =
     String(
-      minutesInput?.value ||
+      (minutesInput && minutesInput.value) ||
       ""
     ).trim();
 
 
   const resolution =
     String(
-      resolutionInput?.value ||
+      (resolutionInput && resolutionInput.value) ||
       ""
     ).trim();
 
@@ -2800,11 +2800,8 @@ function setupTableActions() {
 
 function setupButtons() {
 
-  document
-    .getElementById(
-      "refreshMeetings"
-    )
-    ?.addEventListener(
+  const refreshMeetingsButton = document.getElementById("refreshMeetings");
+  if (refreshMeetingsButton) refreshMeetingsButton.addEventListener(
       "click",
       async event => {
 
@@ -2869,22 +2866,22 @@ function setupButtons() {
     );
 
 
-  statusFilter?.addEventListener(
+  if (statusFilter) statusFilter.addEventListener(
     "change",
     renderMeetings
   );
 
-  expandAllMeetings?.addEventListener("click", () => setAccordionState(true));
-  collapseAllMeetings?.addEventListener("click", () => setAccordionState(false));
+  if (expandAllMeetings) expandAllMeetings.addEventListener("click", () => setAccordionState(true));
+  if (collapseAllMeetings) collapseAllMeetings.addEventListener("click", () => setAccordionState(false));
 
-  fullscreenMinutes?.addEventListener("click", () => {
-    meetingReadableView?.classList.toggle("meeting-fullscreen-active");
-    const active = meetingReadableView?.classList.contains("meeting-fullscreen-active");
+  if (fullscreenMinutes) fullscreenMinutes.addEventListener("click", () => {
+    (meetingReadableView && meetingReadableView.classList).toggle("meeting-fullscreen-active");
+    const active = (meetingReadableView && meetingReadableView.classList).contains("meeting-fullscreen-active");
     fullscreenMinutes.textContent = active ? "Exit full-screen" : "Full-screen reading";
   });
 
-  printMeetingMinutes?.addEventListener("click", () => {
-    if (normalizeStatus(selectedMeeting?.status) !== "completed") return;
+  if (printMeetingMinutes) printMeetingMinutes.addEventListener("click", () => {
+    if (normalizeStatus((selectedMeeting && selectedMeeting.status)) !== "completed") return;
     renderPrintDocument();
     window.print();
   });
@@ -2903,7 +2900,7 @@ function setupButtons() {
    * "Save Attendance".
    */
 
-  meetingAttendanceList?.addEventListener(
+  if (meetingAttendanceList) meetingAttendanceList.addEventListener(
     "change",
     event => {
 
@@ -2970,7 +2967,7 @@ function setupButtons() {
           ...(existing || {}),
 
           meeting_id:
-            selectedMeeting?.id,
+            (selectedMeeting && selectedMeeting.id),
 
           member_id:
             memberId,
@@ -2986,7 +2983,7 @@ function setupButtons() {
   );
 
 
-  saveMeetingAttendance?.addEventListener(
+  if (saveMeetingAttendance) saveMeetingAttendance.addEventListener(
     "click",
     async () => {
 
@@ -3007,7 +3004,7 @@ function setupButtons() {
   );
 
 
-  editMeeting?.addEventListener(
+  if (editMeeting) editMeeting.addEventListener(
     "click",
     () => {
 
@@ -3024,11 +3021,11 @@ function setupButtons() {
   );
 
 
-  cancelEdit?.addEventListener(
+  if (cancelEdit) cancelEdit.addEventListener(
     "click",
     () => {
 
-      form?.reset();
+      if (form) form.reset();
 
 
       if (dateInput) {
@@ -3047,7 +3044,7 @@ function setupButtons() {
   );
 
 
-  completeMeeting?.addEventListener(
+  if (completeMeeting) completeMeeting.addEventListener(
     "click",
     async () => {
 
@@ -3070,7 +3067,7 @@ function setupButtons() {
   );
 
 
-  cancelMeeting?.addEventListener(
+  if (cancelMeeting) cancelMeeting.addEventListener(
     "click",
     async () => {
 
@@ -3093,7 +3090,7 @@ function setupButtons() {
   );
 
 
-  restoreMeeting?.addEventListener(
+  if (restoreMeeting) restoreMeeting.addEventListener(
     "click",
     async () => {
 
@@ -3116,7 +3113,7 @@ function setupButtons() {
   );
 
 
-  deleteMeeting?.addEventListener(
+  if (deleteMeeting) deleteMeeting.addEventListener(
     "click",
     async () => {
 
@@ -3137,7 +3134,7 @@ function setupButtons() {
   );
 
 
-  saveMinutes?.addEventListener(
+  if (saveMinutes) saveMinutes.addEventListener(
     "click",
     async () => {
 
@@ -3227,7 +3224,7 @@ export async function initPage() {
 
 
     const groupResult = await supabase.from("groups").select("name").eq("id", groupId).maybeSingle();
-    if (!groupResult.error && groupResult.data?.name) {
+    if (!groupResult.error && (groupResult.data && groupResult.data.name)) {
       groupName = groupResult.data.name;
     }
 
@@ -3280,7 +3277,7 @@ export async function initPage() {
     }
 
 
-    form?.addEventListener(
+    if (form) form.addEventListener(
       "submit",
       saveMeetingForm
     );
