@@ -1285,8 +1285,16 @@ function renderDetails() {
   }
 
 
-  detailsCard.hidden =
-    false;
+  detailsCard.hidden = false;
+
+  const official = isMeetingOfficial();
+  if (meetingRecordEditor) meetingRecordEditor.hidden = !official;
+  if (saveMinutes) saveMinutes.hidden = !official;
+  if (editMeeting) editMeeting.hidden = !official;
+  if (printMeetingMinutes) printMeetingMinutes.hidden = status !== "completed";
+
+  renderReadableMeeting();
+  renderPrintDocument();
 
 
   if (completeMeeting) {
@@ -1323,6 +1331,10 @@ function renderDetails() {
 
 
   loadMeetingAttendance()
+    .then(() => {
+      renderReadableMeeting();
+      renderPrintDocument();
+    })
     .catch(showError);
 
 }
@@ -1666,10 +1678,7 @@ async function loadMeetingAttendance() {
   const role =
     String(currentMember?.role || "").trim().toLowerCase();
 
-  if (!ATTENDANCE_RECORDING_ROLES.includes(role)) {
-    meetingAttendance.hidden = true;
-    return;
-  }
+  const official = MEETING_OFFICIAL_ROLES.includes(role);
 
   if (normalizeStatus(selectedMeeting.status) !== "completed") {
     meetingAttendance.hidden = true;
@@ -1720,8 +1729,10 @@ async function loadMeetingAttendance() {
       )
     );
 
-  meetingAttendance.hidden = false;
+  meetingAttendance.hidden = !official;
   renderAttendanceList();
+  renderReadableMeeting();
+  renderPrintDocument();
 }
 
 /* =========================================================
@@ -2861,6 +2872,23 @@ function setupButtons() {
     renderMeetings
   );
 
+  expandAllMeetings?.addEventListener("click", () => setAccordionState(true));
+  collapseAllMeetings?.addEventListener("click", () => setAccordionState(false));
+
+  fullscreenMinutes?.addEventListener("click", () => {
+    meetingReadableView?.classList.toggle("meeting-fullscreen-active");
+    const active = meetingReadableView?.classList.contains("meeting-fullscreen-active");
+    fullscreenMinutes.textContent = active ? "Exit full-screen" : "Full-screen reading";
+  });
+
+  printMeetingMinutes?.addEventListener("click", () => {
+    if (normalizeStatus(selectedMeeting?.status) !== "completed") return;
+    renderPrintDocument();
+    window.print();
+  });
+
+
+
 
   /*
    * =======================================================
@@ -3195,6 +3223,11 @@ export async function initPage() {
 
     }
 
+
+    const groupResult = await supabase.from("groups").select("name").eq("id", groupId).maybeSingle();
+    if (!groupResult.error && groupResult.data?.name) {
+      groupName = groupResult.data.name;
+    }
 
     console.log(
       "CHAMA LIVE: meetings context",
