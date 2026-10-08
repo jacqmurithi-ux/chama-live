@@ -112,6 +112,7 @@ let members = [];
 let contributions = [];
 let expenses = [];
 let meetings = [];
+let attendance = [];
 
 let supportCases = 0;
 let plans = 0;
@@ -859,6 +860,48 @@ async function loadExpenses() {
 /* =========================================================
    LOAD MEETINGS
 ========================================================= */
+
+async function loadAttendance() {
+
+  if (isDemoMode()) {
+    const { getDemoAttendance } = await import("./demo-client.js");
+    attendance = await getDemoAttendance();
+    return;
+  }
+
+  const { data, error } = await supabase
+    .from("attendance")
+    .select("id,meeting_id,member_id,status")
+    .eq("group_id", currentGroupId);
+
+  if (error) throw error;
+  attendance = Array.isArray(data) ? data : [];
+}
+
+
+/* =========================================================
+   MEETING ATTENDANCE SUMMARY — ADMIN ONLY
+   ---------------------------------------------------------
+   RLS remains the authorization boundary. This renderer
+   exposes aggregate counts only, never member attendance
+   detail.
+========================================================= */
+function renderAttendanceSummary() {
+  const total = attendance.length;
+  const present = attendance.filter(row => row.status === "present").length;
+  const late = attendance.filter(row => row.status === "late").length;
+  const apology = attendance.filter(row => row.status === "apology").length;
+  const absent = attendance.filter(row => row.status === "absent").length;
+  const rate = total ? Math.round(((present + late) / total) * 100) : 0;
+
+  setText("adminAttendanceRecords", total);
+  setText("adminAttendancePresent", present);
+  setText("adminAttendanceLate", late);
+  setText("adminAttendanceApology", apology);
+  setText("adminAttendanceAbsent", absent);
+  setText("adminAttendanceRate", total ? String(rate) + "%" : "—");
+}
+
 
 async function loadMeetings() {
 
@@ -2423,6 +2466,7 @@ async function loadData() {
     contributions = [];
     expenses = [];
     meetings = [];
+    attendance = [];
 
     supportCases = 0;
     plans = 0;
@@ -2439,7 +2483,8 @@ async function loadData() {
 
     await Promise.all([
       loadMembers(),
-      loadMeetings()
+      loadMeetings(),
+      loadAttendance()
     ]);
 
     return;
@@ -2449,6 +2494,7 @@ async function loadData() {
   contributions = [];
   expenses = [];
   meetings = [];
+  attendance = [];
 
   supportCases = 0;
   plans = 0;
@@ -2473,7 +2519,8 @@ async function loadData() {
     loadActivities(),
     loadMilestones(),
     loadAssets(),
-    loadContributionGoals()
+    loadContributionGoals(),
+    loadAttendance()
   ]);
 
   await loadCanonicalAccounting();
@@ -4062,6 +4109,8 @@ function renderDashboard() {
   renderRecentExpenses();
 
   renderUpcomingMeetings();
+
+  renderAttendanceSummary();
 
   renderOperationsSnapshot();
 
