@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex,nofollow">
+  <title>CHAMA LIVE — E2600 Demo Dashboard</title>
+  <style>
+    :root{font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#183028;background:#f5f8f6}
+    *{box-sizing:border-box}body{margin:0}.top{background:#0f8a5f;color:#fff;padding:18px 20px}
+    .top-inner{max-width:1120px;margin:auto;display:flex;justify-content:space-between;gap:16px;align-items:center}
+    .brand{font-weight:800}.badge{font-size:.78rem;background:rgba(255,255,255,.16);padding:6px 10px;border-radius:999px}
+    main{max-width:1120px;margin:24px auto;padding:0 16px}.hero,.card{background:#fff;border:1px solid #e2ebe6;border-radius:18px;box-shadow:0 10px 30px rgba(16,34,27,.05)}
+    .hero{padding:24px}.hero h1{margin:0 0 6px}.muted{color:#66756e}.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:20px 0}
+    button{border:1px solid #d5e2dc;background:#fff;color:#183028;padding:10px 14px;border-radius:10px;font-weight:700;cursor:pointer}
+    button.active{background:#0f8a5f;color:#fff;border-color:#0f8a5f}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px}
+    .stat{padding:18px}.stat strong{display:block;font-size:1.8rem;margin-top:5px}.card{padding:20px;margin-bottom:16px}
+    .row{display:flex;justify-content:space-between;gap:16px;padding:12px 0;border-bottom:1px solid #edf2ef}.row:last-child{border-bottom:0}
+    table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:10px;border-bottom:1px solid #edf2ef;font-size:.92rem}th{color:#66756e}
+    .hidden{display:none}.pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef6f1;font-size:.78rem}.error{color:#a33a32}
+    @media(max-width:650px){.top-inner{align-items:flex-start;flex-direction:column}table{display:block;overflow-x:auto}}
+  </style>
+</head>
+<body>
+<header class="top"><div class="top-inner"><div class="brand">CHAMA LIVE · E2600 DEMO</div><div class="badge">Read-only candidate demo</div></div></header>
+<main>
+  <section class="hero">
+    <h1 id="groupName">E2600</h1>
+    <p id="visitor" class="muted">Loading demo session…</p>
+    <p class="muted">This dashboard uses a temporary demo token. It does not require or create a CHAMA LIVE Auth account.</p>
+  </section>
+  <nav class="tabs" aria-label="Demo sections">
+    <button class="tab active" data-view="overview">Dashboard</button>
+    <button class="tab" data-view="members">Members</button>
+    <button class="tab" data-view="meetings">Meetings</button>
+  </nav>
+
+  <section id="overview" class="view">
+    <div class="grid">
+      <div class="card stat"><span class="muted">Active members</span><strong id="memberCount">—</strong></div>
+      <div class="card stat"><span class="muted">Meetings</span><strong id="meetingCount">—</strong></div>
+      <div class="card stat"><span class="muted">Present</span><strong id="presentCount">—</strong></div>
+      <div class="card stat"><span class="muted">Late</span><strong id="lateCount">—</strong></div>
+      <div class="card stat"><span class="muted">Apologies</span><strong id="apologyCount">—</strong></div>
+      <div class="card stat"><span class="muted">Absent</span><strong id="absentCount">—</strong></div>
+    </div>
+    <div class="card" style="margin-top:16px"><h2>Latest meeting</h2><div id="latestMeeting" class="muted">Loading…</div></div>
+  </section>
+
+  <section id="members" class="view hidden">
+    <div class="card"><h2>Group Members</h2><p class="muted">Demo roster · read-only</p><div id="membersTable">Loading…</div></div>
+  </section>
+
+  <section id="meetings" class="view hidden">
+    <div id="meetingsList">Loading…</div>
+  </section>
+
+  <p id="status" class="muted"></p>
+</main>
+<script type="module" src="js/demo-dashboard.js"></script>
+</body>
+</html>
