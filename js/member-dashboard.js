@@ -1635,6 +1635,11 @@ async function loadMeetings() {
   container.innerHTML = '<div>' + upcomingHtml + '</div>' + completedHtml + '<div id="memberMinutesViewer" hidden style="margin-top:16px;"></div>';
 
   container.onclick = async event => {
+    if (event.target.closest("[data-close-member-minutes]")) {
+      const viewer = byId("memberMinutesViewer");
+      if (viewer) { viewer.hidden = true; viewer.innerHTML = ""; }
+      return;
+    }
     const button = event.target.closest("button[data-meeting-minutes]");
     if (!button) return;
     const doc = docByMeeting.get(String(button.dataset.meetingMinutes));
@@ -1657,7 +1662,6 @@ async function loadMeetings() {
     } catch (error) { console.error("CHAMA LIVE meeting minutes:", error); }
     finally { if (button.isConnected) button.disabled = false; }
   };
-  container.addEventListener("click", event => { if (event.target.closest("[data-close-member-minutes]")) { const viewer=byId("memberMinutesViewer"); if (viewer) { viewer.hidden=true; viewer.innerHTML=""; } } }, { once:false });
 }
 
 /* =========================================================
