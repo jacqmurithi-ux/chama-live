@@ -885,6 +885,236 @@ function renderMeetings() {
 
 
 /* =========================================================
+   READABLE MEETING DOCUMENT
+========================================================= */
+
+function plainTextToHtml(value) {
+  const lines = escapeHtml(value || "").split(/\r?\n/);
+  let html = "";
+  let listType = null;
+
+  const closeList = () => {
+    if (listType) {
+      html += "</" + listType + ">";
+      listType = null;
+    }
+  };
+
+  lines.forEach(line => {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      closeList();
+      return;
+    }
+
+    const heading = trimmed.match(/^#{1,3}\s+(.+)$/);
+    const bullet = trimmed.match(/^[-*•]\s+(.+)$/);
+    const numbered = trimmed.match(/^\d+[.)]\s+(.+)$/);
+
+    if (heading) {
+      closeList();
+      html += "<h3>" + heading[1] + "</h3>";
+      return;
+    }
+
+    if (bullet) {
+      if (listType !== "ul") {
+        closeList();
+        html += "<ul>";
+        listType = "ul";
+      }
+      html += "<li>" + bullet[1] + "</li>";
+      return;
+    }
+
+    if (numbered) {
+      if (listType !== "ol") {
+        closeList();
+        html += "<ol>";
+        listType = "ol";
+      }
+      html += "<li>" + numbered[1] + "</li>";
+      return;
+    }
+
+    closeList();
+    html += "<p>" + trimmed + "</p>";
+  });
+
+  closeList();
+  return html || '<p class="muted">Not recorded.</p>';
+}
+
+
+function resolutionItems(value) {
+  return String(value || "")
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .filter(Boolean)
+    .map((line, index) => ({
+      number: index + 1,
+      text: line.replace(/^\d+[.)]\s+/, "").replace(/^[-*•]\s+/, "")
+    }));
+}
+
+
+function attendancePeople(status) {
+  return attendanceMembers
+    .filter(member => normalizeAttendanceStatus(attendanceRows.get(member.id)?.status) === status)
+    .map(member => member.name || "Unnamed member");
+}
+
+
+function renderReadableMeeting() {
+  if (!meetingReadableView || !selectedMeeting) return;
+
+  const status = normalizeStatus(selectedMeeting.status);
+  const completed = status === "completed";
+  const agenda = agendaToArray(selectedMeeting.agenda);
+  const minutes = selectedMeeting.minutes || "";
+  const resolutions = resolutionItems(selectedMeeting.resolution);
+  const present = attendancePeople("present");
+  const late = attendancePeople("late");
+  const apologies = attendancePeople("apology");
+  const absent = attendancePeople("absent");
+  const attending = present.length + late.length;
+  const required = quorumRequired(attendanceMembers.length);
+  const quorumText = attendanceMembers.length
+    ? attending + " of " + attendanceMembers.length + " attended; " + required + " required"
+    : "Attendance not recorded";
+
+  const agendaHtml = agenda.length
+    ? "<ol class=\"meeting-agenda-list\">" + agenda.map(item => "<li>" + escapeHtml(item) + "</li>").join("") + "</ol>"
+    : '<p class="muted">No agenda recorded.</p>';
+
+  const minutesHtml = minutes
+    ? '<div class="meeting-readable-text">' + plainTextToHtml(minutes) + "</div>"
+    : '<p class="muted">No minutes recorded.</p>';
+
+  const resolutionHtml = resolutions.length
+    ? resolutions.map(item =>
+        '<article class="meeting-resolution-card">' +
+          '<div class="meeting-resolution-title">Resolution ' + escapeHtml(String(item.number)) + "</div>" +
+          '<div class="meeting-readable-text"><p>' + escapeHtml(item.text) + "</p></div>" +
+          '<span class="meeting-outcome">Recorded text</span>' +
+        "</article>"
+      ).join("")
+    : '<p class="muted">No resolutions recorded.</p>';
+
+  const peopleList = (items, empty) =>
+    items.length
+      ? "<ul>" + items.map(name => "<li>" + escapeHtml(name) + "</li>").join("") + "</ul>"
+      : '<p class="muted">' + escapeHtml(empty) + "</p>";
+
+  const section = (id, title, body, open) =>
+    '<details class="meeting-accordion" data-meeting-accordion="' + id + '"' + (open ? " open" : "") + ">" +
+      "<summary>" + escapeHtml(title) + "</summary>" +
+      '<div class="meeting-accordion-body">' + body + "</div>" +
+    "</details>";
+
+  const signoff =
+    selectedMeeting.chairperson || selectedMeeting.secretary
+      ? '<div class="meeting-document-signoff">' +
+          (selectedMeeting.chairperson ? '<div class="meeting-signature-line">Chairperson: ' + escapeHtml(selectedMeeting.chairperson) + "</div>" : "") +
+          (selectedMeeting.secretary ? '<div class="meeting-signature-line">Secretary: ' + escapeHtml(selectedMeeting.secretary) + "</div>" : "") +
+        "</div>"
+      : '<p class="muted">Chairperson and secretary sign-off details are not recorded for this meeting.</p>';
+
+  meetingReadableView.innerHTML =
+    '<div class="meeting-document-header">' +
+      '<div class="meeting-document-kicker">' + escapeHtml(groupName) + "</div>" +
+      '<h2 class="meeting-document-title">' + escapeHtml(selectedMeeting.title || "Meeting") + "</h2>" +
+      '<div class="meeting-document-meta">' +
+        "<span>" + escapeHtml(formatMeetingDateTime(selectedMeeting.date, selectedMeeting.start_time, selectedMeeting.end_time)) + "</span>" +
+        "<span>" + escapeHtml(selectedMeeting.venue || "Venue not specified") + "</span>" +
+      "</div>" +
+      '<div class="meeting-document-status">' + statusBadge(status) + (selectedMeeting.back_dated ? ' <span class="meeting-backdated-badge">Back-dated</span>' : "") + "</div>" +
+    "</div>" +
+    section("attendance", "Attendance & quorum",
+      "<p><strong>Quorum:</strong> " + escapeHtml(quorumText) + "</p>" +
+      "<p><strong>Present (" + present.length + "):</strong></p>" + peopleList(present, "None recorded") +
+      "<p><strong>Late (" + late.length + "):</strong></p>" + peopleList(late, "None recorded") +
+      "<p><strong>Apologies (" + apologies.length + "):</strong></p>" + peopleList(apologies, "None recorded") +
+      "<p><strong>Absent (" + absent.length + "):</strong></p>" + peopleList(absent, "None recorded"),
+      completed
+    ) +
+    section("agenda", "Agenda", agendaHtml, false) +
+    section("minutes", "Minutes", minutesHtml, completed) +
+    section("resolutions", "Resolutions", resolutionHtml, completed) +
+    section("actions", "Action items",
+      '<p class="muted">No structured action items are currently recorded. This section will use meeting_actions automatically when that structured data exists.</p>',
+      false
+    ) +
+    section("signoff", "Sign-off", signoff, false);
+
+  meetingReadableView.hidden = false;
+  if (meetingReadingToolbar) meetingReadingToolbar.hidden = false;
+}
+
+
+function renderPrintDocument() {
+  if (!meetingPrintDocument || !selectedMeeting) return;
+
+  const status = normalizeStatus(selectedMeeting.status);
+  const resolutions = resolutionItems(selectedMeeting.resolution);
+  const present = attendancePeople("present");
+  const late = attendancePeople("late");
+  const apologies = attendancePeople("apology");
+  const absent = attendancePeople("absent");
+  const minutes = selectedMeeting.minutes || "";
+  const agenda = agendaToArray(selectedMeeting.agenda);
+  const generated = new Date().toLocaleDateString("en-KE", {year:"numeric",month:"long",day:"numeric"});
+
+  const list = items => items.length
+    ? "<ul>" + items.map(x => "<li>" + escapeHtml(x) + "</li>").join("") + "</ul>"
+    : "<p>None recorded.</p>";
+
+  const agendaHtml = agenda.length
+    ? "<ol>" + agenda.map(x => "<li>" + escapeHtml(x) + "</li>").join("") + "</ol>"
+    : "<p>None recorded.</p>";
+
+  const resolutionTable = resolutions.length
+    ? "<table><thead><tr><th>No.</th><th>Resolution</th><th>Outcome</th></tr></thead><tbody>" +
+      resolutions.map(item => "<tr><td>" + item.number + "</td><td>" + escapeHtml(item.text) + "</td><td>Recorded text</td></tr>").join("") +
+      "</tbody></table>"
+    : "<p>No resolutions recorded.</p>";
+
+  meetingPrintDocument.innerHTML =
+    '<div class="print-header">' +
+      "<div>" + escapeHtml(groupName) + "</div>" +
+      "<h1>MINUTES OF " + escapeHtml((selectedMeeting.title || "MEETING").toUpperCase()) + "</h1>" +
+      "<p><strong>Date / time:</strong> " + escapeHtml(formatMeetingDateTime(selectedMeeting.date, selectedMeeting.start_time, selectedMeeting.end_time)) + "</p>" +
+      "<p><strong>Venue:</strong> " + escapeHtml(selectedMeeting.venue || "Not specified") + "</p>" +
+      "<p><strong>Status:</strong> " + escapeHtml(status.toUpperCase()) + (selectedMeeting.back_dated ? " — BACK-DATED" : "") + "</p>" +
+    "</div>" +
+    '<section class="print-section"><h2>Attendance and quorum</h2>' +
+      "<p><strong>Present:</strong> " + present.length + " · <strong>Late:</strong> " + late.length + " · <strong>Apologies:</strong> " + apologies.length + " · <strong>Absent:</strong> " + absent.length + "</p>" +
+      "<p><strong>Present members</strong></p>" + list(present) +
+      "<p><strong>Apologies</strong></p>" + list(apologies) +
+      "<p><strong>Absent</strong></p>" + list(absent) +
+      "<p><strong>Quorum:</strong> " + escapeHtml(attendanceMembers.length ? (present.length + late.length) + " of " + attendanceMembers.length + " attended; " + quorumRequired(attendanceMembers.length) + " required." : "Not recorded.") + "</p>" +
+    "</section>" +
+    '<section class="print-section"><h2>Agenda</h2>' + agendaHtml + "</section>" +
+    '<section class="print-section"><h2>Minutes</h2>' + (minutes ? plainTextToHtml(minutes) : "<p>Not recorded.</p>") + "</section>" +
+    '<section class="print-section"><h2>Resolutions</h2>' + resolutionTable + "</section>" +
+    '<section class="print-section"><h2>Action items</h2><p>No structured action items are currently recorded.</p></section>' +
+    '<section class="print-section"><h2>Next meeting</h2><p>Not recorded.</p></section>' +
+    '<section class="print-section"><h2>Sign-off</h2><div class="print-signoff">' +
+      '<div class="print-signature">Chairperson</div><div class="print-signature">Secretary</div>' +
+    "</div><p>Date: ____________________</p></section>" +
+    '<div class="print-footer">Generated on ' + escapeHtml(generated) + " · CHAMA LIVE</div>";
+}
+
+
+function setAccordionState(open) {
+  if (!meetingReadableView) return;
+  meetingReadableView.querySelectorAll("[data-meeting-accordion]").forEach(item => {
+    item.open = open;
+  });
+}
+
+
+/* =========================================================
    RENDER DETAILS
 ========================================================= */
 
