@@ -144,7 +144,7 @@ verifyForm.addEventListener("submit", async (event) => {
         code
       });
 
-    localStorage.setItem(
+    sessionStorage.setItem(
       TOKEN_KEY,
       data.demo_token
     );
