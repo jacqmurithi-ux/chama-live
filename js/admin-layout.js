@@ -957,6 +957,12 @@ function bindAdminLogout() {
 
       try {
 
+        if (demoMode) {
+          clearDemoSession();
+          window.location.replace("demo.html");
+          return;
+        }
+
         await signOut();
 
       }
@@ -1000,6 +1006,39 @@ function bindAdminLogout() {
     }
   );
 
+}
+
+
+/* =========================================================
+   DEMO PORTAL CHROME
+========================================================= */
+
+function renderDemoPortalChrome() {
+  document.documentElement.dataset.chamaLiveDemo = "true";
+  document.body.classList.add("chama-demo-mode");
+
+  if (document.getElementById("chamaDemoBanner")) return;
+
+  const banner = document.createElement("div");
+  banner.id = "chamaDemoBanner";
+  banner.setAttribute("role", "status");
+  banner.innerHTML =
+    '<strong>E2600 Demo</strong>' +
+    '<span>Session-only demo. No real-group data is being changed.</span>' +
+    '<button type="button" id="chamaDemoReset">Exit demo</button>';
+
+  const style = document.createElement("style");
+  style.textContent =
+    "#chamaDemoBanner{position:sticky;top:0;z-index:30000;display:flex;align-items:center;gap:10px;min-height:38px;padding:7px 14px;background:#ecfdf5;border-bottom:1px solid #a7f3d0;color:#065f46;font:12px/1.35 Inter,system-ui,sans-serif}" +
+    "#chamaDemoBanner span{opacity:.85}" +
+    "#chamaDemoReset{margin-left:auto;border:1px solid #86efac;border-radius:8px;background:#fff;color:#065f46;padding:5px 9px;font-weight:700;cursor:pointer}";
+  document.head.appendChild(style);
+  document.body.prepend(banner);
+
+  document.getElementById("chamaDemoReset")?.addEventListener("click", () => {
+    clearDemoSession();
+    window.location.replace("demo.html");
+  });
 }
 
 
@@ -1579,6 +1618,16 @@ async function loadCurrentPageFeature() {
   const page =
     getCurrentPage();
 
+  /*
+   * Demo boundary guard:
+   * ordinary feature modules still use the authenticated
+   * real-group client. Do not import them from a demo token.
+   * The approved session-sandbox adapter will replace this
+   * guard after the all-pages data plan.
+   */
+  if (demoMode) {
+    return;
+  }
 
   const entry =
     PAGE_SCRIPTS[page];
@@ -2040,15 +2089,7 @@ export async function boot() {
       "page authorization";
 
 
-    if (
-      demoMode
-        ? !new Set([
-            "dashboard.html",
-            "members.html",
-            "meetings.html"
-          ]).has(page)
-        : !ADMIN_PAGES.has(page)
-    ) {
+    if (!ADMIN_PAGES.has(page)) {
 
       window.location.replace(
         "dashboard.html"
@@ -2097,26 +2138,7 @@ export async function boot() {
     renderMobileBottomNavigation();
 
     if (demoMode) {
-      document
-        .querySelectorAll("a[href]")
-        .forEach(function (link) {
-          const href =
-            String(link.getAttribute("href") || "")
-              .split("#")[0]
-              .split("?")[0]
-              .toLowerCase();
-
-          if (
-            ![
-              "dashboard.html",
-              "members.html",
-              "meetings.html"
-            ].includes(href) &&
-            ADMIN_PAGES.has(href)
-          ) {
-            link.remove();
-          }
-        });
+      renderDemoPortalChrome();
     }
 
     bindAdminLogout();
