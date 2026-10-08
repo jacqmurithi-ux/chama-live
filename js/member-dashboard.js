@@ -1604,8 +1604,8 @@ async function loadMeetings() {
   if (!container) return;
 
   const [{ data: upcoming, error: upcomingError }, { data: completed, error: completedError }] = await Promise.all([
-    supabase.from("meetings").select("id,date,start_time,end_time,title,venue,agenda,status").eq("group_id",groupId).eq("status","upcoming").order("date",{ascending:true}).order("start_time",{ascending:true,nullsFirst:false}).limit(5),
-    supabase.from("meetings").select("id,date,start_time,end_time,title,venue,agenda,status").eq("group_id",groupId).eq("status","completed").order("date",{ascending:false}).order("start_time",{ascending:false,nullsFirst:false}).limit(5)
+    supabase.from("meetings").select("id,date,title,venue,agenda,status").eq("group_id",groupId).eq("status","upcoming").order("date",{ascending:true}).limit(5),
+    supabase.from("meetings").select("id,date,title,venue,agenda,status").eq("group_id",groupId).eq("status","completed").order("date",{ascending:false}).limit(5)
   ]);
   if (upcomingError) throw upcomingError;
   if (completedError) throw completedError;
@@ -1628,7 +1628,7 @@ async function loadMeetings() {
     return (hour % 12 || 12) + ":" + minute + " " + (hour >= 12 ? "PM" : "AM");
   };
   const agendaText = agenda => Array.isArray(agenda) && agenda.length ? agenda.filter(Boolean).join(" · ") : "No agenda recorded";
-  const dateTime = m => escapeHtml(formatDate(m.date) + " · " + formatTime(m.start_time) + (m.end_time ? " – " + formatTime(m.end_time) : ""));
+  const dateTime = m => escapeHtml(formatDate(m.date));
 
   const upcomingHtml = upcomingMeetings.length ? upcomingMeetings.map(m => '<div class="member-dashboard-list-item member-meeting-item"><div><strong>' + escapeHtml(m.title || "Meeting") + '</strong><small>' + dateTime(m) + (m.venue ? " · " + escapeHtml(m.venue) : "") + '</small><small>' + escapeHtml(agendaText(m.agenda)) + '</small></div></div>').join("") : '<p>No upcoming meetings recorded.</p>';
   const completedHtml = completedMeetings.length ? '<div class="member-meeting-completed-heading">Recent completed meetings</div>' + completedMeetings.map(m => { const d=docByMeeting.get(String(m.id)); return '<div class="member-dashboard-list-item member-meeting-item"><div><strong>' + escapeHtml(m.title || "Meeting") + '</strong><small>' + dateTime(m) + (m.venue ? " · " + escapeHtml(m.venue) : "") + '</small></div><div class="member-meeting-rsvp-actions">' + (d ? '<button type="button" class="btn btn-secondary" data-meeting-minutes="' + escapeHtml(m.id) + '">Minutes</button>' : '<span class="member-muted">Minutes not uploaded</span>') + '</div></div>'; }).join("") : "";
