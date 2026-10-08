@@ -15,8 +15,7 @@
    • Delete meetings
    • Filter by status
    • Upcoming / Completed / Cancelled totals
-   • RSVP summary
-   • Four-state attendance:
+   •    • Four-state attendance:
        present
        late
        apology
@@ -52,14 +51,6 @@
 
    No direct database schema changes are performed here.
 
-   IMPORTANT
-   ---------------------------------------------------------
-   RSVP data is reference information only.
-
-   RSVP NEVER determines or replaces actual attendance.
-
-   Actual attendance is explicitly selected by the authorized
-   officer for every active member.
 ========================================================= */
 
 import { supabase } from "./supabase.js";
@@ -182,9 +173,6 @@ const minutesInput =
 const resolutionInput =
   document.getElementById("resolution");
 
-const meetingRsvpSummary =
-  document.getElementById("meetingRsvpSummary");
-
 const meetingAttendance =
   document.getElementById("meetingAttendance");
 
@@ -216,8 +204,6 @@ let selectedMeeting = null;
 let editingMeetingId = null;
 
 let attendanceMembers = [];
-
-let attendanceRsvps = new Map();
 
 let attendanceRows = new Map();
 
@@ -887,12 +873,6 @@ function renderDetails() {
     }
 
 
-    if (meetingRsvpSummary) {
-      meetingRsvpSummary.hidden =
-        true;
-    }
-
-
     return;
 
   }
@@ -1172,51 +1152,7 @@ function renderAttendanceStats() {
     attending >= required;
 
 
-  const rsvpAttending =
-    [...attendanceRsvps.values()]
-      .filter(
-        row =>
-          row.status === "attending"
-      ).length;
-
-
-  const rsvpApologies =
-    [...attendanceRsvps.values()]
-      .filter(
-        row =>
-          row.status === "apology"
-      ).length;
-
-
-  const rsvpKnown =
-    rsvpAttending +
-    rsvpApologies;
-
-
-  const noResponse =
-    Math.max(
-      0,
-      total -
-      rsvpKnown
-    );
-
-
   meetingAttendanceStats.innerHTML = `
-
-    <div class="meeting-meta-box">
-
-      <span class="meeting-meta-label">
-        RSVP
-      </span>
-
-      <span class="meeting-meta-value">
-        Attending ${rsvpAttending}
-        · Apologies ${rsvpApologies}
-        · No response ${noResponse}
-      </span>
-
-    </div>
-
 
     <div class="meeting-meta-box">
 
@@ -1258,33 +1194,7 @@ function renderAttendanceStats() {
   `;
 
 
-  if (meetingRsvpSummary) {
-
-    meetingRsvpSummary.hidden =
-      false;
-
-
-    meetingRsvpSummary.innerHTML = `
-
-      <div class="meeting-meta-box">
-
-        <span class="meeting-meta-label">
-          Member RSVP
-        </span>
-
-        <span class="meeting-meta-value">
-          Attending ${rsvpAttending}
-          · Apologies ${rsvpApologies}
-          · No response ${noResponse}
-        </span>
-
-      </div>
-
-    `;
-
   }
-
-}
 
 
 /* =========================================================
@@ -1296,8 +1206,6 @@ function renderAttendanceStats() {
    attendance selector.
 
    There is NO checkbox semantics.
-
-   There is NO automatic conversion from RSVP to attendance.
 
    The officer explicitly records one of:
 
@@ -1352,12 +1260,6 @@ function renderAttendanceList() {
             );
 
 
-          const rsvp =
-            attendanceRsvps.get(
-              member.id
-            );
-
-
           const memberNumber =
             member.member_number ||
             member.membership_number ||
@@ -1389,12 +1291,12 @@ function renderAttendanceList() {
                   )}
 
                   ${
-                    rsvp?.status
-                      ? " · RSVP: " +
+                    ?.status
+                      ? " · : " +
                         escapeHtml(
-                          rsvp.status
+                          .status
                         )
-                      : " · RSVP: No response"
+                      : " · : No response"
                   }
 
                 </small>
@@ -1491,207 +1393,70 @@ function renderAttendanceList() {
 
 async function loadMeetingAttendance() {
 
-  if (
-    !selectedMeeting ||
-    !groupId ||
-    !meetingAttendance
-  ) {
+  if (!selectedMeeting || !groupId || !meetingAttendance) {
     return;
   }
-
 
   const role =
-    String(
-      currentMember?.role ||
-      ""
-    )
-      .trim()
-      .toLowerCase();
+    String(currentMember?.role || "").trim().toLowerCase();
 
-
-  /*
-   * Match the attendance authorization contract.
-   *
-   * Admin and secretary may record and correct attendance.
-   * Members remain read-only.
-   */
-
-  const canRecordAttendance =
-    ATTENDANCE_RECORDING_ROLES.includes(
-      role
-    );
-
-
-  if (!canRecordAttendance) {
-
-    meetingAttendance.hidden =
-      true;
-
-
-    if (meetingRsvpSummary) {
-      meetingRsvpSummary.hidden =
-        true;
-    }
-
-
+  if (!ATTENDANCE_RECORDING_ROLES.includes(role)) {
+    meetingAttendance.hidden = true;
     return;
-
   }
 
-
-  const meetingStatus =
-    normalizeStatus(
-      selectedMeeting.status
-    );
-
-
-  /*
-   * Attendance is an after-meeting workflow.
-   *
-   * The meeting must be completed before actual attendance
-   * is displayed for recording.
-   *
-   * Cancelled meetings do not accept attendance.
-   */
-
-  if (meetingStatus !== "completed") {
-
-    meetingAttendance.hidden =
-      true;
-
-
-    if (meetingRsvpSummary) {
-      meetingRsvpSummary.hidden =
-        true;
-    }
-
-
+  if (normalizeStatus(selectedMeeting.status) !== "completed") {
+    meetingAttendance.hidden = true;
     return;
-
   }
 
-
-  const [
-    membersResult,
-    rsvpResult,
-    attendanceResult
-  ] =
+  const [membersResult, attendanceResult] =
     await Promise.all([
 
       supabase
         .from("members")
-        .select(
-          "id, name, member_number, membership_number"
-        )
-        .eq(
-          "group_id",
-          groupId
-        )
-        .eq(
-          "status",
-          "active"
-        )
-        .eq(
-          "onboarding_status",
-          "active"
-        )
-        .order(
-          "name",
-          {
-            ascending: true
-          }
-        ),
-
-
-      supabase
-        .from("meeting_rsvps")
-        .select(
-          "member_id, status"
-        )
-        .eq(
-          "meeting_id",
-          selectedMeeting.id
-        ),
-
+        .select("id, name, member_number, membership_number")
+        .eq("group_id", groupId)
+        .eq("status", "active")
+        .eq("onboarding_status", "active")
+        .order("name", { ascending: true }),
 
       supabase
         .from("attendance")
-        .select(
-          "member_id, status"
-        )
-        .eq(
-          "meeting_id",
-          selectedMeeting.id
-        )
+        .select("member_id, status")
+        .eq("meeting_id", selectedMeeting.id)
 
     ]);
-
 
   if (membersResult.error) {
     throw membersResult.error;
   }
 
-
-  if (rsvpResult.error) {
-    throw rsvpResult.error;
-  }
-
-
   if (attendanceResult.error) {
     throw attendanceResult.error;
   }
 
-
   attendanceMembers =
-    Array.isArray(
-      membersResult.data
-    )
+    Array.isArray(membersResult.data)
       ? membersResult.data
       : [];
 
-
-  attendanceRsvps =
-    new Map(
-      (rsvpResult.data || [])
-        .map(
-          row =>
-            [
-              row.member_id,
-              row
-            ]
-        )
-    );
-
-
   attendanceRows =
     new Map(
-      (attendanceResult.data || [])
-        .map(
-          row =>
-            [
-              row.member_id,
-              {
-                member_id:
-                  row.member_id,
-
-                status:
-                  normalizeAttendanceStatus(
-                    row.status
-                  )
-              }
-            ]
-        )
+      (attendanceResult.data || []).map(
+        row => [
+          row.member_id,
+          {
+            member_id: row.member_id,
+            status: normalizeAttendanceStatus(row.status)
+          }
+        ]
+      )
     );
 
-
-  meetingAttendance.hidden =
-    false;
-
-
+  meetingAttendance.hidden = false;
   renderAttendanceList();
-
 }
-
 
 /* =========================================================
    READ ATTENDANCE FORM
@@ -2323,9 +2088,6 @@ function viewMeeting(id) {
 
   attendanceMembers = [];
 
-  attendanceRsvps =
-    new Map();
-
   attendanceRows =
     new Map();
 
@@ -2434,9 +2196,6 @@ async function updateMeetingStatus(
   ) {
 
     attendanceMembers = [];
-
-    attendanceRsvps =
-      new Map();
 
     attendanceRows =
       new Map();
@@ -2672,9 +2431,6 @@ async function removeMeeting() {
 
 
   attendanceMembers = [];
-
-  attendanceRsvps =
-    new Map();
 
   attendanceRows =
     new Map();
