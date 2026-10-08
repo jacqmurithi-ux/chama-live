@@ -271,10 +271,10 @@ function getCurrentPage() {
 function isAdminAccount() {
 
   return (
-    context?.isOwner === true ||
+    (context && context.isOwner) === true ||
     ADMIN_ROLES.has(
       String(
-        context?.role || ""
+        (context && context.role) || ""
       )
         .trim()
         .toLowerCase()
@@ -291,8 +291,8 @@ function isAdminAccount() {
 function renderCurrentGroupName() {
 
   const groupName =
-    context?.group?.name ||
-    context?.member?.group_name ||
+    (context && context.group && context.group.name) ||
+    (context && context.member && context.member.group_name) ||
     "CHAMA";
 
   document
@@ -981,7 +981,7 @@ function bindAdminLogout() {
             false;
 
           errorBox.textContent =
-            error?.message ||
+            (error && error.message) ||
             "Unable to sign out.";
 
         }
@@ -1016,22 +1016,22 @@ function openAdminMobileMenu() {
     );
 
 
-  menu?.classList.add(
+  if (menu) menu.classList.add(
     "open"
   );
 
-  backdrop?.classList.add(
+  if (backdrop) backdrop.classList.add(
     "open"
   );
 
 
-  button?.setAttribute(
+  if (button) button.setAttribute(
     "aria-expanded",
     "true"
   );
 
 
-  button?.setAttribute(
+  if (button) button.setAttribute(
     "aria-label",
     "Close menu"
   );
@@ -1057,22 +1057,22 @@ function closeAdminMobileMenu() {
     );
 
 
-  menu?.classList.remove(
+  if (menu) menu.classList.remove(
     "open"
   );
 
-  backdrop?.classList.remove(
+  if (backdrop) backdrop.classList.remove(
     "open"
   );
 
 
-  button?.setAttribute(
+  if (button) button.setAttribute(
     "aria-expanded",
     "false"
   );
 
 
-  button?.setAttribute(
+  if (button) button.setAttribute(
     "aria-label",
     "Open menu"
   );
@@ -1139,7 +1139,7 @@ function renderMobileNavigation() {
     );
 
   groupName.textContent =
-    context?.group?.name ||
+    (context && context.group && context.group.name) ||
     "CHAMA";
 
 
@@ -1149,7 +1149,7 @@ function renderMobileNavigation() {
     );
 
   memberName.textContent =
-    context?.member?.name ||
+    (context && context.member && context.member.name) ||
     "Admin";
 
 
@@ -1641,11 +1641,11 @@ async function loadCurrentPageFeature() {
         modulePath,
         initializerName,
         name:
-          error?.name,
+          (error && error.name),
         message:
-          error?.message,
+          (error && error.message),
         stack:
-          error?.stack,
+          (error && error.stack),
         error
       }
     );
@@ -1677,9 +1677,9 @@ async function loadCurrentPageFeature() {
   --------------------------------------------------------- */
 
   const initializer =
-    module?.[initializerName] ||
-    module?.initPage ||
-    module?.init;
+    (module && module[initializerName]) ||
+    (module && module.initPage) ||
+    (module && module.init);
 
 
   if (
@@ -1744,11 +1744,11 @@ async function loadCurrentPageFeature() {
         modulePath,
         initializerName,
         name:
-          error?.name,
+          (error && error.name),
         message:
-          error?.message,
+          (error && error.message),
         stack:
-          error?.stack,
+          (error && error.stack),
         error
       }
     );
@@ -1905,8 +1905,8 @@ export async function boot() {
 
 
     if (
-      !context?.user ||
-      !context?.member?.group_id
+      !(context && context.user) ||
+      !(context && context.member && context.member.group_id)
     ) {
 
       throw new Error(
@@ -2051,17 +2051,17 @@ export async function boot() {
         stage,
         error,
         name:
-          error?.name,
+          (error && error.name),
         message:
-          error?.message,
+          (error && error.message),
         stack:
-          error?.stack
+          (error && error.stack)
       }
     );
 
 
     let message =
-      error?.message ||
+      (error && error.message) ||
       "Unable to load the Admin Portal.";
 
 
