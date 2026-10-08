@@ -22,12 +22,17 @@
   </style>
 </head>
 <body>
-<header class="top"><div class="top-inner"><div class="brand">CHAMA LIVE · E2600 DEMO</div><div class="badge">Read-only candidate demo</div></div></header>
+<header class="top"><div class="top-inner"><div class="brand">CHAMA LIVE · E2600 DEMO</div><div class="badge">Open E2600 candidate demo</div></div></header>
 <main>
   <section class="hero">
     <h1 id="groupName">E2600</h1>
     <p id="visitor" class="muted">Loading demo session…</p>
-    <p class="muted">This dashboard uses a temporary demo token. It does not require or create a CHAMA LIVE Auth account.</p>
+    <p class="muted">This is an open CHAMA LIVE showcase. Explore the demo freely — no CHAMA LIVE Auth account is required or created.</p>
+    <div class="card" style="margin-top:16px;background:#f7fbf8">
+      <h2>How to use this demo</h2>
+      <p class="muted">Everyone can explore the fictional E2600 group data. Use the Dashboard, Members and Meetings tabs to see how CHAMA LIVE brings group information together. The demo is intentionally open: it does not simulate member/admin restrictions.</p>
+      <p class="muted"><strong>In a real group:</strong> access and actions depend on the person's authorized role. Group officers handle protected management tasks such as managing members, creating/completing meetings and recording attendance, while ordinary members receive the information and actions available to their role. Financial and other sensitive operations are also authorization-controlled.</p>
+    </div>
   </section>
   <nav class="tabs" aria-label="Demo sections">
     <button class="tab active" data-view="overview">Dashboard</button>
@@ -45,10 +50,18 @@
       <div class="card stat"><span class="muted">Absent</span><strong id="absentCount">—</strong></div>
     </div>
     <div class="card" style="margin-top:16px"><h2>Latest meeting</h2><div id="latestMeeting" class="muted">Loading…</div></div>
+    <div class="card">
+      <h2>Attendance in the demo</h2>
+      <p class="muted">The demo shows the complete fictional attendance picture — Present, Late, Apology and Absent. In a real group, detailed attendance entry and protected member records are controlled by the group's authorization rules.</p>
+    </div>
   </section>
 
   <section id="members" class="view hidden">
-    <div class="card"><h2>Group Members</h2><p class="muted">Demo roster · read-only</p><div id="membersTable">Loading…</div></div>
+    <div class="card"><h2>Group Members</h2><p class="muted">Explore the fictional E2600 member register. The public demo is open to everyone.</p><div id="membersTable">Loading…</div></div>
+    <div class="card">
+      <h2>Real-group authorization</h2>
+      <p class="muted">In a real CHAMA LIVE group, member-management actions are available only to authorized group officers. The demo does not impose that restriction because all records here are demonstration data.</p>
+    </div>
   </section>
 
   <section id="meetings" class="view hidden">
