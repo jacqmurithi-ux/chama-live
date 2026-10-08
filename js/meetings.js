@@ -106,9 +106,8 @@ const ATTENDANCE_STATUS_LABELS = Object.freeze({
 
 
 const ATTENDANCE_RECORDING_ROLES = Object.freeze([
-  "chairperson",
-  "secretary",
-  "treasurer"
+  "admin",
+  "secretary"
 ]);
 
 
@@ -130,15 +129,6 @@ const titleInput =
 
 const dateInput =
   document.getElementById("meetingDate");
-
-const startTimeInput =
-  document.getElementById("meetingStartTime");
-
-const endTimeInput =
-  document.getElementById("meetingEndTime");
-
-const meetingTypeInput =
-  document.getElementById("meetingType");
 
 const venueInput =
   document.getElementById("venue");
@@ -334,69 +324,6 @@ function formatDate(value) {
 }
 
 
-function formatTime(value) {
-
-  if (!value) {
-    return "Not specified";
-  }
-
-
-  const parts =
-    String(value).split(":");
-
-
-  const hour =
-    Number(parts[0]);
-
-
-  const minute =
-    parts[1] || "00";
-
-
-  if (!Number.isFinite(hour)) {
-    return String(value);
-  }
-
-
-  const suffix =
-    hour >= 12
-      ? "PM"
-      : "AM";
-
-
-  const displayHour =
-    hour % 12 || 12;
-
-
-  return (
-    displayHour +
-    ":" +
-    minute +
-    " " +
-    suffix
-  );
-
-}
-
-
-function formatMeetingType(value) {
-
-  const type =
-    String(
-      value || "regular"
-    ).trim();
-
-
-  return ({
-    regular: "Regular",
-    AGM: "AGM",
-    special: "Special",
-    committee: "Committee"
-  })[type] || type;
-
-}
-
-
 function getToday() {
 
   const date =
@@ -575,23 +502,6 @@ function setEditMode(meeting) {
   }
 
 
-  if (startTimeInput) {
-    startTimeInput.value =
-      meeting.start_time || "";
-  }
-
-
-  if (endTimeInput) {
-    endTimeInput.value =
-      meeting.end_time || "";
-  }
-
-
-  if (meetingTypeInput) {
-    meetingTypeInput.value =
-      meeting.type || "regular";
-  }
-
 
   if (venueInput) {
     venueInput.value =
@@ -636,9 +546,6 @@ const MEETING_SELECT = `
   group_id,
   title,
   date,
-  start_time,
-  end_time,
-  type,
   venue,
   agenda,
   minutes,
@@ -919,14 +826,6 @@ function renderMeetings() {
                   "—"
                 )}
 
-                <div class="muted">
-                  ${escapeHtml(
-                    formatMeetingType(
-                      meeting.type
-                    )
-                  )}
-                </div>
-
               </td>
 
 
@@ -1088,49 +987,6 @@ function renderDetails() {
           ${escapeHtml(
             selectedMeeting.venue ||
             "Not specified"
-          )}
-        </span>
-      </div>
-
-
-      <div class="meeting-meta-box">
-        <span class="meeting-meta-label">
-          Time
-        </span>
-
-        <span class="meeting-meta-value">
-
-          ${escapeHtml(
-            formatTime(
-              selectedMeeting.start_time
-            )
-          )}
-
-          ${
-            selectedMeeting.end_time
-              ? "– " +
-                escapeHtml(
-                  formatTime(
-                    selectedMeeting.end_time
-                  )
-                )
-              : ""
-          }
-
-        </span>
-      </div>
-
-
-      <div class="meeting-meta-box">
-        <span class="meeting-meta-label">
-          Type
-        </span>
-
-        <span class="meeting-meta-value">
-          ${escapeHtml(
-            formatMeetingType(
-              selectedMeeting.type
-            )
           )}
         </span>
       </div>
@@ -1656,13 +1512,10 @@ async function loadMeetingAttendance() {
 
 
   /*
-   * Match the currently verified candidate RLS contract.
+   * Match the attendance authorization contract.
    *
-   * IMPORTANT:
-   * admin is intentionally NOT included.
-   *
-   * Do not expand this list unless the backend RLS policy
-   * is separately authorized, changed, and regression-tested.
+   * Admin and secretary may record and correct attendance.
+   * Members remain read-only.
    */
 
   const canRecordAttendance =
@@ -2196,27 +2049,6 @@ async function saveMeetingForm(event) {
       ).trim();
 
 
-    const startTime =
-      String(
-        startTimeInput?.value ||
-        ""
-      ).trim();
-
-
-    const endTime =
-      String(
-        endTimeInput?.value ||
-        ""
-      ).trim();
-
-
-    const meetingType =
-      String(
-        meetingTypeInput?.value ||
-        "regular"
-      ).trim();
-
-
     const venue =
       String(
         venueInput?.value ||
@@ -2248,45 +2080,6 @@ async function saveMeetingForm(event) {
     }
 
 
-    if (!startTime) {
-
-      throw new Error(
-        "Please select the meeting start time."
-      );
-
-    }
-
-
-    if (
-      endTime &&
-      endTime <= startTime
-    ) {
-
-      throw new Error(
-        "End time must be later than start time."
-      );
-
-    }
-
-
-    if (
-      ![
-        "regular",
-        "AGM",
-        "special",
-        "committee"
-      ].includes(
-        meetingType
-      )
-    ) {
-
-      throw new Error(
-        "Please select a valid meeting type."
-      );
-
-    }
-
-
     if (saveButton) {
 
       saveButton.disabled =
@@ -2311,16 +2104,6 @@ async function saveMeetingForm(event) {
 
       date:
         date,
-
-      start_time:
-        startTime,
-
-      end_time:
-        endTime ||
-        null,
-
-      type:
-        meetingType,
 
       venue:
         venue ||
@@ -2450,23 +2233,6 @@ async function saveMeetingForm(event) {
 
     }
 
-
-    if (startTimeInput) {
-      startTimeInput.value =
-        "";
-    }
-
-
-    if (endTimeInput) {
-      endTimeInput.value =
-        "";
-    }
-
-
-    if (meetingTypeInput) {
-      meetingTypeInput.value =
-        "regular";
-    }
 
 
     setCreateMode();
