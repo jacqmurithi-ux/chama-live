@@ -121,8 +121,7 @@ const titleInput =
   document.getElementById("title");
 
 const dateInput = document.getElementById("meetingDate");
-const backDatedInput = null;
-const backDatedGroup = null;
+
 const meetingReadableView = document.getElementById("meetingReadableView");
 const meetingReadingToolbar = document.getElementById("meetingReadingToolbar");
 const meetingPrintDocument = document.getElementById("meetingPrintDocument");
@@ -490,7 +489,6 @@ function showError(error) {
 function setCreateMode() {
   editingMeetingId = null;
   if (backDatedInput) backDatedInput.checked = false;
-  if (backDatedGroup) backDatedGroup.hidden = !isMeetingOfficial();
 
 
   if (saveButton) {
@@ -529,8 +527,6 @@ function setEditMode(meeting) {
 
 
   if (dateInput) dateInput.value = meeting.date || "";
-  if (backDatedInput) backDatedInput.checked = Boolean(meeting.back_dated);
-  if (backDatedGroup) backDatedGroup.hidden = !isMeetingOfficial();
 
   if (venueInput) {
     venueInput.value =
@@ -3380,8 +3376,7 @@ export async function initPage() {
 
     if (dateInput) dateInput.value = getToday();
     if (startTimeInput) startTimeInput.value = "14:00";
-    if (backDatedGroup) backDatedGroup.hidden = !isMeetingOfficial();
-
+  
 
     /*
      * Client-side limits.
