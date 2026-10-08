@@ -2433,14 +2433,52 @@ async function loadData() {
 
     activeContributionTypes = [];
     monthlyStatus = [];
-    canonicalSummary = null;
     cumulativePositions = [];
     cumulativePositionsComplete = false;
+
+    /*
+       DEMO MODE IS READ-ONLY.
+
+       The normal dashboard accounting RPCs require an
+       authenticated group context and therefore must not run
+       with a demo token. The demo dashboard uses the verified
+       demo member population and a zeroed accounting summary
+       rather than inventing financial/accounting results.
+    */
 
     await Promise.all([
       loadMembers(),
       loadMeetings()
     ]);
+
+    canonicalSummary = {
+      month: getCurrentMonth(),
+      active_members: members.length,
+      expected_monthly_contributions: 0,
+      total_contributions_collected: 0,
+      applied_this_month: 0,
+      carry_forward: 0,
+      current_outstanding: 0,
+      members_paid: 0,
+      partial_payments: 0,
+      outstanding_members: 0
+    };
+
+    activeContributionTypes = [{
+      key: "monthly",
+      name: "Monthly Contribution",
+      type: "Monthly",
+      amount: numberValue(
+        currentGroup?.monthly_contribution
+      ),
+      frequency: "Monthly",
+      due_date: null,
+      closing_date: null,
+      fine_rule: "Demo read-only",
+      status: "Demo",
+      active: true,
+      source: "verified_demo_group"
+    }];
 
     return;
   }
