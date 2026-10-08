@@ -54,6 +54,7 @@
    ========================================================= */
 
 import { supabase } from "./supabase.js";
+import { getDemoAttendance } from "./demo-client.js";
 
 
 /* =========================================================
@@ -1599,6 +1600,46 @@ function renderRecentGroupExpenses() {
    MEETINGS
    ========================================================= */
 
+/* =========================================================
+   MEMBER ATTENDANCE SUMMARY
+   ---------------------------------------------------------
+   Only the authenticated member's own attendance rows are
+   requested. The renderer exposes aggregate numbers only;
+   no other member ID/name/attendance detail is rendered.
+========================================================= */
+async function loadMyAttendanceSummary() {
+  let rows = [];
+
+  if (window.__CHAMA_LIVE_ADMIN_CONTEXT__ && !currentUser) {
+    rows = await getDemoAttendance();
+  } else {
+    const { data, error } = await supabase
+      .from("attendance")
+      .select("id,meeting_id,member_id,status")
+      .eq("member_id", memberId);
+
+    if (error) throw error;
+    rows = Array.isArray(data) ? data : [];
+  }
+
+  const ownRows = rows.filter(row => String(row.member_id) === String(memberId));
+  const total = ownRows.length;
+  const present = ownRows.filter(row => row.status === "present").length;
+  const late = ownRows.filter(row => row.status === "late").length;
+  const apology = ownRows.filter(row => row.status === "apology").length;
+  const absent = ownRows.filter(row => row.status === "absent").length;
+  const attended = present + late;
+  const rate = total ? Math.round((attended / total) * 100) : 0;
+
+  setText("memberAttendanceMeetings", total);
+  setText("memberAttendancePresent", present);
+  setText("memberAttendanceLate", late);
+  setText("memberAttendanceApology", apology);
+  setText("memberAttendanceAbsent", absent);
+  setText("memberAttendanceRate", total ? String(rate) + "%" : "—");
+}
+
+
 async function loadMeetings() {
   const container = byId("memberMeetings");
   if (!container) return;
@@ -2237,6 +2278,7 @@ async function loadDashboard() {
         loadGroupMonthlyAccountingSummary(),
         loadGroupMonthlyFinancialSummary(),
         loadMeetings(),
+        loadMyAttendanceSummary(),
         loadActivities(),
         loadPlansAndGoals(),
         loadAssets()

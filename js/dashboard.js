@@ -112,6 +112,7 @@ let members = [];
 let contributions = [];
 let expenses = [];
 let meetings = [];
+let attendance = [];
 
 let supportCases = 0;
 let plans = 0;
@@ -859,6 +860,48 @@ async function loadExpenses() {
 /* =========================================================
    LOAD MEETINGS
 ========================================================= */
+
+async function loadAttendance() {
+
+  if (isDemoMode()) {
+    const { getDemoAttendance } = await import("./demo-client.js");
+    attendance = await getDemoAttendance();
+    return;
+  }
+
+  const { data, error } = await supabase
+    .from("attendance")
+    .select("id,meeting_id,member_id,status")
+    .eq("group_id", currentGroupId);
+
+  if (error) throw error;
+  attendance = Array.isArray(data) ? data : [];
+}
+
+
+/* =========================================================
+   MEETING ATTENDANCE SUMMARY — ADMIN ONLY
+   ---------------------------------------------------------
+   RLS remains the authorization boundary. This renderer
+   exposes aggregate counts only, never member attendance
+   detail.
+========================================================= */
+function renderAttendanceSummary() {
+  const total = attendance.length;
+  const present = attendance.filter(row => row.status === "present").length;
+  const late = attendance.filter(row => row.status === "late").length;
+  const apology = attendance.filter(row => row.status === "apology").length;
+  const absent = attendance.filter(row => row.status === "absent").length;
+  const rate = total ? Math.round(((present + late) / total) * 100) : 0;
+
+  setText("adminAttendanceRecords", total);
+  setText("adminAttendancePresent", present);
+  setText("adminAttendanceLate", late);
+  setText("adminAttendanceApology", apology);
+  setText("adminAttendanceAbsent", absent);
+  setText("adminAttendanceRate", total ? String(rate) + "%" : "—");
+}
+
 
 async function loadMeetings() {
 
@@ -2423,6 +2466,7 @@ async function loadData() {
     contributions = [];
     expenses = [];
     meetings = [];
+    attendance = [];
 
     supportCases = 0;
     plans = 0;
@@ -2439,7 +2483,8 @@ async function loadData() {
 
     await Promise.all([
       loadMembers(),
-      loadMeetings()
+      loadMeetings(),
+      loadAttendance()
     ]);
 
     return;
@@ -2449,6 +2494,7 @@ async function loadData() {
   contributions = [];
   expenses = [];
   meetings = [];
+  attendance = [];
 
   supportCases = 0;
   plans = 0;
@@ -2473,7 +2519,8 @@ async function loadData() {
     loadActivities(),
     loadMilestones(),
     loadAssets(),
-    loadContributionGoals()
+    loadContributionGoals(),
+    loadAttendance()
   ]);
 
   await loadCanonicalAccounting();
@@ -3986,6 +4033,75 @@ function renderOperationsSnapshot() {
 
 
 /* =========================================================
+   DEMO DASHBOARD PROJECTION
+   ---------------------------------------------------------
+   E2600 demo currently exposes only the approved session
+   projections: group members, meetings and attendance.
+   Do not invent accounting/expense/operations values from
+   the production client while a demo token is active.
+========================================================= */
+function renderDemoDashboard() {
+
+  const totalMembers = members.length;
+  const activeMembers = members.filter(
+    member => String(member?.status || "").toLowerCase() === "active"
+  ).length;
+
+  setText("membersCount", totalMembers + " members");
+  setText("activeMembers", activeMembers);
+
+  for (const id of [
+    "monthlyExpected",
+    "currentBalance",
+    "monthlyCollected",
+    "monthlyOutstanding",
+    "progressApplied",
+    "progressCarryForward",
+    "progressOutstanding",
+    "contributorsCount",
+    "contributorsPercentage"
+  ]) {
+    setText(id, "—");
+  }
+
+  setText("progressMonth", "E2600 Demo");
+  setText("progressPercentage", "—");
+  setText("progressText", "Demo accounting projection not loaded");
+
+  const progressBar = el("progressBar");
+  if (progressBar) {
+    progressBar.style.width = "0%";
+    progressBar.setAttribute("aria-valuenow", "0");
+  }
+
+  renderRecentContributions();
+  renderRecentExpenses();
+  renderUpcomingMeetings();
+  renderAttendanceSummary();
+
+  for (const id of [
+    "operationsSupportCases",
+    "operationsPlans",
+    "operationsActivities",
+    "operationsMilestones",
+    "operationsAssets",
+    "operationsContributionGoals"
+  ]) {
+    setText(id, "—");
+  }
+
+  const cumulativeRows = el("cumulativePositionRows");
+  if (cumulativeRows) {
+    cumulativeRows.innerHTML =
+      '<tr><td colspan="5"><div class="empty-state">' +
+      '<strong>Demo accounting projection</strong>' +
+      '<span>Financial accounting is not part of the current E2600 session projection.</span>' +
+      '</div></td></tr>';
+  }
+}
+
+
+/* =========================================================
    DASHBOARD ACTIONS
 ========================================================= */
 
@@ -4049,6 +4165,11 @@ function bindDashboardActions() {
 
 function renderDashboard() {
 
+  if (isDemoMode()) {
+    renderDemoDashboard();
+    return;
+  }
+
   renderSummary();
 
   renderActiveContributionTypes();
@@ -4062,6 +4183,8 @@ function renderDashboard() {
   renderRecentExpenses();
 
   renderUpcomingMeetings();
+
+  renderAttendanceSummary();
 
   renderOperationsSnapshot();
 
