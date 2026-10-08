@@ -4033,6 +4033,75 @@ function renderOperationsSnapshot() {
 
 
 /* =========================================================
+   DEMO DASHBOARD PROJECTION
+   ---------------------------------------------------------
+   E2600 demo currently exposes only the approved session
+   projections: group members, meetings and attendance.
+   Do not invent accounting/expense/operations values from
+   the production client while a demo token is active.
+========================================================= */
+function renderDemoDashboard() {
+
+  const totalMembers = members.length;
+  const activeMembers = members.filter(
+    member => String(member?.status || "").toLowerCase() === "active"
+  ).length;
+
+  setText("membersCount", totalMembers + " members");
+  setText("activeMembers", activeMembers);
+
+  for (const id of [
+    "monthlyExpected",
+    "currentBalance",
+    "monthlyCollected",
+    "monthlyOutstanding",
+    "progressApplied",
+    "progressCarryForward",
+    "progressOutstanding",
+    "contributorsCount",
+    "contributorsPercentage"
+  ]) {
+    setText(id, "—");
+  }
+
+  setText("progressMonth", "E2600 Demo");
+  setText("progressPercentage", "—");
+  setText("progressText", "Demo accounting projection not loaded");
+
+  const progressBar = el("progressBar");
+  if (progressBar) {
+    progressBar.style.width = "0%";
+    progressBar.setAttribute("aria-valuenow", "0");
+  }
+
+  renderRecentContributions();
+  renderRecentExpenses();
+  renderUpcomingMeetings();
+  renderAttendanceSummary();
+
+  for (const id of [
+    "operationsSupportCases",
+    "operationsPlans",
+    "operationsActivities",
+    "operationsMilestones",
+    "operationsAssets",
+    "operationsContributionGoals"
+  ]) {
+    setText(id, "—");
+  }
+
+  const cumulativeRows = el("cumulativePositionRows");
+  if (cumulativeRows) {
+    cumulativeRows.innerHTML =
+      '<tr><td colspan="5"><div class="empty-state">' +
+      '<strong>Demo accounting projection</strong>' +
+      '<span>Financial accounting is not part of the current E2600 session projection.</span>' +
+      '</div></td></tr>';
+  }
+}
+
+
+/* =========================================================
    DASHBOARD ACTIONS
 ========================================================= */
 
@@ -4095,6 +4164,11 @@ function bindDashboardActions() {
 ========================================================= */
 
 function renderDashboard() {
+
+  if (isDemoMode()) {
+    renderDemoDashboard();
+    return;
+  }
 
   renderSummary();
 
