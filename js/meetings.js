@@ -26,13 +26,6 @@
 import { supabase } from "./supabase.js";
 
 import {
-  getDemoMeetings,
-  getDemoMembers,
-  getDemoAttendance,
-  isDemoMode
-} from "./demo-client.js";
-
-import {
   requireAuth,
   getMyMember
 } from "./auth.js";
@@ -528,11 +521,6 @@ function setEditMode(meeting) {
 ========================================================= */
 
 async function loadMeetings() {
-
-  if (isDemoMode()) {
-    meetings = await getDemoMeetings();
-    return;
-  }
 
   if (!groupId) {
     throw new Error(
@@ -2394,40 +2382,8 @@ export async function initPage() {
       "Loading meetings..."
     );
 
-    if (isDemoMode()) {
+    await requireAuth();
 
-      const demo =
-        window.__CHAMA_LIVE_ADMIN_CONTEXT__;
-
-      currentMember =
-        demo?.member || null;
-
-      groupId = null;
-
-      setCreateMode();
-
-      if (form) {
-        form.hidden = true;
-      }
-
-      [
-        editMeeting,
-        completeMeeting,
-        cancelMeeting,
-        restoreMeeting,
-        deleteMeeting,
-        saveMinutes
-      ].forEach(
-        button => {
-          if (button) {
-            button.hidden = true;
-          }
-        }
-      );
-
-    } else {
-
-      await requireAuth();
 
       currentMember =
         await getMyMember();
