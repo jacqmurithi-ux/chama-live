@@ -11,7 +11,7 @@
    • Mark completed
    • Cancel meeting
    • Restore cancelled meeting
-   • Save informative minutes and resolutions
+   • Upload and read official meeting minutes documents
    • Delete meetings
    • Filter by status
    • Upcoming / Completed / Cancelled totals
@@ -72,6 +72,12 @@ console.log(
 
 const MAX_MINUTES_LENGTH = 10000;
 const MAX_RESOLUTION_LENGTH = 5000;
+const MEETING_MINUTES_BUCKET = "meeting-minutes";
+const MAX_MEETING_DOCUMENT_SIZE = 10 * 1024 * 1024;
+const MEETING_DOCUMENT_TYPES = Object.freeze([
+  "application/pdf",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+]);
 
 
 /* =========================================================
@@ -123,6 +129,16 @@ const meetingReadableView = document.getElementById("meetingReadableView");
 const meetingReadingToolbar = document.getElementById("meetingReadingToolbar");
 const meetingPrintDocument = document.getElementById("meetingPrintDocument");
 const meetingRecordEditor = document.getElementById("meetingRecordEditor");
+const meetingDocumentPanel = document.getElementById("meetingDocumentPanel");
+const meetingDocumentMeta = document.getElementById("meetingDocumentMeta");
+const meetingDocumentActions = document.getElementById("meetingDocumentActions");
+const meetingDocumentFile = document.getElementById("meetingDocumentFile");
+const uploadMeetingDocument = document.getElementById("uploadMeetingDocument");
+const downloadMeetingDocument = document.getElementById("downloadMeetingDocument");
+const meetingDocumentMessage = document.getElementById("meetingDocumentMessage");
+const meetingDocumentViewer = document.getElementById("meetingDocumentViewer");
+
+
 const expandAllMeetings = document.getElementById("expandAllMeetings");
 const collapseAllMeetings = document.getElementById("collapseAllMeetings");
 const fullscreenMinutes = document.getElementById("fullscreenMinutes");
@@ -219,6 +235,7 @@ let attendanceMembers = [];
 let attendanceRows = new Map();
 
 let initialized = false;
+let currentMeetingDocument = null;
 
 
 /* =========================================================
@@ -1117,6 +1134,135 @@ function setAccordionState(open) {
 
 
 /* =========================================================
+   MEETING MINUTES DOCUMENT
+========================================================= */
+
+function sanitizeDocumentFilename(name) {
+  const base = String(name || "minutes").trim().replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "");
+  return (base || "minutes").slice(0, 180);
+}
+
+function setDocumentMessage(message, isError = false) {
+  if (!meetingDocumentMessage) return;
+  meetingDocumentMessage.textContent = message || "";
+  meetingDocumentMessage.style.color = isError ? "#9f1239" : "";
+}
+
+async function createMinutesSignedUrl(filePath, download = false) {
+  const { data, error } = await supabase.storage
+    .from(MEETING_MINUTES_BUCKET)
+    .createSignedUrl(filePath, 600, download ? { download: true } : undefined);
+  if (error) throw error;
+  if (!data?.signedUrl) throw new Error("The minutes document could not be opened.");
+  return data.signedUrl;
+}
+
+async function loadMeetingDocument() {
+  currentMeetingDocument = null;
+  if (!selectedMeeting || !meetingDocumentPanel) return;
+  const completed = normalizeStatus(selectedMeeting.status) === "completed";
+  meetingDocumentPanel.hidden = !completed;
+  if (!completed) return;
+
+  const { data, error } = await supabase
+    .from("meeting_documents")
+    .select("id, group_id, meeting_id, file_path, file_name, file_type, file_size, uploaded_by, uploaded_at, version, replaced_at")
+    .eq("group_id", groupId)
+    .eq("meeting_id", selectedMeeting.id)
+    .is("replaced_at", null)
+    .maybeSingle();
+  if (error) throw error;
+  currentMeetingDocument = data || null;
+  renderMeetingDocument();
+}
+
+function renderMeetingDocument() {
+  if (!meetingDocumentPanel || !selectedMeeting) return;
+  const completed = normalizeStatus(selectedMeeting.status) === "completed";
+  meetingDocumentPanel.hidden = !completed;
+  if (!completed) return;
+
+  const official = isMeetingOfficial();
+  if (meetingDocumentActions) meetingDocumentActions.hidden = !official;
+  if (meetingDocumentFile) meetingDocumentFile.value = "";
+  if (uploadMeetingDocument) uploadMeetingDocument.textContent = currentMeetingDocument ? "Replace Minutes" : "Upload Minutes";
+  if (downloadMeetingDocument) downloadMeetingDocument.hidden = !currentMeetingDocument;
+  if (meetingDocumentMeta) {
+    meetingDocumentMeta.innerHTML = currentMeetingDocument
+      ? "<span><strong>" + escapeHtml(currentMeetingDocument.file_name) + "</strong></span><span>Version " + escapeHtml(currentMeetingDocument.version) + "</span><span>" + escapeHtml(formatDate(currentMeetingDocument.uploaded_at)) + "</span>"
+      : "<span>No official minutes document has been uploaded.</span>";
+  }
+  if (meetingDocumentViewer) {
+    meetingDocumentViewer.hidden = true;
+    meetingDocumentViewer.innerHTML = "";
+  }
+  setDocumentMessage(currentMeetingDocument ? "The current official minutes are available to group members." : (official ? "Upload a PDF or Word document, up to 10 MB." : "The meeting has no official minutes document yet."));
+
+  if (currentMeetingDocument && currentMeetingDocument.file_type === "application/pdf") {
+    createMinutesSignedUrl(currentMeetingDocument.file_path)
+      .then(url => {
+        if (!meetingDocumentViewer || !currentMeetingDocument) return;
+        meetingDocumentViewer.innerHTML = '<iframe title="Meeting minutes PDF" src="' + escapeHtml(url) + '"></iframe>';
+        meetingDocumentViewer.hidden = false;
+      })
+      .catch(error => setDocumentMessage(error?.message || "Unable to preview the minutes document.", true));
+  } else if (currentMeetingDocument) {
+    if (meetingDocumentViewer) {
+      meetingDocumentViewer.innerHTML = '<div class="meeting-document-empty">Word minutes are ready to download. In-browser Word rendering is not required for the first release.</div>';
+      meetingDocumentViewer.hidden = false;
+    }
+  }
+}
+
+async function uploadMeetingMinutesDocument() {
+  if (!selectedMeeting) throw new Error("Select a meeting first.");
+  if (!isMeetingOfficial()) throw new Error("Only the admin, chairperson, or secretary can upload meeting minutes.");
+  if (normalizeStatus(selectedMeeting.status) !== "completed") throw new Error("Minutes can only be uploaded after the meeting is completed.");
+  const file = meetingDocumentFile?.files?.[0];
+  if (!file) throw new Error("Choose a PDF or Word minutes document first.");
+  if (file.size <= 0 || file.size > MAX_MEETING_DOCUMENT_SIZE) throw new Error("The minutes document must be larger than 0 bytes and no more than 10 MB.");
+  if (!MEETING_DOCUMENT_TYPES.includes(file.type)) throw new Error("Only PDF and Word (.docx) minutes documents are allowed.");
+
+  const safeName = sanitizeDocumentFilename(file.name);
+  const path = groupId + "/" + selectedMeeting.id + "/" + Date.now() + "-" + crypto.randomUUID() + "-" + safeName;
+  if (uploadMeetingDocument) { uploadMeetingDocument.disabled = true; uploadMeetingDocument.textContent = "Uploading..."; }
+  setDocumentMessage("Uploading minutes...");
+  try {
+    const { error: uploadError } = await supabase.storage.from(MEETING_MINUTES_BUCKET).upload(path, file, { contentType: file.type, cacheControl: "3600", upsert: false });
+    if (uploadError) throw uploadError;
+
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError || !userData?.user) throw userError || new Error("Your session could not be verified.");
+
+    const { data: row, error: rpcError } = await supabase.rpc("replace_meeting_document", {
+      p_group_id: groupId,
+      p_meeting_id: selectedMeeting.id,
+      p_file_path: path,
+      p_file_name: safeName,
+      p_file_type: file.type,
+      p_file_size: file.size,
+      p_uploaded_by: currentMember.id
+    });
+    if (rpcError) {
+      await supabase.storage.from(MEETING_MINUTES_BUCKET).remove([path]);
+      throw rpcError;
+    }
+    currentMeetingDocument = row;
+    renderMeetingDocument();
+    setDocumentMessage("Minutes uploaded successfully.");
+  } finally {
+    if (uploadMeetingDocument) { uploadMeetingDocument.disabled = false; uploadMeetingDocument.textContent = currentMeetingDocument ? "Replace Minutes" : "Upload Minutes"; }
+  }
+}
+
+async function downloadMeetingMinutesDocument() {
+  if (!currentMeetingDocument) return;
+  const url = await createMinutesSignedUrl(currentMeetingDocument.file_path, true);
+  window.open(url, "_blank", "noopener,noreferrer");
+}
+
+
+/* =========================================================
    RENDER DETAILS
 ========================================================= */
 
@@ -1294,6 +1440,8 @@ function renderDetails() {
   if (saveMinutes) saveMinutes.hidden = !official;
   if (editMeeting) editMeeting.hidden = !official;
   if (printMeetingMinutes) printMeetingMinutes.hidden = status !== "completed";
+
+  loadMeetingDocument().catch(showError);
 
   renderReadableMeeting();
   renderPrintDocument();
@@ -3135,6 +3283,14 @@ function setupButtons() {
     }
   );
 
+
+  if (uploadMeetingDocument) uploadMeetingDocument.addEventListener("click", async () => {
+    try { clearError(); await uploadMeetingMinutesDocument(); } catch (error) { showError(error); setDocumentMessage(error?.message || "Upload failed.", true); }
+  });
+
+  if (downloadMeetingDocument) downloadMeetingDocument.addEventListener("click", async () => {
+    try { clearError(); await downloadMeetingMinutesDocument(); } catch (error) { showError(error); }
+  });
 
   if (saveMinutes) saveMinutes.addEventListener(
     "click",
