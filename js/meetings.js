@@ -121,10 +121,8 @@ const titleInput =
   document.getElementById("title");
 
 const dateInput = document.getElementById("meetingDate");
-const startTimeInput = document.getElementById("meetingStartTime");
-const endTimeInput = document.getElementById("meetingEndTime");
-const backDatedInput = document.getElementById("meetingBackDated");
-const backDatedGroup = document.getElementById("backDatedGroup");
+const backDatedInput = null;
+const backDatedGroup = null;
 const meetingReadableView = document.getElementById("meetingReadableView");
 const meetingReadingToolbar = document.getElementById("meetingReadingToolbar");
 const meetingPrintDocument = document.getElementById("meetingPrintDocument");
@@ -491,8 +489,6 @@ function showError(error) {
 
 function setCreateMode() {
   editingMeetingId = null;
-  if (startTimeInput) startTimeInput.value = "14:00";
-  if (endTimeInput) endTimeInput.value = "";
   if (backDatedInput) backDatedInput.checked = false;
   if (backDatedGroup) backDatedGroup.hidden = !isMeetingOfficial();
 
@@ -533,8 +529,6 @@ function setEditMode(meeting) {
 
 
   if (dateInput) dateInput.value = meeting.date || "";
-  if (startTimeInput) startTimeInput.value = meeting.start_time || "";
-  if (endTimeInput) endTimeInput.value = meeting.end_time || "";
   if (backDatedInput) backDatedInput.checked = Boolean(meeting.back_dated);
   if (backDatedGroup) backDatedGroup.hidden = !isMeetingOfficial();
 
@@ -587,9 +581,6 @@ const MEETING_SELECT = `
   resolution,
   status,
   created_at,
-  start_time,
-  end_time,
-  back_dated
 `;
 
 
@@ -624,10 +615,6 @@ async function loadMeetings() {
         {
           ascending: false
         }
-      )
-      .order(
-        "start_time",
-        { ascending: true, nullsFirst: false }
       )
       .order(
         "created_at",
@@ -841,7 +828,7 @@ function renderMeetings() {
               <td class="meeting-date">
                 ${escapeHtml(formatDate(meeting.date))}
                 <span class="meeting-time">
-                  ${escapeHtml(formatMeetingDateTime(meeting.date, meeting.start_time, meeting.end_time).split(" · ").slice(1).join(" · ") || "Time not set")}
+                  ${escapeHtml(formatDate(meeting.date))}
                 </span>
               </td>
 
@@ -1043,7 +1030,7 @@ function renderReadableMeeting() {
       '<div class="meeting-document-kicker">' + escapeHtml(groupName) + "</div>" +
       '<h2 class="meeting-document-title">' + escapeHtml(selectedMeeting.title || "Meeting") + "</h2>" +
       '<div class="meeting-document-meta">' +
-        "<span>" + escapeHtml(formatMeetingDateTime(selectedMeeting.date, selectedMeeting.start_time, selectedMeeting.end_time)) + "</span>" +
+        "<span>" + escapeHtml(formatDate(selectedMeeting.date)) + "</span>" +
         "<span>" + escapeHtml(selectedMeeting.venue || "Venue not specified") + "</span>" +
       "</div>" +
       '<div class="meeting-document-status">' + statusBadge(status) + "</div>" +
@@ -1101,7 +1088,7 @@ function renderPrintDocument() {
     '<div class="print-header">' +
       "<div>" + escapeHtml(groupName) + "</div>" +
       "<h1>MINUTES OF " + escapeHtml((selectedMeeting.title || "MEETING").toUpperCase()) + "</h1>" +
-      "<p><strong>Date / time:</strong> " + escapeHtml(formatMeetingDateTime(selectedMeeting.date, selectedMeeting.start_time, selectedMeeting.end_time)) + "</p>" +
+      "<p><strong>Date / time:</strong> " + escapeHtml(formatDate(selectedMeeting.date)) + "</p>" +
       "<p><strong>Venue:</strong> " + escapeHtml(selectedMeeting.venue || "Not specified") + "</p>" +
       "<p><strong>Status:</strong> " + escapeHtml(status.toUpperCase()) + "</p>" +
     "</div>" +
@@ -1373,7 +1360,7 @@ function renderDetails() {
       <div class="meeting-meta-box">
         <span class="meeting-meta-label">Date &amp; time</span>
         <span class="meeting-meta-value">
-          ${escapeHtml(formatMeetingDateTime(selectedMeeting.date, selectedMeeting.start_time, selectedMeeting.end_time))}
+          ${escapeHtml(formatDate(selectedMeeting.date))}
         </span>
       </div>
 
@@ -2264,18 +2251,6 @@ async function saveMeetingForm(event) {
     if (!date) {
       throw new Error("Please select the meeting date.");
     }
-    if (!startTime && !editingMeetingId) {
-      throw new Error("Please select the meeting start time.");
-    }
-    const startMinutes = timeToMinutes(startTime);
-    const endMinutes = timeToMinutes(endTime);
-    if (endTime && (endMinutes === null || startMinutes === null || endMinutes <= startMinutes)) {
-      throw new Error("End time must be after the start time.");
-    }
-    const past = isPastSchedule(date, startTime);
-    if (past && (!isMeetingOfficial() || !backDated)) {
-      throw new Error("This meeting is in the past. An official must select Back-date this meeting to record an old meeting.");
-    }
 
     if (saveButton) {
 
@@ -2300,9 +2275,6 @@ async function saveMeetingForm(event) {
         title,
 
       date: date,
-      start_time: startTime,
-      end_time: endTime || null,
-      back_dated: past ? backDated : false,
 
       venue:
         venue ||
