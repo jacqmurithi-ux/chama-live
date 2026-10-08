@@ -296,9 +296,9 @@
     }
 
     .meeting-venue,
-    .meeting-date {
-      white-space: nowrap;
-    }
+    .meeting-date { white-space: nowrap; }
+    .meeting-time { display:block; margin-top:3px; color:#667085; font-size:11px; line-height:1.35; white-space:nowrap; }
+    .meeting-backdated-badge { display:inline-flex; align-items:center; margin-top:5px; padding:2px 7px; border:1px solid #fed7aa; border-radius:999px; color:#9a3412; background:#fff7ed; font-size:9px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; }
 
     .meeting-actions {
       display: flex;
@@ -573,13 +573,54 @@
       border-radius: 14px;
     }
 
-    .meeting-record-box small {
-      display: block;
-      margin-top: 6px;
-      color: #667085;
-      font-size: 11px;
-      line-height: 1.45;
+    .meeting-record-box small { display:block; margin-top:6px; color:#667085; font-size:11px; line-height:1.45; }
+    .meeting-reading-toolbar { display:flex; flex-wrap:wrap; gap:8px; margin:18px 0; }
+    .meeting-readable-view { max-width:900px; margin:0 auto 24px; color:#172033; }
+    .meeting-document-header { padding:24px; border:1px solid #e5e7eb; border-radius:16px; background:#fff; }
+    .meeting-document-kicker { margin-bottom:7px; color:#0f766e; font-size:10px; font-weight:850; letter-spacing:.08em; text-transform:uppercase; }
+    .meeting-document-title { margin:0; color:#0f172a; font-size:clamp(25px,5vw,36px); line-height:1.16; }
+    .meeting-document-meta { display:flex; flex-wrap:wrap; gap:8px 16px; margin-top:12px; color:#475467; font-size:13px; line-height:1.5; }
+    .meeting-document-status { margin-top:14px; }
+    .meeting-accordion { margin-top:10px; border:1px solid #e5e7eb; border-radius:13px; background:#fff; overflow:hidden; }
+    .meeting-accordion summary { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:52px; padding:13px 16px; cursor:pointer; list-style:none; color:#101828; font-size:14px; font-weight:800; }
+    .meeting-accordion summary::-webkit-details-marker { display:none; }
+    .meeting-accordion summary::after { content:"+"; color:#667085; font-size:20px; line-height:1; }
+    .meeting-accordion[open] summary::after { content:"−"; }
+    .meeting-accordion summary:focus-visible, .meeting-reading-toolbar button:focus-visible { outline:3px solid rgba(15,118,110,.25); outline-offset:2px; }
+    .meeting-accordion-body { padding:0 18px 20px; border-top:1px solid #edf0f4; }
+    .meeting-readable-text { max-width:780px; color:#344054; font-size:16px; line-height:1.78; overflow-wrap:anywhere; }
+    .meeting-readable-text p { margin:0 0 1em; }
+    .meeting-readable-text ul, .meeting-readable-text ol { margin:0 0 1em; padding-left:1.6em; }
+    .meeting-readable-text li + li { margin-top:.45em; }
+    .meeting-resolution-card, .meeting-action-card { padding:14px; margin-top:10px; border:1px solid #e5e7eb; border-radius:12px; background:#f8fafc; break-inside:avoid; }
+    .meeting-resolution-title, .meeting-action-title { color:#101828; font-weight:800; line-height:1.45; }
+    .meeting-resolution-meta, .meeting-action-meta { margin-top:6px; color:#667085; font-size:12px; line-height:1.5; }
+    .meeting-outcome { display:inline-flex; margin-top:9px; padding:4px 9px; border-radius:999px; border:1px solid #d1d5db; background:#fff; color:#344054; font-size:10px; font-weight:850; letter-spacing:.04em; text-transform:uppercase; }
+    .meeting-document-signoff { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:28px; margin-top:20px; }
+    .meeting-signature-line { padding-top:34px; border-top:1px solid #344054; color:#344054; font-size:12px; line-height:1.5; }
+    .meeting-print-document { display:none; }
+    .meeting-fullscreen-active { position:fixed; z-index:9999; inset:0; overflow:auto; max-width:none; margin:0; padding:24px; background:#fff; }
+    @media (max-width:760px) { .meeting-reading-toolbar { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); } .meeting-reading-toolbar .btn { width:100%; } .meeting-document-header { padding:18px; } .meeting-readable-text { font-size:15px; line-height:1.72; } .meeting-document-signoff { grid-template-columns:1fr; } }
+    @media print {
+      @page { size:A4 portrait; margin:16mm 14mm 18mm; }
+      html, body { background:#fff !important; }
+      body * { visibility:hidden !important; }
+      #meetingPrintDocument, #meetingPrintDocument * { visibility:visible !important; }
+      #meetingPrintDocument { display:block !important; position:absolute; inset:0; width:100%; max-width:none; margin:0; padding:0; color:#000 !important; background:#fff !important; font-family:Inter,Arial,sans-serif; font-size:10.5pt; line-height:1.5; }
+      #meetingPrintDocument .print-header { padding-bottom:10mm; margin-bottom:8mm; border-bottom:1px solid #000; }
+      #meetingPrintDocument h1 { margin:0 0 4mm; font-size:20pt; line-height:1.2; }
+      #meetingPrintDocument h2 { margin:7mm 0 3mm; padding-bottom:1.5mm; border-bottom:1px solid #999; font-size:12pt; }
+      #meetingPrintDocument p { margin:0 0 3mm; }
+      #meetingPrintDocument ul, #meetingPrintDocument ol { margin-top:0; padding-left:6mm; }
+      #meetingPrintDocument table { width:100%; border-collapse:collapse; margin:3mm 0 5mm; }
+      #meetingPrintDocument th, #meetingPrintDocument td { padding:2.5mm 2mm; border:1px solid #777; vertical-align:top; text-align:left; }
+      #meetingPrintDocument th { font-weight:800; }
+      #meetingPrintDocument .print-section { break-inside:avoid; }
+      #meetingPrintDocument .print-signoff { display:grid; grid-template-columns:1fr 1fr; gap:15mm; margin-top:12mm; }
+      #meetingPrintDocument .print-signature { padding-top:12mm; border-top:1px solid #000; }
+      #meetingPrintDocument .print-footer { margin-top:12mm; padding-top:3mm; border-top:1px solid #999; color:#444; font-size:8pt; }
     }
+
 
     .meeting-save-row {
       display: flex;
@@ -974,23 +1015,23 @@
 
 
               <!-- DATE -->
-
               <div class="form-group">
-
-                <label for="meetingDate">
-                  Date
-                </label>
-
-                <input
-                  id="meetingDate"
-                  name="date"
-                  type="date"
-                  required
-                >
-
+                <label for="meetingDate">Date</label>
+                <input id="meetingDate" name="date" type="date" required>
               </div>
-
-
+              <div class="form-group">
+                <label for="meetingStartTime">Start time</label>
+                <input id="meetingStartTime" name="start_time" type="time" required value="14:00">
+              </div>
+              <div class="form-group">
+                <label for="meetingEndTime">End time</label>
+                <input id="meetingEndTime" name="end_time" type="time">
+                <small class="muted">Optional. If supplied, it must be after the start time.</small>
+              </div>
+              <div class="form-group meeting-form-full" id="backDatedGroup" hidden>
+                <label><input id="meetingBackDated" name="back_dated" type="checkbox"> Back-date this meeting (official use)</label>
+                <small class="muted">Use only when recording an old meeting after it occurred.</small>
+              </div>
               <!-- VENUE -->
 
               <div class="form-group">
@@ -1184,6 +1225,14 @@
         >
 
           <div id="meetingDetails"></div>
+          <div id="meetingReadingToolbar" class="meeting-reading-toolbar" hidden aria-label="Meeting document controls">
+            <button class="btn btn-secondary" id="expandAllMeetings" type="button">Expand all</button>
+            <button class="btn btn-secondary" id="collapseAllMeetings" type="button">Collapse all</button>
+            <button class="btn btn-secondary" id="fullscreenMinutes" type="button">Full-screen reading</button>
+            <button class="btn btn-primary" id="printMeetingMinutes" type="button">Print / Download PDF</button>
+          </div>
+          <div id="meetingReadableView" class="meeting-readable-view" hidden></div>
+          <div id="meetingPrintDocument" class="meeting-print-document" aria-hidden="true"></div>
 
 
           <!-- =================================================
@@ -1295,19 +1344,11 @@
                OFFICIAL RECORD
           ================================================== -->
 
+          <div id="meetingRecordEditor" hidden>
           <div class="meeting-section-header">
-
-            <h2 id="meetingRecordTitle">
-              Meeting Record
-            </h2>
-
-            <p class="muted">
-              Record informative minutes and the formal resolutions or decisions arising from the meeting.
-            </p>
-
+            <h2 id="meetingRecordTitle">Meeting Record — Edit</h2>
+            <p class="muted">Officials can edit the official minutes and resolutions here. Members use the readable document above.</p>
           </div>
-
-
           <div class="meeting-record-grid">
 
 
@@ -1378,17 +1419,9 @@
 
 
           <div class="meeting-save-row">
-
-            <button
-              class="btn btn-primary"
-              id="saveMinutes"
-              type="button"
-            >
-              Save Minutes &amp; Resolutions
-            </button>
-
+            <button class="btn btn-primary" id="saveMinutes" type="button">Save Minutes &amp; Resolutions</button>
           </div>
-
+          </div>
         </section>
 
       </div>
