@@ -206,6 +206,8 @@ let currentMember = null;
 
 let groupId = null;
 
+let groupName = "CHAMA";
+
 let meetings = [];
 
 let selectedMeeting = null;
