@@ -80,6 +80,13 @@ import {
   signOut
 } from "./auth.js";
 
+import {
+  getDemoContext,
+  getDemoGroup,
+  isDemoMode,
+  clearDemoSession
+} from "./demo-client.js";
+
 
 /* =========================================================
    ADMIN ROLES
@@ -245,6 +252,7 @@ const PAGE_SCRIPTS = {
 let bootStarted = false;
 
 let context = null;
+let demoMode = false;
 
 
 /* =========================================================
@@ -271,10 +279,11 @@ function getCurrentPage() {
 function isAdminAccount() {
 
   return (
-    (context && context.isOwner) === true ||
+    demoMode ||
+    context?.isOwner === true ||
     ADMIN_ROLES.has(
       String(
-        (context && context.role) || ""
+        context?.role || ""
       )
         .trim()
         .toLowerCase()
@@ -291,8 +300,8 @@ function isAdminAccount() {
 function renderCurrentGroupName() {
 
   const groupName =
-    (context && context.group && context.group.name) ||
-    (context && context.member && context.member.group_name) ||
+    context?.group?.name ||
+    context?.member?.group_name ||
     "CHAMA";
 
   document
@@ -981,7 +990,7 @@ function bindAdminLogout() {
             false;
 
           errorBox.textContent =
-            (error && error.message) ||
+            error?.message ||
             "Unable to sign out.";
 
         }
@@ -1016,22 +1025,22 @@ function openAdminMobileMenu() {
     );
 
 
-  if (menu) menu.classList.add(
+  menu?.classList.add(
     "open"
   );
 
-  if (backdrop) backdrop.classList.add(
+  backdrop?.classList.add(
     "open"
   );
 
 
-  if (button) button.setAttribute(
+  button?.setAttribute(
     "aria-expanded",
     "true"
   );
 
 
-  if (button) button.setAttribute(
+  button?.setAttribute(
     "aria-label",
     "Close menu"
   );
@@ -1057,22 +1066,22 @@ function closeAdminMobileMenu() {
     );
 
 
-  if (menu) menu.classList.remove(
+  menu?.classList.remove(
     "open"
   );
 
-  if (backdrop) backdrop.classList.remove(
+  backdrop?.classList.remove(
     "open"
   );
 
 
-  if (button) button.setAttribute(
+  button?.setAttribute(
     "aria-expanded",
     "false"
   );
 
 
-  if (button) button.setAttribute(
+  button?.setAttribute(
     "aria-label",
     "Open menu"
   );
@@ -1139,7 +1148,7 @@ function renderMobileNavigation() {
     );
 
   groupName.textContent =
-    (context && context.group && context.group.name) ||
+    context?.group?.name ||
     "CHAMA";
 
 
@@ -1149,7 +1158,7 @@ function renderMobileNavigation() {
     );
 
   memberName.textContent =
-    (context && context.member && context.member.name) ||
+    context?.member?.name ||
     "Admin";
 
 
@@ -1641,11 +1650,11 @@ async function loadCurrentPageFeature() {
         modulePath,
         initializerName,
         name:
-          (error && error.name),
+          error?.name,
         message:
-          (error && error.message),
+          error?.message,
         stack:
-          (error && error.stack),
+          error?.stack,
         error
       }
     );
@@ -1677,9 +1686,9 @@ async function loadCurrentPageFeature() {
   --------------------------------------------------------- */
 
   const initializer =
-    (module && module[initializerName]) ||
-    (module && module.initPage) ||
-    (module && module.init);
+    module?.[initializerName] ||
+    module?.initPage ||
+    module?.init;
 
 
   if (
@@ -1744,11 +1753,11 @@ async function loadCurrentPageFeature() {
         modulePath,
         initializerName,
         name:
-          (error && error.name),
+          error?.name,
         message:
-          (error && error.message),
+          error?.message,
         stack:
-          (error && error.stack),
+          error?.stack,
         error
       }
     );
@@ -1894,19 +1903,82 @@ export async function boot() {
 
     /* -------------------------------------------------------
        APPLICATION CONTEXT
+       -------------------------------------------------------
+       A valid demo token is an alternate identity boundary.
+       It never creates a Supabase Auth user.
     ------------------------------------------------------- */
 
     stage =
       "application context";
 
+    if (isDemoMode()) {
 
-    context =
-      await getMyApplicationContext();
+      stage =
+        "demo session";
+
+      try {
+
+        const demo =
+          await getDemoContext();
+
+        if (!demo?.demo || !demo?.group_name) {
+          throw new Error(
+            "The demo session is invalid or expired."
+          );
+        }
+
+        const group =
+          await getDemoGroup();
+
+        if (!group?.name) {
+          throw new Error(
+            "The demo group could not be loaded."
+          );
+        }
+
+        context = {
+          demo: true,
+          user: null,
+          member: {
+            id: "demo-viewer",
+            name: demo.visitor_name || "Demo Visitor",
+            role: "viewer",
+            status: "active",
+            onboarding_status: "active"
+          },
+          group,
+          isOwner: false,
+          role: "viewer"
+        };
+
+        demoMode = true;
+
+      } catch (demoError) {
+
+        console.warn(
+          "CHAMA LIVE: demo session rejected; clearing demo token.",
+          demoError
+        );
+
+        clearDemoSession();
+
+        throw new Error(
+          "Your CHAMA LIVE demo session is invalid or has expired."
+        );
+
+      }
+
+    } else {
+
+      context =
+        await getMyApplicationContext();
+
+    }
 
 
     if (
-      !(context && context.user) ||
-      !(context && context.member && context.member.group_id)
+      !demoMode &&
+      (!context?.member?.group_id || !context?.user)
     ) {
 
       throw new Error(
@@ -1969,9 +2041,13 @@ export async function boot() {
 
 
     if (
-      !ADMIN_PAGES.has(
-        page
-      )
+      demoMode
+        ? !new Set([
+            "dashboard.html",
+            "members.html",
+            "meetings.html"
+          ]).has(page)
+        : !ADMIN_PAGES.has(page)
     ) {
 
       window.location.replace(
@@ -2020,6 +2096,29 @@ export async function boot() {
 
     renderMobileBottomNavigation();
 
+    if (demoMode) {
+      document
+        .querySelectorAll("a[href]")
+        .forEach(function (link) {
+          const href =
+            String(link.getAttribute("href") || "")
+              .split("#")[0]
+              .split("?")[0]
+              .toLowerCase();
+
+          if (
+            ![
+              "dashboard.html",
+              "members.html",
+              "meetings.html"
+            ].includes(href) &&
+            ADMIN_PAGES.has(href)
+          ) {
+            link.remove();
+          }
+        });
+    }
+
     bindAdminLogout();
 
 
@@ -2051,17 +2150,17 @@ export async function boot() {
         stage,
         error,
         name:
-          (error && error.name),
+          error?.name,
         message:
-          (error && error.message),
+          error?.message,
         stack:
-          (error && error.stack)
+          error?.stack
       }
     );
 
 
     let message =
-      (error && error.message) ||
+      error?.message ||
       "Unable to load the Admin Portal.";
 
 
