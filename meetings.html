@@ -602,7 +602,15 @@
     .meeting-fullscreen-active { position:fixed; z-index:9999; inset:0; overflow:auto; max-width:none; margin:0; padding:24px; background:#fff; }
     @media (max-width:760px) { .meeting-reading-toolbar { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); } .meeting-reading-toolbar .btn { width:100%; } .meeting-document-header { padding:18px; } .meeting-readable-text { font-size:15px; line-height:1.72; } .meeting-document-signoff { grid-template-columns:1fr; } }
     @media print {
-      @page { size:A4 portrait; margin:16mm 14mm 18mm; }
+      @page {
+        size:A4 portrait;
+        margin:16mm 14mm 18mm;
+        @bottom-right {
+          content:"Page " counter(page) " of " counter(pages);
+          font-size:8pt;
+          color:#444;
+        }
+      }
       html, body { background:#fff !important; }
       body * { visibility:hidden !important; }
       #meetingPrintDocument, #meetingPrintDocument * { visibility:visible !important; }
