@@ -87,12 +87,6 @@ import {
   getMyApplicationContext
 } from "./auth.js";
 
-import {
-  getDemoMembers,
-  getDemoMeetings,
-  isDemoMode
-} from "./demo-client.js";
-
 
 console.log(
   "CHAMA LIVE: dashboard.js loaded"
@@ -550,32 +544,6 @@ function statusClass(value) {
 
 async function loadContext() {
 
-  if (isDemoMode()) {
-
-    const demo =
-      window.__CHAMA_LIVE_ADMIN_CONTEXT__;
-
-    currentUser =
-      null;
-
-    currentMember =
-      demo?.member || null;
-
-    currentGroup =
-      demo?.group || null;
-
-    currentGroupId = null;
-
-    if (!currentMember || !currentGroup?.name) {
-      throw new Error(
-        "The demo group context could not be verified."
-      );
-    }
-
-    renderContext();
-    return;
-  }
-
   const context =
     await getMyApplicationContext();
 
@@ -703,11 +671,6 @@ function renderContext() {
 ========================================================= */
 
 async function loadMembers() {
-
-  if (isDemoMode()) {
-    members = await getDemoMembers();
-    return;
-  }
 
   const {
     data,
@@ -863,12 +826,6 @@ async function loadExpenses() {
 
 async function loadAttendance() {
 
-  if (isDemoMode()) {
-    const { getDemoAttendance } = await import("./demo-client.js");
-    attendance = await getDemoAttendance();
-    return;
-  }
-
   const { data, error } = await supabase
     .from("attendance")
     .select("id,meeting_id,member_id,status")
@@ -904,11 +861,6 @@ function renderAttendanceSummary() {
 
 
 async function loadMeetings() {
-
-  if (isDemoMode()) {
-    meetings = await getDemoMeetings();
-    return;
-  }
 
   const {
     data,
@@ -2460,9 +2412,7 @@ async function loadCanonicalAccounting() {
 
 async function loadData() {
 
-  if (isDemoMode()) {
-
-    members = [];
+  members = [];
     contributions = [];
     expenses = [];
     meetings = [];
@@ -4033,142 +3983,10 @@ function renderOperationsSnapshot() {
 
 
 /* =========================================================
-   DEMO DASHBOARD PROJECTION
-   ---------------------------------------------------------
-   E2600 demo currently exposes only the approved session
-   projections: group members, meetings and attendance.
-   Do not invent accounting/expense/operations values from
-   the production client while a demo token is active.
-========================================================= */
-function renderDemoDashboard() {
-
-  const totalMembers = members.length;
-  const activeMembers = members.filter(
-    member => String(member?.status || "").toLowerCase() === "active"
-  ).length;
-
-  setText("membersCount", totalMembers + " members");
-  setText("activeMembers", activeMembers);
-
-  for (const id of [
-    "monthlyExpected",
-    "currentBalance",
-    "monthlyCollected",
-    "monthlyOutstanding",
-    "progressApplied",
-    "progressCarryForward",
-    "progressOutstanding",
-    "contributorsCount",
-    "contributorsPercentage"
-  ]) {
-    setText(id, "—");
-  }
-
-  setText("progressMonth", "E2600 Demo");
-  setText("progressPercentage", "—");
-  setText("progressText", "Demo accounting projection not loaded");
-
-  const progressBar = el("progressBar");
-  if (progressBar) {
-    progressBar.style.width = "0%";
-    progressBar.setAttribute("aria-valuenow", "0");
-  }
-
-  renderRecentContributions();
-  renderRecentExpenses();
-  renderUpcomingMeetings();
-  renderAttendanceSummary();
-
-  for (const id of [
-    "operationsSupportCases",
-    "operationsPlans",
-    "operationsActivities",
-    "operationsMilestones",
-    "operationsAssets",
-    "operationsContributionGoals"
-  ]) {
-    setText(id, "—");
-  }
-
-  const cumulativeRows = el("cumulativePositionRows");
-  if (cumulativeRows) {
-    cumulativeRows.innerHTML =
-      '<tr><td colspan="5"><div class="empty-state">' +
-      '<strong>Demo accounting projection</strong>' +
-      '<span>Financial accounting is not part of the current E2600 session projection.</span>' +
-      '</div></td></tr>';
-  }
-}
-
-
-/* =========================================================
-   DASHBOARD ACTIONS
-========================================================= */
-
-function bindDashboardActions() {
-
-  const refreshButton =
-    el("refreshDashboard");
-
-  if (!refreshButton) {
-    return;
-  }
-
-  if (
-    refreshButton.dataset.dashboardActionBound ===
-    "true"
-  ) {
-    return;
-  }
-
-  refreshButton.dataset.dashboardActionBound =
-    "true";
-
-  refreshButton.addEventListener(
-    "click",
-    async () => {
-
-      if (refreshButton.disabled) {
-        return;
-      }
-
-      const originalText =
-        refreshButton.textContent;
-
-      refreshButton.disabled =
-        true;
-
-      refreshButton.textContent =
-        "Refreshing…";
-
-      try {
-        await refreshDashboard();
-      }
-      finally {
-        refreshButton.disabled =
-          false;
-
-        refreshButton.textContent =
-          originalText ||
-          "Refresh";
-      }
-
-    }
-  );
-
-}
-
-
-/* =========================================================
    RENDER DASHBOARD
 ========================================================= */
 
 function renderDashboard() {
-
-  if (isDemoMode()) {
-    renderDemoDashboard();
-    return;
-  }
 
   renderSummary();
 
