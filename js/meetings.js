@@ -1572,9 +1572,11 @@ function renderAttendanceList() {
 
                   ${escapeHtml(
                     memberNumber
-                  )}                  ${row?.status
+                  )}
+
+                  ${row?.status
                     ? " · " + attendanceLabel(row.status)
-                    : " · No response
+                    : " · No response"
                   }
 
                 </small>
