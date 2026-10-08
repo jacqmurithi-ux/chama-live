@@ -40,11 +40,6 @@
 import { supabase } from "./supabase.js";
 
 import {
-  getDemoMembers,
-  isDemoMode
-} from "./demo-client.js";
-
-import {
   requireAuth,
   getMyMember,
   getMyGroup
@@ -329,12 +324,6 @@ function setLoadingState(loading) {
 ========================================================= */
 
 async function loadMembers() {
-
-  if (isDemoMode()) {
-    members = await getDemoMembers();
-    visibleMembers = [...members];
-    return;
-  }
 
   if (!groupId) {
     throw new Error(
@@ -2737,26 +2726,6 @@ export async function init() {
   bindEvents();
 
   try {
-
-    if (isDemoMode()) {
-
-      const demo =
-        window.__CHAMA_LIVE_ADMIN_CONTEXT__;
-
-      currentUser = null;
-      currentMember = demo?.member || null;
-      currentGroup = demo?.group || null;
-
-      groupId = null;
-
-      if (byId("addMemberButton")) {
-        byId("addMemberButton").hidden = true;
-      }
-
-      await refreshMembers();
-      return;
-
-    }
 
     currentUser =
       await requireAuth();
