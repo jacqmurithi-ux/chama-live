@@ -271,8 +271,7 @@ function getCurrentPage() {
 function isAdminAccount() {
 
   return (
-    demoMode ||
-    context?.isOwner === true ||
+        context?.isOwner === true ||
     ADMIN_ROLES.has(
       String(
         context?.role || ""
