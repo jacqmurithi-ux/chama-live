@@ -2393,7 +2393,7 @@ function bindEvents() {
                         "error"
                     );
                 }
-            } finally {
+                finally {
                 if (elements.saveMonthlyContribution) {
                     elements.saveMonthlyContribution.disabled = false;
                     elements.saveMonthlyContribution.textContent = "Save Monthly Contribution";
@@ -2431,7 +2431,7 @@ function bindEvents() {
                         "error"
                     );
                 }
-            } finally {
+                finally {
                 if (elements.saveCustomContribution) {
                     elements.saveCustomContribution.disabled = false;
                     elements.saveCustomContribution.textContent = "Save & Activate";
