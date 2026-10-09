@@ -670,6 +670,16 @@ async function loadPlans() {
 
 
   if (error) {
+    const body = $("plansBody");
+    if (body) {
+      body.innerHTML = `
+        <tr>
+          <td colspan="7" class="empty">
+            Plans could not be loaded. Check the error message above, then use Refresh.
+          </td>
+        </tr>
+      `;
+    }
     throw error;
   }
 
@@ -741,6 +751,16 @@ async function loadActivities() {
 
 
   if (error) {
+    const body = $("activitiesBody");
+    if (body) {
+      body.innerHTML = `
+        <tr>
+          <td colspan="7" class="empty">
+            Activities could not be loaded. Check the error message above, then use Refresh.
+          </td>
+        </tr>
+      `;
+    }
     throw error;
   }
 
@@ -1659,14 +1679,36 @@ async function createPlan(event) {
 
 
     if (error) {
+      console.error("CHAMA LIVE: plan insert failed", error);
       throw error;
     }
 
 
+    // The insert succeeded. Reset the form before refreshing so a refresh
+    // failure cannot encourage a duplicate submission.
     resetPlanForm();
 
+    showStatus(
+      "Plan saved. Refreshing the plans list…"
+    );
 
-    await loadPlans();
+
+    try {
+      await loadPlans();
+    } catch (refreshError) {
+      console.error(
+        "CHAMA LIVE: plan saved but list refresh failed",
+        refreshError
+      );
+
+      showError(
+        "The plan was saved, but the list could not be refreshed. " +
+        normalizeError(refreshError) +
+        " Use Refresh to reload the list; do not submit the same plan again."
+      );
+
+      return;
+    }
 
 
     showStatus(
