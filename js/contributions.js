@@ -224,6 +224,11 @@ const customContributionEditorCard =
     "customContributionEditorCard"
   );
 
+const newCustomContributionButton =
+  document.getElementById(
+    "newCustomContributionButton"
+  );
+
 const customContributionForm =
   document.getElementById(
     "customContributionForm"
@@ -6501,6 +6506,17 @@ function openCustomContributionEditor() {
     return;
   }
 
+  if (
+    !isGroupOwner &&
+    !["chairperson", "treasurer"].includes(getCurrentMemberRole())
+  ) {
+    showCustomContributionEditorMessage(
+      "Only the group owner, chairperson or treasurer can create a custom contribution draft.",
+      "error"
+    );
+    return;
+  }
+
 
   customContributionEditorCard.hidden =
     false;
@@ -7048,6 +7064,31 @@ async function saveCustomContributionDraft(
 
     }
 
+
+    /* =====================================================
+       DRAFT-ONLY TREASURER WORKFLOW
+       Treasurers may create drafts but cannot activate them.
+    ===================================================== */
+
+    if (getCurrentMemberRole() === "treasurer" && !isGroupOwner) {
+      await loadDraftCustomContributions();
+      await loadActiveCustomContributions();
+      renderDraftCustomContributionList();
+      renderActiveCustomContributionList();
+
+      showCustomContributionEditorMessage(
+        "Custom contribution draft created. It is not active and will not create member obligations until an authorized officer activates it.",
+        "success"
+      );
+
+      if (statusEl) {
+        statusEl.hidden = false;
+        statusEl.textContent = "✓ Custom contribution draft created; awaiting authorized activation.";
+      }
+
+      setTimeout(() => closeCustomContributionEditor(), 900);
+      return;
+    }
 
     /* =====================================================
        ACTIVATE
@@ -7936,6 +7977,13 @@ export async function initContributions(
     isGroupOwner =
       Boolean(applicationContext.isOwner);
 
+    if (newCustomContributionButton) {
+      newCustomContributionButton.hidden = !(
+        isGroupOwner ||
+        ["chairperson", "treasurer"].includes(getCurrentMemberRole())
+      );
+    }
+
 
     buildAccountingMonthOptions();
 
@@ -8207,6 +8255,17 @@ if (
 /* =========================================================
    REMAINING EVENTS
 ========================================================= */
+
+if (
+  newCustomContributionButton &&
+  !newCustomContributionButton.dataset.clCustomContributionBound
+) {
+  newCustomContributionButton.dataset.clCustomContributionBound = "true";
+  newCustomContributionButton.addEventListener("click", () => {
+    clearCustomContributionEditorMessage();
+    openCustomContributionEditor();
+  });
+}
 
 if (
   customContributionApplyFine &&
