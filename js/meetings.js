@@ -471,16 +471,6 @@ function setEditMode(meeting) {
       meeting.date || "";
 
   }
-
-
-  if (startTimeInput) {
-    startTimeInput.value = meeting.start_time || "";
-  }
-
-  if (endTimeInput) {
-    endTimeInput.value = meeting.end_time || "";
-  }
-
   if (meetingTypeInput) {
     meetingTypeInput.value = meeting.type || "regular";
   }
@@ -550,8 +540,6 @@ async function loadMeetings() {
         group_id,
         title,
         date,
-        start_time,
-        end_time,
         type,
         venue,
         agenda,
@@ -906,14 +894,6 @@ function renderDetails() {
         <span class="meeting-meta-label">Venue</span>
         <span class="meeting-meta-value">
           ${escapeHtml(selectedMeeting.venue || "Not specified")}
-        </span>
-      </div>
-
-      <div class="meeting-meta-box">
-        <span class="meeting-meta-label">Time</span>
-        <span class="meeting-meta-value">
-          ${escapeHtml(formatTime(selectedMeeting.start_time))}
-          ${selectedMeeting.end_time ? "– " + escapeHtml(formatTime(selectedMeeting.end_time)) : ""}
         </span>
       </div>
 
@@ -1372,13 +1352,6 @@ async function saveMeetingForm(event) {
       date:
         date,
 
-      start_time:
-        startTime || null,
-
-      end_time:
-        endTime ||
-        null,
-
       type:
         meetingType,
 
@@ -1420,8 +1393,6 @@ async function saveMeetingForm(event) {
             group_id,
             title,
             date,
-            start_time,
-            end_time,
             type,
             venue,
             agenda,
@@ -1475,8 +1446,6 @@ async function saveMeetingForm(event) {
             group_id,
             title,
             date,
-            start_time,
-            end_time,
             type,
             venue,
             agenda,
@@ -1677,8 +1646,6 @@ async function updateMeetingStatus(
         group_id,
         title,
         date,
-        start_time,
-        end_time,
         type,
         venue,
         agenda,
@@ -1802,8 +1769,6 @@ async function saveMeetingMinutes() {
         group_id,
         title,
         date,
-        start_time,
-        end_time,
         type,
         venue,
         agenda,
