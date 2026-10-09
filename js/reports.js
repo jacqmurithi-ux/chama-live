@@ -858,7 +858,7 @@ async function loadCanonical(month) {
       "get_canonical_member_monthly_status",
       {
         p_group_id: groupId,
-        p_accounting_month: month
+        p_month: month
       }
     ),
 
@@ -866,7 +866,7 @@ async function loadCanonical(month) {
       "get_canonical_monthly_accounting_summary",
       {
         p_group_id: groupId,
-        p_accounting_month: month
+        p_month: month
       }
     )
   ]);
