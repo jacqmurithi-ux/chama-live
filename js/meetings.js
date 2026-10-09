@@ -357,6 +357,11 @@ function showStatus(message) {
   statusEl.hidden =
     !message;
 
+  statusEl.className =
+    message
+      ? "meeting-status is-visible"
+      : "meeting-status";
+
 }
 
 
@@ -392,13 +397,19 @@ function showError(error) {
     "Unable to process meeting.";
 
 
-  if (errorEl) {
+  const messageTarget =
+    errorEl || statusEl;
 
-    errorEl.textContent =
+  if (messageTarget) {
+
+    messageTarget.textContent =
       message;
 
-    errorEl.hidden =
+    messageTarget.hidden =
       false;
+
+    messageTarget.className =
+      "meeting-status error is-visible";
 
   }
 
@@ -1266,8 +1277,8 @@ async function saveMeetingForm(event) {
     }
 
 
-    if (endTime && endTime <= startTime) {
-      throw new Error("End time must be later than start time.");
+    if (endTime && (!startTime || endTime <= startTime)) {
+      throw new Error("Select a start time before entering an end time, and ensure the end time is later.");
     }
 
     if (!["regular", "AGM", "special", "committee"].includes(meetingType)) {
