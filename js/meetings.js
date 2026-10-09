@@ -921,169 +921,79 @@ function quorumRequired(memberCount) {
 
 
 function renderAttendanceStats() {
-
   if (!meetingAttendanceStats) {
     return;
   }
 
-  const total =
-    attendanceMembers.length;
-
-  const attending =
-    [...attendanceRows.values()]
-      .filter(row =>
-        row.status === "present" ||
-        row.status === "late"
-      ).length;
-
-  const late =
-    [...attendanceRows.values()]
-      .filter(row => row.status === "late")
-      .length;
-
-  const apologies =
-    [...attendanceRows.values()]
-      .filter(row => row.status === "apology")
-      .length;
-
-  const absent =
-    Math.max(
-      0,
-      total - attending - apologies
-    );
-
-  const required =
-    quorumRequired(total);
-
-  const quorumMet =
-    total > 0 &&
-    attending >= required;
-
-  const rsvpAttending =
-    [...attendanceRsvps.values()]
-      .filter(row => row.status === "attending")
-      .length;
-
-  const rsvpApologies =
-    [...attendanceRsvps.values()]
-      .filter(row => row.status === "apology")
-      .length;
-
-  const noResponse =
-    Math.max(
-      0,
-      total - rsvpAttending - rsvpApologies
-    );
+  const total = attendanceMembers.length;
+  const present = [...attendanceRows.values()]
+    .filter(row => row.status === "present")
+    .length;
+  const absent = Math.max(0, total - present);
+  const required = quorumRequired(total);
+  const quorumMet = total > 0 && present >= required;
 
   meetingAttendanceStats.innerHTML = `
     <div class="meeting-meta-box">
-      <span class="meeting-meta-label">RSVP</span>
-      <span class="meeting-meta-value">
-        Attending ${rsvpAttending} · Apologies ${rsvpApologies} · No response ${noResponse}
-      </span>
-    </div>
-
-    <div class="meeting-meta-box">
       <span class="meeting-meta-label">Attendance</span>
       <span class="meeting-meta-value">
-        Present ${attending} · Late ${late} · Apologies ${apologies} · Absent ${absent}
+        Present ${present} · Absent ${absent}
       </span>
     </div>
 
     <div class="meeting-meta-box">
       <span class="meeting-meta-label">Quorum</span>
       <span class="meeting-meta-value">
-        ${attending} / ${required}
+        ${present} / ${required}
         · ${quorumMet ? "Quorum met" : "Quorum not met"}
       </span>
     </div>
   `;
 
   if (meetingRsvpSummary) {
-    meetingRsvpSummary.hidden = false;
-    meetingRsvpSummary.innerHTML = `
-      <div class="meeting-meta-box">
-        <span class="meeting-meta-label">Member RSVP</span>
-        <span class="meeting-meta-value">
-          Attending ${rsvpAttending} · Apologies ${rsvpApologies} · No response ${noResponse}
-        </span>
-      </div>
-    `;
+    // No RSVP source is currently connected to this page.
+    meetingRsvpSummary.hidden = true;
+    meetingRsvpSummary.replaceChildren();
   }
 }
 
 
 function renderAttendanceList() {
-
   if (!meetingAttendanceList) {
     return;
   }
 
   if (!attendanceMembers.length) {
     meetingAttendanceList.innerHTML =
-      "<p class=\"muted\">No active group members found.</p>";
+      "<p class=\\"muted\\">No active group members found.</p>";
+    renderAttendanceStats();
     return;
   }
 
-  meetingAttendanceList.innerHTML =
-    attendanceMembers.map(member => {
+  meetingAttendanceList.innerHTML = attendanceMembers.map(member => {
+    const row = attendanceRows.get(String(member.id));
+    const checked = row?.status === "present";
 
-      const row =
-        attendanceRows.get(member.id);
-
-      const checked =
-        row?.status === "present" ||
-        row?.status === "late";
-
-      const late =
-        row?.status === "late";
-
-      const rsvp =
-        attendanceRsvps.get(member.id);
-
-      const defaultStatus =
-        row?.status === "apology" || rsvp?.status === "apology"
-          ? "apology"
-          : "absent";
-
-      return `
-        <div class="meeting-attendance-row">
-          <label>
-            <input
-              type="checkbox"
-              data-attendance-member="${escapeHtml(member.id)}"
-              ${checked ? "checked" : ""}
-            >
-            <span>
-              <strong>${escapeHtml(member.name)}</strong>
-              <small>
-                ${escapeHtml(member.member_number || member.membership_number || "")}
-                · RSVP: ${escapeHtml(rsvp?.status || "No response")}
-              </small>
-            </span>
-          </label>
-
-          <select
-            data-attendance-status="${escapeHtml(member.id)}"
-            aria-label="Attendance status for ${escapeHtml(member.name)}"
-            ${checked ? "" : "hidden"}
-          >
-            <option value="present" ${!late ? "selected" : ""}>Present</option>
-            <option value="late" ${late ? "selected" : ""}>Late</option>
-          </select>
-
+    return `
+      <div class="meeting-attendance-row">
+        <label>
           <input
-            type="hidden"
-            data-attendance-default="${escapeHtml(member.id)}"
-            value="${defaultStatus}"
+            type="checkbox"
+            data-attendance-member="${escapeHtml(member.id)}"
+            ${checked ? "checked" : ""}
           >
-        </div>
-      `;
-    }).join("");
+          <span>
+            <strong>${escapeHtml(member.name)}</strong>
+            <small>${escapeHtml(member.member_number || member.membership_number || "")}</small>
+          </span>
+        </label>
+        <span class="meeting-attendance-status">${checked ? "Present" : "Absent"}</span>
+      </div>
+    `;
+  }).join("");
 
   renderAttendanceStats();
 }
-
 
 async function loadMeetingAttendance() {
 
@@ -1127,7 +1037,6 @@ async function loadMeetingAttendance() {
 
 
 async function saveAttendance() {
-
   if (!selectedMeeting || !groupId) {
     throw new Error("Select a meeting before saving attendance.");
   }
@@ -1140,30 +1049,18 @@ async function saveAttendance() {
   saveMeetingAttendance.textContent = "Saving...";
 
   try {
+    // The database CHECK constraint permits only "present" and "absent".
+    // Keep the UI payload strictly within that persisted contract.
     const rows = attendanceMembers.map(member => {
       const memberId = String(member.id);
       const checkbox = meetingAttendanceList?.querySelector(
         `input[data-attendance-member="${CSS.escape(memberId)}"]`
       );
-      const statusSelect = meetingAttendanceList?.querySelector(
-        `select[data-attendance-status="${CSS.escape(memberId)}"]`
-      );
-      const defaultInput = meetingAttendanceList?.querySelector(
-        `input[data-attendance-default="${CSS.escape(memberId)}"]`
-      );
-
-      let status;
-      if (checkbox?.checked) {
-        status = statusSelect?.value === "late" ? "late" : "present";
-      } else {
-        const defaultStatus = defaultInput?.value;
-        status = defaultStatus === "apology" ? "apology" : "absent";
-      }
 
       return {
         meeting_id: selectedMeeting.id,
         member_id: member.id,
-        status
+        status: checkbox?.checked ? "present" : "absent"
       };
     });
 
@@ -1952,22 +1849,18 @@ function setupButtons() {
   meetingAttendanceList?.addEventListener(
     "change",
     event => {
-      const checkbox =
-        event.target.closest("input[data-attendance-member]");
+      if (event.target.matches("input[data-attendance-member]")) {
+        const memberId = String(event.target.dataset.attendanceMember);
+        const statusLabel = event.target
+          .closest(".meeting-attendance-row")
+          ?.querySelector(".meeting-attendance-status");
 
-      if (!checkbox) return;
+        if (statusLabel) {
+          statusLabel.textContent = event.target.checked ? "Present" : "Absent";
+        }
 
-      const memberId = checkbox.dataset.attendanceMember;
-      const statusSelect =
-        meetingAttendanceList.querySelector(
-          `select[data-attendance-status="${CSS.escape(memberId)}"]`
-        );
-
-      if (statusSelect) {
-        statusSelect.hidden = !checkbox.checked;
+        renderAttendanceStats();
       }
-
-      renderAttendanceStats();
     }
   );
 
