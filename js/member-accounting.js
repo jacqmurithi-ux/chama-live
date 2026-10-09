@@ -655,6 +655,20 @@ function renderPeriod() {
    ========================================================= */
 
 async function loadContext() {
+  const {
+    data: authData,
+    error: authError
+  } = await supabase.auth.getUser();
+
+  if (authError || !authData?.user?.id) {
+    throw new Error(
+      "Your signed-in identity could not be verified. Please sign in again."
+    );
+  }
+
+  const authenticatedUserId =
+    String(authData.user.id);
+
   currentMember =
     await getMyMember();
 
@@ -670,6 +684,26 @@ async function loadContext() {
   if (!currentGroup) {
     throw new Error(
       "Your group could not be loaded."
+    );
+  }
+
+  /*
+   * Fail closed if the resolved member row is explicitly linked
+   * to a different authenticated user. This prevents an admin or
+   * chairperson from being shown a treasurer's member record when
+   * the canonical member resolver returns the wrong linked row.
+   */
+  const linkedUserId =
+    currentMember.auth_user_id ??
+    currentMember.user_id ??
+    null;
+
+  if (
+    linkedUserId &&
+    String(linkedUserId) !== authenticatedUserId
+  ) {
+    throw new Error(
+      "The member record returned for this session belongs to a different login. Your personal accounting has been blocked for your protection. Please sign out and contact support if this continues."
     );
   }
 
