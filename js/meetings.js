@@ -948,6 +948,7 @@ function renderDetails() {
   }
 
   detailsCard.hidden = false;
+  if (meetingAttendance) meetingAttendance.hidden = false;
 
   if (completeMeeting) {
     completeMeeting.hidden = status !== "upcoming";
@@ -1102,7 +1103,7 @@ function renderAttendanceList() {
         attendanceRsvps.get(member.id);
 
       const defaultStatus =
-        rsvp?.status === "apology"
+        row?.status === "apology" || rsvp?.status === "apology"
           ? "apology"
           : "absent";
 
@@ -1151,43 +1152,105 @@ async function loadMeetingAttendance() {
     return;
   }
 
-  const { error } =
-      await supabase
-        .from("attendance")
-        .upsert(
-          rows,
-          {
-            onConflict: "meeting_id,member_id"
-          }
-        );
+  meetingAttendance.hidden = false;
 
-    if (error) throw error;
+  const [membersResult, attendanceResult] = await Promise.all([
+    supabase
+      .from("members")
+      .select("id, name, member_number, membership_number")
+      .eq("group_id", groupId)
+      .eq("status", "active")
+      .order("name", { ascending: true }),
 
-    const { data, error: reloadError } =
-      await supabase
+    supabase
+      .from("attendance")
+      .select("member_id, status")
+      .eq("meeting_id", selectedMeeting.id)
+  ]);
+
+  if (membersResult.error) throw membersResult.error;
+  if (attendanceResult.error) throw attendanceResult.error;
+
+  attendanceMembers = Array.isArray(membersResult.data)
+    ? membersResult.data
+    : [];
+
+  attendanceRows = new Map(
+    (attendanceResult.data || [])
+      .map(row => [String(row.member_id), row])
+  );
+
+  // No separate RSVP table is queried here; do not invent RSVP records.
+  attendanceRsvps = new Map();
+
+  renderAttendanceList();
+}
+
+
+async function saveAttendance() {
+
+  if (!selectedMeeting || !groupId) {
+    throw new Error("Select a meeting before saving attendance.");
+  }
+
+  if (!saveMeetingAttendance) {
+    throw new Error("The Save Attendance button is unavailable.");
+  }
+
+  saveMeetingAttendance.disabled = true;
+  saveMeetingAttendance.textContent = "Saving...";
+
+  try {
+    const rows = attendanceMembers.map(member => {
+      const memberId = String(member.id);
+      const checkbox = meetingAttendanceList?.querySelector(
+        `input[data-attendance-member="${CSS.escape(memberId)}"]`
+      );
+      const statusSelect = meetingAttendanceList?.querySelector(
+        `select[data-attendance-status="${CSS.escape(memberId)}"]`
+      );
+      const defaultInput = meetingAttendanceList?.querySelector(
+        `input[data-attendance-default="${CSS.escape(memberId)}"]`
+      );
+
+      let status;
+      if (checkbox?.checked) {
+        status = statusSelect?.value === "late" ? "late" : "present";
+      } else {
+        const defaultStatus = defaultInput?.value;
+        status = defaultStatus === "apology" ? "apology" : "absent";
+      }
+
+      return {
+        meeting_id: selectedMeeting.id,
+        member_id: member.id,
+        status
+      };
+    });
+
+    if (rows.length) {
+      const { error } = await supabase
         .from("attendance")
-        .select("member_id, status")
-        .eq("meeting_id", selectedMeeting.id);
+        .upsert(rows, { onConflict: "meeting_id,member_id" });
+
+      if (error) throw error;
+    }
+
+    const { data, error: reloadError } = await supabase
+      .from("attendance")
+      .select("member_id, status")
+      .eq("meeting_id", selectedMeeting.id);
 
     if (reloadError) throw reloadError;
 
-    attendanceRows =
-      new Map(
-        (data || [])
-          .map(row => [row.member_id, row])
-      );
-
-    renderAttendanceList();
-
-    showStatus("Attendance saved.");
-
-    setTimeout(
-      () => showStatus(""),
-      2000
+    attendanceRows = new Map(
+      (data || []).map(row => [String(row.member_id), row])
     );
 
-  }
-  finally {
+    renderAttendanceList();
+    showStatus("Attendance saved.");
+    setTimeout(() => showStatus(""), 2000);
+  } finally {
     saveMeetingAttendance.disabled = false;
     saveMeetingAttendance.textContent = "Save Attendance";
   }
