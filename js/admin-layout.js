@@ -571,6 +571,20 @@ function injectStyles() {
         display: none !important;
       }
 
+      /* Remove the desktop sidebar column and let page content fill the screen. */
+      .layout {
+        display: block !important;
+      }
+
+      .layout > .main,
+      .layout > main,
+      .main-content {
+        width: 100%;
+        max-width: 100%;
+        margin-left: 0 !important;
+        box-sizing: border-box;
+      }
+
       body {
         padding-bottom: calc(78px + env(safe-area-inset-bottom)) !important;
       }
