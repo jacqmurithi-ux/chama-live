@@ -201,7 +201,7 @@ const PAGE_SCRIPTS = {
   ],
 
   "monthly-closing.html": [
-    "./monthly-closing.js",
+    "./monthly-closing.js?v=20261009-closed-guard",
     "initPage"
   ],
 
