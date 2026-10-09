@@ -881,7 +881,7 @@ async function refreshCanonicalAccountingThroughMonth(
     error
   } =
     await supabase.rpc(
-      "refresh_canonical_contribution_accounting",
+      "refresh_my_group_contribution_accounting",
       {
         p_group_id:
           groupId,
