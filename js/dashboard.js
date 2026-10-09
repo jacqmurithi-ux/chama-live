@@ -1,4 +1,6 @@
- ---------------------------------------------------------
+
+/*
+=========================================================
    DATABASE:
        NO INSERT
        NO UPDATE
@@ -29,50 +31,24 @@
    CANONICAL CUMULATIVE ACCOUNTING:
        get_member_contribution_position()
 
-       IMPORTANT:
-       Cumulative position is kept separate from the
-       monthly accounting contract.
+       Cumulative position is separate from monthly accounting.
 
    CUSTOM / OTHER CONTRIBUTIONS:
-       Read-only discovery only.
-
-       The dashboard does NOT create, activate, modify,
-       allocate, settle, or otherwise mutate Custom
-       Contribution records.
-
-       Active Custom Contribution data is displayed only
-       when the corresponding read-only schema is available.
-
-       No assumed RPC/table mutation contract is introduced.
-
-   CANONICAL CHAIN:
-       Obligation
-           ↓
-       Payment
-           ↓
-       Allocation
-           ↓
-       Monthly / Cumulative accounting status
+       Read-only discovery only. No mutation.
 
    OPERATIONS SNAPSHOT:
-       Read-only counts for:
-       - Support & Welfare
-       - Plans
-       - Activities
-       - Milestones
-       - Assets
-       - Contribution Goals
+       Read-only counts for support, plans, activities,
+       milestones, assets, and contribution goals.
 
    IMPORTANT:
-       admin-layout.js is the page bootloader.
-
-       Therefore this module does NOT auto-run
-       initDashboard() at the bottom.
+       admin-layout.js owns initialization.
+       Do NOT auto-run initDashboard().
 
    EXPORTS:
        initDashboard()
        refreshDashboard()
-========================================================= */
+=========================================================
+*/
 
 import {
   supabase
