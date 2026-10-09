@@ -136,11 +136,16 @@ function pageTitle(page) {
 }
 function renderDashboard(data, memberView = false) {
   const count = key => Array.isArray(data[key]) ? data[key].length : 0;
+  const sum = key => (Array.isArray(data[key]) ? data[key] : []).reduce((total,row)=>total+Number(row.amount ?? row.current_value ?? 0),0);
   const metrics = [
-    ["Members",count("members")],["Contribution records",count("contributions")],
-    ["Meetings",count("meetings")],["Fines",count("fines")],
-    ["Expenses",count("expenses")],["Assets",count("group_assets")],
-    ["Financial periods",count("financial_periods")],["Welfare cases",count("group_support_cases")]
+    ["Members",count("members")],
+    ["Contributions (sample)",money(sum("contributions"))],
+    ["Expenses (sample)",money(sum("expenses"))],
+    ["Meetings",count("meetings")],
+    ["Fines",count("fines")],
+    ["Assets",count("group_assets")],
+    ["Financial periods",count("financial_periods")],
+    ["Welfare cases",count("group_support_cases")]
   ];
   pageContent.innerHTML = `
     <div class="demo-page-heading"><div><p class="demo-kicker">OVERVIEW</p><h1>${memberView ? "Member Dashboard Preview" : "Group dashboard"}</h1><p class="demo-note">${memberView ? "A preview of the member-facing experience. No member account is signed in." : "Welcome to " + escapeHtml(context?.group_name || "Furaha Investment Group") + ". This is a sandbox view of simulated group records."}</p></div><span class="demo-pill">DEMO</span></div>
