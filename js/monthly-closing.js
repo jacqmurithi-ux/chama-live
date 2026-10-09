@@ -2713,16 +2713,16 @@ async function closeMonth() {
       Reconcile the page to the closed state instead.
     */
     const alreadyClosed =
-      /Financial month \\d{4}-\\d{2} is already closed/i.test(
+      /Financial month \d{4}-\d{2} is already closed/i.test(
         errorMessage
       );
+
+    const selectedMonth =
+      monthInput?.value;
 
     if (alreadyClosed) {
 
       periodStatus = "closed";
-
-      const selectedMonth =
-        monthInput?.value;
 
       if (selectedMonth) {
 
