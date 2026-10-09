@@ -83,7 +83,7 @@ const PAGE_SCRIPTS = {
   },
 
   "member-accounting.html": {
-    path: "./js/member-accounting.js?v=20261009-personal-only1",
+    path: "./js/member-accounting.js?v=20261009-identity-guard2",
     initializer: "initMemberAccounting"
   },
 
