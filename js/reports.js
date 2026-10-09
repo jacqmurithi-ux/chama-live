@@ -1879,6 +1879,7 @@ function canonicalOutstanding(row) {
 function canonicalCredit(row) {
   return numberValue(
     row.carry_forward_credit ??
+    row.previous_credit ??
     row.credit ??
     row.current_credit ??
     0
