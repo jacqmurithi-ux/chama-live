@@ -42,6 +42,7 @@ let currentDefinition = null;
 let currentRows = [];
 let editingRow = null;
 let context = null;
+let editorChoices = { members: [], meetings: [] };
 
 function renderGuide(type) {
   const admin = type === "admin";
@@ -256,7 +257,7 @@ function renderTable(def, rows) {
       row.hidden = !row.textContent.toLowerCase().includes(query);
     });
   });
-  pageContent.querySelectorAll("[data-edit-index]").forEach(button => button.addEventListener("click", () => openEditor(currentRows[Number(button.dataset.editIndex)])));
+  pageContent.querySelectorAll("[data-edit-index]").forEach(button => button.addEventListener("click", () => openEditor(currentRows[Number(button.dataset.editIndex)]).catch(error=>showError(error.message || "Could not open record form."))));
   pageContent.querySelectorAll("[data-delete-index]").forEach(button => button.addEventListener("click", async () => {
     const row = currentRows[Number(button.dataset.deleteIndex)];
     if (!row?.id || !confirm("Hide this record in your demo session? The original seed record will remain unchanged.")) return;
@@ -278,7 +279,7 @@ function renderTable(def, rows) {
       for (const field of currentDefinition.fields) {
         if (!(field in row)) row[field] = "";
       }
-      openEditor(row);
+      await openEditor(row);
       document.querySelector("#editTitle").textContent = `Create demo ${currentDefinition.title.toLowerCase()} record`;
     } catch (error) {
       showError(error.message || "Could not start a new demo record.");
@@ -303,6 +304,13 @@ function fieldControl(key, value, row) {
   const isDate = /(^date$|_date$|^month$|_month$|^current_period_(start|end)$)/.test(key) || key==="date";
   const isNumber = /amount|balance|budget|value|contribution$/.test(key);
   const common = `id="${id}" name="${key}" aria-label="${label}"`;
+  if (key === "member_id" || key === "meeting_id") {
+    const source = key === "member_id" ? editorChoices.members : editorChoices.meetings;
+    const current = value == null ? "" : String(value);
+    const options = source.map(item => ({value:String(item.id),label:key==="member_id" ? `${item.member_number ? item.member_number+" · " : ""}${item.name || "Member"}` : `${item.title || "Meeting"} · ${item.date || "No date"}`}));
+    if (current && !options.some(item=>item.value===current)) options.unshift({value:current,label:"Current linked record"});
+    return `<label class="demo-edit-field" for="${id}"><span>${escapeHtml(label)}</span><select ${common} required><option value="">Choose ${escapeHtml(label.toLowerCase())}…</option>${options.map(option=>`<option value="${escapeHtml(option.value)}" ${current===option.value?"selected":""}>${escapeHtml(option.label)}</option>`).join("")}</select></label>`;
+  }
   if (selectOptions[key]) {
     const options = [...new Set([...(value!==undefined && value!==null && value!=="" ? [String(value)] : []),...selectOptions[key]])];
     return `<label class="demo-edit-field" for="${id}"><span>${escapeHtml(label)}</span><select ${common}>${options.map(option=>`<option value="${escapeHtml(option)}" ${String(value??"")===option?"selected":""}>${escapeHtml(option)}</option>`).join("")}</select></label>`;
@@ -314,8 +322,11 @@ function fieldControl(key, value, row) {
   const type = key==="email" ? "email" : "text";
   return `<label class="demo-edit-field" for="${id}"><span>${escapeHtml(label)}</span><input ${common} type="${type}" value="${escapeHtml(value??"")}" ${required?"required":""} ${key.endsWith("_id") ? 'placeholder="Use a demo record ID"' : ""}></label>`;
 }
-function openEditor(row) {
+async function openEditor(row) {
   if (!row?.id) return showError("This record has no editable identifier.");
+  try {
+    editorChoices = { members: await getDemoRows("members"), meetings: await getDemoRows("meetings") };
+  } catch (error) { showError(error.message || "Could not load member and meeting choices."); return; }
   editingRow = row;
   editError.hidden = true;
   document.querySelector("#editTitle").textContent = `${row.group_id && currentDefinition.table==="groups" ? "Edit" : (currentRows.some(existing=>existing.id===row.id) ? "Edit" : "Create")} ${currentDefinition.title.toLowerCase()} record`;
