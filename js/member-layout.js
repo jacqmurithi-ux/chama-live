@@ -37,7 +37,9 @@ import {
    ========================================================= */
 
 const ADMIN_ROLES = new Set([
+  "owner",
   "admin",
+  "administrator",
   "chairperson",
   "secretary",
   "treasurer",
@@ -1020,6 +1022,19 @@ function renderBottomNavigation() {
       href: "member-getting-started.html"
     }
   ];
+
+  /*
+   * Keep the Official Portal route visible in the mobile
+   * quick navigation for recognized group-officer roles.
+   * This is navigation only; official-page authorization
+   * remains authoritative.
+   */
+  if (isAdminAccount()) {
+    items.push({
+      label: "Official",
+      href: "dashboard.html"
+    });
+  }
 
   items.forEach(item => {
     bottom.appendChild(
