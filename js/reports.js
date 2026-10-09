@@ -1989,6 +1989,21 @@ function renderExecutiveReport(
 
       </div>
 
+      <div class="report-table-wrap executive-export-table">
+        <h3>Executive Summary Values</h3>
+        <table class="report-table">
+          <thead><tr><th>Metric</th><th>Value</th></tr></thead>
+          <tbody>
+            <tr><td>Contributions</td><td>${formatCurrency(totalContributions)}</td></tr>
+            <tr><td>Approved Expenses</td><td>${formatCurrency(approvedExpenses)}</td></tr>
+            <tr><td>Net Cash Position</td><td>${formatCurrency(balance)}</td></tr>
+            <tr><td>Cumulative Arrears</td><td>${formatCurrency(cumulativeArrears)}</td></tr>
+            <tr><td>Cumulative Credit</td><td>${formatCurrency(cumulativeCredit)}</td></tr>
+            <tr><td>Meetings</td><td>${formatNumber(meetingRows.length)}</td></tr>
+          </tbody>
+        </table>
+      </div>
+
       <div class="report-executive-note">
         <strong>Accounting view</strong>
         <p>
