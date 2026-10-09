@@ -241,7 +241,7 @@ function mapRpcError(error) {
       "Your account must be an active member of this group.",
 
     MEMBER_MANAGEMENT_NOT_AUTHORIZED:
-      "Only a group admin or chairperson can add members.",
+      "Only a group admin, chairperson, or treasurer can add members.",
 
     MEMBER_NUMBER_ALREADY_EXISTS:
       "That member number already exists in this group.",
@@ -1874,7 +1874,7 @@ async function checkMemberManagementAccess(
     error,
   } =
     await supabase.rpc(
-      "can_manage_members",
+      "can_add_group_members",
       {
         p_group_id:
           groupId,
@@ -1993,19 +1993,19 @@ export async function addMemberInit() {
     const groupId =
       context.group_id;
 
-    const canManage =
+    const canAddMembers =
       await checkMemberManagementAccess(
         groupId
       );
 
     console.info(
-      "CHAMA LIVE Add Member: can_manage_members result:",
-      canManage
+      "CHAMA LIVE Add Member: can_add_group_members result:",
+      canAddMembers
     );
 
-    if (!canManage) {
+    if (!canAddMembers) {
       showAccessError(
-        "Only a group admin or chairperson can add members."
+        "Only a group admin, chairperson, or treasurer can add members."
       );
 
       return;
