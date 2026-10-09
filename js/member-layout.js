@@ -310,7 +310,7 @@ function injectStyles() {
     .chama-member-mobile-backdrop {
       position: fixed;
       inset: 0;
-      z-index: 9997;
+      z-index: 20000;
       background: rgba(0, 0, 0, 0.38);
     }
 
@@ -319,7 +319,7 @@ function injectStyles() {
       top: 0;
       right: 0;
       bottom: 0;
-      z-index: 9998;
+      z-index: 20001;
       width: min(88vw, 340px);
       overflow-y: auto;
       padding: 1.25rem;
@@ -456,6 +456,12 @@ function injectStyles() {
 
       body {
         padding-bottom: calc(78px + env(safe-area-inset-bottom)) !important;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .chama-member-bottom-nav a {
+        font-size: 9px;
       }
     }
 
@@ -1038,19 +1044,6 @@ function renderBottomNavigation() {
       href: "member-getting-started.html"
     }
   ];
-
-  /*
-   * Keep the Official Portal route visible in the mobile
-   * quick navigation for recognized group-officer roles.
-   * This is navigation only; official-page authorization
-   * remains authoritative.
-   */
-  if (isAdminAccount()) {
-    items.push({
-      label: "Official",
-      href: "dashboard.html"
-    });
-  }
 
   items.forEach(item => {
     bottom.appendChild(
