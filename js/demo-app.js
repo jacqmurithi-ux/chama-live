@@ -5,7 +5,7 @@ const pageContent = document.querySelector("#pageContent");
 const errorBox = document.querySelector("#demoError");
 const editDialog = document.querySelector("#editDialog");
 const editForm = document.querySelector("#editForm");
-const editJson = document.querySelector("#editJson");
+const editFields = document.querySelector("#editFields");
 const editError = document.querySelector("#editError");
 const money = value => new Intl.NumberFormat("en-KE", { style:"currency", currency:"KES", maximumFractionDigits:0 }).format(Number(value || 0));
 const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, char => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[char]));
@@ -285,21 +285,60 @@ function renderTable(def, rows) {
     }
   });
 }
+function fieldControl(key, value, row) {
+  const id = `editField_${key}`;
+  const label = key.replaceAll("_"," ").replace(/\b\w/g, c=>c.toUpperCase());
+  const selectOptions = {
+    status: ["active","inactive","pending","paid","unpaid","open","closed","planned","completed","present","late","apology","absent","simulated","approved","draft"],
+    role: ["member","admin","chairperson","secretary","treasurer"],
+    actual_position_name: ["Member","Chairperson","Vice Chairperson","Secretary","Treasurer"],
+    payment_method: ["cash","mpesa","bank","other","demo-import"],
+    category: ["Investment","Operations","Welfare","Transport","Equipment","Other"],
+    contribution_type: ["Monthly Contribution","Shares","Welfare","Special Contribution","Other"],
+    fine_type: ["Attendance","Late Arrival","Missed Activity","Disciplinary","Other"],
+    type: ["Regular Meeting","Special Meeting","Annual General Meeting","Other"],
+    case_type: ["Medical","Emergency","Bereavement","Other"]
+  };
+  const isLong = /description|reason|minutes|notes|address|location/.test(key);
+  const isDate = /(^date$|_date$|^month$|_month$|^current_period_(start|end)$)/.test(key) || key==="date";
+  const isNumber = /amount|balance|budget|value|contribution$/.test(key);
+  const common = `id="${id}" name="${key}" aria-label="${label}"`;
+  if (selectOptions[key]) {
+    const options = [...new Set([...(value!==undefined && value!==null && value!=="" ? [String(value)] : []),...selectOptions[key]])];
+    return `<label class="demo-edit-field" for="${id}"><span>${escapeHtml(label)}</span><select ${common}>${options.map(option=>`<option value="${escapeHtml(option)}" ${String(value??"")===option?"selected":""}>${escapeHtml(option)}</option>`).join("")}</select></label>`;
+  }
+  if (isLong) return `<label class="demo-edit-field demo-edit-field-wide" for="${id}"><span>${escapeHtml(label)}</span><textarea ${common} rows="3">${escapeHtml(value??"")}</textarea></label>`;
+  if (isNumber) return `<label class="demo-edit-field" for="${id}"><span>${escapeHtml(label)}</span><input ${common} type="number" min="0" step="0.01" value="${escapeHtml(value??"")}" ${key==="amount"||key==="budget"?"required":""}></label>`;
+  if (isDate) return `<label class="demo-edit-field" for="${id}"><span>${escapeHtml(label)}</span><input ${common} type="date" value="${escapeHtml(String(value??"").slice(0,10))}"></label>`;
+  const required = ["name","title","description","contribution_date","date","amount","member_id","meeting_id"].includes(key);
+  const type = key==="email" ? "email" : "text";
+  return `<label class="demo-edit-field" for="${id}"><span>${escapeHtml(label)}</span><input ${common} type="${type}" value="${escapeHtml(value??"")}" ${required?"required":""} ${key.endsWith("_id")?"placeholder":"".length===0 && key.endsWith("_id")?"placeholder":""}></label>`;
+}
 function openEditor(row) {
   if (!row?.id) return showError("This record has no editable identifier.");
   editingRow = row;
-  editJson.value = JSON.stringify(row,null,2);
   editError.hidden = true;
-  document.querySelector("#editTitle").textContent = `Edit ${currentDefinition.title.toLowerCase()} record`;
+  document.querySelector("#editTitle").textContent = `${row.group_id && currentDefinition.table==="groups" ? "Edit" : (currentRows.some(existing=>existing.id===row.id) ? "Edit" : "Create")} ${currentDefinition.title.toLowerCase()} record`;
+  const fields = currentDefinition.fields.filter(key=>key!=="id"&&key!=="group_id"&&key!=="created_at"&&key!=="updated_at");
+  editFields.innerHTML = fields.map(key=>fieldControl(key,row[key],row)).join("");
   editDialog.showModal();
 }
 editForm.addEventListener("submit", async event => {
   event.preventDefault();
   try {
-    const parsed = JSON.parse(editJson.value);
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed) || parsed.id !== editingRow.id) {
-      throw new Error("Keep the original record id unchanged.");
+    const parsed = {...editingRow};
+    for (const control of editFields.querySelectorAll("[name]")) {
+      const key=control.name;
+      let value=control.value;
+      if (control.type==="number" && value!=="") value=Number(value);
+      if (typeof value==="string") value=value.trim();
+      if (control.required && !value) throw new Error(`${key.replaceAll("_"," ")} is required.`);
+      parsed[key]=value;
     }
+    if (parsed.id !== editingRow.id) throw new Error("Record identifier changed unexpectedly.");
+    if ("group_id" in parsed && parsed.group_id !== editingRow.group_id) throw new Error("Group ownership cannot be changed in the demo editor.");
+    if (parsed.email && !parsed.email.endsWith("@furaha-demo.invalid")) throw new Error("Use the reserved @furaha-demo.invalid placeholder domain.");
+    if (parsed.phone && !parsed.phone.startsWith("DEMO-PHONE-")) throw new Error("Use the reserved DEMO-PHONE placeholder format.");
     await setDemoOverride(currentDefinition.table, editingRow.id, parsed, "upsert");
     editDialog.close();
     await navigate(currentPage);
