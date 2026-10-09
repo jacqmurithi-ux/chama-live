@@ -3974,6 +3974,38 @@ function renderDashboard() {
 
 
 /* =========================================================
+   DASHBOARD ACTIONS
+========================================================= */
+
+function bindDashboardActions() {
+  const refreshButton = el("refreshDashboard");
+
+  if (!refreshButton) {
+    console.warn(
+      "CHAMA LIVE: Refresh button not found; dashboard refresh remains available through refreshDashboard()."
+    );
+    return;
+  }
+
+  // Avoid registering duplicate click handlers if initialization is retried.
+  if (refreshButton.dataset.dashboardActionBound === "true") {
+    return;
+  }
+
+  refreshButton.dataset.dashboardActionBound = "true";
+  refreshButton.addEventListener("click", async () => {
+    refreshButton.disabled = true;
+
+    try {
+      await refreshDashboard();
+    } finally {
+      refreshButton.disabled = false;
+    }
+  });
+}
+
+
+/* =========================================================
    INITIALIZE
 ========================================================= */
 
