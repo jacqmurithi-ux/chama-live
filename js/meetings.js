@@ -55,12 +55,6 @@ const titleInput =
 const dateInput =
   document.getElementById("meetingDate");
 
-const startTimeInput =
-  document.getElementById("meetingStartTime");
-
-const endTimeInput =
-  document.getElementById("meetingEndTime");
-
 const meetingTypeInput =
   document.getElementById("meetingType");
 
@@ -252,17 +246,6 @@ function formatDate(value) {
 
 }
 
-
-function formatTime(value) {
-  if (!value) return "Not specified";
-  const parts = String(value).split(":");
-  const hour = Number(parts[0]);
-  const minute = parts[1] || "00";
-  if (!Number.isFinite(hour)) return String(value);
-  const suffix = hour >= 12 ? "PM" : "AM";
-  const displayHour = hour % 12 || 12;
-  return displayHour + ":" + minute + " " + suffix;
-}
 
 function formatMeetingType(value) {
   const type = String(value || "regular").trim();
@@ -1284,13 +1267,7 @@ async function saveMeetingForm(event) {
       ).trim();
 
 
-    const startTime =
-      String(startTimeInput?.value || "").trim();
-
-    const endTime =
-      String(endTimeInput?.value || "").trim();
-
-    const meetingType =
+const meetingType =
       String(meetingTypeInput?.value || "regular").trim();
 
     const venue =
@@ -1320,11 +1297,7 @@ async function saveMeetingForm(event) {
     }
 
 
-    if (endTime && (!startTime || endTime <= startTime)) {
-      throw new Error("Select a start time before entering an end time, and ensure the end time is later.");
-    }
-
-    if (!["regular", "AGM", "special", "committee"].includes(meetingType)) {
+if (!["regular", "AGM", "special", "committee"].includes(meetingType)) {
       throw new Error("Please select a valid meeting type.");
     }
 
@@ -2079,9 +2052,7 @@ function setupButtons() {
         dateInput.value = getToday();
       }
 
-      if (startTimeInput) startTimeInput.value = "";
-      if (endTimeInput) endTimeInput.value = "";
-      if (meetingTypeInput) meetingTypeInput.value = "regular";
+if (meetingTypeInput) meetingTypeInput.value = "regular";
 
       setCreateMode();
 
