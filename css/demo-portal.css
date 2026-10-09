@@ -64,3 +64,13 @@ body.chama-demo-portal{margin:0;background:#f5f8f6;color:#17221d;font-family:Int
 .demo-import-preview{margin-top:14px;padding:12px;border-radius:10px;background:#f4faf6;color:#176b45;font-size:13px;line-height:1.5}
 .demo-panel label[for="importCsv"]{display:block;margin:12px 0 6px;font-size:12px;font-weight:800}
 .demo-panel textarea{box-sizing:border-box;width:100%;padding:12px;border:1px solid #cddbd4;border-radius:10px;font:12px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace}
+
+.demo-select{width:100%;max-width:520px;margin:8px 0 14px;padding:11px 12px;border:1px solid #cddbd4;border-radius:10px;background:#fff;font:inherit;font-size:13px}
+.demo-attendance-roster{display:grid;gap:8px;margin:16px 0}
+.demo-attendance-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 12px;border:1px solid #e2eae5;border-radius:10px;background:#fff}
+.demo-attendance-row>div{display:flex;flex-direction:column;gap:4px;min-width:0}
+.demo-attendance-row strong{font-size:13px;overflow-wrap:anywhere}
+.demo-attendance-row>div span{color:#829087;font-size:11px}
+.demo-attendance-row label select{min-width:120px;padding:8px;border:1px solid #d6e0da;border-radius:8px;background:#fff;font:inherit;font-size:12px}
+.demo-sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media(max-width:460px){.demo-attendance-row{align-items:flex-start;flex-direction:column}.demo-attendance-row label,.demo-attendance-row label select{width:100%;box-sizing:border-box}}
