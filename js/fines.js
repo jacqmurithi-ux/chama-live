@@ -217,7 +217,7 @@ async function loadContext() {
 async function loadMembers() {
   const { data, error } = await supabase
     .from("members")
-    .select("id,name,full_name,member_number,status,onboarding_status")
+    .select("id,name,member_number,status,onboarding_status")
     .eq("group_id", state.groupId)
     .order("name", { ascending: true });
 
