@@ -56,6 +56,7 @@ let canonicalRows = [];
 let filteredRows = [];
 
 let selectedMemberId = null;
+let ownMemberId = null;
 
 /*
  * Cumulative position cache.
@@ -672,6 +673,17 @@ async function loadContext() {
     );
   }
 
+  ownMemberId =
+    currentMember.id ??
+    currentMember.member_id ??
+    null;
+
+  if (!ownMemberId) {
+    throw new Error(
+      "Your own member identity could not be identified."
+    );
+  }
+
   groupId =
     currentGroup.id ??
     currentGroup.group_id;
@@ -731,10 +743,22 @@ async function loadCanonicalRows() {
     throw error;
   }
 
-  canonicalRows =
+  /*
+   * Member Portal is a personal view, including when the
+   * signed-in member is an admin or chairperson. Never render
+   * another member's accounting row in this portal.
+   */
+  const returnedRows =
     Array.isArray(data)
       ? data
       : [];
+
+  canonicalRows =
+    returnedRows.filter(
+      row =>
+        String(getMemberId(row)) ===
+        String(ownMemberId)
+    );
 }
 
 
@@ -745,7 +769,10 @@ async function loadCanonicalRows() {
 async function loadMemberContributionPosition(
   memberId
 ) {
-  if (!memberId) {
+  if (
+    !memberId ||
+    String(memberId) !== String(ownMemberId)
+  ) {
     return null;
   }
 
@@ -974,48 +1001,32 @@ function populateMemberFilter() {
   const previousValue =
     memberFilter.value;
 
-  const members =
-    [...canonicalRows].sort(
-      (a, b) =>
-        getMemberName(a).localeCompare(
-          getMemberName(b),
-          undefined,
-          {
-            sensitivity: "base"
-          }
-        )
+  const ownRow =
+    canonicalRows.find(
+      row =>
+        String(getMemberId(row)) ===
+        String(ownMemberId)
     );
 
-  memberFilter.innerHTML = `
-    <option value="">
-      All Members
-    </option>
+  memberFilter.innerHTML = "";
 
-    ${members.map(row => `
-      <option
-        value="${escapeHtml(
-          getMemberId(row)
-        )}"
-      >
-        ${escapeHtml(
-          getMemberName(row)
-        )}
-      </option>
-    `).join("")}
-  `;
+  const option = document.createElement("option");
+  option.value = String(ownMemberId);
+  option.textContent = "My account";
+  memberFilter.appendChild(option);
+  memberFilter.value = String(ownMemberId);
 
-  if (
-    previousValue &&
-    members.some(
-      row =>
-        String(
-          getMemberId(row)
-        ) ===
-        String(previousValue)
-    )
-  ) {
-    memberFilter.value =
-      previousValue;
+  // These controls are not appropriate in a personal portal.
+  const memberField = memberFilter.closest(".field");
+  if (memberField) memberField.hidden = true;
+
+  if (searchMember) {
+    const searchField = searchMember.closest(".field");
+    if (searchField) searchField.hidden = true;
+  }
+
+  if (ownRow && memberFilter.labels?.[0]) {
+    memberFilter.labels[0].textContent = "My account";
   }
 }
 
@@ -1074,7 +1085,7 @@ function matchesQuickFilter(
 
 function applyFilters() {
   const selectedMember =
-    memberFilter?.value || "";
+    String(ownMemberId || "");
 
   const selectedStatus =
     statusFilter?.value || "";
@@ -1487,10 +1498,10 @@ async function openMemberStatement(
   const row =
     canonicalRows.find(
       item =>
-        String(
-          getMemberId(item)
-        ) ===
-        String(memberId)
+        String(getMemberId(item)) ===
+          String(ownMemberId) &&
+        String(getMemberId(item)) ===
+          String(memberId)
     );
 
   if (!row) {
@@ -1498,7 +1509,7 @@ async function openMemberStatement(
   }
 
   selectedMemberId =
-    memberId;
+    ownMemberId;
 
   const name =
     getMemberName(row);
