@@ -1511,8 +1511,12 @@ function renderCustomContributionStatuses() {
   }
 
   const rows = customContributionStatuses;
-  const periodIds = new Set(rows.map(row => String(row.periodId)));
-  setText("customContributionActiveCount", periodIds.size);
+  const activeCustomPeriods = new Set(
+    activeContributionTypes
+      .filter(row => row?.type === "Custom" && row?.active === true)
+      .map(row => String(row.id || row.key))
+  );
+  setText("customContributionActiveCount", activeCustomPeriods.size);
   setText("customContributionPaidCount", rows.filter(row => row.status === "paid").length);
   setText("customContributionOutstandingCount", rows.filter(row => row.status === "outstanding").length);
   setText("customContributionPartialCount", rows.filter(row => row.status === "partial").length);
