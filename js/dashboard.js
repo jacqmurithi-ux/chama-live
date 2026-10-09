@@ -130,6 +130,10 @@ let canonicalSummary = null;
 let cumulativePositions = [];
 let cumulativePositionsComplete = false;
 
+let customContributionStatuses = [];
+let customContributionStatusComplete = false;
+let customContributionStatusError = null;
+
 let initialized = false;
 
 
@@ -1437,6 +1441,108 @@ async function loadActiveContributionTypes() {
 
 
 /* =========================================================
+   CANONICAL CUSTOM CONTRIBUTION MEMBER STATUS
+========================================================= */
+
+async function loadCustomContributionStatuses() {
+  customContributionStatuses = [];
+  customContributionStatusComplete = false;
+  customContributionStatusError = null;
+
+  const { data, error } = await supabase.rpc(
+    "get_group_custom_contribution_status",
+    { p_group_id: currentGroupId }
+  );
+
+  if (error) throw new Error(`Custom contribution status could not be loaded: ${error.message}`);
+
+  const rows = Array.isArray(data) ? data : [];
+  const expectedIds = new Set(getActiveMembers().map(member => String(member.id)));
+
+  customContributionStatuses = rows.map(row => {
+    if (!row?.member_id || !row?.period_id) {
+      throw new Error("Custom contribution status returned a row without a member or period.");
+    }
+    if (!expectedIds.has(String(row.member_id))) {
+      throw new Error("Custom contribution status returned a member outside the current group.");
+    }
+    const due = numberValue(row.amount_due);
+    const applied = numberValue(row.amount_applied);
+    const outstanding = numberValue(row.outstanding);
+    const status = String(row.status || "").toLowerCase();
+    if (!["paid", "partial", "outstanding"].includes(status)) {
+      throw new Error("Custom contribution status returned an unknown payment status.");
+    }
+    if (Math.abs(Math.max(due - applied, 0) - outstanding) > 0.01) {
+      throw new Error("Custom contribution status amounts failed reconciliation.");
+    }
+    return {
+      memberId: row.member_id,
+      memberName: row.member_name || memberName(row.member_id),
+      contributionName: row.contribution_name || "Custom Contribution",
+      periodId: row.period_id,
+      due,
+      applied,
+      outstanding,
+      status,
+      dueDate: row.due_date || null
+    };
+  });
+
+  customContributionStatusComplete = true;
+  return customContributionStatuses;
+}
+
+function renderCustomContributionStatuses() {
+  const container = el("customContributionMemberStatusRows");
+  if (!container) return;
+
+  if (!customContributionStatusComplete) {
+    setText("customContributionActiveCount", "—");
+    setText("customContributionPaidCount", "—");
+    setText("customContributionOutstandingCount", "—");
+    setText("customContributionPartialCount", "—");
+    container.innerHTML = `
+      <tr><td colspan="6"><div class="empty-state">
+        <strong>Custom contribution status unavailable</strong>
+        <span>${escapeHtml(customContributionStatusError || "Canonical custom contribution status could not be loaded.")}</span>
+      </div></td></tr>`;
+    return;
+  }
+
+  const rows = customContributionStatuses;
+  const activeCustomPeriods = new Set(
+    activeContributionTypes
+      .filter(row => row?.type === "Custom" && row?.active === true)
+      .map(row => String(row.id || row.key))
+  );
+  setText("customContributionActiveCount", activeCustomPeriods.size);
+  setText("customContributionPaidCount", rows.filter(row => row.status === "paid").length);
+  setText("customContributionOutstandingCount", rows.filter(row => row.status === "outstanding").length);
+  setText("customContributionPartialCount", rows.filter(row => row.status === "partial").length);
+
+  if (!rows.length) {
+    container.innerHTML = `
+      <tr><td colspan="6"><div class="empty-state">
+        <strong>No active custom contribution obligations</strong>
+        <span>No obligations were found for open, due, or grace-period custom contributions.</span>
+      </div></td></tr>`;
+    return;
+  }
+
+  container.innerHTML = rows.map(row => `
+    <tr>
+      <td><strong>${escapeHtml(row.memberName)}</strong></td>
+      <td>${escapeHtml(row.contributionName)}${row.dueDate ? `<small class="table-subtext">Due ${escapeHtml(formatDate(row.dueDate))}</small>` : ""}</td>
+      <td>${escapeHtml(money(row.due))}</td>
+      <td>${escapeHtml(money(row.applied))}</td>
+      <td>${escapeHtml(money(row.outstanding))}</td>
+      <td><span class="status-badge status-${escapeHtml(statusClass(row.status))}">${escapeHtml(row.status[0].toUpperCase() + row.status.slice(1))}</span></td>
+    </tr>`).join("");
+}
+
+
+/* =========================================================
    ACTIVE CONTRIBUTION TYPE LABEL
 ========================================================= */
 
@@ -2171,67 +2277,49 @@ async function loadCumulativePositions() {
   cumulativePositions = [];
   cumulativePositionsComplete = false;
 
-  const activeMembers = getActiveMembers();
-
-  if (!activeMembers.length) {
-    cumulativePositionsComplete = true;
-    return [];
-  }
-
-  // Settle per-member requests independently so one absent position does not
-  // prevent the dashboard's monthly accounting and operational panels loading.
-  const settled = await Promise.allSettled(
-    activeMembers.map(member => loadCumulativePosition(member.id))
+  const expectedMembers = getActiveMembers();
+  const { data, error } = await supabase.rpc(
+    "get_group_contribution_positions",
+    { p_group_id: currentGroupId }
   );
 
-  const failures = settled.filter(result => result.status === "rejected");
-  const positions = settled
-    .filter(result => result.status === "fulfilled" && result.value)
-    .map(result => result.value);
-
-  // Preserve real RPC/permission failures for the caller to report as unavailable.
-  if (failures.length) {
-    const reasons = failures.map(result => result.reason?.message || String(result.reason));
-    throw new Error(
-      `Cumulative accounting failed for ${failures.length} member(s): ${reasons.join("; ")}`
-    );
+  if (error) {
+    throw new Error(`Group cumulative accounting could not be loaded: ${error.message}`);
   }
 
-  const invalidResult = positions.find(
-    position =>
-      position.groupId &&
-      String(position.groupId) !== String(currentGroupId)
-  );
+  const rows = Array.isArray(data) ? data : [];
+  const expectedIds = new Set(expectedMembers.map(member => String(member.id)));
+  const seenIds = new Set();
+  const positions = rows.map(row => {
+    if (!row?.member_id || String(row.group_id) !== String(currentGroupId)) {
+      throw new Error("Cumulative accounting returned a missing member or a position outside the current group.");
+    }
+    const id = String(row.member_id);
+    if (!expectedIds.has(id)) {
+      throw new Error("Cumulative accounting returned a member outside the loaded group membership.");
+    }
+    if (seenIds.has(id)) {
+      throw new Error("Cumulative accounting returned duplicate member positions.");
+    }
+    seenIds.add(id);
+    return {
+      memberId: row.member_id,
+      groupId: row.group_id,
+      totalDue: numberValue(row.total_due),
+      totalAllocated: numberValue(row.total_allocated),
+      arrears: numberValue(row.arrears),
+      credit: numberValue(row.credit),
+      status: normalizeCumulativeStatus(row.status, row.arrears, row.credit)
+    };
+  });
 
-  if (invalidResult) {
-    throw new Error(
-      "Cumulative accounting returned a position outside the current group."
-    );
-  }
-
-  const returnedMemberIds = new Set(
-    positions.map(position => String(position.memberId))
-  );
-
-  if (returnedMemberIds.size !== positions.length) {
-    throw new Error(
-      "Cumulative accounting returned duplicate member positions."
-    );
+  const missing = expectedMembers.filter(member => !seenIds.has(String(member.id)));
+  if (missing.length || positions.length !== expectedMembers.length) {
+    throw new Error(`Cumulative accounting returned ${positions.length} of ${expectedMembers.length} group-member positions.`);
   }
 
   cumulativePositions = positions;
-  cumulativePositionsComplete = positions.length === activeMembers.length;
-
-  if (!cumulativePositionsComplete) {
-    console.warn("CHAMA LIVE: cumulative accounting is incomplete; missing positions remain unavailable.", {
-      expectedMembers: activeMembers.length,
-      returnedPositions: positions.length,
-      missingMemberIds: activeMembers
-        .filter(member => !returnedMemberIds.has(String(member.id)))
-        .map(member => member.id)
-    });
-  }
-
+  cumulativePositionsComplete = true;
   return cumulativePositions;
 }
 
@@ -2291,6 +2379,9 @@ async function loadData() {
   contributionGoals = 0;
 
   activeContributionTypes = [];
+  customContributionStatuses = [];
+  customContributionStatusComplete = false;
+  customContributionStatusError = null;
   monthlyStatus = [];
   canonicalSummary = null;
   cumulativePositions = [];
@@ -2313,6 +2404,15 @@ async function loadData() {
 
   // Accounting figures must come from the canonical accounting RPCs.
   await loadCanonicalAccounting();
+
+  try {
+    await loadCustomContributionStatuses();
+  } catch (error) {
+    customContributionStatuses = [];
+    customContributionStatusComplete = false;
+    customContributionStatusError = error?.message || String(error);
+    console.error("CHAMA LIVE: custom contribution status unavailable.", error);
+  }
 
   // Read-only contribution definitions are optional; do not fabricate
   // accounting data if the optional definition source is unavailable.
@@ -3820,6 +3920,8 @@ function renderDashboard() {
   renderSummary();
 
   renderActiveContributionTypes();
+
+  renderCustomContributionStatuses();
 
   renderMemberStatus();
 
