@@ -67,8 +67,7 @@
     <form method="dialog" id="editForm">
       <div class="demo-dialog-heading"><div><p class="demo-kicker">Temporary change</p><h2 id="editTitle">Edit demo record</h2></div><button value="cancel" aria-label="Close">×</button></div>
       <p class="demo-note">Changes are stored as session overrides. They do not modify the underlying group records.</p>
-      <label for="editJson">Record fields (JSON)</label>
-      <textarea id="editJson" rows="14" spellcheck="false" required></textarea>
+      <div id="editFields" class="demo-edit-fields"></div>
       <div id="editError" class="demo-error" hidden></div>
       <div class="demo-dialog-actions"><button value="cancel" type="button" id="cancelEdit">Cancel</button><button value="save" type="submit" class="demo-primary">Save temporary change</button></div>
     </form>
