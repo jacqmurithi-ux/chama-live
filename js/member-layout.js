@@ -173,6 +173,73 @@ function createNavLink(
 
 
 /* =========================================================
+   SHARED MEMBER PORTAL SHELL
+   ========================================================= */
+
+function ensureMemberPortalShell() {
+  let header = document.querySelector("header.topbar, .topbar");
+  if (!header) {
+    header = document.createElement("header");
+    header.className = "topbar";
+    document.body.prepend(header);
+  }
+  let inner = header.querySelector(".topbar-inner");
+  if (!inner) {
+    inner = document.createElement("div");
+    inner.className = "topbar-inner";
+    while (header.firstChild) inner.appendChild(header.firstChild);
+    header.appendChild(inner);
+  }
+  let brand = inner.querySelector(".brand") || header.querySelector(".brand");
+  if (!brand) {
+    brand = document.createElement("a");
+    brand.className = "brand";
+    brand.innerHTML = 'CHAMA <span>LIVE</span>';
+  } else if (brand.tagName !== "A") {
+    const brandLink = document.createElement("a");
+    brandLink.className = brand.className || "brand";
+    brandLink.innerHTML = brand.innerHTML || brand.textContent || "CHAMA LIVE";
+    brand.replaceWith(brandLink);
+    brand = brandLink;
+  }
+  brand.href = "member-dashboard.html";
+  inner.prepend(brand);
+  let topNav = header.querySelector(".top-nav");
+  if (!topNav) {
+    topNav = document.createElement("nav");
+    topNav.className = "top-nav";
+    topNav.setAttribute("aria-label", "Member navigation");
+  }
+  inner.appendChild(topNav);
+  let actions = inner.querySelector(".topbar-actions") || header.querySelector(".topbar-actions");
+  if (!actions) {
+    actions = document.createElement("div");
+    actions.className = "topbar-actions";
+  }
+  inner.appendChild(actions);
+  const name = header.querySelector("[data-user-name]");
+  if (name) actions.prepend(name);
+  else {
+    const label = document.createElement("span");
+    label.className = "muted user-name";
+    label.setAttribute("data-user-name", "");
+    actions.prepend(label);
+  }
+  // Member logout is recreated by this layout so its sign-out handler is preserved.
+  const legacyLogout = document.getElementById("logout");
+  if (legacyLogout) legacyLogout.remove();
+  const userLabel = actions.querySelector("[data-user-name]");
+  if (userLabel) {
+    userLabel.textContent = context?.member?.name ||
+      context?.member?.full_name || context?.user?.email || "Member";
+  }
+  inner.querySelectorAll(".topbar-left, .topbar-right").forEach(wrapper => {
+    if (!wrapper.querySelector("*") && !wrapper.textContent.trim()) wrapper.remove();
+  });
+  return header;
+}
+
+/* =========================================================
    MEMBER NAVIGATION
    ========================================================= */
 
@@ -224,27 +291,69 @@ function injectStyles() {
     "chama-member-layout-styles";
 
   style.textContent = `
+    /* Shared desktop shell to match the Admin Portal's header. */
+    .topbar {
+      position: sticky; top: 0; z-index: 12000; width: 100%;
+      box-sizing: border-box; background: #ffffff;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .topbar-inner {
+      display: flex; align-items: center; gap: 12px; width: 100%;
+      max-width: 1600px; min-height: 68px; margin: 0 auto;
+      padding: 10px 20px; box-sizing: border-box;
+    }
+    .topbar .brand {
+      display: inline-flex; align-items: center; gap: 4px; flex: 0 0 auto;
+      color: #0f766e; text-decoration: none; font-size: 17px;
+      font-weight: 850; white-space: nowrap;
+    }
+    .topbar .brand span { color: #344054; }
+    .topbar .top-nav {
+      display: flex; align-items: center; justify-content: flex-end;
+      flex: 1 1 auto; min-width: 0;
+    }
+    .topbar .topbar-actions {
+      display: flex; align-items: center; justify-content: flex-end;
+      gap: 10px; flex: 0 0 auto; min-width: 0;
+    }
+    .topbar [data-user-name] {
+      max-width: 170px; overflow: hidden; text-overflow: ellipsis;
+      white-space: nowrap; color: #475467; font-size: 12px; font-weight: 600;
+    }
+    .topbar-actions .chama-member-logout {
+      min-height: 38px; padding: 8px 12px; border: 1px solid #e5e7eb;
+      border-radius: 10px; background: #ffffff; color: #344054;
+      box-shadow: none; font-size: 12px; font-weight: 700;
+    }
+    @media (max-width: 1100px) and (min-width: 821px) {
+      .topbar-inner { gap: 8px; padding-right: 12px; padding-left: 12px; }
+      .topbar .topbar-actions { gap: 6px; }
+      .topbar [data-user-name] { max-width: 80px; }
+      .topbar .top-nav { justify-content: flex-start; overflow-x: auto; scrollbar-width: thin; }
+      .chama-member-nav { gap: 2px; width: max-content; flex-wrap: nowrap; }
+      .chama-member-nav a { padding-right: 7px; padding-left: 7px; font-size: 11px; }
+    }
+    @media (max-width: 820px) {
+      .topbar-inner { min-height: 60px; gap: 10px; padding: 8px 12px; }
+      .topbar .top-nav { display: none !important; }
+      .topbar .topbar-actions { margin-left: auto; gap: 7px; }
+      .topbar [data-user-name] { max-width: 105px; font-size: 11px; }
+    }
+
+
     .chama-member-nav {
-      display: flex;
-      align-items: center;
-      gap: 0.35rem;
-      flex-wrap: wrap;
+      display: flex; align-items: center; justify-content: flex-end;
+      gap: 4px; flex-wrap: nowrap; min-width: 0;
     }
-
     .chama-member-nav a {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 38px;
-      padding: 0.55rem 0.8rem;
-      border-radius: 10px;
-      text-decoration: none;
-      font-size: 0.9rem;
-      font-weight: 600;
+      display: inline-flex; align-items: center; justify-content: center;
+      min-height: 40px; padding: 8px 10px; border-radius: 10px;
+      color: #344054; text-decoration: none; font-size: 12px;
+      font-weight: 700; white-space: nowrap; box-sizing: border-box;
     }
-
+    .chama-member-nav a:hover,
     .chama-member-nav a.active {
-      font-weight: 700;
+      background: #ecfdf5; color: #0f766e;
     }
 
     .chama-member-logout {
@@ -292,20 +401,11 @@ function injectStyles() {
     }
 
     .chama-member-desktop-logout {
-      min-height: 40px;
-      padding: 0.55rem 0.9rem;
-      border: 1px solid rgba(185, 28, 28, 0.35);
-      border-radius: 10px;
-      background: #ffffff;
-      color: #b91c1c;
-      box-shadow:
-        0 4px 14px rgba(0, 0, 0, 0.12);
+      min-height: 38px; padding: 8px 12px; border: 1px solid #e5e7eb;
+      border-radius: 10px; background: #ffffff; color: #344054;
+      box-shadow: none; font-size: 12px; font-weight: 700;
     }
-
-    .chama-member-desktop-logout:hover {
-      background: #fef2f2;
-      opacity: 1;
-    }
+    .chama-member-desktop-logout:hover { background: #f8fafc; opacity: 1; }
 
     .chama-member-mobile-backdrop {
       position: fixed;
@@ -866,25 +966,8 @@ function renderDesktopNavigation() {
     );
 
   if (existingTopNav) {
-    MEMBER_NAVIGATION.forEach(item => {
-      const target =
-        item.href.split("/").pop();
-
-      existingTopNav
-        .querySelectorAll(
-          `a[href$="${target}"]`
-        )
-        .forEach(link => {
-          link.remove();
-        });
-    });
-
-    existingTopNav.appendChild(
-      nav
-    );
-
+    existingTopNav.replaceChildren(nav);
     renderDesktopLogout();
-
     return;
   }
 
@@ -1234,6 +1317,8 @@ export async function boot() {
 
     window.__CHAMA_LIVE_LAYOUT_LOADING__ =
       true;
+
+    ensureMemberPortalShell();
 
     injectStyles();
 
