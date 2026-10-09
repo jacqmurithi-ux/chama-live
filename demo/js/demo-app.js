@@ -289,8 +289,12 @@ function renderTable(def, rows) {
 function fieldControl(key, value, row) {
   const id = `editField_${key}`;
   const label = key.replaceAll("_"," ").replace(/\b\w/g, c=>c.toUpperCase());
+  const observedStatuses = [...new Set((currentRows || []).map(item => String(item.status ?? "").trim()).filter(Boolean))];
+  const memberStatuses = ["active","inactive","pending"];
   const selectOptions = {
-    status: ["active","inactive","pending","paid","unpaid","open","closed","planned","completed","present","late","apology","absent","simulated","approved","draft"],
+    status: currentDefinition?.table === "members"
+      ? memberStatuses
+      : (observedStatuses.length ? observedStatuses : ["active","inactive","pending","paid","unpaid","open","closed","planned","completed","present","late","apology","absent","simulated","approved","draft"]),
     role: ["member","admin","chairperson","secretary","treasurer"],
     actual_position_name: ["Member","Chairperson","Vice Chairperson","Secretary","Treasurer"],
     payment_method: ["cash","mpesa","bank","other","demo-import"],
