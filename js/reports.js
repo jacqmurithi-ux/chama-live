@@ -6075,7 +6075,19 @@ function bindEvents() {
   if (accountingMonth) {
     accountingMonth.addEventListener(
       "change",
-      generateReport
+      () => {
+        const month = String(accountingMonth.value || "");
+        if (/^\\d{4}-\\d{2}$/.test(month)) {
+          const parts = month.split("-").map(Number);
+          const lastDay = new Date(parts[0], parts[1], 0).getDate();
+          const firstDate = month + "-01";
+          const lastDate = month + "-" + String(lastDay).padStart(2, "0");
+          if ($("fromDate")) $("fromDate").value = firstDate;
+          if ($("toDate")) $("toDate").value = lastDate;
+          if ($("periodPreset")) $("periodPreset").value = "custom";
+        }
+        generateReport();
+      }
     );
   }
 
