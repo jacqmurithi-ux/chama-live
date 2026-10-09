@@ -825,11 +825,29 @@ async function loadExpenses() {
 ========================================================= */
 
 async function loadAttendance() {
+  // Attendance is linked to a meeting, not directly to a group.
+  // Resolve this group's meeting IDs first and scope attendance
+  // through meeting_id; do not query a nonexistent attendance.group_id.
+  const { data: groupMeetings, error: meetingsError } = await supabase
+    .from("meetings")
+    .select("id")
+    .eq("group_id", currentGroupId);
+
+  if (meetingsError) throw meetingsError;
+
+  const meetingIds = (Array.isArray(groupMeetings) ? groupMeetings : [])
+    .map(meeting => meeting.id)
+    .filter(Boolean);
+
+  if (meetingIds.length === 0) {
+    attendance = [];
+    return;
+  }
 
   const { data, error } = await supabase
     .from("attendance")
     .select("id,meeting_id,member_id,status")
-    .eq("group_id", currentGroupId);
+    .in("meeting_id", meetingIds);
 
   if (error) throw error;
   attendance = Array.isArray(data) ? data : [];
