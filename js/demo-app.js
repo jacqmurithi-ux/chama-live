@@ -13,7 +13,8 @@ const definitions = {
   members:{title:"Members",table:"members",fields:["member_number","name","actual_position_name","role","status","phone","email"]},
   contributions:{title:"Contributions",table:"contributions",fields:["contribution_date","member_id","amount","contribution_type","payment_method","status"]},
   fines:{title:"Fines",table:"fines",fields:["created_at","member_id","fine_type","amount","reason","status"]},
-  meetings:{title:"Meetings & Attendance",table:"meetings",fields:["date","title","venue","status","type","minutes"]},
+  meetings:{title:"Meetings",table:"meetings",fields:["date","title","venue","status","type","minutes"]},
+  attendance:{title:"Attendance Register",custom:true},
   expenses:{title:"Expenses",table:"expenses",fields:["date","description","category","amount","payment_method"]},
   assets:{title:"Assets",table:"group_assets",fields:["name","category","purchase_date","purchase_value","current_value","status"]},
   plans:{title:"Plans & Activities",table:"group_plans",fields:["title","status","start_date","end_date","budget"]},
@@ -63,6 +64,76 @@ function renderGuide(type) {
         ]).map(([title,description])=>`<li><strong>${escapeHtml(title)}</strong><p>${escapeHtml(description)}</p></li>`).join("")}
       </ol>
     </section>`;
+}
+function renderAttendance() {
+  pageContent.innerHTML = `
+    <div class="demo-page-heading"><div><p class="demo-kicker">MEETINGS</p><h1>Attendance Register</h1><p class="demo-note">Select a meeting, then mark each fictional member present, late, apologising or absent. Saves are session-only.</p></div><span class="demo-pill">SIMULATED</span></div>
+    <section class="demo-panel"><label for="attendanceMeeting">Meeting</label><select id="attendanceMeeting" class="demo-select"><option value="">Loading meetings…</option></select>
+      <div id="attendanceSummary" class="demo-import-preview">Choose a meeting to load its attendance register.</div>
+      <div id="attendanceRoster" class="demo-attendance-roster"></div>
+      <div id="attendanceError" class="demo-error" hidden role="alert"></div>
+      <div class="demo-dialog-actions"><button id="saveAttendance" type="button" class="demo-primary" disabled>Save attendance changes</button></div>
+    </section>`;
+  const meetingSelect=pageContent.querySelector("#attendanceMeeting");
+  const roster=pageContent.querySelector("#attendanceRoster");
+  const summary=pageContent.querySelector("#attendanceSummary");
+  const error=pageContent.querySelector("#attendanceError");
+  const save=pageContent.querySelector("#saveAttendance");
+  let meetings=[],members=[],attendance=[];
+  const statusOptions=["present","late","apology","absent"];
+  const renderRoster=()=>{
+    const meetingId=meetingSelect.value;
+    const meeting=meetings.find(row=>row.id===meetingId);
+    if(!meeting){roster.innerHTML="";summary.textContent="Choose a meeting to load its attendance register.";save.disabled=true;return;}
+    const byMember=new Map(attendance.filter(row=>row.meeting_id===meetingId).map(row=>[row.member_id,row]));
+    roster.innerHTML=members.map(member=>{
+      const record=byMember.get(member.id);
+      const status=record?.status || "absent";
+      return `<div class="demo-attendance-row" data-member-id="${escapeHtml(member.id)}"><div><strong>${escapeHtml(member.name)}</strong><span>${escapeHtml(member.member_number || "Member")}</span></div><label><span class="demo-sr-only">Attendance status for ${escapeHtml(member.name)}</span><select class="attendance-status" data-member-id="${escapeHtml(member.id)}">${statusOptions.map(value=>`<option value="${value}" ${status===value?"selected":""}>${value.charAt(0).toUpperCase()+value.slice(1)}</option>`).join("")}</select></label></div>`;
+    }).join("");
+    const counts=Object.fromEntries(statusOptions.map(status=>[status,0]));
+    roster.querySelectorAll(".attendance-status").forEach(select=>counts[select.value]++);
+    summary.textContent=`${meeting.title || "Meeting"} · ${meeting.date || "Date not set"} · ${counts.present} present · ${counts.late} late · ${counts.apology} apologies · ${counts.absent} absent`;
+    save.disabled=false;
+  };
+  (async()=>{
+    try{
+      [meetings,members,attendance]=await Promise.all([getDemoRows("meetings"),getDemoRows("members"),getDemoRows("attendance")]);
+      meetings.sort((a,b)=>String(b.date||"").localeCompare(String(a.date||"")));
+      meetingSelect.innerHTML='<option value="">Select a meeting…</option>'+meetings.map(row=>`<option value="${escapeHtml(row.id)}">${escapeHtml(row.title || "Meeting")} — ${escapeHtml(row.date || "No date")}</option>`).join("");
+      meetingSelect.addEventListener("change",renderRoster);
+      renderRoster();
+    }catch(err){error.textContent=err.message||"Could not load attendance data.";error.hidden=false;}
+  })();
+  roster.addEventListener("change",()=>{
+    const counts=Object.fromEntries(statusOptions.map(status=>[status,0]));
+    roster.querySelectorAll(".attendance-status").forEach(select=>counts[select.value]++);
+    const meeting=meetings.find(row=>row.id===meetingSelect.value);
+    summary.textContent=`${meeting?.title || "Meeting"} · ${meeting?.date || "Date not set"} · ${counts.present} present · ${counts.late} late · ${counts.apology} apologies · ${counts.absent} absent`;
+  });
+  save.addEventListener("click",async()=>{
+    error.hidden=true;save.disabled=true;save.textContent="Saving simulated attendance…";
+    try{
+      const meetingId=meetingSelect.value;
+      if(!meetingId)throw new Error("Select a meeting first.");
+      const groupRows=await getDemoRows("groups");
+      const groupId=groupRows?.[0]?.id;
+      if(!groupId)throw new Error("Could not identify the demo group.");
+      const existing=new Map(attendance.filter(row=>row.meeting_id===meetingId).map(row=>[row.member_id,row]));
+      const pending=[...roster.querySelectorAll(".attendance-status")];
+      for(const select of pending){
+        const memberId=select.dataset.memberId;
+        const old=existing.get(memberId);
+        const id=old?.id || crypto.randomUUID();
+        const row={...(old||{}),id,meeting_id:meetingId,member_id:memberId,status:select.value};
+        await setDemoOverride("attendance",id,row,"upsert");
+      }
+      attendance=await getDemoRows("attendance");
+      renderRoster();
+      summary.textContent+=" · Saved to this session only.";
+    }catch(err){error.textContent=err.message||"Could not save attendance.";error.hidden=false;}
+    finally{save.disabled=false;save.textContent="Save attendance changes";}
+  });
 }
 function renderDataImport() {
   pageContent.innerHTML = `
@@ -142,6 +213,7 @@ function renderDashboard(data, memberView = false) {
     ["Contributions (sample)",money(sum("contributions"))],
     ["Expenses (sample)",money(sum("expenses"))],
     ["Meetings",count("meetings")],
+    ["Attendance entries",count("attendance")],
     ["Fines",count("fines")],
     ["Assets",count("group_assets")],
     ["Financial periods",count("financial_periods")],
@@ -155,7 +227,7 @@ function renderDashboard(data, memberView = false) {
   pageContent.querySelectorAll("[data-shortcut]").forEach(button => button.addEventListener("click",()=>navigate(button.dataset.shortcut)));
 }
 async function loadDashboard(memberView = false) {
-  const names = ["members","contributions","meetings","fines","expenses","group_assets","financial_periods","group_support_cases"];
+  const names = ["members","contributions","meetings","attendance","fines","expenses","group_assets","financial_periods","group_support_cases"];
   const results = await Promise.all(names.map(async name => [name, await getDemoRows(name)]));
   renderDashboard(Object.fromEntries(results), memberView);
 }
@@ -256,6 +328,10 @@ async function navigate(page) {
   }
   if (def.custom && page === "dataImport") {
     renderDataImport();
+    return;
+  }
+  if (def.custom && page === "attendance") {
+    renderAttendance();
     return;
   }
   pageContent.innerHTML = '<p class="demo-status">Loading records…</p>';
