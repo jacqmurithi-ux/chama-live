@@ -2747,7 +2747,9 @@ export async function init() {
       );
     }
 
-    if (!isManager()) {
+    // Official portal roles may view the directory. Editing and
+    // sensitive member actions remain guarded by isManager().
+    if (!isOfficialPortalRole(currentMember?.role)) {
       window.location.replace(
         "member-dashboard.html"
       );
