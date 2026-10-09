@@ -374,7 +374,7 @@ function populateMemberFilter() {
   const currentValue = select.value;
 
   const options = [
-    `<option value="">All members</option>`
+    `<option value="all">All Members</option>`
   ];
 
   for (const member of members) {
@@ -774,7 +774,17 @@ function contributionTypeMatchesFilter(row) {
     return true;
   }
 
-  return lower(row.contribution_type) === selected;
+  const type = lower(row.contribution_type);
+
+  if (selected === "monthly") {
+    return type === "monthly";
+  }
+
+  if (selected === "other") {
+    return type !== "" && type !== "monthly";
+  }
+
+  return type === selected;
 }
 
 function paymentMethodMatchesFilter(row) {
@@ -898,73 +908,68 @@ async function loadCumulativePositions() {
     throw new Error("GROUP_CONTEXT_REQUIRED");
   }
 
-  const activeMembers = members.filter(member => {
-    const status = lower(member.status);
+  // Use the same group-level canonical RPC and full member population
+  // as the Group Dashboard. Do not independently filter members by
+  // profile status or make one RPC call per member.
+  const { data, error } = await supabase.rpc(
+    "get_group_contribution_positions",
+    { p_group_id: currentGroup.id }
+  );
 
-    return (
-      !status ||
-      status === "active" ||
-      status === "approved"
-    );
+  if (error) {
+    throw error;
+  }
+
+  const rows = safeArray(data);
+  const expectedIds = new Set(
+    members.filter(member => member?.id).map(member => String(member.id))
+  );
+  const seenIds = new Set();
+
+  const results = rows.map(row => {
+    if (
+      !row?.member_id ||
+      String(row.group_id) !== String(currentGroup.id)
+    ) {
+      throw new Error(
+        "Cumulative accounting returned a missing member or a position outside the current group."
+      );
+    }
+
+    const memberId = String(row.member_id);
+
+    if (!expectedIds.has(memberId)) {
+      throw new Error(
+        "Cumulative accounting returned a member outside the loaded group membership."
+      );
+    }
+
+    if (seenIds.has(memberId)) {
+      throw new Error(
+        "Cumulative accounting returned duplicate member positions."
+      );
+    }
+
+    seenIds.add(memberId);
+
+    return {
+      member_id: row.member_id,
+      group_id: row.group_id,
+      total_due: numberValue(row.total_due),
+      total_allocated: numberValue(row.total_allocated),
+      arrears: numberValue(row.arrears),
+      credit: numberValue(row.credit),
+      status: row.status || "up_to_date"
+    };
   });
 
-  const results = await Promise.all(
-    activeMembers.map(async member => {
-      const { data, error } = await supabase.rpc(
-        "get_member_contribution_position",
-        {
-          p_member_id: member.id
-        }
-      );
+  const missing = [...expectedIds].filter(id => !seenIds.has(id));
 
-      if (error) {
-        throw error;
-      }
-
-      const row =
-        Array.isArray(data)
-          ? data[0]
-          : data;
-
-      if (!row) {
-        return {
-          member_id: member.id,
-          group_id: currentGroup.id,
-          total_due: 0,
-          total_allocated: 0,
-          arrears: 0,
-          credit: 0,
-          status: "up_to_date"
-        };
-      }
-
-      return {
-        member_id:
-          row.member_id ||
-          member.id,
-
-        group_id:
-          row.group_id ||
-          currentGroup.id,
-
-        total_due:
-          numberValue(row.total_due),
-
-        total_allocated:
-          numberValue(row.total_allocated),
-
-        arrears:
-          numberValue(row.arrears),
-
-        credit:
-          numberValue(row.credit),
-
-        status:
-          row.status ||
-          "up_to_date"
-      };
-    })
-  );
+  if (missing.length || results.length !== expectedIds.size) {
+    throw new Error(
+      `Cumulative accounting returned ${results.length} of ${expectedIds.size} group-member positions.`
+    );
+  }
 
   cumulativePositions = results;
   cumulativePositionsLoaded = true;
@@ -1357,6 +1362,7 @@ function updateSummary(
 
   const applied =
     numberValue(
+      summary.applied_this_month ??
       summary.applied ??
       summary.total_applied ??
       summary.total_allocated ??
@@ -1379,15 +1385,19 @@ function updateSummary(
 
   const totalDue =
     numberValue(
+      summary.expected_monthly_contributions ??
       summary.total_due ??
       summary.total_obligations ??
       applied + outstanding
     );
 
   const collectionRate =
-    totalDue > 0
-      ? (applied / totalDue) * 100
-      : 0;
+    summary.collection_rate !== undefined &&
+    summary.collection_rate !== null
+      ? numberValue(summary.collection_rate)
+      : totalDue > 0
+        ? (applied / totalDue) * 100
+        : 0;
 
   const cumulativeRows =
     cumulativePositions;
