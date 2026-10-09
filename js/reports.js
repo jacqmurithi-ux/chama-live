@@ -5029,7 +5029,6 @@ async function generateReport() {
       canonicalRows,
       cumulativeRows
     );
-    enableReportTableSorting();
 
     renderContributionBreakdown(
       contributionRows
@@ -5060,6 +5059,9 @@ async function generateReport() {
       canonicalRows,
       cumulativeRows
     );
+
+    // Bind sorting after the selected report has replaced #reportOutput.
+    enableReportTableSorting();
 
     setStatus(
       `Report ready • ${formatNumber(
@@ -5528,17 +5530,28 @@ function exportCSV() {
 }
 
 
-function exportSortedReportCSV() {
+async function exportSortedReportCSV() {
   try {
-    const table = $("reportOutput")?.querySelector("table");
+    // The selected report renderer owns #reportOutput. If a click arrives
+    // before the first render finishes, wait for a fresh report render.
+    let table = $("reportOutput")?.querySelector("table");
+
     if (!table) {
-      showError("Generate a report with a table before downloading the sorted report.");
+      setStatus("Preparing report for download…");
+      await generateReport();
+      table = $("reportOutput")?.querySelector("table");
+    }
+
+    if (!table) {
+      showError("No report table is available to download. Check that report generation completed successfully.");
       return;
     }
 
     const rows = Array.from(table.querySelectorAll("tr"));
     const lines = rows.map(row =>
-      Array.from(row.cells).map(cell => csvEscape(cell.innerText || cell.textContent || "")).join(",")
+      Array.from(row.cells).map(cell =>
+        csvEscape(cell.innerText || cell.textContent || "")
+      ).join(",")
     );
 
     if (!lines.length) {
