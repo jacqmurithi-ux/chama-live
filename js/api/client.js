@@ -1,4 +1,3 @@
-```javascript
 /* =========================================================
    CHAMA LIVE — API CLIENT
    ---------------------------------------------------------
@@ -554,4 +553,3 @@ export function createApiClient(
     invalidateCache
   });
 }
-```
