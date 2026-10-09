@@ -2411,35 +2411,7 @@ async function loadCanonicalAccounting() {
 ========================================================= */
 
 async function loadData() {
-
-  members = [];
-    contributions = [];
-    expenses = [];
-    meetings = [];
-    attendance = [];
-
-    supportCases = 0;
-    plans = 0;
-    activities = 0;
-    milestones = 0;
-    assets = 0;
-    contributionGoals = 0;
-
-    activeContributionTypes = [];
-    monthlyStatus = [];
-    canonicalSummary = null;
-    cumulativePositions = [];
-    cumulativePositionsComplete = false;
-
-    await Promise.all([
-      loadMembers(),
-      loadMeetings(),
-      loadAttendance()
-    ]);
-
-    return;
-  }
-
+  // Reset the previous dashboard snapshot before loading live data.
   members = [];
   contributions = [];
   expenses = [];
@@ -2459,6 +2431,7 @@ async function loadData() {
   cumulativePositions = [];
   cumulativePositionsComplete = false;
 
+  // Load live group data only. No demo/sample-data branch.
   await Promise.all([
     loadMembers(),
     loadContributions(),
@@ -2473,32 +2446,23 @@ async function loadData() {
     loadAttendance()
   ]);
 
+  // Accounting figures must come from the canonical accounting RPCs.
   await loadCanonicalAccounting();
 
+  // Read-only contribution definitions are optional; do not fabricate
+  // accounting data if the optional definition source is unavailable.
   try {
     await loadActiveContributionTypes();
-  }
-  catch (error) {
+  } catch (error) {
     console.warn(
       "CHAMA LIVE: Active contribution definition display unavailable.",
       error
     );
 
-    activeContributionTypes = [
-      {
-        key: "monthly",
-        name: "Monthly Contribution",
-        type: "Monthly",
-        active: true,
-        source: "canonical_monthly_accounting"
-      }
-    ];
-
+    activeContributionTypes = [];
     renderActiveContributionTypes();
   }
-
 }
-
 
 /* =========================================================
    CANONICAL SUMMARY NORMALIZATION
