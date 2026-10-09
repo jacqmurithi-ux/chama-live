@@ -493,6 +493,90 @@
       display: none;
     }
 
+
+    /* Plain-language report narrative */
+    .report-story-card {
+      border-left: 4px solid #15803d;
+    }
+
+    .story-source {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      background: #f0fdf4;
+      color: #166534;
+      border: 1px solid #bbf7d0;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .report-story {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .story-item {
+      background: #f8fafc;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 14px;
+      min-width: 0;
+    }
+
+    .story-item h3 {
+      margin: 0 0 6px;
+      font-size: 14px;
+      color: #111827;
+    }
+
+    .story-item p {
+      margin: 0;
+      color: #4b5563;
+      line-height: 1.55;
+      font-size: 13px;
+    }
+
+    .story-item.story-attention {
+      background: #fffbeb;
+      border-color: #fde68a;
+    }
+
+    .story-item.story-good {
+      background: #f0fdf4;
+      border-color: #bbf7d0;
+    }
+
+    .report-story-empty {
+      padding: 14px;
+      border: 1px dashed #cbd5e1;
+      border-radius: 12px;
+      color: #475569;
+      line-height: 1.6;
+      grid-column: 1 / -1;
+    }
+
+    /* Table headings are interactive sort controls. */
+    .table-wrap th[data-sortable="true"] {
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .table-wrap th[data-sortable="true"]:hover {
+      background: #eef2ff;
+    }
+
+    .table-wrap th[data-sort-direction="asc"]::after {
+      content: " ↑";
+      color: #2563eb;
+    }
+
+    .table-wrap th[data-sort-direction="desc"]::after {
+      content: " ↓";
+      color: #2563eb;
+    }
+
     /* =====================================================
        ADMIN PORTAL INTEGRATION
     ===================================================== */
@@ -560,6 +644,10 @@
       .hero-chip {
         max-width: 100%;
         overflow-wrap: anywhere;
+      }
+
+      .report-story {
+        grid-template-columns: 1fr;
       }
 
       .filter-grid,
@@ -1291,6 +1379,20 @@
               </strong>
             </div>
 
+          </section>
+
+          <!-- REPORT NARRATIVE -->
+          <section class="report-card report-story-card" aria-labelledby="reportStoryTitle">
+            <div class="section-title">
+              <div>
+                <h2 id="reportStoryTitle">What this report tells us</h2>
+                <p id="reportStoryPeriod">A plain-language reading of the selected period.</p>
+              </div>
+              <span class="story-source">Based on selected filters</span>
+            </div>
+            <div id="reportStory" class="report-story" aria-live="polite">
+              Generate a report to see the financial story for this period.
+            </div>
           </section>
 
           <!-- DYNAMIC REPORT -->
