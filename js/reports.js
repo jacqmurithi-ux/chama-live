@@ -4950,7 +4950,8 @@ function sortReportTable(th) {
     const cleaned = raw.replace(/[KSh\s,]/gi, "").replace(/%$/, "");
     if (!cleaned) return { raw, numeric: null, date: null };
     const numeric = Number(cleaned);
-    const date = /^\d{4}-\d{2}-\d{2}$/.test(raw) ? Date.parse(raw) : null;
+    const looksLikeDate = /^\d{4}-\d{2}-\d{2}$/.test(raw) || /^\d{1,2}\s+[A-Za-z]{3}\s+\d{4}$/.test(raw);
+    const date = looksLikeDate ? Date.parse(raw) : null;
     return {
       raw,
       numeric: Number.isFinite(numeric) && cleaned !== "" ? numeric : null,
