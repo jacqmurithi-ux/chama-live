@@ -55,9 +55,6 @@ const titleInput =
 const dateInput =
   document.getElementById("meetingDate");
 
-const meetingTypeInput =
-  document.getElementById("meetingType");
-
 const venueInput =
   document.getElementById("venue");
 
@@ -247,15 +244,6 @@ function formatDate(value) {
 }
 
 
-function formatMeetingType(value) {
-  const type = String(value || "regular").trim();
-  return ({
-    regular: "Regular",
-    AGM: "AGM",
-    special: "Special",
-    committee: "Committee"
-  })[type] || type;
-}
 
 function getToday() {
 
@@ -454,9 +442,6 @@ function setEditMode(meeting) {
       meeting.date || "";
 
   }
-  if (meetingTypeInput) {
-    meetingTypeInput.value = meeting.type || "regular";
-  }
 
   if (venueInput) {
 
@@ -523,7 +508,6 @@ async function loadMeetings() {
         group_id,
         title,
         date,
-        type,
         venue,
         agenda,
         minutes,
@@ -775,9 +759,7 @@ function renderMeetings() {
                   "—"
                 )}
 
-                <div class="muted">
-                  ${escapeHtml(formatMeetingType(meeting.type))}
-                </div>              </td>
+              </td>
 
 
               <td>
@@ -880,12 +862,6 @@ function renderDetails() {
         </span>
       </div>
 
-      <div class="meeting-meta-box">
-        <span class="meeting-meta-label">Type</span>
-        <span class="meeting-meta-value">
-          ${escapeHtml(formatMeetingType(selectedMeeting.type))}
-        </span>
-      </div>
 
       <div class="meeting-meta-box">
         <span class="meeting-meta-label">Status</span>
@@ -1267,9 +1243,6 @@ async function saveMeetingForm(event) {
       ).trim();
 
 
-const meetingType =
-      String(meetingTypeInput?.value || "regular").trim();
-
     const venue =
       String(venueInput?.value || "").trim();
 
@@ -1297,9 +1270,6 @@ const meetingType =
     }
 
 
-if (!["regular", "AGM", "special", "committee"].includes(meetingType)) {
-      throw new Error("Please select a valid meeting type.");
-    }
 
     if (saveButton) {
 
@@ -1324,9 +1294,6 @@ if (!["regular", "AGM", "special", "committee"].includes(meetingType)) {
 
       date:
         date,
-
-      type:
-        meetingType,
 
       venue:
         venue ||
@@ -1366,8 +1333,7 @@ if (!["regular", "AGM", "special", "committee"].includes(meetingType)) {
             group_id,
             title,
             date,
-            type,
-            venue,
+                venue,
             agenda,
             minutes,
             resolution,
@@ -1419,8 +1385,7 @@ if (!["regular", "AGM", "special", "committee"].includes(meetingType)) {
             group_id,
             title,
             date,
-            type,
-            venue,
+                venue,
             agenda,
             minutes,
             resolution,
@@ -1619,7 +1584,6 @@ async function updateMeetingStatus(
         group_id,
         title,
         date,
-        type,
         venue,
         agenda,
         minutes,
@@ -1742,7 +1706,6 @@ async function saveMeetingMinutes() {
         group_id,
         title,
         date,
-        type,
         venue,
         agenda,
         minutes,
@@ -2051,8 +2014,6 @@ function setupButtons() {
       if (dateInput) {
         dateInput.value = getToday();
       }
-
-if (meetingTypeInput) meetingTypeInput.value = "regular";
 
       setCreateMode();
 
