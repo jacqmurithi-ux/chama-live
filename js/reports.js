@@ -6077,7 +6077,7 @@ function bindEvents() {
       "change",
       () => {
         const month = String(accountingMonth.value || "");
-        if (/^\\d{4}-\\d{2}$/.test(month)) {
+        if (/^\d{4}-\d{2}$/.test(month)) {
           const parts = month.split("-").map(Number);
           const lastDay = new Date(parts[0], parts[1], 0).getDate();
           const firstDate = month + "-01";
