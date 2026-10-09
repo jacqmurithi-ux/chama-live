@@ -54,7 +54,6 @@
    ========================================================= */
 
 import { supabase } from "./supabase.js";
-import { getDemoAttendance } from "./demo-client.js";
 
 
 /* =========================================================
@@ -1611,7 +1610,10 @@ async function loadMyAttendanceSummary() {
   let rows = [];
 
   if (window.__CHAMA_LIVE_ADMIN_CONTEXT__ && !currentUser) {
-    rows = await getDemoAttendance();
+    // The production member dashboard does not depend on demo-only
+    // modules. If rendered in an admin preview without an authenticated
+    // member, show zero attendance rather than failing module loading.
+    rows = [];
   } else {
     const { data, error } = await supabase
       .from("attendance")
