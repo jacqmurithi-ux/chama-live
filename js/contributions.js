@@ -6508,7 +6508,7 @@ function openCustomContributionEditor() {
 
   if (
     !isGroupOwner &&
-    !["chairperson", "treasurer"].includes(getCurrentMemberRole())
+    !["admin", "chairperson", "treasurer"].includes(getCurrentMemberRole())
   ) {
     showCustomContributionEditorMessage(
       "Only the group owner, chairperson or treasurer can create a custom contribution draft.",
@@ -7980,7 +7980,7 @@ export async function initContributions(
     if (newCustomContributionButton) {
       newCustomContributionButton.hidden = !(
         isGroupOwner ||
-        ["chairperson", "treasurer"].includes(getCurrentMemberRole())
+        ["admin", "chairperson", "treasurer"].includes(getCurrentMemberRole())
       );
     }
 
