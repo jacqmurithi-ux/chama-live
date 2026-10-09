@@ -248,6 +248,80 @@ let context = null;
 
 
 /* =========================================================
+   SHARED ADMIN PORTAL SHELL
+   ========================================================= */
+
+function ensureAdminPortalShell() {
+  let header = document.querySelector("header.topbar, .topbar");
+  if (!header) {
+    header = document.createElement("header");
+    header.className = "topbar";
+    document.body.prepend(header);
+  }
+  let inner = header.querySelector(".topbar-inner");
+  if (!inner) {
+    inner = document.createElement("div");
+    inner.className = "topbar-inner";
+    while (header.firstChild) inner.appendChild(header.firstChild);
+    header.appendChild(inner);
+  }
+  let brand = inner.querySelector(".brand") || header.querySelector(".brand");
+  if (!brand) {
+    brand = document.createElement("a");
+    brand.className = "brand";
+    brand.innerHTML = 'CHAMA <span>LIVE</span>';
+  } else if (brand.tagName !== "A") {
+    const brandLink = document.createElement("a");
+    brandLink.className = brand.className || "brand";
+    brandLink.innerHTML = brand.innerHTML || brand.textContent || "CHAMA LIVE";
+    brand.replaceWith(brandLink);
+    brand = brandLink;
+  }
+  brand.href = "dashboard.html";
+  inner.prepend(brand);
+  let topNav = header.querySelector(".top-nav");
+  if (!topNav) {
+    topNav = document.createElement("nav");
+    topNav.className = "top-nav";
+    topNav.setAttribute("aria-label", "Admin navigation");
+  }
+  inner.appendChild(topNav);
+  let actions = inner.querySelector(".topbar-actions") || header.querySelector(".topbar-actions");
+  if (!actions) {
+    actions = document.createElement("div");
+    actions.className = "topbar-actions";
+  }
+  inner.appendChild(actions);
+  const name = header.querySelector("[data-user-name]");
+  if (name) actions.prepend(name);
+  else {
+    const label = document.createElement("span");
+    label.className = "muted user-name";
+    label.setAttribute("data-user-name", "");
+    actions.prepend(label);
+  }
+  let logout = document.getElementById("logout");
+  if (!logout) {
+    logout = document.createElement("button");
+    logout.id = "logout";
+    logout.type = "button";
+    logout.className = "btn btn-secondary";
+    logout.textContent = "Sign out";
+  }
+  logout.type = "button";
+  actions.appendChild(logout);
+  const userLabel = actions.querySelector("[data-user-name]");
+  if (userLabel) {
+    userLabel.textContent = context?.member?.name ||
+      context?.member?.full_name || context?.user?.email || "Account";
+  }
+  inner.querySelectorAll(".topbar-left, .topbar-right").forEach(wrapper => {
+    if (!wrapper.querySelector("*") && !wrapper.textContent.trim()) wrapper.remove();
+  });
+  return header;
+}
+
+/* =========================================================
    CURRENT PAGE
 ========================================================= */
 
@@ -478,6 +552,63 @@ function injectStyles() {
     "chama-admin-layout";
 
   style.textContent = `
+    /* Shared desktop shell for every authenticated Admin Portal page. */
+    .topbar {
+      position: sticky; top: 0; z-index: 12000; width: 100%;
+      box-sizing: border-box; background: #ffffff;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .topbar-inner {
+      display: flex; align-items: center; gap: 12px; width: 100%;
+      max-width: 1600px; min-height: 68px; margin: 0 auto;
+      padding: 10px 20px; box-sizing: border-box;
+    }
+    .topbar .brand {
+      display: inline-flex; align-items: center; gap: 4px; flex: 0 0 auto;
+      color: #0f766e; text-decoration: none; font-size: 17px;
+      font-weight: 850; white-space: nowrap;
+    }
+    .topbar .brand span { color: #344054; }
+    .topbar .top-nav {
+      display: flex; align-items: center; justify-content: flex-end;
+      flex: 1 1 auto; min-width: 0;
+    }
+    .topbar .topbar-actions {
+      display: flex; align-items: center; justify-content: flex-end;
+      gap: 10px; flex: 0 0 auto; min-width: 0;
+    }
+    .topbar [data-user-name] {
+      max-width: 170px; overflow: hidden; text-overflow: ellipsis;
+      white-space: nowrap; color: #475467; font-size: 12px; font-weight: 600;
+    }
+    .sidebar, .sidebar-nav { display: none !important; }
+    .layout { grid-template-columns: minmax(0, 1fr) !important; }
+    .layout > .main, .layout > main, .main-content {
+      width: 100%; max-width: 100%; margin-left: 0 !important; box-sizing: border-box;
+    }
+    .topbar-actions #logout {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-height: 38px; padding: 8px 12px; border: 1px solid #e5e7eb;
+      border-radius: 10px; background: #ffffff; color: #344054;
+      font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap;
+    }
+    @media (max-width: 1100px) and (min-width: 821px) {
+      .topbar-inner { gap: 8px; padding-right: 12px; padding-left: 12px; }
+      .topbar .topbar-actions { gap: 6px; }
+      .topbar [data-user-name] { max-width: 80px; }
+      .topbar .top-nav { justify-content: flex-start; overflow-x: auto; scrollbar-width: thin; }
+      .chama-admin-nav { gap: 2px; width: max-content; flex-wrap: nowrap; }
+      .chama-admin-nav a, .chama-admin-nav summary {
+        padding-right: 7px; padding-left: 7px; font-size: 11px;
+      }
+    }
+    @media (max-width: 820px) {
+      .topbar-inner { min-height: 60px; gap: 10px; padding: 8px 12px; }
+      .topbar .top-nav { display: none !important; }
+      .topbar .topbar-actions { margin-left: auto; gap: 7px; }
+      .topbar [data-user-name] { max-width: 105px; font-size: 11px; }
+    }
+
 
     .chama-admin-nav {
       display: flex;
@@ -2020,6 +2151,8 @@ export async function boot() {
     stage =
       "admin navigation";
 
+
+    ensureAdminPortalShell();
 
     injectStyles();
 
