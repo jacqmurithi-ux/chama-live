@@ -223,12 +223,13 @@ async function loadMembers() {
 
   if (error) throw error;
 
-  state.members = (data || []).filter(member => {
-    const status = String(member.status || "active").toLowerCase();
-    const onboarding =
-      String(member.onboarding_status || "active").toLowerCase();
-    return status === "active" && onboarding === "active";
-  });
+  /*
+   * The member picker is a group directory, not a login/onboarding
+   * filter. A member can still be subject to a recorded incident
+   * even when their portal onboarding is pending or their status
+   * is not active. Keep every row in this group selectable.
+   */
+  state.members = data || [];
 
   const manualMember = byId("manualFineMember");
   if (manualMember) {
@@ -273,11 +274,15 @@ async function loadFineTypes() {
     );
     const previous = select.value;
     select.innerHTML =
-      '<option value="">Select fine type</option>' +
-      active.map(rule =>
-        `<option value="${esc(rule.id)}" data-amount="${esc(rule.fixed_amount ?? "")}">${esc(rule.name)}</option>`
-      ).join("");
-    if (previous) select.value = previous;
+      active.length
+        ? '<option value="">Select fine type</option>' +
+          active.map(rule =>
+            `<option value="${esc(rule.id)}" data-amount="${esc(rule.fixed_amount ?? "")}">${esc(rule.name)}</option>`
+          ).join("")
+        : '<option value="">No active manual fine types — add one below</option>';
+    if (previous && active.some(rule => String(rule.id) === String(previous))) {
+      select.value = previous;
+    }
   }
 
   renderFineTypes();
