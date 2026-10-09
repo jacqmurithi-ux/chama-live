@@ -3459,7 +3459,7 @@ function drawContributionExpenseChart(
   const chartHeight =
     height - top - bottom;
 
-  const max =
+  let max =
     niceMax(
       Math.max(...values)
     );
@@ -5157,7 +5157,7 @@ function resetFilters() {
   }
 
   queryAll(
-    "[data-report-quick-filter]"
+    "[data-quick]"
   ).forEach(button => {
     button.classList.remove("active");
     button.removeAttribute("aria-pressed");
@@ -5189,10 +5189,10 @@ function applyQuickFilter(filter) {
     filter || "all";
 
   queryAll(
-    "[data-report-quick-filter]"
+    "[data-quick]"
   ).forEach(button => {
     const active =
-      button.dataset.reportQuickFilter ===
+      button.dataset.quick ===
       activeQuickFilter;
 
     button.classList.toggle(
@@ -6008,13 +6008,13 @@ function bindEvents() {
   }
 
   queryAll(
-    "[data-report-quick-filter]"
+    "[data-quick]"
   ).forEach(button => {
     button.addEventListener(
       "click",
       () => {
         applyQuickFilter(
-          button.dataset.reportQuickFilter
+          button.dataset.quick
         );
       }
     );
@@ -6085,10 +6085,10 @@ function initializeFilters() {
   activeQuickFilter = "all";
 
   queryAll(
-    "[data-report-quick-filter]"
+    "[data-quick]"
   ).forEach(button => {
     const active =
-      button.dataset.reportQuickFilter ===
+      button.dataset.quick ===
       "all";
 
     button.classList.toggle(
