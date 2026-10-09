@@ -280,6 +280,42 @@ const MEMBER_NAVIGATION = [
 
 
 /* =========================================================
+   MEMBER DESKTOP NAVIGATION GROUPS
+   ========================================================= */
+
+const MEMBER_DESKTOP_NAVIGATION_GROUPS = [
+  [
+    "Home",
+    [
+      { label: "Home", href: "member-dashboard.html" },
+      { label: "Getting Started", href: "member-getting-started.html" }
+    ]
+  ],
+  [
+    "Finance",
+    [
+      { label: "My Contributions", href: "member-contributions.html" },
+      { label: "My Accounting", href: "member-accounting.html" }
+    ]
+  ],
+  [
+    "Group",
+    [
+      { label: "Activities", href: "member-activities.html" },
+      { label: "Assets", href: "member-assets.html" },
+      { label: "Milestones", href: "member-milestones.html" }
+    ]
+  ],
+  [
+    "Account",
+    [
+      { label: "My Profile", href: "member-profile.html" }
+    ]
+  ]
+];
+
+
+/* =========================================================
    STYLES
    ========================================================= */
 
@@ -339,7 +375,7 @@ function injectStyles() {
       .topbar [data-user-name] { max-width: 80px; }
       .topbar .top-nav { justify-content: flex-start; overflow-x: auto; scrollbar-width: thin; }
       .chama-member-nav { gap: 2px; width: max-content; flex-wrap: nowrap; }
-      .chama-member-nav a { padding-right: 7px; padding-left: 7px; font-size: 11px; }
+      .chama-member-nav a, .chama-member-nav summary { padding-right: 7px; padding-left: 7px; font-size: 11px; }
     }
     @media (max-width: 820px) {
       .topbar-inner { min-height: 60px; gap: 10px; padding: 8px 12px; }
@@ -360,8 +396,49 @@ function injectStyles() {
       font-weight: 700; white-space: nowrap; box-sizing: border-box;
     }
     .chama-member-nav a:hover,
-    .chama-member-nav a.active {
+    .chama-member-nav a.active,
+    .chama-member-nav summary:hover {
       background: #ecfdf5; color: #0f766e;
+    }
+
+    .chama-member-nav summary {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-height: 40px; padding: 8px 10px; border-radius: 10px;
+      color: #344054; font-size: 12px; font-weight: 700;
+      white-space: nowrap; cursor: pointer; box-sizing: border-box;
+      list-style: none;
+    }
+
+    .chama-member-nav summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .chama-member-nav summary::after {
+      content: "▾"; margin-left: 7px; font-size: 10px; opacity: 0.72;
+    }
+
+    .chama-member-nav details[open] > summary::after {
+      content: "▴";
+    }
+
+    .chama-member-nav summary:focus-visible,
+    .chama-member-nav .chama-member-group-panel a:focus-visible {
+      outline: 2px solid #0f766e; outline-offset: 2px;
+    }
+
+    .chama-member-group {
+      position: relative;
+    }
+
+    .chama-member-group-panel {
+      position: absolute; top: 46px; left: 0; min-width: 220px;
+      padding: 6px; background: #ffffff; border: 1px solid #e5e7eb;
+      border-radius: 14px; box-shadow: 0 18px 45px rgba(16, 24, 40, 0.14);
+      z-index: 20000;
+    }
+
+    .chama-member-group-panel a {
+      display: flex; width: 100%; justify-content: flex-start;
     }
 
     .chama-member-logout {
@@ -917,57 +994,58 @@ function renderDesktopLogout() {
    ========================================================= */
 
 function renderDesktopNavigation() {
-  const currentPage =
-    getCurrentPage();
+  const currentPage = getCurrentPage();
 
-  // Rebuild the desktop menu from the canonical portal link list.
-  // This prevents page-specific/legacy navigation from surviving beside it.
+  // Replace any legacy desktop menu with the canonical collapsible groups.
   document
     .querySelectorAll(".chama-member-nav")
     .forEach(existing => existing.remove());
 
-  const nav =
-    document.createElement("nav");
+  const nav = document.createElement("nav");
+  nav.className = "chama-member-nav";
+  nav.setAttribute("aria-label", "Member portal navigation");
 
-  nav.className =
-    "chama-member-nav";
+  const groups = MEMBER_DESKTOP_NAVIGATION_GROUPS.map(([title, items]) => [
+    title,
+    [...items]
+  ]);
 
-  nav.setAttribute(
-    "aria-label",
-    "Member portal navigation"
-  );
-
-  MEMBER_NAVIGATION.forEach(item => {
-    nav.appendChild(
-      createNavLink(
-        item.label,
-        item.href,
-        currentPage
-      )
-    );
-  });
-
-  /*
-   * Official roles can switch back to the
-   * Official Portal.
-   *
-   * This does not grant permissions; it only
-   * exposes the existing official portal route.
-   */
+  // Official users can switch portals from the Account menu.
   if (isAdminAccount()) {
-    nav.appendChild(
-      createNavLink(
-        "Official Portal",
-        "dashboard.html",
-        currentPage
-      )
-    );
+    const accountGroup = groups.find(([title]) => title === "Account");
+    accountGroup?.[1].push({
+      label: "Official Portal",
+      href: "dashboard.html"
+    });
+  }
+
+  for (const [title, items] of groups) {
+    const details = document.createElement("details");
+    details.className = "chama-member-group";
+
+    if (items.some(item => item.href.split("/").pop() === currentPage)) {
+      details.open = true;
+    }
+
+    const summary = document.createElement("summary");
+    summary.textContent = title;
+    details.appendChild(summary);
+
+    const panel = document.createElement("div");
+    panel.className = "chama-member-group-panel";
+
+    items.forEach(item => {
+      panel.appendChild(
+        createNavLink(item.label, item.href, currentPage)
+      );
+    });
+
+    details.appendChild(panel);
+    nav.appendChild(details);
   }
 
   const existingTopNav =
-    document.querySelector(
-      ".topbar .top-nav, .top-nav"
-    );
+    document.querySelector(".topbar .top-nav, .top-nav");
 
   if (existingTopNav) {
     existingTopNav.replaceChildren(nav);
@@ -975,23 +1053,15 @@ function renderDesktopNavigation() {
     return;
   }
 
-  const topbar =
-    document.querySelector(
-      ".topbar"
-    );
+  const topbar = document.querySelector(".topbar");
 
   if (topbar) {
-    topbar.appendChild(
-      nav
-    );
-
+    topbar.appendChild(nav);
     renderDesktopLogout();
-
     return;
   }
 
   document.body.prepend(nav);
-
   renderDesktopLogout();
 }
 
