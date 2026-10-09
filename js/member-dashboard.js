@@ -67,12 +67,8 @@ let currentGroup = null;
 let groupId = null;
 let memberId = null;
 
-let groupMembers = [];
-let groupContributions = [];
-let groupExpenses = [];
+// Group-wide financial datasets are intentionally not loaded into the Member Portal.
 
-let groupMonthlyAccountingSummary = null;
-let groupMonthlyFinancialSummary = null;
 
 let initialized = false;
 
@@ -246,6 +242,40 @@ function displayStatus(status) {
       letter =>
         letter.toUpperCase()
     );
+}
+
+
+/* =========================================================
+   MEMBER-ONLY FINANCIAL VISIBILITY
+   ========================================================= */
+
+function hideGroupWideFinancialSections() {
+  const groupWideIds = [
+    "groupMemberCount",
+    "groupMonthlyContributions",
+    "groupMonthlyExpenses",
+    "groupNetMovement",
+    "groupParticipation",
+    "groupExpenseActivity",
+    "memberRecentContributions",
+    "memberRecentExpenses",
+    "activityMemberCount",
+    "activityContributionCount",
+    "activityExpenseCount"
+  ];
+
+  const cards = new Set();
+
+  for (const id of groupWideIds) {
+    const element = byId(id);
+    const card = element?.closest("article.member-card, article, .member-card");
+    if (card) cards.add(card);
+  }
+
+  for (const card of cards) {
+    card.hidden = true;
+    card.setAttribute("aria-hidden", "true");
+  }
 }
 
 
@@ -2270,15 +2300,18 @@ async function loadDashboard() {
      * A failure in one optional section does not destroy
      * successfully loaded canonical member accounting data.
      */
+    /*
+     * Personal records only. Do not request group-wide financial
+     * summaries, other members' contribution rows, or group expense rows.
+     */
+    hideGroupWideFinancialSections();
+
     const results =
       await Promise.allSettled([
         loadMyContributionPosition(),
         loadMyActiveContributions(),
         loadMyFinePosition(),
         loadMyContributionActivity(),
-        loadGroupReadData(),
-        loadGroupMonthlyAccountingSummary(),
-        loadGroupMonthlyFinancialSummary(),
         loadMeetings(),
         loadMyAttendanceSummary(),
         loadActivities(),
@@ -2289,136 +2322,14 @@ async function loadDashboard() {
     const [
       myPositionResult,
       myActivityResult,
-      groupDataResult,
-      groupAccountingResult,
-      groupFinancialResult,
+      myFineResult,
+      myContributionActivityResult,
       meetingsResult,
+      attendanceResult,
       activitiesResult,
       plansResult,
       assetsResult
     ] = results;
-
-
-    /* =====================================================
-       GROUP FINANCIAL HEALTH GATE
-       ===================================================== */
-
-    /*
-     * Financial health is rendered only when all required
-     * source contracts are available:
-     *
-     *   A. group read data
-     *   B. canonical monthly accounting
-     *   C. monthly financial summary
-     *
-     * There is NO fallback to raw contribution aggregation.
-     */
-    if (
-      groupDataResult.status ===
-        "fulfilled" &&
-
-      groupAccountingResult.status ===
-        "fulfilled" &&
-
-      groupFinancialResult.status ===
-        "fulfilled"
-    ) {
-      renderGroupFinancialHealth(
-        groupMonthlyAccountingSummary
-      );
-
-      renderRecentGroupContributions();
-      renderRecentGroupExpenses();
-
-    } else {
-      console.warn(
-        "Member dashboard group financial data failed:",
-        {
-          groupData:
-            groupDataResult.status ===
-            "rejected"
-              ? groupDataResult.reason
-              : null,
-
-          groupAccounting:
-            groupAccountingResult.status ===
-            "rejected"
-              ? groupAccountingResult.reason
-              : null,
-
-          groupFinancial:
-            groupFinancialResult.status ===
-            "rejected"
-              ? groupFinancialResult.reason
-              : null
-        }
-      );
-
-      setText(
-        "groupMemberCount",
-        "—"
-      );
-
-      setText(
-        "groupMonthlyContributions",
-        "—"
-      );
-
-      setText(
-        "groupMonthlyExpenses",
-        "—"
-      );
-
-      setText(
-        "groupNetMovement",
-        "—"
-      );
-
-      setText(
-        "groupParticipation",
-        "—"
-      );
-
-      setText(
-        "groupExpenseActivity",
-        "—"
-      );
-
-      setText(
-        "activityMemberCount",
-        "—"
-      );
-
-      setText(
-        "activityContributionCount",
-        "—"
-      );
-
-      setText(
-        "activityExpenseCount",
-        "—"
-      );
-
-      const contributionContainer =
-        byId(
-          "memberRecentContributions"
-        );
-
-      if (contributionContainer) {
-        contributionContainer.innerHTML =
-          "<p>Group contribution data could not be loaded.</p>";
-      }
-
-      const expenseContainer =
-        byId(
-          "memberRecentExpenses"
-        );
-
-      if (expenseContainer) {
-        expenseContainer.innerHTML =
-          "<p>Group expense data could not be loaded.</p>";
-      }
-    }
 
 
     /* =====================================================
@@ -2464,7 +2375,10 @@ async function loadDashboard() {
     void currentUser;
     void myPositionResult;
     void myActivityResult;
+    void myFineResult;
+    void myContributionActivityResult;
     void meetingsResult;
+    void attendanceResult;
     void activitiesResult;
     void plansResult;
     void assetsResult;
