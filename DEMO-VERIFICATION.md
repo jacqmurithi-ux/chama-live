@@ -23,7 +23,10 @@ Target: candidate Supabase project `onzaonflquipqmhgslxi` and Git branch `demo/f
 | Group boundary validation | PASS | Override with a mismatched group ID was rejected |
 | Browser JavaScript parse check | PASS | `js/demo-app.js`, `js/demo-api.js`, and `js/demo-session.js` parsed successfully after removing module imports/exports for syntax checking |
 | Candidate OTP group lookup | PASS (code change deployed) | Edge Function resolves the unique `is_demo=true` group instead of hardcoded `E2600` |
-| Live browser start/end test | NOT RUN | Requires a real browser request to the deployed candidate Edge Function |
+| Live browser start/end test | NOT RUN | Requires a real browser request to the deployed candidate Edge Function; no browser automation/invocation tool is available in this session |
+| Field-specific create/edit form | PARTIAL PASS | Replaced raw JSON with field controls, enum selectors, member/meeting dropdowns, and placeholder-contact validation; full per-module validation remains pending |
+| Security-definer view findings | PASS (candidate only) | Set `security_invoker=true` on `public.group_balances` and `public.subscription_credit_balances`; candidate advisor no longer reports `security_definer_view` |
+| Context/read response shape | PASS | `cl_demo_get_context` returned `demo=true`, Furaha group name; `cl_demo_get_rows(...,'members')` returned an array of 15 rows |
 | Full page-by-page visual/workflow parity | NOT COMPLETE | Shared routes exist; every form, selector, validation, calculation and workflow has not yet been compared against production HTML |
 
 ## Portal page coverage map
@@ -69,6 +72,6 @@ Target: candidate Supabase project `onzaonflquipqmhgslxi` and Git branch `demo/f
 
 1. Run real browser tests for direct start, invalid/expired token, explicit end, and a second visitor.
 2. Verify meeting create/edit/minutes, attendance submission/resubmission/idempotency and dashboard projections in the browser.
-3. Add field-specific forms, selectors and validation to every CRUD module; avoid raw JSON as the final user interface.
+3. Finish field-specific forms, selectors and validation in every CRUD module; raw JSON is no longer the main editor, but each module still needs parity checks.
 4. Compare each covered route with its live counterpart and record PASS/FAIL per workflow.
 5. Run a final candidate security review; do not merge this branch or deploy to `chamalive.co.ke` until the browser and parity gates pass.
