@@ -2028,122 +2028,59 @@ async function loadCanonicalSummary(
    CANONICAL CUMULATIVE MEMBER POSITION
 ========================================================= */
 
-async function loadCumulativePosition(
-  memberId
-) {
-
+async function loadCumulativePosition(memberId) {
   if (!memberId) {
-
-    throw new Error(
-      "Cumulative accounting requires a member ID."
-    );
-
+    throw new Error("Cumulative accounting requires a member ID.");
   }
 
-
-  const {
-    data,
-    error
-  } =
-    await supabase.rpc(
-      "get_member_contribution_position",
-      {
-        p_member_id:
-          memberId
-      }
-    );
-
+  const { data, error } = await supabase.rpc(
+    "get_member_contribution_position",
+    { p_member_id: memberId }
+  );
 
   if (error) {
-
-    console.error(
-      "CHAMA LIVE: cumulative member position RPC failed",
-      {
-        memberId,
-        error
-      }
-    );
-
-
+    console.error("CHAMA LIVE: cumulative member position RPC failed", {
+      memberId,
+      error
+    });
     throw new Error(
       `Cumulative member accounting could not be loaded: ${error.message}`
     );
-
   }
 
+  const row = Array.isArray(data) ? data[0] : data;
 
-  const row =
-    Array.isArray(data)
-      ? data[0]
-      : data;
-
-
+  // An empty result means no position was returned. It is not a zero balance.
   if (!row) {
-
-    throw new Error(
-      "Cumulative member accounting returned no position."
+    console.warn(
+      "CHAMA LIVE: no cumulative position returned for member",
+      memberId
     );
-
+    return null;
   }
 
+  const returnedMemberId = row.member_id || memberId;
 
-  const returnedMemberId =
-    row.member_id ||
-    memberId;
-
-
-  if (
-    String(returnedMemberId) !==
-    String(memberId)
-  ) {
-
+  if (String(returnedMemberId) !== String(memberId)) {
     throw new Error(
       "Cumulative accounting returned a position for a different member."
     );
-
   }
 
-
   return {
-
-    memberId:
-      returnedMemberId,
-
-    groupId:
-      row.group_id ||
-      null,
-
-    totalDue:
-      numberValue(
-        row.total_due
-      ),
-
-    totalAllocated:
-      numberValue(
-        row.total_allocated
-      ),
-
-    arrears:
-      numberValue(
-        row.arrears
-      ),
-
-    credit:
-      numberValue(
-        row.credit
-      ),
-
-    status:
-      normalizeCumulativeStatus(
-        row.status,
-        row.arrears,
-        row.credit
-      )
-
+    memberId: returnedMemberId,
+    groupId: row.group_id || null,
+    totalDue: numberValue(row.total_due),
+    totalAllocated: numberValue(row.total_allocated),
+    arrears: numberValue(row.arrears),
+    credit: numberValue(row.credit),
+    status: normalizeCumulativeStatus(
+      row.status,
+      row.arrears,
+      row.credit
+    )
   };
-
 }
-
 
 /* =========================================================
    CUMULATIVE STATUS NORMALIZATION
@@ -2231,169 +2168,108 @@ function normalizeCumulativeStatus(
 ========================================================= */
 
 async function loadCumulativePositions() {
+  cumulativePositions = [];
+  cumulativePositionsComplete = false;
 
-  cumulativePositions =
-    [];
-
-  cumulativePositionsComplete =
-    false;
-
-
-  const activeMembers =
-    getActiveMembers();
-
+  const activeMembers = getActiveMembers();
 
   if (!activeMembers.length) {
-
-    cumulativePositionsComplete =
-      true;
-
+    cumulativePositionsComplete = true;
     return [];
-
   }
 
+  // Settle per-member requests independently so one absent position does not
+  // prevent the dashboard's monthly accounting and operational panels loading.
+  const settled = await Promise.allSettled(
+    activeMembers.map(member => loadCumulativePosition(member.id))
+  );
 
-  const results =
-    await Promise.all(
-      activeMembers.map(
-        member =>
-          loadCumulativePosition(
-            member.id
-          )
-      )
+  const failures = settled.filter(result => result.status === "rejected");
+  const positions = settled
+    .filter(result => result.status === "fulfilled" && result.value)
+    .map(result => result.value);
+
+  // Preserve real RPC/permission failures for the caller to report as unavailable.
+  if (failures.length) {
+    const reasons = failures.map(result => result.reason?.message || String(result.reason));
+    throw new Error(
+      `Cumulative accounting failed for ${failures.length} member(s): ${reasons.join("; ")}`
     );
+  }
 
-
-  const invalidResult =
-    results.find(
-      position =>
-        position.groupId &&
-        String(
-          position.groupId
-        ) !==
-        String(
-          currentGroupId
-        )
-    );
-
+  const invalidResult = positions.find(
+    position =>
+      position.groupId &&
+      String(position.groupId) !== String(currentGroupId)
+  );
 
   if (invalidResult) {
-
     throw new Error(
       "Cumulative accounting returned a position outside the current group."
     );
-
   }
 
+  const returnedMemberIds = new Set(
+    positions.map(position => String(position.memberId))
+  );
 
-  const returnedMemberIds =
-    new Set(
-      results.map(
-        position =>
-          String(
-            position.memberId
-          )
-      )
-    );
-
-
-  if (
-    returnedMemberIds.size !==
-    results.length
-  ) {
-
+  if (returnedMemberIds.size !== positions.length) {
     throw new Error(
       "Cumulative accounting returned duplicate member positions."
     );
-
   }
 
+  cumulativePositions = positions;
+  cumulativePositionsComplete = positions.length === activeMembers.length;
 
-  for (
-    const member of activeMembers
-  ) {
-
-    if (
-      !returnedMemberIds.has(
-        String(member.id)
-      )
-    ) {
-
-      throw new Error(
-        "Cumulative accounting did not return a position for every group member."
-      );
-
-    }
-
+  if (!cumulativePositionsComplete) {
+    console.warn("CHAMA LIVE: cumulative accounting is incomplete; missing positions remain unavailable.", {
+      expectedMembers: activeMembers.length,
+      returnedPositions: positions.length,
+      missingMemberIds: activeMembers
+        .filter(member => !returnedMemberIds.has(String(member.id)))
+        .map(member => member.id)
+    });
   }
-
-
-  cumulativePositions =
-    results;
-
-
-  cumulativePositionsComplete =
-    results.length ===
-    activeMembers.length;
-
-
-  if (
-    !cumulativePositionsComplete
-  ) {
-
-    throw new Error(
-      "Cumulative accounting could not be fully loaded."
-    );
-
-  }
-
 
   return cumulativePositions;
-
 }
-
 
 /* =========================================================
    CANONICAL ACCOUNTING
 ========================================================= */
 
 async function loadCanonicalAccounting() {
+  const month = getCurrentMonth();
 
-  const month =
-    getCurrentMonth();
-
-
-  await loadCanonicalMemberStatus(
-    month
-  );
-
-
-  await loadCanonicalSummary(
-    month
-  );
-
+  await loadCanonicalMemberStatus(month);
+  await loadCanonicalSummary(month);
 
   if (!canonicalSummary) {
-
-    throw new Error(
-      "Canonical accounting summary was not returned."
-    );
-
+    throw new Error("Canonical accounting summary was not returned.");
   }
 
-
-  await loadCumulativePositions();
-
+  // Cumulative positions are a separate projection. If they are unavailable,
+  // keep that section visibly incomplete without blocking canonical monthly data.
+  try {
+    await loadCumulativePositions();
+  } catch (error) {
+    cumulativePositions = [];
+    cumulativePositionsComplete = false;
+    console.error(
+      "CHAMA LIVE: cumulative accounting unavailable; monthly dashboard data can still load.",
+      error
+    );
+  }
 
   return {
     month,
     monthlyStatus,
     canonicalSummary,
-    cumulativePositions
+    cumulativePositions,
+    cumulativePositionsComplete
   };
-
 }
-
 
 /* =========================================================
    LOAD ALL DATA
