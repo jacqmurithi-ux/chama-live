@@ -363,6 +363,9 @@ let initialized = false;
 let accountingMonth =
   getCurrentMonth();
 
+// Default to three recent records until a month is explicitly selected.
+let contributionHistoryMonthSelected = false;
+
 let selectedVerifierEvidenceId =
   null;
 
@@ -936,6 +939,8 @@ async function changeAccountingMonth() {
   accountingMonth =
     selected;
 
+  contributionHistoryMonthSelected = true;
+
   renderAccountingMonthLabel();
 
   clearError();
@@ -963,6 +968,8 @@ async function changeAccountingMonth() {
     );
 
     renderMemberStatus();
+
+    renderLedger();
 
     renderSummary();
 
@@ -4747,20 +4754,24 @@ function renderLedger() {
     return;
   }
 
-  if (!contributions.length) {
+  const historyRows = contributionHistoryMonthSelected
+    ? contributions.filter(item => getContributionMonth(item) === accountingMonth)
+    : contributions.slice(0, 3);
+
+  if (!historyRows.length) {
+    const emptyMessage = contributionHistoryMonthSelected
+      ? "No contribution records found for " + formatAccountingMonth(accountingMonth) + "."
+      : "No contributions recorded yet.";
     contributionRows.innerHTML = `
       <tr>
-        <td colspan="8" class="cl-empty-table">
-          No contributions recorded yet.
-        </td>
+        <td colspan="8" class="cl-empty-table">${escapeHtml(emptyMessage)}</td>
       </tr>
     `;
     return;
   }
 
   contributionRows.innerHTML =
-    contributions
-      .slice(0, 100)
+    historyRows
       .map(item => {
         const date =
           item.contribution_date ||
