@@ -965,7 +965,7 @@ function renderAttendanceList() {
 
   if (!attendanceMembers.length) {
     meetingAttendanceList.innerHTML =
-      "<p class=\\"muted\\">No active group members found.</p>";
+      '<p class="muted">No active group members found.</p>';
     renderAttendanceStats();
     return;
   }
