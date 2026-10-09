@@ -16,12 +16,15 @@ export function getDemoToken() {
 }
 
 export async function startDemo() {
+  // If this tab already has a session, discard its overrides before starting a fresh one.
+  if (sessionStorage.getItem(TOKEN_KEY)) {
+    await endDemo({ redirect: false });
+  }
   const response = await fetch(FUNCTION_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "apikey": SUPABASE_PUBLISHABLE_KEY,
-      "Authorization": `Bearer ${SUPABASE_PUBLISHABLE_KEY}`
+      "apikey": SUPABASE_PUBLISHABLE_KEY
     },
     body: JSON.stringify({ action: "start" })
   });
@@ -42,8 +45,7 @@ export async function endDemo({ redirect = true } = {}) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "apikey": SUPABASE_PUBLISHABLE_KEY,
-          "Authorization": `Bearer ${SUPABASE_PUBLISHABLE_KEY}`
+          "apikey": SUPABASE_PUBLISHABLE_KEY
         },
         body: JSON.stringify({ action: "end", demo_token: token }),
         keepalive: true
