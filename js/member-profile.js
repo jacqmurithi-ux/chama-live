@@ -664,8 +664,39 @@ async function loadMonthlyStatus() {
     throw error;
   }
 
+  /*
+   * Personal Member Portal boundary: officer roles do not grant
+   * permission to browse other members' accounting here.
+   * Keep only the authenticated member's own row before any
+   * filter, summary, statement, export, or print can access it.
+   */
   state.monthlyRows =
-    normalizeRows(data);
+    normalizeRows(data).filter(
+      row =>
+        String(rowMemberId(row) ?? "") ===
+        String(state.memberId ?? "")
+    );
+
+  if (els.memberFilter) {
+    const field =
+      els.memberFilter.closest(".field, .filter-group, .form-group") ||
+      els.memberFilter.parentElement;
+    if (field) field.hidden = true;
+    els.memberFilter.innerHTML = "";
+    const ownOption = document.createElement("option");
+    ownOption.value = String(state.memberId);
+    ownOption.textContent = "My account";
+    els.memberFilter.appendChild(ownOption);
+    els.memberFilter.value = String(state.memberId);
+  }
+
+  if (els.searchMember) {
+    const field =
+      els.searchMember.closest(".field, .filter-group, .form-group") ||
+      els.searchMember.parentElement;
+    if (field) field.hidden = true;
+    els.searchMember.value = "";
+  }
 
   return state.monthlyRows;
 }
@@ -693,9 +724,9 @@ function filteredRows() {
       .trim()
       .toUpperCase();
 
+  // Always fixed to the signed-in member; never trust UI selection.
   const selectedMemberId =
-    els.memberFilter?.value ||
-    "";
+    String(state.memberId ?? "");
 
   return state.monthlyRows
     .filter(row => {
@@ -1102,6 +1133,13 @@ function renderSummary() {
 ========================================================= */
 
 function openStatement(memberId) {
+
+  if (
+    !memberId ||
+    String(memberId) !== String(state.memberId)
+  ) {
+    return;
+  }
 
   const row =
     state.monthlyRows.find(
