@@ -435,94 +435,54 @@ const NAVIGATION_GROUPS = [
   [
     "Home",
     [
-      [
-        "dashboard.html",
-        "Dashboard"
-      ],
-      [
-        "admin-getting-started.html",
-        "Getting Started"
-      ]
+      ["dashboard.html", "Dashboard"],
+      ["admin-getting-started.html", "Getting Started"]
     ]
   ],
 
   [
     "Members",
     [
-      [
-        "members.html",
-        "Members"
-      ],
-      [
-        "add-member.html",
-        "Add Member"
-      ]
+      ["members.html", "Members"],
+      ["add-member.html", "Add Member"]
     ]
   ],
 
   [
     "Finance",
     [
-      [
-        "contributions.html",
-        "Contributions"
-      ],
-      [
-        "expenses.html",
-        "Expenses"
-      ],
-      [
-        "fines.html",
-        "Fines"
-      ],
-      [
-        "reports.html",
-        "Reports"
-      ],
-      [
-        "monthly-closing.html",
-        "Monthly Closing"
-      ]
+      ["contributions.html", "Contributions"],
+      ["expenses.html", "Expenses"],
+      ["fines.html", "Fines"],
+      ["reports.html", "Reports"],
+      ["monthly-closing.html", "Monthly Closing"]
     ]
   ],
 
   [
     "Group",
     [
-      [
-        "meetings.html",
-        "Meetings"
-      ],
-      [
-        "plans-activities.html",
-        "Plans & Activities"
-      ],
-      [
-        "milestones.html",
-        "Milestones"
-      ],
-      [
-        "assets.html",
-        "Assets"
-      ],
-      [
-        "welfare.html",
-        "Welfare"
-      ]
+      ["meetings.html", "Meetings"],
+      ["plans-activities.html", "Plans & Activities"],
+      ["milestones.html", "Milestones"],
+      ["assets.html", "Assets"],
+      ["welfare.html", "Welfare"]
     ]
   ],
 
   [
     "Management",
     [
-      [
-        "group-management.html",
-        "Group Management"
-      ],
-      [
-        "data-migration.html",
-        "Data Migration"
-      ]
+      ["group-management.html", "Group Management"],
+      ["data-migration.html", "Data Migration"],
+      ["billing.html", "Billing"]
+    ]
+  ],
+
+  [
+    "Account",
+    [
+      ["member-dashboard.html", "View My Account"]
     ]
   ]
 
@@ -651,6 +611,23 @@ function injectStyles() {
 
     .chama-admin-group summary::-webkit-details-marker {
       display: none;
+    }
+
+    .chama-admin-group summary::after {
+      content: "▾";
+      margin-left: 7px;
+      font-size: 10px;
+      opacity: 0.72;
+    }
+
+    .chama-admin-group[open] > summary::after {
+      content: "▴";
+    }
+
+    .chama-admin-group summary:focus-visible,
+    .chama-admin-group-panel a:focus-visible {
+      outline: 2px solid #0f766e;
+      outline-offset: 2px;
     }
 
     .chama-admin-group-panel {
@@ -896,9 +873,7 @@ function injectStyles() {
 function renderDesktopNavigation() {
 
   const target =
-    document.querySelector(
-      ".topbar .top-nav"
-    );
+    document.querySelector(".topbar .top-nav");
 
   if (!target) {
     return;
@@ -906,138 +881,38 @@ function renderDesktopNavigation() {
 
   target.replaceChildren();
 
-  const nav =
-    document.createElement(
-      "nav"
-    );
+  const nav = document.createElement("nav");
+  nav.className = "chama-admin-nav";
+  nav.setAttribute("aria-label", "Admin navigation");
 
-  nav.className =
-    "chama-admin-nav";
+  const currentPage = getCurrentPage();
 
-  nav.setAttribute(
-    "aria-label",
-    "Admin navigation"
-  );
+  for (const [title, items] of NAVIGATION_GROUPS) {
+    const details = document.createElement("details");
+    details.className = "chama-admin-group";
 
-
-  for (
-    const [
-      title,
-      items
-    ]
-    of NAVIGATION_GROUPS
-  ) {
-
-    if (
-      items.length === 1
-    ) {
-
-      nav.appendChild(
-        createNavLink(
-          items[0][0],
-          items[0][1]
-        )
-      );
-
-      continue;
-
+    // Keep the active page's category expanded so users can see
+    // where the current page belongs without losing the dropdown menus.
+    if (items.some(([href]) => href === currentPage)) {
+      details.open = true;
     }
 
+    const summary = document.createElement("summary");
+    summary.textContent = title;
+    details.appendChild(summary);
 
-    const details =
-      document.createElement(
-        "details"
-      );
+    const panel = document.createElement("div");
+    panel.className = "chama-admin-group-panel";
 
-    details.className =
-      "chama-admin-group";
-
-
-    const summary =
-      document.createElement(
-        "summary"
-      );
-
-    summary.textContent =
-      title;
-
-
-    details.appendChild(
-      summary
-    );
-
-
-    const panel =
-      document.createElement(
-        "div"
-      );
-
-    panel.className =
-      "chama-admin-group-panel";
-
-
-    for (
-      const item
-      of items
-    ) {
-
-      panel.appendChild(
-        createNavLink(
-          item[0],
-          item[1]
-        )
-      );
-
+    for (const [href, label] of items) {
+      panel.appendChild(createNavLink(href, label));
     }
 
-
-    details.appendChild(
-      panel
-    );
-
-    nav.appendChild(
-      details
-    );
-
+    details.appendChild(panel);
+    nav.appendChild(details);
   }
 
-
-  /*
-   * Billing is a dedicated admin page.
-   *
-   * It is intentionally outside the grouped
-   * Finance navigation.
-   */
-
-  nav.appendChild(
-    createNavLink(
-      "billing.html",
-      "Billing"
-    )
-  );
-
-
-  /*
-   * Official users can switch to their existing
-   * Member Portal / My Account without changing
-   * authentication identity.
-   *
-   * This is navigation only. Member feature guards,
-   * RPC authorization and RLS remain authoritative.
-   */
-
-  nav.appendChild(
-    createNavLink(
-      "member-dashboard.html",
-      "View My Account"
-    )
-  );
-
-
-  target.appendChild(
-    nav
-  );
-
+  target.appendChild(nav);
 }
 
 
@@ -1369,60 +1244,10 @@ function renderMobileNavigation() {
   }
 
 
-  /* ---------------------------------------------------------
-     ACCOUNT
-  --------------------------------------------------------- */
-
-  const accountSection =
-    document.createElement(
-      "section"
-    );
-
-  accountSection.className =
-    "chama-mobile-section";
-
-
-  const accountHeading =
-    document.createElement(
-      "h2"
-    );
-
-  accountHeading.textContent =
-    "Account";
-
-
-  accountSection.appendChild(
-    accountHeading
-  );
-
-
-  accountSection.appendChild(
-    createNavLink(
-      "billing.html",
-      "Billing"
-    )
-  );
-
-
   /*
-   * Return to the same user's Member Portal /
-   * My Account context.
-   *
-   * Navigation only — no permission escalation.
+   * Billing and View My Account are included in the same
+   * canonical navigation groups above, avoiding duplicate links.
    */
-
-  accountSection.appendChild(
-    createNavLink(
-      "member-dashboard.html",
-      "View My Account"
-    )
-  );
-
-
-  menu.appendChild(
-    accountSection
-  );
-
 
   document.body.appendChild(
     backdrop
