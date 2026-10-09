@@ -696,7 +696,23 @@ async function loadMonthlyStatus() {
       els.searchMember.parentElement;
     if (field) field.hidden = true;
     els.searchMember.value = "";
+    els.searchMember.disabled = true;
   }
+
+  if (els.statusFilter) {
+    const field =
+      els.statusFilter.closest(".field, .filter-group, .form-group") ||
+      els.statusFilter.parentElement;
+    if (field) field.hidden = true;
+    els.statusFilter.value = "";
+    els.statusFilter.disabled = true;
+  }
+
+  document.querySelectorAll("[data-quick]").forEach(element => {
+    const container = element.closest(".quick-filters");
+    if (container) container.hidden = true;
+    element.disabled = true;
+  });
 
   return state.monthlyRows;
 }
