@@ -1789,9 +1789,9 @@
        Do not import reports.js directly here.
   ====================================================== -->
 
-  <script
-    type="module"
-    src="./js/admin-layout.js">
+  <script type="module">
+    import { boot } from "./js/admin-layout.js";
+    boot();
   </script>
 
 </body>
