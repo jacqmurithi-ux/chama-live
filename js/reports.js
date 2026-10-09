@@ -4982,7 +4982,7 @@ function sortReportTable(th) {
    GENERATE REPORT
    ========================================================= */
 
-async async function generateReport() {
+async function generateReport() {
   clearError();
 
   try {
