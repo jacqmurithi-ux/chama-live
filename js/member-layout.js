@@ -253,6 +253,10 @@ const MEMBER_NAVIGATION = [
     href: "member-contributions.html"
   },
   {
+    label: "My Accounting",
+    href: "member-accounting.html"
+  },
+  {
     label: "Activities",
     href: "member-activities.html"
   },
@@ -263,6 +267,10 @@ const MEMBER_NAVIGATION = [
   {
     label: "Milestones",
     href: "member-milestones.html"
+  },
+  {
+    label: "My Profile",
+    href: "member-profile.html"
   },
   {
     label: "Getting Started",
