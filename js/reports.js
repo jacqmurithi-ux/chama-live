@@ -756,9 +756,10 @@ function getMemberNumber(memberId) {
 }
 
 function memberMatchesFilter(memberId) {
-  const selected = $("memberFilter")?.value || "";
+  const selected = lower($("memberFilter")?.value || "");
 
-  if (!selected) {
+  // HTML uses value="all" for the All Members option.
+  if (!selected || selected === "all") {
     return true;
   }
 
@@ -769,7 +770,7 @@ function contributionTypeMatchesFilter(row) {
   const selected =
     lower($("contributionTypeFilter")?.value || "");
 
-  if (!selected) {
+  if (!selected || selected === "all") {
     return true;
   }
 
@@ -780,7 +781,7 @@ function paymentMethodMatchesFilter(row) {
   const selected =
     lower($("paymentMethodFilter")?.value || "");
 
-  if (!selected) {
+  if (!selected || selected === "all") {
     return true;
   }
 
@@ -807,26 +808,15 @@ function filteredContributions() {
 function filteredExpenses() {
   const { from, to } = getDateRange();
 
-  const selectedStatus =
-    lower($("statusFilter")?.value || "");
-
+  // statusFilter is a member-accounting status selector, not an
+  // expense approval selector. Keep all expense states in the period
+  // so pending/rejected totals remain visible in the summary.
   return expenses.filter(row => {
     const date =
       row.date ||
       row.created_at;
 
-    if (!dateWithinRange(date, from, to)) {
-      return false;
-    }
-
-    if (
-      selectedStatus &&
-      lower(row.approval_status) !== selectedStatus
-    ) {
-      return false;
-    }
-
-    return true;
+    return dateWithinRange(date, from, to);
   });
 }
 
@@ -1268,7 +1258,7 @@ function filteredCanonicalStatus() {
 
   let rows = canonicalStatus.slice();
 
-  if (selectedMember) {
+  if (selectedMember && lower(selectedMember) !== "all") {
     rows = rows.filter(
       row =>
         String(row.member_id) ===
@@ -1276,7 +1266,11 @@ function filteredCanonicalStatus() {
     );
   }
 
-  if (selectedStatus) {
+  if (
+    selectedStatus &&
+    selectedStatus !== "all" &&
+    !selectedStatus.startsWith("cumulative-")
+  ) {
     rows = rows.filter(row => {
       const status =
         lower(
@@ -1341,7 +1335,7 @@ function filteredCumulativePositions() {
 
   let rows = cumulativePositions.slice();
 
-  if (selectedMember) {
+  if (selectedMember && lower(selectedMember) !== "all") {
     rows = rows.filter(
       row =>
         String(row.member_id) ===
