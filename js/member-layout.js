@@ -322,10 +322,12 @@ function injectStyles() {
       z-index: 20001;
       width: min(88vw, 340px);
       overflow-y: auto;
-      padding: 1.25rem;
-      background: var(--surface, #ffffff);
+      padding: 20px 16px;
+      box-sizing: border-box;
+      background: #ffffff;
+      border-left: 1px solid #e5e7eb;
       box-shadow:
-        -10px 0 30px rgba(0, 0, 0, 0.16);
+        -10px 0 30px rgba(16, 24, 40, 0.16);
     }
 
     .chama-member-mobile-header {
@@ -355,11 +357,14 @@ function injectStyles() {
       display: block;
       padding: 0.8rem;
       border-radius: 10px;
+      color: #344054;
       text-decoration: none;
       font-weight: 600;
     }
 
     .chama-member-mobile-links a.active {
+      background: #ecfdf5;
+      color: #0f766e;
       font-weight: 700;
     }
 
@@ -915,12 +920,17 @@ function renderMobileMenuToggle() {
     );
 
   if (!button) {
+    const topbarInner =
+      document.querySelector(
+        ".topbar-inner"
+      );
+
     const topbar =
       document.querySelector(
         ".topbar"
       );
 
-    if (!topbar) {
+    if (!topbarInner && !topbar) {
       return;
     }
 
@@ -935,9 +945,11 @@ function renderMobileMenuToggle() {
     button.textContent =
       "☰";
 
-    topbar.appendChild(
-      button
-    );
+    if (topbarInner) {
+      topbarInner.prepend(button);
+    } else {
+      topbar.prepend(button);
+    }
   }
 
   button.classList.add(
