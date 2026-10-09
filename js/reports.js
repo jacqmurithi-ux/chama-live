@@ -1177,6 +1177,15 @@ function filteredCanonicalStatus() {
           row.payment_status
         );
 
+      if (selectedStatus === "outstanding") {
+        return canonicalOutstanding(row) > 0;
+      }
+
+      if (selectedStatus === "no-payment") {
+        return canonicalApplied(row) <= 0 &&
+          canonicalOutstanding(row) > 0;
+      }
+
       return status === selectedStatus;
     });
   }
@@ -1218,6 +1227,8 @@ function filteredCanonicalStatus() {
     rows = rows.filter(row =>
       numberValue(
         row.carry_forward_credit ??
+        row.previous_credit ??
+        row.current_credit ??
         row.credit ??
         0
       ) > 0
@@ -1255,9 +1266,24 @@ function filteredCumulativePositions() {
 
   if (activeQuickFilter === "attention") {
     rows = rows.filter(row =>
-      numberValue(row.arrears) > 0 ||
-      numberValue(row.credit) > 0
+      numberValue(row.arrears) > 0
     );
+  }
+
+  const selectedStatus =
+    lower($("statusFilter")?.value || "");
+
+  if (selectedStatus === "cumulative-arrears") {
+    rows = rows.filter(row => numberValue(row.arrears) > 0);
+  } else if (selectedStatus === "cumulative-credit") {
+    rows = rows.filter(row => numberValue(row.credit) > 0);
+  } else if (selectedStatus === "cumulative-up-to-date") {
+    rows = rows.filter(row =>
+      numberValue(row.arrears) <= 0 &&
+      numberValue(row.credit) <= 0
+    );
+  } else if (selectedStatus === "no-payment") {
+    rows = rows.filter(row => numberValue(row.total_allocated) <= 0);
   }
 
   return rows;
@@ -4583,6 +4609,52 @@ function renderVisualInsights(
 ========================================================= */
 
 
+function renderFilteredMemberAccounting(rows, title) {
+  const target = $("reportOutput");
+  if (!target) return;
+
+  target.innerHTML = `
+    <div class="report-table-wrap">
+      <h3>${escapeHTML(title)}</h3>
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>Member</th>
+            <th>Member No.</th>
+            <th>Previous Outstanding</th>
+            <th>Due</th>
+            <th>Applied</th>
+            <th>Outstanding</th>
+            <th>Credit</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.length ? rows.map(row => `
+            <tr>
+              <td>${escapeHTML(getMemberName(row.member_id))}</td>
+              <td>${escapeHTML(getMemberNumber(row.member_id) || "—")}</td>
+              <td>${formatCurrency(
+                row.previous_outstanding ??
+                row.previous_arrears ??
+                row.outstanding_before ??
+                0
+              )}</td>
+              <td>${formatCurrency(canonicalDue(row))}</td>
+              <td>${formatCurrency(canonicalApplied(row))}</td>
+              <td>${formatCurrency(canonicalOutstanding(row))}</td>
+              <td>${formatCurrency(canonicalCredit(row))}</td>
+              <td>${escapeHTML(getStatusLabel(canonicalRowStatus(row)))}</td>
+            </tr>
+          `).join("") : `
+            <tr><td colspan="8">No members match this filter for the selected accounting month.</td></tr>
+          `}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
 function renderSelectedReport(
   type,
   contributionRows,
@@ -4605,7 +4677,43 @@ function renderSelectedReport(
     `Accounting month: ${month}`
   );
 
-  switch (type) {
+  const selectedStatus =
+    lower($("statusFilter")?.value || "");
+
+  const hasMonthlyFilter =
+    activeQuickFilter !== "all" ||
+    (selectedStatus &&
+      selectedStatus !== "all" &&
+      !selectedStatus.startsWith("cumulative-"));
+
+  const hasCumulativeFilter =
+    selectedStatus.startsWith("cumulative-");
+
+  if (hasCumulativeFilter) {
+    renderCumulativePosition(cumulativeRows);
+    setReportHeader(
+      "Filtered Cumulative Member Position",
+      `Accounting month: ${month} • ${selectedStatus.replace(/-/g, " ")}`
+    );
+  } else if (hasMonthlyFilter) {
+    const filterTitle = activeQuickFilter !== "all"
+      ? ({
+          attention: "Needs Attention",
+          arrears: "Has Previous Outstanding",
+          credit: "Has Credit"
+        }[activeQuickFilter] || "Filtered Monthly Accounting")
+      : (selectedStatus === "outstanding"
+          ? "Outstanding Members"
+          : selectedStatus === "no-payment"
+            ? "Members With No Payment"
+            : `Monthly Status: ${selectedStatus}`);
+
+    renderFilteredMemberAccounting(canonicalRows, filterTitle);
+    setReportHeader(
+      filterTitle,
+      `Accounting month: ${month} • ${canonicalRows.length} matching members`
+    );
+  } else switch (type) {
     case "member-contributions":
       renderMemberContributions(
         contributionRows
@@ -5062,7 +5170,7 @@ function resetFilters() {
 
   const allButton =
     query(
-      '[data-report-quick-filter="all"]'
+      '[data-quick="all"]'
     );
 
   if (allButton) {
