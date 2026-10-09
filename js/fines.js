@@ -292,7 +292,7 @@ async function loadFineLedger() {
   const { data, error } = await supabase
     .from("fines")
     .select(
-      "id,group_id,member_id,rule_id,trigger_type,trigger_id,accounting_month,original_amount,calculated_amount,triggered_at"
+      "id,group_id,member_id,rule_id,trigger_type,trigger_id,accounting_month,original_amount,calculated_amount,triggered_at,source_type,reason,imposed_at"
     )
     .eq("group_id", state.groupId)
     .order("triggered_at", { ascending: false });
