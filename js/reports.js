@@ -978,270 +978,163 @@ async function loadCumulativePositions() {
    ========================================================= */
 
 async function loadActiveCustomContributionStatus() {
-  if (!currentGroup?.id) {
-    return;
-  }
+  const select = $("customContributionMemberStatusSelect");
+  if (!currentGroup?.id || !select) return;
 
   activeCustomContributions = [];
   customMemberStatusRows = [];
 
-  /*
-   * This is a reporting/status feature.
-   * It does not write accounting rows.
-   */
-
   try {
-    const [
-      contributionTypesResult,
-      contributionPeriodsResult
-    ] = await Promise.all([
+    const [typesResult, periodsResult] = await Promise.all([
       supabase
         .from("contribution_types")
-        .select("*")
+        .select("id, group_id, name, code")
         .eq("group_id", currentGroup.id),
-
       supabase
         .from("contribution_periods")
-        .select("*")
+        .select("id, group_id, contribution_type_id, name, status, due_date")
         .eq("group_id", currentGroup.id)
     ]);
 
-    if (
-      contributionTypesResult.error ||
-      contributionPeriodsResult.error
-    ) {
-      return;
-    }
+    if (typesResult.error) throw typesResult.error;
+    if (periodsResult.error) throw periodsResult.error;
 
-    const types =
-      safeArray(contributionTypesResult.data);
+    const customTypeIds = new Set(
+      safeArray(typesResult.data)
+        .filter(type => lower(type.code) === "custom")
+        .map(type => String(type.id))
+    );
 
-    const periods =
-      safeArray(contributionPeriodsResult.data);
-
-    const combined = [];
-
-    for (const type of types) {
-      combined.push({
-        ...type,
-        _kind: "type"
-      });
-    }
-
-    for (const period of periods) {
-      combined.push({
-        ...period,
-        _kind: "period"
-      });
-    }
-
-    activeCustomContributions =
-      combined.filter(row => {
-        if (
-          row.active === false ||
-          row.is_active === false
-        ) {
-          return false;
-        }
-
-        if (
-          lower(row.status) === "inactive" ||
-          lower(row.status) === "archived"
-        ) {
-          return false;
-        }
-
-        return true;
-      });
+    // The canonical status RPC reports custom contribution PERIODS,
+    // not contribution-type IDs or arbitrary contribution initiatives.
+    activeCustomContributions = safeArray(periodsResult.data).filter(period =>
+      customTypeIds.has(String(period.contribution_type_id)) &&
+      ["open", "due", "grace"].includes(lower(period.status))
+    );
 
     populateCustomContributionSelector();
 
-    if (activeCustomContributions.length) {
+    if (select.value) {
       await refreshSelectedCustomContribution();
+    } else {
+      customMemberStatusRows = [];
+      renderCustomContributionStatus();
     }
   } catch (error) {
-    console.warn(
-      "[Reports] Custom contribution status unavailable:",
-      error
-    );
+    console.warn("[Reports] Custom contribution status unavailable:", error);
+    select.innerHTML = '<option value="">Custom contribution status unavailable</option>';
+    setText("customContributionMemberStatusViewing", "Unavailable");
+    const target = $("customContributionMemberStatusRows");
+    if (target) {
+      target.innerHTML = '<tr><td colspan="6">Could not load custom contribution status. Check the browser console or contact an administrator.</td></tr>';
+    }
   }
 }
 
 function populateCustomContributionSelector() {
-  const select =
-    $("customContributionMemberStatusSelect");
-
+  const select = $("customContributionMemberStatusSelect");
   if (!select) return;
 
-  const currentValue = select.value;
-
-  const options = [
-    `<option value="">Select contribution</option>`
-  ];
+  const previousValue = selectedCustomContributionId || select.value;
+  const options = ['<option value="">Select contribution</option>'];
 
   for (const item of activeCustomContributions) {
-    const id =
-      item.id ||
-      item.contribution_type_id ||
-      item.period_id;
-
-    const name =
-      item.name ||
-      item.title ||
-      item.label ||
-      item.contribution_type ||
-      "Contribution";
-
-    if (!id) continue;
-
+    if (!item.id) continue;
     options.push(
-      `<option value="${escapeHTML(id)}">${escapeHTML(name)}</option>`
+      `<option value="${escapeHTML(item.id)}">${escapeHTML(item.name || "Custom contribution")}</option>`
     );
   }
 
   select.innerHTML = options.join("");
 
-  if (currentValue) {
-    select.value = currentValue;
-  }
+  const previousExists = previousValue &&
+    activeCustomContributions.some(item => String(item.id) === String(previousValue));
 
-  if (
-    selectedCustomContributionId &&
-    select.querySelector(
-      `option[value="${CSS.escape(String(selectedCustomContributionId))}"]`
-    )
-  ) {
-    select.value = selectedCustomContributionId;
-  }
+  // Choose the first valid period on initial load so the section does
+  // not remain blank while active custom periods are available.
+  select.value = previousExists
+    ? String(previousValue)
+    : String(activeCustomContributions[0]?.id || "");
+
+  selectedCustomContributionId = select.value || null;
 }
 
 async function refreshSelectedCustomContribution() {
-  const select =
-    $("customContributionMemberStatusSelect");
-
+  const select = $("customContributionMemberStatusSelect");
   if (!select) return;
 
   const selectedId = select.value;
+  selectedCustomContributionId = selectedId || null;
 
   if (!selectedId) {
     customMemberStatusRows = [];
-    selectedCustomContributionId = null;
+    setText("customContributionMemberStatusViewing", "—");
     renderCustomContributionStatus();
     return;
   }
 
-  selectedCustomContributionId = selectedId;
+  const selectedPeriod = activeCustomContributions.find(
+    item => String(item.id) === String(selectedId)
+  );
+
+  setText(
+    "customContributionMemberStatusViewing",
+    selectedPeriod?.name || "Selected contribution"
+  );
 
   try {
-    const activeMembers = members.filter(member => {
-      const status = lower(member.status);
-
-      return (
-        !status ||
-        status === "active" ||
-        status === "approved"
-      );
-    });
-
-    const rows = await Promise.all(
-      activeMembers.map(async member => {
-        const { data, error } = await supabase.rpc(
-          "get_member_active_contributions",
-          {
-            p_member_id: member.id
-          }
-        );
-
-        if (error) {
-          return null;
-        }
-
-        const list = safeArray(data);
-
-        const matching = list.find(row => {
-          const ids = [
-            row.id,
-            row.contribution_type_id,
-            row.period_id,
-            row.contribution_id
-          ];
-
-          return ids.some(
-            id => String(id) === String(selectedId)
-          );
-        });
-
-        if (!matching) {
-          return {
-            member_id: member.id,
-            status: "not active"
-          };
-        }
-
-        return {
-          member_id: member.id,
-          ...matching
-        };
-      })
+    const { data, error } = await supabase.rpc(
+      "get_group_custom_contribution_status",
+      { p_group_id: currentGroup.id }
     );
 
-    customMemberStatusRows =
-      rows.filter(Boolean);
+    if (error) throw error;
+
+    customMemberStatusRows = safeArray(data)
+      .filter(row => String(row.period_id) === String(selectedId));
 
     renderCustomContributionStatus();
   } catch (error) {
-    console.warn(
-      "[Reports] Unable to load custom contribution status:",
-      error
-    );
-
+    console.warn("[Reports] Unable to load custom contribution status:", error);
     customMemberStatusRows = [];
-    renderCustomContributionStatus();
+    const target = $("customContributionMemberStatusRows");
+    if (target) {
+      target.innerHTML = '<tr><td colspan="6">Unable to load this contribution status. Verify officer access and try again.</td></tr>';
+    }
   }
 }
 
 function renderCustomContributionStatus() {
-  const target =
-    $("customContributionMemberStatusRows");
-
+  const target = $("customContributionMemberStatusRows");
   if (!target) return;
 
-  if (!customMemberStatusRows.length) {
+  if (!selectedCustomContributionId) {
     target.innerHTML =
-      `<tr><td colspan="6">No custom contribution status available.</td></tr>`;
+      '<tr><td colspan="6">Select an active custom contribution to view member status.</td></tr>';
     return;
   }
 
-  target.innerHTML =
-    customMemberStatusRows.map(row => {
-      const memberName =
-        getMemberName(row.member_id);
+  if (!customMemberStatusRows.length) {
+    target.innerHTML =
+      '<tr><td colspan="6">No member obligations were returned for this contribution period.</td></tr>';
+    return;
+  }
 
-      const status =
-        row.status ||
-        row.payment_status ||
-        row.contribution_status ||
-        "—";
+  target.innerHTML = customMemberStatusRows.map(row => {
+    const memberName = row.member_name || getMemberName(row.member_id);
+    const status = row.status || "—";
 
-      const amount =
-        numberValue(
-          row.amount ??
-          row.allocated ??
-          row.total_allocated ??
-          0
-        );
-
-      return `
-        <tr>
-          <td>${escapeHTML(memberName)}</td>
-          <td>${escapeHTML(getMemberNumber(row.member_id) || "—")}</td>
-          <td>${escapeHTML(status)}</td>
-          <td>${formatCurrency(amount)}</td>
-          <td>${escapeHTML(formatDate(row.due_date))}</td>
-          <td>${escapeHTML(row.notes || "—")}</td>
-        </tr>
-      `;
-    }).join("");
+    return `
+      <tr>
+        <td>${escapeHTML(memberName)}</td>
+        <td class="amount">${formatCurrency(row.amount_due)}</td>
+        <td class="amount">${formatCurrency(row.amount_applied)}</td>
+        <td class="amount">${formatCurrency(row.outstanding)}</td>
+        <td>${escapeHTML(formatDate(row.due_date))}</td>
+        <td>${escapeHTML(status)}</td>
+      </tr>
+    `;
+  }).join("");
 }
 
 
