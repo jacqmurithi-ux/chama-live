@@ -191,7 +191,7 @@ const PAGE_SCRIPTS = {
   ],
 
   "meetings.html": [
-    "./meetings.js?v=20261009-meetings-attendance-fix",
+    "./meetings.js?v=20261009-meetings-schema-fix",
     "initPage"
   ],
 
