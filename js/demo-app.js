@@ -23,7 +23,18 @@ const definitions = {
   closing:{title:"Monthly Closing",table:"monthly_closings",fields:["closing_month","status","closed_at","opening_balance","closing_balance"]},
   reports:{title:"Reports",table:"contributions",fields:["contribution_date","member_id","amount","contribution_type","payment_method"]},
   billing:{title:"Billing",table:"group_subscriptions",fields:["status","plan_id","current_period_start","current_period_end"]},
-  group:{title:"Group Management",table:"groups",fields:["name","category","registration_number","monthly_contribution","location","town","email","phone"]}
+  group:{title:"Group Management",table:"groups",fields:["name","category","registration_number","monthly_contribution","location","town","email","phone"]},
+  memberDashboard:{title:"Member Dashboard Preview",dashboard:true},
+  memberContributions:{title:"My Contributions",table:"contributions",fields:["contribution_date","amount","contribution_type","payment_method","status"]},
+  memberAccounting:{title:"Member Accounting",table:"contribution_obligations",fields:["obligation_month","amount_due","amount_paid","status","member_id"]},
+  memberActivities:{title:"Member Activities",table:"group_activities",fields:["title","activity_date","status","description"]},
+  memberAssets:{title:"Member Assets",table:"group_assets",fields:["name","category","purchase_date","purchase_value","current_value","status"]},
+  memberMilestones:{title:"Member Milestones",table:"group_milestones",fields:["title","status","target_date","description"]},
+  memberProfile:{title:"Member Profile Preview",table:"members",fields:["member_number","name","actual_position_name","status","email","phone"]},
+  adminMembers:{title:"Admin Member Management",table:"members",fields:["member_number","name","actual_position_name","role","status","email","phone"]},
+  dataImport:{title:"Data Import Simulation",custom:true},
+  adminGettingStarted:{title:"Admin Getting Started",guide:"admin"},
+  memberGettingStarted:{title:"Member Getting Started",guide:"member"}
 };
 let currentPage = "dashboard";
 let currentDefinition = null;
@@ -31,6 +42,90 @@ let currentRows = [];
 let editingRow = null;
 let context = null;
 
+function renderGuide(type) {
+  const admin = type === "admin";
+  pageContent.innerHTML = `
+    <div class="demo-page-heading"><div><p class="demo-kicker">QUICK START</p><h1>${admin ? "Admin Getting Started" : "Member Getting Started"}</h1><p class="demo-note">A guided preview using the Furaha Investment Group sandbox.</p></div><span class="demo-pill">DEMO GUIDE</span></div>
+    <section class="demo-panel"><h2>${admin ? "Explore the group workspace" : "Explore the member experience"}</h2>
+      <ol class="demo-guide-list">
+        ${(admin ? [
+          ["Review the dashboard","Check sample members, contributions, meetings, expenses and fines."],
+          ["Open Members","Search the fictional roster and create, edit or hide a temporary profile."],
+          ["Explore finance modules","Inspect sample contributions, fines, expenses and monthly closing records."],
+          ["Test a safe change","Use a module's New record, Edit or Delete controls; only your session view changes."],
+          ["Reset the sandbox","Use Reset changes to return your session to the seeded baseline."]
+        ] : [
+          ["Open Member Dashboard Preview","See the sample group overview without signing into a member account."],
+          ["Review My Contributions","Inspect simulated contribution records and amounts."],
+          ["Explore activities and assets","View group activities, assets and milestones."],
+          ["Preview your profile","Member profiles are fictional and contact details are reserved placeholders."],
+          ["End your session","End demo clears your temporary overrides and revokes the session."]
+        ]).map(([title,description])=>`<li><strong>${escapeHtml(title)}</strong><p>${escapeHtml(description)}</p></li>`).join("")}
+      </ol>
+    </section>`;
+}
+function renderDataImport() {
+  pageContent.innerHTML = `
+    <div class="demo-page-heading"><div><p class="demo-kicker">ADMIN TOOLS</p><h1>Data Import Simulation</h1><p class="demo-note">Preview CSV rows and create simulated contribution records only. No file is sent to production and no canonical ledger writes occur.</p></div><span class="demo-pill">SIMULATION</span></div>
+    <section class="demo-panel"><h2>Paste sample contribution CSV</h2><p class="demo-note">Required columns: contribution_date, amount, contribution_type, member_id. Member IDs must be selected from the demo roster.</p>
+      <label for="importCsv">CSV data</label>
+      <textarea id="importCsv" rows="8" spellcheck="false">contribution_date,amount,contribution_type,member_id</textarea>
+      <div class="demo-dialog-actions"><button id="previewImport" type="button">Preview rows</button><button id="applyImport" type="button" class="demo-primary">Create simulated rows</button></div>
+      <div id="importPreview" class="demo-import-preview" aria-live="polite"></div>
+      <div id="importError" class="demo-error" hidden role="alert"></div>
+    </section>`;
+  let parsedRows = [];
+  const csvInput = pageContent.querySelector("#importCsv");
+  const preview = pageContent.querySelector("#importPreview");
+  const importError = pageContent.querySelector("#importError");
+  const parse = () => {
+    const lines = csvInput.value.split(/\\r?\\n/).map(line=>line.trim()).filter(Boolean);
+    if (lines.length < 2) throw new Error("Add a header row and at least one data row.");
+    const headers = lines[0].split(",").map(h=>h.trim());
+    const required = ["contribution_date","amount","contribution_type","member_id"];
+    if (required.some(h=>!headers.includes(h))) throw new Error("CSV header must include contribution_date, amount, contribution_type and member_id.");
+    const members = new Set((currentRows || []).map(row=>row.id));
+    return lines.slice(1).map((line,index)=>{
+      const values=line.split(",").map(v=>v.trim());
+      const row=Object.fromEntries(headers.map((h,i)=>[h,values[i] ?? ""]));
+      if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(row.contribution_date)) throw new Error(`Row ${index+2}: use YYYY-MM-DD for contribution_date.`);
+      if (!Number.isFinite(Number(row.amount)) || Number(row.amount)<=0) throw new Error(`Row ${index+2}: amount must be greater than zero.`);
+      if (!row.contribution_type) throw new Error(`Row ${index+2}: contribution_type is required.`);
+      return row;
+    });
+  };
+  pageContent.querySelector("#previewImport").addEventListener("click",async()=>{
+    importError.hidden=true;
+    try {
+      const members=await getDemoRows("members");
+      const ids=new Set(members.map(row=>row.id));
+      parsedRows=parse();
+      if(parsedRows.some(row=>!ids.has(row.member_id))) throw new Error("Every member_id must match a member in the demo roster.");
+      preview.textContent=`${parsedRows.length} simulated contribution row(s) ready to create. Nothing has been saved yet.`;
+    } catch(error) { importError.textContent=error.message||"CSV validation failed."; importError.hidden=false; }
+  });
+  pageContent.querySelector("#applyImport").addEventListener("click",async()=>{
+    importError.hidden=true;
+    try {
+      const groups=await getDemoRows("groups");
+      const groupId=groups?.[0]?.id;
+      if(!groupId) throw new Error("Could not identify the demo group.");
+      const members=await getDemoRows("members");
+      const ids=new Set(members.map(row=>row.id));
+      parsedRows=parse();
+      if(parsedRows.some(row=>!ids.has(row.member_id))) throw new Error("Every member_id must match a member in the demo roster.");
+      for(const row of parsedRows) {
+        const id=crypto.randomUUID();
+        await setDemoOverride("contributions",id,{
+          id,group_id:groupId,member_id:row.member_id,contribution_date:row.contribution_date,
+          amount:Number(row.amount),contribution_type:row.contribution_type,payment_method:"demo-import",
+          status:"simulated",source:"demo-import"
+        },"upsert");
+      }
+      preview.textContent=`Created ${parsedRows.length} simulated row(s) in this session only. The real contribution ledger is unchanged.`;
+    } catch(error) { importError.textContent=error.message||"Could not create simulated rows."; importError.hidden=false; }
+  });
+}
 function showError(message) {
   errorBox.textContent = message;
   errorBox.hidden = false;
@@ -39,7 +134,7 @@ function clearError() { errorBox.hidden = true; errorBox.textContent = ""; }
 function pageTitle(page) {
   return page === "dashboard" ? "Group dashboard" : (definitions[page]?.title || "Dashboard");
 }
-function renderDashboard(data) {
+function renderDashboard(data, memberView = false) {
   const count = key => Array.isArray(data[key]) ? data[key].length : 0;
   const metrics = [
     ["Members",count("members")],["Contribution records",count("contributions")],
@@ -48,16 +143,16 @@ function renderDashboard(data) {
     ["Financial periods",count("financial_periods")],["Welfare cases",count("group_support_cases")]
   ];
   pageContent.innerHTML = `
-    <div class="demo-page-heading"><div><p class="demo-kicker">OVERVIEW</p><h1>Group dashboard</h1><p class="demo-note">Welcome to ${escapeHtml(context?.group_name || "Furaha Investment Group")}. This is a sandbox view of simulated group records.</p></div><span class="demo-pill">DEMO</span></div>
+    <div class="demo-page-heading"><div><p class="demo-kicker">OVERVIEW</p><h1>${memberView ? "Member Dashboard Preview" : "Group dashboard"}</h1><p class="demo-note">${memberView ? "A preview of the member-facing experience. No member account is signed in." : "Welcome to " + escapeHtml(context?.group_name || "Furaha Investment Group") + ". This is a sandbox view of simulated group records."}</p></div><span class="demo-pill">DEMO</span></div>
     <div class="demo-metrics">${metrics.map(([label,value])=>`<article class="demo-metric"><span>${escapeHtml(label)}</span><strong>${value}</strong></article>`).join("")}</div>
     <section class="demo-panel"><div class="demo-panel-heading"><div><h2>Explore your workspace</h2><p>Choose a module from the navigation to inspect the seeded records and test temporary edits.</p></div></div><div class="demo-shortcuts">${Object.entries(definitions).slice(0,8).map(([key,def])=>`<button type="button" class="demo-shortcut" data-shortcut="${key}"><strong>${escapeHtml(def.title)}</strong><span>Open module →</span></button>`).join("")}</div></section>
     <p class="demo-status">Financial values are displayed as sample records only. No real payment is initiated or verified in this sandbox.</p>`;
   pageContent.querySelectorAll("[data-shortcut]").forEach(button => button.addEventListener("click",()=>navigate(button.dataset.shortcut)));
 }
-async function loadDashboard() {
+async function loadDashboard(memberView = false) {
   const names = ["members","contributions","meetings","fines","expenses","group_assets","financial_periods","group_support_cases"];
   const results = await Promise.all(names.map(async name => [name, await getDemoRows(name)]));
-  renderDashboard(Object.fromEntries(results));
+  renderDashboard(Object.fromEntries(results), memberView);
 }
 function cellValue(row, key) {
   const value = row[key];
@@ -142,14 +237,22 @@ async function navigate(page) {
   document.querySelectorAll("[data-page]").forEach(button => button.classList.toggle("active",button.dataset.page===page));
   document.querySelector("#demoSidebar").classList.remove("open");
   clearError();
-  if (page === "dashboard") {
+  if (page === "dashboard" || page === "memberDashboard") {
     pageContent.innerHTML = '<p class="demo-status">Loading dashboard records…</p>';
-    try { await loadDashboard(); } catch (error) { showError(error.message || "Could not load the demo dashboard."); }
+    try { await loadDashboard(page === "memberDashboard"); } catch (error) { showError(error.message || "Could not load the demo dashboard."); }
     return;
   }
   const def = definitions[page];
   if (!def) return;
   currentDefinition = def;
+  if (def.guide) {
+    renderGuide(def.guide);
+    return;
+  }
+  if (def.custom && page === "dataImport") {
+    renderDataImport();
+    return;
+  }
   pageContent.innerHTML = '<p class="demo-status">Loading records…</p>';
   try { renderTable(def, await getDemoRows(def.table)); }
   catch (error) { showError(error.message || "Could not load demo records."); }
