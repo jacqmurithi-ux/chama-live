@@ -2394,9 +2394,10 @@ function bindEvents() {
                     );
                 }
                 finally {
-                if (elements.saveMonthlyContribution) {
-                    elements.saveMonthlyContribution.disabled = false;
-                    elements.saveMonthlyContribution.textContent = "Save Monthly Contribution";
+                    if (elements.saveMonthlyContribution) {
+                        elements.saveMonthlyContribution.disabled = false;
+                        elements.saveMonthlyContribution.textContent = "Save Monthly Contribution";
+                    }
                 }
             }
         );
@@ -2432,9 +2433,10 @@ function bindEvents() {
                     );
                 }
                 finally {
-                if (elements.saveCustomContribution) {
-                    elements.saveCustomContribution.disabled = false;
-                    elements.saveCustomContribution.textContent = "Save & Activate";
+                    if (elements.saveCustomContribution) {
+                        elements.saveCustomContribution.disabled = false;
+                        elements.saveCustomContribution.textContent = "Save & Activate";
+                    }
                 }
             }
         );
