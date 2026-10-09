@@ -196,7 +196,7 @@ const PAGE_SCRIPTS = {
   ],
 
   "reports.html": [
-    "./reports.js?v=60a77351",
+    "./reports.js?v=aacf17f3",
     "initPage"
   ],
 
