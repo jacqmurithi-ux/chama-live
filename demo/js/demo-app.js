@@ -290,7 +290,22 @@ function fieldControl(key, value, row) {
   const id = `editField_${key}`;
   const label = key.replaceAll("_"," ").replace(/\b\w/g, c=>c.toUpperCase());
   const selectOptions = {
-    status: ["active","inactive","pending","paid","unpaid","open","closed","planned","completed","present","late","apology","absent","simulated","approved","draft"],
+    status: ({
+      members: ["active","inactive","pending"],
+      contributions: ["simulated","pending","verified","rejected"],
+      fines: ["open","paid","waived","cancelled"],
+      meetings: ["planned","completed","cancelled"],
+      expenses: ["simulated","pending","approved","paid"],
+      group_assets: ["active","inactive","disposed"],
+      group_plans: ["planned","active","completed","cancelled"],
+      group_milestones: ["planned","active","completed"],
+      group_support_cases: ["open","approved","closed"],
+      financial_periods: ["open","closed"],
+      monthly_closings: ["open","closed"],
+      group_subscriptions: ["active","pending","cancelled","expired"],
+      contribution_obligations: ["open","paid","partial","waived"],
+      group_activities: ["planned","completed","cancelled"]
+    })[currentDefinition?.table] || ["active","inactive","pending"],
     role: ["member","admin","chairperson","secretary","treasurer"],
     actual_position_name: ["Member","Chairperson","Vice Chairperson","Secretary","Treasurer"],
     payment_method: ["cash","mpesa","bank","other","demo-import"],
