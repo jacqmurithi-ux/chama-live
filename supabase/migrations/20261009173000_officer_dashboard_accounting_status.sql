@@ -23,7 +23,7 @@ DECLARE
 BEGIN
   v_role := public.current_user_role(p_group_id);
 
-  IF v_role NOT IN ('admin', 'chairperson', 'treasurer') THEN
+  IF v_role IS NULL OR v_role NOT IN ('admin', 'chairperson', 'treasurer') THEN
     RAISE EXCEPTION 'Not authorized to view group custom contribution status'
       USING ERRCODE = '42501';
   END IF;
@@ -90,7 +90,7 @@ DECLARE
 BEGIN
   v_role := public.current_user_role(p_group_id);
 
-  IF v_role NOT IN ('admin', 'chairperson', 'treasurer') THEN
+  IF v_role IS NULL OR v_role NOT IN ('admin', 'chairperson', 'treasurer') THEN
     RAISE EXCEPTION 'Not authorized to view group cumulative contribution positions'
       USING ERRCODE = '42501';
   END IF;
