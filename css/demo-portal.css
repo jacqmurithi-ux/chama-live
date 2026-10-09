@@ -56,3 +56,11 @@ body.chama-demo-portal{margin:0;background:#f5f8f6;color:#17221d;font-family:Int
 .demo-row-delete{padding:7px 10px;border:1px solid #ead2d2;border-radius:8px;background:#fff;color:#a12c2c;font-size:12px;font-weight:800;cursor:pointer}
 .demo-row-delete:hover{background:#fff4f4}
 @media(max-width:700px){.demo-table-actions{align-items:stretch;flex-direction:column}.demo-table-actions .demo-primary{width:100%}}
+
+.demo-guide-list{display:grid;gap:16px;padding-left:22px}
+.demo-guide-list li{padding-left:4px}
+.demo-guide-list li strong{display:block;color:#20372c;font-size:14px}
+.demo-guide-list li p{margin:5px 0 0;color:#66756e;font-size:13px;line-height:1.55}
+.demo-import-preview{margin-top:14px;padding:12px;border-radius:10px;background:#f4faf6;color:#176b45;font-size:13px;line-height:1.5}
+.demo-panel label[for="importCsv"]{display:block;margin:12px 0 6px;font-size:12px;font-weight:800}
+.demo-panel textarea{box-sizing:border-box;width:100%;padding:12px;border:1px solid #cddbd4;border-radius:10px;font:12px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace}
