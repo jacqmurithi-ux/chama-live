@@ -1057,7 +1057,25 @@ function populateMemberFilter() {
   if (searchMember) {
     const searchField = searchMember.closest(".field");
     if (searchField) searchField.hidden = true;
+    searchMember.value = "";
+    searchMember.disabled = true;
   }
+
+  // Personal status is displayed from the member's canonical row;
+  // do not offer a selector for filtering group-wide statuses.
+  if (statusFilter) {
+    const statusField = statusFilter.closest(".field");
+    if (statusField) statusField.hidden = true;
+    statusFilter.value = "";
+    statusFilter.disabled = true;
+  }
+
+  // Hide group-oriented quick filters in the personal portal.
+  document.querySelectorAll("[data-quick-filter]").forEach(button => {
+    const container = button.closest(".quick-filters");
+    if (container) container.hidden = true;
+    button.disabled = true;
+  });
 
   if (ownRow && memberFilter.labels?.[0]) {
     memberFilter.labels[0].textContent = "My account";
