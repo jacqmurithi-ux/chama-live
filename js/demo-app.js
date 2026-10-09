@@ -312,7 +312,7 @@ function fieldControl(key, value, row) {
   if (isDate) return `<label class="demo-edit-field" for="${id}"><span>${escapeHtml(label)}</span><input ${common} type="date" value="${escapeHtml(String(value??"").slice(0,10))}"></label>`;
   const required = ["name","title","description","contribution_date","date","amount","member_id","meeting_id"].includes(key);
   const type = key==="email" ? "email" : "text";
-  return `<label class="demo-edit-field" for="${id}"><span>${escapeHtml(label)}</span><input ${common} type="${type}" value="${escapeHtml(value??"")}" ${required?"required":""} ${key.endsWith("_id")?"placeholder":"".length===0 && key.endsWith("_id")?"placeholder":""}></label>`;
+  return `<label class="demo-edit-field" for="${id}"><span>${escapeHtml(label)}</span><input ${common} type="${type}" value="${escapeHtml(value??"")}" ${required?"required":""} ${key.endsWith("_id") ? 'placeholder="Use a demo record ID"' : ""}></label>`;
 }
 function openEditor(row) {
   if (!row?.id) return showError("This record has no editable identifier.");
