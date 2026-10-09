@@ -2696,7 +2696,77 @@ async function closeMonth() {
 
   catch (error) {
 
-    showError(error);
+    const errorMessage =
+      String(
+        error?.message ||
+        error ||
+        ""
+      );
+
+    /*
+      The database is authoritative. A P0001 duplicate-close
+      response means this period is already closed, even if
+      the earlier read-only status query could not see that
+      state (for example, because of a visibility mismatch).
+
+      Do not retry the close RPC or show a false generic error.
+      Reconcile the page to the closed state instead.
+    */
+    const alreadyClosed =
+      /Financial month \\d{4}-\\d{2} is already closed/i.test(
+        errorMessage
+      );
+
+    if (alreadyClosed) {
+
+      periodStatus = "closed";
+
+      const selectedMonth =
+        monthInput?.value;
+
+      if (selectedMonth) {
+
+        try {
+          await loadFinancialPeriodState(
+            selectedMonth
+          );
+        } catch (statusError) {
+          console.warn(
+            "Monthly Closing: could not refresh period status after duplicate-close guard.",
+            statusError
+          );
+        }
+
+        /*
+          The close RPC's explicit response is authoritative;
+          retain closed state even if a read is filtered.
+        */
+        periodStatus = "closed";
+
+        try {
+          await loadExistingClosing(
+            selectedMonth
+          );
+        } catch (closingError) {
+          console.warn(
+            "Monthly Closing: could not load historical closing metadata.",
+            closingError
+          );
+        }
+      }
+
+      renderClosingStatus();
+      clearError();
+
+      showStatus(
+        `${formatMonth(selectedMonth)} is already closed. No duplicate closing was created.`
+      );
+
+    } else {
+
+      showError(error);
+
+    }
 
   }
 
