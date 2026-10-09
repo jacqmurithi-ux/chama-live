@@ -73,10 +73,10 @@ function renderTable(def, rows) {
   const safeKeys = keys.length ? keys : Object.keys(currentRows[0] || {}).filter(key => !["id","group_id"].includes(key)).slice(0,6);
   pageContent.innerHTML = `
     <div class="demo-page-heading"><div><p class="demo-kicker">FURAHA INVESTMENT GROUP</p><h1>${escapeHtml(def.title)}</h1><p class="demo-note">Seeded demo records with session-only editing.</p></div><span class="demo-pill">${currentRows.length} records</span></div>
-    <section class="demo-panel"><div class="demo-table-toolbar"><input id="tableSearch" type="search" placeholder="Search records…" aria-label="Search records"><span class="demo-note">Use Edit to test a temporary change.</span></div>
-      <div class="demo-table-wrap"><table class="demo-table"><thead><tr>${safeKeys.map(key=>`<th>${escapeHtml(key.replaceAll("_"," "))}</th>`).join("")}<th>Action</th></tr></thead><tbody>${currentRows.length ? currentRows.map((row,index)=>`<tr data-row-index="${index}">${safeKeys.map(key=>`<td title="${escapeHtml(cellValue(row,key))}">${escapeHtml(cellValue(row,key))}</td>`).join("")}<td><button type="button" class="demo-row-edit" data-edit-index="${index}">Edit</button></td></tr>`).join("") : `<tr><td colspan="${safeKeys.length+1}">No demo records available for this section.</td></tr>`}</tbody></table></div>
+    <section class="demo-panel"><div class="demo-table-toolbar"><input id="tableSearch" type="search" placeholder="Search records…" aria-label="Search records"><div class="demo-table-actions"><span class="demo-note">Changes stay in this session.</span>${def.table === "groups" ? "" : '<button type="button" id="newDemoRecord" class="demo-primary">+ New record</button>'}</div></div>
+      <div class="demo-table-wrap"><table class="demo-table"><thead><tr>${safeKeys.map(key=>`<th>${escapeHtml(key.replaceAll("_"," "))}</th>`).join("")}<th>Action</th></tr></thead><tbody>${currentRows.length ? currentRows.map((row,index)=>`<tr data-row-index="${index}">${safeKeys.map(key=>`<td title="${escapeHtml(cellValue(row,key))}">${escapeHtml(cellValue(row,key))}</td>`).join("")}<td class="demo-row-actions"><button type="button" class="demo-row-edit" data-edit-index="${index}">Edit</button><button type="button" class="demo-row-delete" data-delete-index="${index}">Delete</button></td></tr>`).join("") : `<tr><td colspan="${safeKeys.length+1}">No demo records available for this section.</td></tr>`}</tbody></table></div>
     </section>
-    <p class="demo-note">Edits are scoped to this demo session. The original seeded record remains unchanged.</p>`;
+    <p class="demo-note">All changes are session-only overrides. Seeded records and the real accounting ledger are not modified.</p>`;
   const search = pageContent.querySelector("#tableSearch");
   search.addEventListener("input", () => {
     const query = search.value.toLowerCase();
@@ -85,6 +85,33 @@ function renderTable(def, rows) {
     });
   });
   pageContent.querySelectorAll("[data-edit-index]").forEach(button => button.addEventListener("click", () => openEditor(currentRows[Number(button.dataset.editIndex)])));
+  pageContent.querySelectorAll("[data-delete-index]").forEach(button => button.addEventListener("click", async () => {
+    const row = currentRows[Number(button.dataset.deleteIndex)];
+    if (!row?.id || !confirm("Hide this record in your demo session? The original seed record will remain unchanged.")) return;
+    try {
+      await setDemoOverride(currentDefinition.table, row.id, null, "delete");
+      await navigate(currentPage);
+    } catch (error) {
+      showError(error.message || "Could not delete this demo record.");
+    }
+  }));
+  const createButton = pageContent.querySelector("#newDemoRecord");
+  if (createButton) createButton.addEventListener("click", async () => {
+    try {
+      const groups = await getDemoRows("groups");
+      const groupId = groups?.[0]?.id;
+      if (!groupId) throw new Error("Could not identify the demo group.");
+      const id = crypto.randomUUID();
+      const row = { id, group_id: groupId };
+      for (const field of currentDefinition.fields) {
+        if (!(field in row)) row[field] = "";
+      }
+      openEditor(row);
+      document.querySelector("#editTitle").textContent = `Create demo ${currentDefinition.title.toLowerCase()} record`;
+    } catch (error) {
+      showError(error.message || "Could not start a new demo record.");
+    }
+  });
 }
 function openEditor(row) {
   if (!row?.id) return showError("This record has no editable identifier.");
