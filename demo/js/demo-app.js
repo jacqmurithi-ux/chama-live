@@ -286,6 +286,144 @@ function renderTable(def, rows) {
     }
   });
 }
+
+function renderDemoFinancePage(page, rows) {
+  const def = definitions[page];
+  currentDefinition = def;
+  currentRows = Array.isArray(rows) ? rows : [];
+  const isReports = page === "reports";
+  const members = editorChoices.members;
+  const memberById = new Map(members.map(member => [String(member.id), member]));
+  const memberLabel = row => {
+    const member = memberById.get(String(row.member_id ?? ""));
+    return member ? String(member.name || "Member") + (member.member_number ? " · " + member.member_number : "") : "Unmatched demo member";
+  };
+  const dateOf = row => String(row.contribution_date || "").slice(0, 10);
+  const monthOf = row => dateOf(row).slice(0, 7);
+  const monthLabel = value => {
+    if (!/^\d{4}-\d{2}$/.test(value)) return value || "Unspecified";
+    const parts = value.split("-").map(Number);
+    return new Intl.DateTimeFormat("en-KE", {month:"short",year:"numeric",timeZone:"UTC"}).format(new Date(Date.UTC(parts[0], parts[1] - 1, 1)));
+  };
+  const months = [...new Set(currentRows.map(monthOf).filter(Boolean))].sort().reverse();
+  const methods = [...new Set(currentRows.map(row => String(row.payment_method || "").trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  const types = [...new Set(currentRows.map(row => String(row.contribution_type || "").trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  const columns = [
+    {key:"contribution_date",label:"Date"},
+    {key:"member_id",label:"Member"},
+    {key:"amount",label:"Amount"},
+    {key:"contribution_type",label:"Contribution type"},
+    {key:"payment_method",label:"Payment method"}
+  ];
+  if(currentRows.some(row=>Object.prototype.hasOwnProperty.call(row,"status"))) columns.push({key:"status",label:"Record status"});
+  let sortKey = "contribution_date";
+  let sortDirection = "desc";
+  const valueFor = (row,key) => key === "member_id" ? memberLabel(row) : row[key];
+  const renderRows = filtered => {
+    const sorted = [...filtered].sort((a,b) => {
+      const av=valueFor(a,sortKey), bv=valueFor(b,sortKey);
+      const comparison = sortKey === "amount" ? Number(av || 0)-Number(bv || 0) : String(av ?? "").localeCompare(String(bv ?? ""),undefined,{numeric:true,sensitivity:"base"});
+      return comparison * (sortDirection === "asc" ? 1 : -1);
+    });
+    const tbody = pageContent.querySelector("#financeRows");
+    tbody.innerHTML = sorted.length ? sorted.map(row => {
+      const cells = columns.map(column => {
+        const value=valueFor(row,column.key);
+        const display=column.key==="amount" ? money(value) : column.key==="contribution_date" ? (dateOf(row)||"—") : (value==null||value==="" ? "—" : String(value));
+        return '<td title="'+escapeHtml(display)+'">'+escapeHtml(display)+'</td>';
+      }).join("");
+      return '<tr>'+cells+'<td class="demo-row-actions"><button type="button" class="demo-row-edit" data-finance-edit="'+escapeHtml(row.id)+'">Edit</button><button type="button" class="demo-row-delete" data-finance-delete="'+escapeHtml(row.id)+'">Delete</button></td></tr>';
+    }).join("") : '<tr><td colspan="'+(columns.length+1)+'" class="demo-empty-cell">No contribution records match these filters.</td></tr>';
+    pageContent.querySelector("#financeResultCount").textContent = sorted.length.toLocaleString("en-KE")+" selected record"+(sorted.length===1?"":"s");
+    pageContent.querySelector("#financeSelectedTotal").textContent = money(sorted.reduce((sum,row)=>sum+Number(row.amount||0),0));
+    pageContent.querySelector("#financeMemberCount").textContent = new Set(sorted.map(row=>String(row.member_id||"")).filter(Boolean)).size.toLocaleString("en-KE");
+    const monthly = new Map();
+    sorted.forEach(row => { const month=monthOf(row)||"Unspecified"; monthly.set(month,(monthly.get(month)||0)+Number(row.amount||0)); });
+    const monthlyBody = pageContent.querySelector("#financeMonthlyRows");
+    const monthlyEntries = [...monthly.entries()].sort((a,b)=>b[0].localeCompare(a[0]));
+    monthlyBody.innerHTML = monthlyEntries.length ? monthlyEntries.map(entry => {
+      const month=entry[0], total=entry[1];
+      const count=sorted.filter(row=>(monthOf(row)||"Unspecified")===month).length;
+      return '<tr><td>'+escapeHtml(monthLabel(month))+'</td><td>'+count.toLocaleString("en-KE")+'</td><td>'+escapeHtml(money(total))+'</td></tr>';
+    }).join("") : '<tr><td colspan="3">No monthly totals to display.</td></tr>';
+    pageContent.querySelectorAll("[data-sort-key]").forEach(button => {
+      const active=button.dataset.sortKey===sortKey;
+      button.setAttribute("aria-sort",active?(sortDirection==="asc"?"ascending":"descending"):"none");
+      button.querySelector(".demo-sort-indicator").textContent=active?(sortDirection==="asc"?"↑":"↓"):"↕";
+    });
+  };
+  const heading = isReports ? "FINANCE & REPORTS" : "GROUP FINANCES";
+  const intro = isReports ? "Explore simulated contribution activity by month, member and payment method. These totals are illustrative, not canonical accounting balances." : "Review simulated contributions using the same summary-card, filter and table hierarchy as the CHAMA LIVE portal. No real payment is recorded or verified here.";
+  pageContent.innerHTML =
+    '<div class="demo-page-heading"><div><p class="demo-kicker">'+heading+'</p><h1>'+escapeHtml(def.title)+'</h1><p class="demo-note">'+intro+'</p></div><span class="demo-pill">SIMULATED DATA</span></div>'+
+    '<div class="demo-metrics demo-finance-metrics">'+
+      '<article class="demo-metric"><span>Selected records</span><strong id="financeResultCount">'+currentRows.length+'</strong></article>'+
+      '<article class="demo-metric"><span>Selected simulated amount</span><strong id="financeSelectedTotal">'+escapeHtml(money(currentRows.reduce((sum,row)=>sum+Number(row.amount||0),0)))+'</strong></article>'+
+      '<article class="demo-metric"><span>Members represented</span><strong id="financeMemberCount">'+new Set(currentRows.map(row=>String(row.member_id||"")).filter(Boolean)).size+'</strong></article>'+
+      '<article class="demo-metric"><span>Seeded records</span><strong>'+currentRows.length+'</strong></article></div>'+
+    '<section class="demo-panel demo-finance-panel"><div class="demo-panel-heading"><div><h2>'+(isReports?"Contribution report":"Contribution records")+'</h2><p>Use filters to narrow the list. Select a column heading to sort.</p></div><button type="button" id="newDemoRecord" class="demo-primary">+ New record</button></div>'+
+      '<div class="demo-finance-filters">'+
+        '<label>Search members and records<input id="financeSearch" type="search" placeholder="Name, member number, type…" aria-label="Search contributions"></label>'+
+        '<label>Month<select id="financeMonth"><option value="">All months</option>'+months.map(month=>'<option value="'+escapeHtml(month)+'">'+escapeHtml(monthLabel(month))+'</option>').join("")+'</select></label>'+
+        '<label>Payment method<select id="financeMethod"><option value="">All methods</option>'+methods.map(method=>'<option value="'+escapeHtml(method)+'">'+escapeHtml(method)+'</option>').join("")+'</select></label>'+
+        '<label>Contribution type<select id="financeType"><option value="">All types</option>'+types.map(type=>'<option value="'+escapeHtml(type)+'">'+escapeHtml(type)+'</option>').join("")+'</select></label></div>'+
+      '<div class="demo-table-toolbar"><span class="demo-note">Changes stay in this session.</span><button type="button" id="clearFinanceFilters" class="demo-secondary">Clear filters</button></div>'+
+      '<div class="demo-table-wrap"><table class="demo-table demo-finance-table"><thead><tr>'+columns.map(column=>'<th scope="col"><button type="button" class="demo-sort-button" data-sort-key="'+column.key+'" aria-sort="none">'+escapeHtml(column.label)+' <span class="demo-sort-indicator" aria-hidden="true">↕</span></button></th>').join("")+'<th scope="col">Actions</th></tr></thead><tbody id="financeRows"></tbody></table></div></section>'+
+    '<section class="demo-panel demo-finance-panel"><div class="demo-panel-heading"><div><h2>Monthly collection summary</h2><p>Totals are calculated from the currently filtered simulated records only.</p></div></div><div class="demo-table-wrap"><table class="demo-table demo-monthly-table"><thead><tr><th scope="col">Month</th><th scope="col">Records</th><th scope="col">Simulated amount</th></tr></thead><tbody id="financeMonthlyRows"></tbody></table></div></section>'+
+    '<p class="demo-note">Demo-only figures. This page does not calculate arrears, balances, verified payments, allocations or canonical accounting positions. All edits and deletions are session-only; seeded data and the real accounting ledger remain unchanged.</p>';
+  const getFiltered = () => {
+    const query=pageContent.querySelector("#financeSearch").value.trim().toLowerCase();
+    const month=pageContent.querySelector("#financeMonth").value;
+    const method=pageContent.querySelector("#financeMethod").value;
+    const type=pageContent.querySelector("#financeType").value;
+    return currentRows.filter(row=>{
+      const searchable=[dateOf(row),memberLabel(row),row.member_id,row.amount,row.contribution_type,row.payment_method,row.status].join(" ").toLowerCase();
+      return (!query||searchable.includes(query))&&(!month||monthOf(row)===month)&&(!method||String(row.payment_method||"")===method)&&(!type||String(row.contribution_type||"")===type);
+    });
+  };
+  const refresh=()=>renderRows(getFiltered());
+  ["#financeSearch","#financeMonth","#financeMethod","#financeType"].forEach(selector=>pageContent.querySelector(selector).addEventListener(selector==="#financeSearch"?"input":"change",refresh));
+  pageContent.querySelector("#clearFinanceFilters").addEventListener("click",()=>{
+    pageContent.querySelector("#financeSearch").value="";
+    pageContent.querySelector("#financeMonth").value="";
+    pageContent.querySelector("#financeMethod").value="";
+    pageContent.querySelector("#financeType").value="";
+    refresh();
+  });
+  pageContent.querySelectorAll("[data-sort-key]").forEach(button=>button.addEventListener("click",()=>{
+    const next=button.dataset.sortKey;
+    if(sortKey===next) sortDirection=sortDirection==="asc"?"desc":"asc";
+    else {sortKey=next;sortDirection=next==="amount"?"desc":"asc";}
+    refresh();
+  }));
+  pageContent.querySelector("#financeRows").addEventListener("click",async event=>{
+    const editButton=event.target.closest("[data-finance-edit]");
+    const deleteButton=event.target.closest("[data-finance-delete]");
+    if(editButton){
+      const row=currentRows.find(item=>String(item.id)===editButton.dataset.financeEdit);
+      if(row) await openEditor(row);
+    }
+    if(deleteButton){
+      const row=currentRows.find(item=>String(item.id)===deleteButton.dataset.financeDelete);
+      if(!row?.id||!confirm("Hide this contribution record in your demo session? The seeded record will remain unchanged.")) return;
+      try{await setDemoOverride(currentDefinition.table,row.id,null,"delete");await navigate(currentPage);}
+      catch(error){showError(error.message||"Could not hide this demo contribution.");}
+    }
+  });
+  pageContent.querySelector("#newDemoRecord").addEventListener("click",async()=>{
+    try{
+      const groups=await getDemoRows("groups");
+      const groupId=groups?.[0]?.id;
+      if(!groupId) throw new Error("Could not identify the demo group.");
+      const row={id:crypto.randomUUID(),group_id:groupId};
+      for(const field of currentDefinition.fields) if(!(field in row)) row[field]="";
+      await openEditor(row);
+      document.querySelector("#editTitle").textContent="Create demo "+currentDefinition.title.toLowerCase()+" record";
+    }catch(error){showError(error.message||"Could not start a new demo contribution.");}
+  });
+  refresh();
+}
+
 function fieldControl(key, value, row) {
   const id = `editField_${key}`;
   const label = key.replaceAll("_"," ").replace(/\b\w/g, c=>c.toUpperCase());
@@ -389,8 +527,15 @@ async function navigate(page) {
     return;
   }
   pageContent.innerHTML = '<p class="demo-status">Loading records…</p>';
-  try { renderTable(def, await getDemoRows(def.table)); }
-  catch (error) { showError(error.message || "Could not load demo records."); }
+  try {
+    const rows = await getDemoRows(def.table);
+    if (page === "contributions" || page === "reports") {
+      editorChoices = { members: await getDemoRows("members"), meetings: await getDemoRows("meetings") };
+      renderDemoFinancePage(page, rows);
+    } else {
+      renderTable(def, rows);
+    }
+  } catch (error) { showError(error.message || "Could not load demo records."); }
 }
 document.querySelectorAll("[data-page]").forEach(button=>button.addEventListener("click",()=>navigate(button.dataset.page)));
 document.querySelector("#menuToggle").addEventListener("click",()=>document.querySelector("#demoSidebar").classList.toggle("open"));
