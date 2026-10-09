@@ -68,6 +68,12 @@ Target: candidate Supabase project `onzaonflquipqmhgslxi` and Git branch `demo/f
 - Public informational/marketing pages: `index.html`, `faq.html`, `pricing.html`, `privacy.html`, `sitemap.html`, `terms.html`, `tour.html`. These are public-site content, not group portal workflows.
 - Demo aliases `demo.html`, `demo-members.html`, `demo-meetings.html`, and `demo-app.html` are entry/shared-workspace pages.
 
+## Security review notes
+
+- Candidate `security_definer_view` advisor finding count is now zero after setting both flagged views to `security_invoker=true`; anonymous SELECT remains denied on both.
+- Remaining `SECURITY DEFINER` demo RPCs are intentionally callable by `anon` because the no-login sandbox uses bearer tokens. They must continue to validate token hash, expiry, revocation, group scope and table allowlists. Advisor warnings for these functions remain and require per-function review; do not blindly revoke EXECUTE while the browser depends on these RPCs.
+- Candidate direct-start rate-limit identity now uses `cf-connecting-ip`; no raw IP is stored, only a SHA-256-derived anonymous identifier. Real edge/browser testing is still required to verify the header is present in the deployed runtime.
+
 ## Remaining release gates
 
 1. Run real browser tests for direct start, invalid/expired token, explicit end, and a second visitor.
