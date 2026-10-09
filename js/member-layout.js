@@ -73,7 +73,7 @@ const MEMBER_PAGES = new Set([
 
 const PAGE_SCRIPTS = {
   "member-dashboard.html": {
-    path: "./js/member-dashboard.js?v=20261009-personal-only1",
+    path: "./member-dashboard.js?v=20261010-personal-only2",
     initializer: "initMemberDashboard"
   },
 
@@ -83,7 +83,7 @@ const PAGE_SCRIPTS = {
   },
 
   "member-accounting.html": {
-    path: "./js/member-accounting.js?v=20261009-personal-status3",
+    path: "./member-accounting.js?v=20261010-personal-status4",
     initializer: "initMemberAccounting"
   },
 
@@ -103,7 +103,7 @@ const PAGE_SCRIPTS = {
   },
 
   "member-profile.html": {
-    path: "./js/member-profile.js?v=20261009-personal-status3",
+    path: "./member-profile.js?v=20261010-personal-status4",
     initializer: "initMemberAccounting"
   }
 };
