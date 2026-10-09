@@ -4919,7 +4919,7 @@ function renderReportStory(
    change database data, accounting values, or saved records.
    ========================================================= */
 function enableReportTableSorting() {
-  queryAll(".table-wrap table thead th").forEach(th => {
+  queryAll("#reportOutput table thead th").forEach(th => {
     if (th.dataset.sortBound === "true") return;
     th.dataset.sortBound = "true";
     th.dataset.sortable = "true";
@@ -4982,7 +4982,7 @@ function sortReportTable(th) {
    GENERATE REPORT
    ========================================================= */
 
-async function generateReport() {
+async async function generateReport() {
   clearError();
 
   try {
@@ -5478,6 +5478,26 @@ function exportCSV() {
       );
     }
 
+    const meetingRows = filteredMeetings();
+    lines.push("");
+    lines.push(["MEETINGS"].map(csvEscape).join(","));
+    lines.push(
+      ["Date", "Meeting", "Venue", "Status", "Agenda", "Resolution"]
+        .map(csvEscape).join(",")
+    );
+    for (const row of meetingRows) {
+      lines.push(
+        [
+          formatDate(row.date),
+          row.title,
+          row.venue,
+          row.status,
+          row.agenda,
+          row.resolution
+        ].map(csvEscape).join(",")
+      );
+    }
+
     const blob =
       new Blob(
         [lines.join("\r\n")],
@@ -5507,6 +5527,36 @@ function exportCSV() {
   }
 }
 
+
+function exportSortedReportCSV() {
+  try {
+    const table = $("reportOutput")?.querySelector("table");
+    if (!table) {
+      showError("Generate a report with a table before downloading the sorted report.");
+      return;
+    }
+
+    const rows = Array.from(table.querySelectorAll("tr"));
+    const lines = rows.map(row =>
+      Array.from(row.cells).map(cell => csvEscape(cell.innerText || cell.textContent || "")).join(",")
+    );
+
+    if (!lines.length) {
+      showError("The current report table has no rows to export.");
+      return;
+    }
+
+    const blob = new Blob(["\\uFEFF", lines.join("\\r\\n")], {
+      type: "text/csv;charset=utf-8"
+    });
+    const base = reportFilename("csv").replace(/\\.csv$/i, "");
+    downloadBlob(blob, base + "-sorted-view.csv");
+    setStatus("Sorted report downloaded.");
+  } catch (error) {
+    console.error("[Reports] Sorted CSV export failed:", error);
+    showError("Unable to download the sorted report.");
+  }
+}
 
 /* =========================================================
    EXCEL EXPORT
@@ -5906,13 +5956,13 @@ function printReport() {
 
 function bindEvents() {
   document.addEventListener("click", event => {
-    const th = event.target.closest(".table-wrap table thead th[data-sortable='true']");
+    const th = event.target.closest("#reportOutput table thead th[data-sortable='true']");
     if (th) sortReportTable(th);
   });
 
   document.addEventListener("keydown", event => {
     if (event.key !== "Enter" && event.key !== " ") return;
-    const th = event.target.closest(".table-wrap table thead th[data-sortable='true']");
+    const th = event.target.closest("#reportOutput table thead th[data-sortable='true']");
     if (!th) return;
     event.preventDefault();
     sortReportTable(th);
@@ -5965,6 +6015,16 @@ function bindEvents() {
     excelButton.addEventListener(
       "click",
       exportExcel
+    );
+  }
+
+  const sortedCsvButton =
+    $("sortedCsvButton");
+
+  if (sortedCsvButton) {
+    sortedCsvButton.addEventListener(
+      "click",
+      exportSortedReportCSV
     );
   }
 
