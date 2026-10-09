@@ -176,7 +176,7 @@ const PAGE_SCRIPTS = {
   ],
 
   "contributions.html": [
-    "./contributions.js?v=20261009-treasurer-custom-draft",
+    "./contributions.js?v=20261009-treasurer-custom-draft2",
     "initContributions"
   ],
 
