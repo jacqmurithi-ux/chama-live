@@ -374,6 +374,19 @@ function injectStyles() {
 
     .chama-member-menu-toggle {
       display: none;
+      width: 40px;
+      height: 40px;
+      flex: 0 0 40px;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      background: #ffffff;
+      color: #344054;
+      font-size: 19px;
+      line-height: 1;
+      cursor: pointer;
     }
 
     @media (max-width: 820px) {
@@ -406,40 +419,43 @@ function injectStyles() {
         left: 0;
         right: 0;
         bottom: 0;
-        z-index: 9990;
+        z-index: 15000;
         display: grid;
-        grid-template-columns: repeat(5, 1fr);
-        gap: 0.15rem;
-        padding:
-          0.4rem
-          0.35rem
-          calc(
-            0.4rem + env(safe-area-inset-bottom)
-          );
-        background: var(--surface, #ffffff);
-        border-top:
-          1px solid rgba(127, 127, 127, 0.2);
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 4px;
+        height: auto;
+        min-height: 64px;
+        padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
+        box-sizing: border-box;
+        background: rgba(255, 255, 255, 0.98);
+        border-top: 1px solid #e5e7eb;
+        backdrop-filter: blur(10px);
       }
 
       .chama-member-bottom-nav a {
         display: flex;
         align-items: center;
         justify-content: center;
-        min-height: 42px;
-        padding: 0.35rem 0.15rem;
-        border-radius: 9px;
+        min-width: 0;
+        min-height: 44px;
+        padding: 5px 3px;
+        border-radius: 10px;
+        color: #64748b;
         text-align: center;
         text-decoration: none;
-        font-size: 0.72rem;
-        font-weight: 600;
+        font-size: 10px;
+        font-weight: 700;
+        white-space: nowrap;
       }
 
       .chama-member-bottom-nav a.active {
+        color: #0f766e;
+        background: #ecfdf5;
         font-weight: 800;
       }
 
       body {
-        padding-bottom: 72px;
+        padding-bottom: calc(78px + env(safe-area-inset-bottom)) !important;
       }
     }
 
@@ -911,7 +927,7 @@ function renderMobileMenuToggle() {
       "menu-toggle";
 
     button.textContent =
-      "Menu";
+      "☰";
 
     topbar.appendChild(
       button
@@ -924,7 +940,7 @@ function renderMobileMenuToggle() {
 
   button.setAttribute(
     "aria-label",
-    "Open member menu"
+    "Open menu"
   );
 
   button.setAttribute(
