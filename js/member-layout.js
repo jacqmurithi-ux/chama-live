@@ -71,7 +71,7 @@ const MEMBER_PAGES = new Set([
 
 const PAGE_SCRIPTS = {
   "member-dashboard.html": {
-    path: "./member-dashboard.js?v=20261009-member-dashboard-fix1",
+    path: "./member-dashboard.js?v=20261009-member-dashboard-fix2",
     initializer: "initMemberDashboard"
   },
 
