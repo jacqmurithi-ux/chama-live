@@ -143,7 +143,8 @@ window.addEventListener("DOMContentLoaded", async()=>{
     context = await getDemoContext();
     if (!context?.demo) throw new Error("This demo session is invalid.");
     document.querySelector("#groupName").textContent = context.group_name || "Furaha Investment Group";
-    await navigate("dashboard");
+    const requestedPage = new URLSearchParams(window.location.search).get("page");
+    await navigate(requestedPage && (requestedPage === "dashboard" || definitions[requestedPage]) ? requestedPage : "dashboard");
   } catch(error) {
     showError(error.message || "The demo session could not be opened.");
   }
