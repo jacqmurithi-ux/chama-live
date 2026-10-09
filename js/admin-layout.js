@@ -563,7 +563,31 @@ function injectStyles() {
       cursor: pointer;
     }
 
-    @media (max-width: 800px) {
+    @media (max-width: 820px) {
+
+      /* All admin pages use the same mobile navigation shell. */
+      .sidebar,
+      .sidebar-nav {
+        display: none !important;
+      }
+
+      /* Remove the desktop sidebar column and let page content fill the screen. */
+      .layout {
+        display: block !important;
+      }
+
+      .layout > .main,
+      .layout > main,
+      .main-content {
+        width: 100%;
+        max-width: 100%;
+        margin-left: 0 !important;
+        box-sizing: border-box;
+      }
+
+      body {
+        padding-bottom: calc(78px + env(safe-area-inset-bottom)) !important;
+      }
 
       .chama-admin-nav {
         display: none;
@@ -590,26 +614,31 @@ function injectStyles() {
 
       .chama-mobile-menu {
         position: fixed;
-        top: 66px;
-        left: 10px;
-        right: 10px;
-        max-height: calc(100vh - 145px);
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: auto;
+        width: min(88vw, 340px);
+        max-height: none;
         overflow-y: auto;
+        padding: 20px 16px;
+        box-sizing: border-box;
         background: #ffffff;
-        border: 1px solid #e5e7eb;
-        border-radius: 18px;
+        border: 0;
+        border-left: 1px solid #e5e7eb;
+        border-radius: 0;
         z-index: 20001;
         box-shadow:
-          0 22px 55px rgba(16, 24, 40, 0.18);
+          -10px 0 30px rgba(16, 24, 40, 0.16);
         opacity: 0;
-        transform: translateY(-6px);
+        transform: translateX(12px);
         pointer-events: none;
       }
 
       .chama-mobile-menu.open {
         display: block;
         opacity: 1;
-        transform: translateY(0);
+        transform: translateX(0);
         pointer-events: auto;
       }
 
@@ -674,15 +703,12 @@ function injectStyles() {
         left: 0;
         right: 0;
         bottom: 0;
-        height: 70px;
+        height: auto;
+        min-height: 64px;
         display: grid;
-        grid-template-columns:
-          repeat(5, minmax(0, 1fr));
+        grid-template-columns: repeat(5, minmax(0, 1fr));
         gap: 4px;
-        padding:
-          6px
-          6px
-          env(safe-area-inset-bottom);
+        padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
         background: rgba(255, 255, 255, 0.98);
         border-top: 1px solid #e5e7eb;
         z-index: 15000;
@@ -695,9 +721,9 @@ function injectStyles() {
         align-items: center;
         justify-content: center;
         min-width: 0;
-        min-height: 42px;
+        min-height: 44px;
         padding: 5px 3px;
-        border-radius: 11px;
+        border-radius: 10px;
         color: #64748b;
         text-decoration: none;
         font-size: 10px;
@@ -718,20 +744,9 @@ function injectStyles() {
     }
 
     @media (max-width: 520px) {
-
-      .chama-mobile-menu {
-        left: 8px;
-        right: 8px;
-      }
-
-      .chama-admin-bottom {
-        height: 68px;
-      }
-
       .chama-admin-bottom a {
         font-size: 9px;
       }
-
     }
 
   `;
@@ -1329,13 +1344,17 @@ function renderMobileNavigation() {
         ".topbar-inner"
       );
 
-
-    if (topbarInner) {
-
-      topbarInner.prepend(
-        button
+    const topbar =
+      document.querySelector(
+        ".topbar"
       );
 
+    if (topbarInner) {
+      topbarInner.prepend(button);
+    } else if (topbar) {
+      topbar.prepend(button);
+    } else {
+      document.body.prepend(button);
     }
 
   }
