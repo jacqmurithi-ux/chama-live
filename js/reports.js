@@ -326,6 +326,9 @@ async function loadContext() {
   if (!currentMember?.group_id || !currentGroup?.id) {
     throw new Error("GROUP_CONTEXT_REQUIRED");
   }
+
+  setText("groupLabel", currentGroup.name || "Your group");
+  setText("printGroupName", currentGroup.name || "Group Report");
 }
 
 
@@ -4812,6 +4815,162 @@ function renderSelectedReport(
 }
 
 
+
+/* =========================================================
+   PLAIN-LANGUAGE REPORT STORY
+   Uses the same filtered rows and canonical server results
+   already loaded for this report. It does not write or
+   recalculate canonical member accounting.
+   ========================================================= */
+function renderReportStory(
+  contributionRows,
+  expenseRows,
+  meetingRows,
+  canonicalRows,
+  cumulativeRows
+) {
+  const host = $("reportStory");
+  if (!host) return;
+
+  const from = $("fromDate")?.value || "";
+  const to = $("toDate")?.value || "";
+  const period = from && to
+    ? (from === to ? from : `${from} to ${to}`)
+    : from || to || getAccountingMonth();
+
+  setText("reportStoryPeriod", `Reporting window: ${period}. Figures below follow the selected filters.`);
+
+  const cashIn = contributionRows.reduce((sum, row) => sum + numberValue(row.amount), 0);
+  const approvedExpenseRows = expenseRows.filter(row => lower(row.approval_status) === "approved");
+  const approvedOut = approvedExpenseRows.reduce((sum, row) => sum + numberValue(row.amount), 0);
+  const pendingExpenseRows = expenseRows.filter(row => lower(row.approval_status) === "pending");
+  const pendingOut = pendingExpenseRows.reduce((sum, row) => sum + numberValue(row.amount), 0);
+  const periodNet = cashIn - approvedOut;
+
+  const monthlyDue = canonicalRows.reduce((sum, row) => sum + canonicalDue(row), 0);
+  const monthlyApplied = canonicalRows.reduce((sum, row) => sum + canonicalApplied(row), 0);
+  const monthlyOutstanding = canonicalRows.reduce((sum, row) => sum + canonicalOutstanding(row), 0);
+  const cumulativeArrears = cumulativeRows.reduce((sum, row) => sum + numberValue(row.arrears ?? row.total_arrears ?? row.outstanding), 0);
+  const cumulativeCredit = cumulativeRows.reduce((sum, row) => sum + numberValue(row.credit ?? row.total_credit), 0);
+
+  const activeMembers = members.filter(member => {
+    const status = lower(member.status);
+    return !status || status === "active" || status === "approved";
+  }).length;
+
+  const money = value => escapeHTML(formatCurrency(value));
+  const item = (title, body, tone = "") =>
+    `<article class="story-item ${tone}"><h3>${escapeHTML(title)}</h3><p>${body}</p></article>`;
+
+  const parts = [];
+  if (!contributionRows.length && !expenseRows.length && !meetingRows.length) {
+    parts.push(
+      `<div class="report-story-empty"><strong>No activity matched these filters.</strong> This means the current report returned no contribution, expense, or meeting rows for the selected window. It does not prove the group has no historical activity. Check the date range, accounting month, member and status filters, then generate the report again. If you expected records, confirm that the correct group is shown above.</div>`
+    );
+  } else {
+    parts.push(item(
+      "1. Money received",
+      contributionRows.length
+        ? `The report found ${contributionRows.length} contribution record(s), totalling <strong>${money(cashIn)}</strong> in the selected window. This is recorded contribution cash, not a forecast or amount merely due.`
+        : "No contribution cash records matched this report window. Check the date and contribution filters if you expected receipts.",
+      contributionRows.length ? "story-good" : "story-attention"
+    ));
+    parts.push(item(
+      "2. Spending and period net",
+      `${approvedExpenseRows.length} approved expense record(s) total <strong>${money(approvedOut)}</strong>. The simple period net—matched contribution cash less approved expenses—is <strong>${money(periodNet)}</strong>. ${pendingExpenseRows.length ? `${pendingExpenseRows.length} expense record(s), totalling ${money(pendingOut)}, are still pending approval and are not included in approved spending.` : "No pending expense records matched these filters."}`
+    ));
+    parts.push(item(
+      "3. Monthly member accounting",
+      canonicalRows.length
+        ? `Canonical accounting returned ${canonicalRows.length} member row(s): due ${money(monthlyDue)}, applied/allocated ${money(monthlyApplied)}, and outstanding ${money(monthlyOutstanding)}. These values come from the server-side accounting results; the report does not create or alter obligations, allocations, arrears or credit.`
+        : "No canonical monthly accounting rows were returned for this selection. Confirm the accounting month and group context before drawing conclusions."
+    ));
+    parts.push(item(
+      "4. Cumulative position",
+      cumulativeRows.length
+        ? `Across ${cumulativeRows.length} cumulative member position(s), reported arrears total ${money(cumulativeArrears)} and reported credit totals ${money(cumulativeCredit)}. These are separate member-accounting positions; do not treat credit as cash received during this period.`
+        : "No cumulative member positions were returned. Check group access and the selected accounting context."
+    ));
+    parts.push(item(
+      "5. Meetings and membership",
+      `The selected window contains ${meetingRows.length} meeting record(s). The group currently has ${activeMembers} active/approved member(s) in the loaded membership list. Meeting count follows the date filter; membership is a current count, not a historical headcount.`
+    ));
+    if (monthlyOutstanding > 0 || cumulativeArrears > 0 || pendingOut > 0) {
+      parts.push(item(
+        "Officer follow-up",
+        `${monthlyOutstanding > 0 || cumulativeArrears > 0 ? "Review the outstanding and cumulative arrears member lists, confirm due dates and allocations, and follow up through the group's normal process. " : ""}${pendingOut > 0 ? "Review pending expense evidence and record an authorised approval decision. " : ""}Use the detailed tables below to identify the specific records before taking action.`,
+        "story-attention"
+      ));
+    }
+  }
+
+  host.innerHTML = parts.join("");
+}
+
+/* =========================================================
+   SORTABLE REPORT TABLES
+   Sorting changes only the visible row order; it does not
+   change database data, accounting values, or saved records.
+   ========================================================= */
+function enableReportTableSorting() {
+  queryAll(".table-wrap table thead th").forEach(th => {
+    if (th.dataset.sortBound === "true") return;
+    th.dataset.sortBound = "true";
+    th.dataset.sortable = "true";
+    th.tabIndex = 0;
+    th.setAttribute("role", "button");
+    th.setAttribute("aria-label", `Sort by ${normalizeText(th.textContent)}`);
+    th.title = "Select to sort this column";
+  });
+}
+
+function sortReportTable(th) {
+  const table = th.closest("table");
+  const body = table?.tBodies?.[0];
+  if (!body) return;
+
+  const headers = Array.from(th.parentElement.children);
+  const columnIndex = headers.indexOf(th);
+  const nextDirection = th.dataset.sortDirection === "asc" ? "desc" : "asc";
+
+  headers.forEach(header => {
+    delete header.dataset.sortDirection;
+    header.setAttribute("aria-sort", "none");
+  });
+
+  th.dataset.sortDirection = nextDirection;
+  th.setAttribute("aria-sort", nextDirection === "asc" ? "ascending" : "descending");
+
+  const rows = Array.from(body.rows).filter(row => !row.querySelector(".report-empty"));
+  const emptyRows = Array.from(body.rows).filter(row => row.querySelector(".report-empty"));
+
+  const valueFor = row => {
+    const cell = row.cells[columnIndex];
+    const raw = normalizeText(cell?.textContent || "");
+    const cleaned = raw.replace(/[KSh\s,]/gi, "").replace(/%$/, "");
+    if (!cleaned) return { raw, numeric: null, date: null };
+    const numeric = Number(cleaned);
+    const date = /^\d{4}-\d{2}-\d{2}$/.test(raw) ? Date.parse(raw) : null;
+    return {
+      raw,
+      numeric: Number.isFinite(numeric) && cleaned !== "" ? numeric : null,
+      date: Number.isFinite(date) ? date : null
+    };
+  };
+
+  rows.sort((a, b) => {
+    const av = valueFor(a), bv = valueFor(b);
+    let result;
+    if (av.date !== null && bv.date !== null) result = av.date - bv.date;
+    else if (av.numeric !== null && bv.numeric !== null) result = av.numeric - bv.numeric;
+    else result = av.raw.localeCompare(bv.raw, undefined, { numeric: true, sensitivity: "base" });
+    return nextDirection === "asc" ? result : -result;
+  });
+
+  rows.forEach(row => body.appendChild(row));
+  emptyRows.forEach(row => body.appendChild(row));
+}
+
 /* =========================================================
    GENERATE REPORT
    ========================================================= */
@@ -4855,6 +5014,15 @@ async function generateReport() {
       contributionRows,
       expenseRows
     );
+
+    renderReportStory(
+      contributionRows,
+      expenseRows,
+      meetingRows,
+      canonicalRows,
+      cumulativeRows
+    );
+    enableReportTableSorting();
 
     renderContributionBreakdown(
       contributionRows
@@ -5730,6 +5898,19 @@ function printReport() {
    ========================================================= */
 
 function bindEvents() {
+  document.addEventListener("click", event => {
+    const th = event.target.closest(".table-wrap table thead th[data-sortable='true']");
+    if (th) sortReportTable(th);
+  });
+
+  document.addEventListener("keydown", event => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    const th = event.target.closest(".table-wrap table thead th[data-sortable='true']");
+    if (!th) return;
+    event.preventDefault();
+    sortReportTable(th);
+  });
+
   const generateButton =
     $("applyFilters");
 
