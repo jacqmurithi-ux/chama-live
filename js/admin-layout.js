@@ -1244,60 +1244,10 @@ function renderMobileNavigation() {
   }
 
 
-  /* ---------------------------------------------------------
-     ACCOUNT
-  --------------------------------------------------------- */
-
-  const accountSection =
-    document.createElement(
-      "section"
-    );
-
-  accountSection.className =
-    "chama-mobile-section";
-
-
-  const accountHeading =
-    document.createElement(
-      "h2"
-    );
-
-  accountHeading.textContent =
-    "Account";
-
-
-  accountSection.appendChild(
-    accountHeading
-  );
-
-
-  accountSection.appendChild(
-    createNavLink(
-      "billing.html",
-      "Billing"
-    )
-  );
-
-
   /*
-   * Return to the same user's Member Portal /
-   * My Account context.
-   *
-   * Navigation only — no permission escalation.
+   * Billing and View My Account are included in the same
+   * canonical navigation groups above, avoiding duplicate links.
    */
-
-  accountSection.appendChild(
-    createNavLink(
-      "member-dashboard.html",
-      "View My Account"
-    )
-  );
-
-
-  menu.appendChild(
-    accountSection
-  );
-
 
   document.body.appendChild(
     backdrop
