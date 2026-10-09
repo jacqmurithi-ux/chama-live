@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="theme-color" content="#ffffff">
+  <title>CHAMA LIVE — Furaha Investment Group Demo</title>
+  <link rel="stylesheet" href="./css/demo-portal.css">
+</head>
+<body class="chama-demo-portal">
+  <div class="demo-warning" role="note">
+    <strong>CHAMA LIVE — DEMO SANDBOX. SIMULATED DATA ONLY · NOT REAL GROUP RECORDS.</strong>
+    <span>This demo uses fictional member profiles and simulated financial and activity records for demonstration and testing. Contributions, balances, fines, payments, meetings, attendance, and subscription records are illustrative only. They are not real transactions, verified payments, or evidence of actual group activity.</span>
+  </div>
+  <header class="demo-topbar">
+    <button class="demo-mobile-menu" id="menuToggle" aria-label="Toggle navigation" type="button">☰</button>
+    <div class="demo-brand"><strong>CHAMA LIVE</strong><span>RUN YOUR GROUP SIMPLY</span></div>
+    <span class="demo-group" id="groupName">Furaha Investment Group</span>
+    <div class="demo-header-actions">
+      <button type="button" id="resetDemo">Reset changes</button>
+      <button type="button" id="endDemo">End demo</button>
+    </div>
+  </header>
+  <div class="demo-layout">
+    <aside class="demo-sidebar" id="demoSidebar" aria-label="Demo navigation">
+      <p class="demo-nav-label">WORKSPACE</p>
+      <button class="demo-nav-link active" data-page="dashboard">Dashboard</button>
+      <p class="demo-nav-label">GROUP MANAGEMENT</p>
+      <button class="demo-nav-link" data-page="members">Members</button>
+      <button class="demo-nav-link" data-page="contributions">Contributions</button>
+      <button class="demo-nav-link" data-page="fines">Fines</button>
+      <button class="demo-nav-link" data-page="meetings">Meetings & Attendance</button>
+      <button class="demo-nav-link" data-page="expenses">Expenses</button>
+      <button class="demo-nav-link" data-page="assets">Assets</button>
+      <button class="demo-nav-link" data-page="plans">Plans & Activities</button>
+      <button class="demo-nav-link" data-page="milestones">Milestones</button>
+      <button class="demo-nav-link" data-page="welfare">Welfare</button>
+      <p class="demo-nav-label">FINANCE & REPORTS</p>
+      <button class="demo-nav-link" data-page="periods">Financial Periods</button>
+      <button class="demo-nav-link" data-page="closing">Monthly Closing</button>
+      <button class="demo-nav-link" data-page="reports">Reports</button>
+      <button class="demo-nav-link" data-page="billing">Billing</button>
+      <button class="demo-nav-link" data-page="group">Group Management</button>
+    </aside>
+    <main class="demo-workspace">
+      <div id="demoError" class="demo-error" hidden role="alert"></div>
+      <section id="pageContent" aria-live="polite"><p class="demo-status">Loading your demo workspace…</p></section>
+      <p class="demo-workspace-foot">Temporary sandbox · Session-isolated changes · Real portal remains separate</p>
+    </main>
+  </div>
+  <dialog id="editDialog" class="demo-edit-dialog">
+    <form method="dialog" id="editForm">
+      <div class="demo-dialog-heading"><div><p class="demo-kicker">Temporary change</p><h2 id="editTitle">Edit demo record</h2></div><button value="cancel" aria-label="Close">×</button></div>
+      <p class="demo-note">Changes are stored as session overrides. They do not modify the underlying group records.</p>
+      <label for="editJson">Record fields (JSON)</label>
+      <textarea id="editJson" rows="14" spellcheck="false" required></textarea>
+      <div id="editError" class="demo-error" hidden></div>
+      <div class="demo-dialog-actions"><button value="cancel" type="button" id="cancelEdit">Cancel</button><button value="save" type="submit" class="demo-primary">Save temporary change</button></div>
+    </form>
+  </dialog>
+  <script type="module" src="./js/demo-app.js"></script>
+</body>
+</html>
