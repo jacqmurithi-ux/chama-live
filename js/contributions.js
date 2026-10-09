@@ -887,10 +887,7 @@ async function refreshCanonicalAccountingThroughMonth(
           groupId,
 
         p_through_month:
-          month,
-
-        p_member_id:
-          null
+          month
       }
     );
 
