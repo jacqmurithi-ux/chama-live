@@ -920,15 +920,11 @@ function renderDesktopNavigation() {
   const currentPage =
     getCurrentPage();
 
-  const existingMemberNav =
-    document.querySelector(
-      ".chama-member-nav"
-    );
-
-  if (existingMemberNav) {
-    renderDesktopLogout();
-    return;
-  }
+  // Rebuild the desktop menu from the canonical portal link list.
+  // This prevents page-specific/legacy navigation from surviving beside it.
+  document
+    .querySelectorAll(".chama-member-nav")
+    .forEach(existing => existing.remove());
 
   const nav =
     document.createElement("nav");
