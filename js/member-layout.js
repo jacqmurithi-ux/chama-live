@@ -83,7 +83,7 @@ const PAGE_SCRIPTS = {
   },
 
   "member-accounting.html": {
-    path: "./js/member-accounting.js?v=20261009-identity-guard2",
+    path: "./js/member-accounting.js?v=20261009-personal-status3",
     initializer: "initMemberAccounting"
   },
 
@@ -103,7 +103,7 @@ const PAGE_SCRIPTS = {
   },
 
   "member-profile.html": {
-    path: "./member-profile.js",
+    path: "./js/member-profile.js?v=20261009-personal-status3",
     initializer: "initMemberAccounting"
   }
 };
