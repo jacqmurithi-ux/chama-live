@@ -41,16 +41,16 @@ console.log(
 ========================================================= */
 
 const statusEl =
-  document.getElementById("status");
+  document.getElementById("meetingStatus");
 
 const errorEl =
-  document.getElementById("error");
+  document.getElementById("meetingError") || document.getElementById("meetingStatus");
 
 const form =
   document.getElementById("meetingForm");
 
 const titleInput =
-  document.getElementById("title");
+  document.getElementById("meetingTitle");
 
 const dateInput =
   document.getElementById("meetingDate");
@@ -1266,10 +1266,6 @@ async function saveMeetingForm(event) {
     }
 
 
-    if (!startTime) {
-      throw new Error("Please select the meeting start time.");
-    }
-
     if (endTime && endTime <= startTime) {
       throw new Error("End time must be later than start time.");
     }
@@ -1303,7 +1299,7 @@ async function saveMeetingForm(event) {
         date,
 
       start_time:
-        startTime,
+        startTime || null,
 
       end_time:
         endTime ||
@@ -2196,41 +2192,38 @@ export async function initPage() {
   try {
 
     clearError();
-
-    showStatus(
-      "Loading meetings..."
-    );
+    showStatus("Loading meetings...");
 
     await requireAuth();
 
+    currentMember = await getMyMember();
 
-      currentMember =
-        await getMyMember();
-
-      if (!currentMember) {
-        throw new Error(
-          "No member record is linked to this account."
-        );
-      }
-
-      groupId = null;
-
-      setCreateMode();
-
-      if (dateInput) {
-        dateInput.value =
-          getToday();
-      }
-
-      form?.addEventListener(
-        "submit",
-        saveMeetingForm
+    if (!currentMember?.id) {
+      throw new Error(
+        "No member record is linked to this account."
       );
-
-      setupButtons();
-      setupTableActions();
-
     }
+
+    groupId = currentMember.group_id;
+
+    if (!groupId) {
+      throw new Error(
+        "Your member record is not linked to a group."
+      );
+    }
+
+    setCreateMode();
+
+    if (dateInput) {
+      dateInput.value = getToday();
+    }
+
+    if (form) {
+      form.addEventListener("submit", saveMeetingForm);
+    }
+
+    setupButtons();
+    setupTableActions();
 
     await loadMeetings();
 
@@ -2238,28 +2231,22 @@ export async function initPage() {
     renderMeetings();
     renderDetails();
 
-    showStatus(
-      "Meetings ready."
-    );
+    showStatus("Meetings ready.");
 
     setTimeout(
       () => showStatus(""),
       2000
     );
 
-  }
-  catch (error) {
+  } catch (error) {
 
     initialized = false;
-
     showStatus("");
-
     showError(error);
 
   }
 
 }
-
 
 /* =========================================================
    PUBLIC ALIAS
