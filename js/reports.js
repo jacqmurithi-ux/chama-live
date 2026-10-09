@@ -5559,10 +5559,10 @@ async function exportSortedReportCSV() {
       return;
     }
 
-    const blob = new Blob(["\\uFEFF", lines.join("\\r\\n")], {
+    const blob = new Blob(["\uFEFF", lines.join("\r\n")], {
       type: "text/csv;charset=utf-8"
     });
-    const base = reportFilename("csv").replace(/\\.csv$/i, "");
+    const base = reportFilename("csv").replace(/\.csv$/i, "");
     downloadBlob(blob, base + "-sorted-view.csv");
     setStatus("Sorted report downloaded.");
   } catch (error) {
