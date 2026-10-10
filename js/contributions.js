@@ -407,33 +407,27 @@ const MEMBER_EVIDENCE_STATUSES = {
 
 const RECORDER_ROLES = new Set([
 
-  "admin",
-
-  "administrator",
-
-  "chairperson",
-
   "treasurer",
 
-  "secretary"
+  "secretary",
+
+  "vice secretary"
 
 ]);
 
 
 const CUSTOM_CONTRIBUTION_ACTIVATOR_ROLES = new Set([
 
-  "chairperson"
+  "treasurer"
 
 ]);
 
 
 const VERIFIER_ROLES = new Set([
 
-  "admin",
-
-  "chairperson",
-
   "secretary",
+
+  "vice secretary",
 
   "treasurer"
 
@@ -1778,7 +1772,6 @@ function renderDraftCustomContributionList() {
 
 
   const canActivate =
-    isGroupOwner ||
     CUSTOM_CONTRIBUTION_ACTIVATOR_ROLES.has(
       getCurrentMemberRole()
     );
@@ -6517,12 +6510,9 @@ function openCustomContributionEditor() {
     return;
   }
 
-  if (
-    !isGroupOwner &&
-    !["admin", "chairperson", "treasurer"].includes(getCurrentMemberRole())
-  ) {
+  if (getCurrentMemberRole() !== "treasurer") {
     showCustomContributionEditorMessage(
-      "Only the group owner, chairperson or treasurer can create a custom contribution draft.",
+      "Only the group treasurer can create a custom contribution draft.",
       "error"
     );
     return;
@@ -7434,7 +7424,6 @@ async function activateExistingCustomContribution(
 ) {
 
   if (
-    !isGroupOwner &&
     !CUSTOM_CONTRIBUTION_ACTIVATOR_ROLES.has(
       getCurrentMemberRole()
     )
@@ -7442,7 +7431,7 @@ async function activateExistingCustomContribution(
 
     showError(
       new Error(
-        "You are not authorised to activate custom contributions."
+        "Only the group treasurer can activate custom contributions."
       )
     );
 
@@ -7989,10 +7978,8 @@ export async function initContributions(
       Boolean(applicationContext.isOwner);
 
     if (newCustomContributionButton) {
-      newCustomContributionButton.hidden = !(
-        isGroupOwner ||
-        ["admin", "chairperson", "treasurer"].includes(getCurrentMemberRole())
-      );
+      newCustomContributionButton.hidden =
+        getCurrentMemberRole() !== "treasurer";
     }
 
 
