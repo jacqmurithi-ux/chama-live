@@ -3943,6 +3943,63 @@ function renderOperationsSnapshot() {
 
 
 /* =========================================================
+   INITIAL LOAD FAILURE FALLBACK
+========================================================= */
+
+function renderUnresolvedLoadingPlaceholders(error) {
+  const message = "Dashboard data could not be loaded. Use Refresh to retry.";
+  const tables = [
+    ["activeContributionTypeRows", 8],
+    ["memberStatusRows", 7],
+    ["customContributionMemberStatusRows", 6],
+    ["cumulativePositionRows", 6],
+    ["recentContributionRows", 4],
+    ["recentExpenseRows", 4],
+    ["upcomingMeetingRows", 4]
+  ];
+
+  for (const [id, colspan] of tables) {
+    const container = el(id);
+    if (!container || !/loading/i.test(container.textContent || "")) continue;
+    container.innerHTML = `
+      <tr><td colspan="${colspan}">
+        <div class="empty-state" role="alert">
+          <strong>Unable to load this section</strong>
+          <span>${message}</span>
+        </div>
+      </td></tr>`;
+  }
+
+  // Avoid presenting initial placeholder zeros as verified financial data
+  // when the dashboard failed before it could render a data snapshot.
+  const hasUnresolvedLoading = tables.some(([id]) => {
+    const container = el(id);
+    return container && /unable to load this section/i.test(container.textContent || "");
+  });
+
+  if (hasUnresolvedLoading) {
+    [
+      "activeMembers",
+      "membersCount",
+      "monthlyExpected",
+      "currentBalance",
+      "monthlyCollected",
+      "progressPercentage",
+      "progressText",
+      "contributorsCount",
+      "contributorsPercentage",
+      "monthlyOutstanding",
+      "progressApplied",
+      "progressCarryForward",
+      "progressOutstanding"
+    ].forEach(id => setText(id, "—"));
+  }
+
+  console.error("CHAMA LIVE: dashboard initialization did not complete.", error);
+}
+
+
+/* =========================================================
    VISIBLE PARTIAL-LOAD AND ACCOUNTING ERRORS
 ========================================================= */
 
@@ -4198,6 +4255,8 @@ export async function initDashboard() {
 
     showError(error);
     renderLoadErrors();
+    renderUnresolvedLoadingPlaceholders(error);
+    renderUnresolvedLoadingPlaceholders(error);
 
   }
 
