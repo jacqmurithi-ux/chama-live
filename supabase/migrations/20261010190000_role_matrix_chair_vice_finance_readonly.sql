@@ -385,7 +385,7 @@ BEGIN
       ),
       (
         'public.create_custom_contribution(uuid,text,text,numeric,text,date,date,date,integer,boolean,numeric,uuid)',
-        $pat$IF NOT EXISTS \(SELECT 1 FROM public\.groups g WHERE g\.id=p_group_id AND g\.owner_user_id=v_auth_user_id\)\s+AND NOT public\.cl_user_has_role\(p_group_id,ARRAY\['chairperson','treasurer'\]::text\[\]\) THEN$pat$,
+        $pat$IF NOT EXISTS \(SELECT 1 FROM public\.groups g WHERE g\.id=p_group_id AND g\.owner_user_id=v_auth_user_id\)\s+AND NOT public\.cl_user_has_role\(p_group_id,ARRAY\['chairperson'\]::text\[\]\) THEN$pat$,
         $rep$IF NOT public.cl_user_has_role(p_group_id,ARRAY['treasurer']::text[]) THEN$rep$
       ),
       (
