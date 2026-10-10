@@ -5,8 +5,10 @@
 -- Rules:
 --   * vice chairperson inherits chairperson permissions.
 --   * vice secretary inherits secretary permissions.
---   * admin/administrator may administer across groups through the shared
---     role helpers, but do not inherit treasurer-only permissions implicitly.
+--   * admin/administrator cross-group access is enabled only where existing
+--     policies call the shared helpers; direct-membership policies still need
+--     a separate audit before full platform-wide access can be claimed.
+--   * admin/administrator do not inherit treasurer-only permissions implicitly.
 --   * chairperson/vice chairperson retain financial read access but are
 --     excluded from treasury mutations.
 --   * existing accounting RPCs remain the only accounting write path.
