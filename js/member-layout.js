@@ -378,8 +378,24 @@ function injectStyles() {
       .chama-member-nav a, .chama-member-nav summary { padding-right: 7px; padding-left: 7px; font-size: 11px; }
     }
     @media (max-width: 820px) {
-      .topbar-inner { min-height: 60px; gap: 10px; padding: 8px 12px; }
-      .topbar .top-nav { display: none !important; }
+      .topbar-inner {
+        min-height: 60px;
+        gap: 10px;
+        padding: 8px 12px;
+        flex-wrap: wrap;
+      }
+      /* Higher-specificity override: do not let the legacy header rule
+         hide the real navigation on mobile-sized CSS viewports. */
+      .topbar .top-nav {
+        display: flex !important;
+        order: 3;
+        flex: 1 1 100%;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        overflow: visible;
+        justify-content: flex-start;
+      }
       .topbar .topbar-actions { margin-left: auto; gap: 7px; }
       .topbar [data-user-name] { max-width: 105px; font-size: 11px; }
     }
