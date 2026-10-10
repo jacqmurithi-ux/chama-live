@@ -15,7 +15,7 @@ BEGIN
       'ARRAY[''admin'',''chairperson'',''secretary'',''treasurer'']::text[]',
       'ARRAY[''secretary'',''treasurer'']::text[]');
     EXECUTE v_def;
-  ELSIF position('ARRAY[''secretary'',''treasurer'']::text[]' in v_def) = 0 THEN
+  ELSIF position('array[''secretary'',''treasurer'']::text[]' in lower(v_def)) = 0 THEN
     RAISE EXCEPTION 'Unexpected verify_member_payment_evidence authorization guard';
   END IF;
 
@@ -27,7 +27,7 @@ BEGIN
       'IF NOT public.can_manage_members(v_i.group_id) THEN RAISE EXCEPTION ''Not authorized''; END IF;',
       'IF NOT public.cl_user_has_role(v_i.group_id, ARRAY[''treasurer'']::text[]) THEN RAISE EXCEPTION ''Not authorized''; END IF;');
     EXECUTE v_def;
-  ELSIF position('cl_user_has_role(v_i.group_id, ARRAY[''treasurer'']::text[])' in v_def) = 0 THEN
+  ELSIF position('cl_user_has_role(v_i.group_id, array[''treasurer'']::text[])' in lower(v_def)) = 0 THEN
     RAISE EXCEPTION 'Unexpected reverse_contribution_initiative_payment authorization guard';
   END IF;
 
@@ -37,7 +37,7 @@ BEGIN
     v_def := replace(v_def, 'public.can_manage_members(i.group_id)',
       'public.cl_user_has_role(i.group_id, ARRAY[''treasurer'']::text[])');
     EXECUTE v_def;
-  ELSIF position('public.cl_user_has_role(i.group_id, ARRAY[''treasurer'']::text[])' in v_def) = 0 THEN
+  ELSIF position('public.cl_user_has_role(i.group_id, array[''treasurer'']::text[])' in lower(v_def)) = 0 THEN
     RAISE EXCEPTION 'Unexpected reverse_recurring_contribution_initiative_payment authorization guard';
   END IF;
 
@@ -49,7 +49,7 @@ BEGIN
     v_def := replace(v_def, 'public.can_manage_members(v_group_id)',
       'public.cl_user_has_role(v_group_id, ARRAY[''secretary'',''treasurer'']::text[])');
     EXECUTE v_def;
-  ELSIF position('public.cl_user_has_role(v_group_id, ARRAY[''secretary'',''treasurer'']::text[])' in v_def) = 0 THEN
+  ELSIF position('public.cl_user_has_role(v_group_id, array[''secretary'',''treasurer'']::text[])' in lower(v_def)) = 0 THEN
     RAISE EXCEPTION 'Unexpected record_existing_member_historical_payments authorization guard';
   END IF;
 
@@ -63,7 +63,7 @@ BEGIN
       'IF NOT public.can_manage_members(p_group_id) THEN RAISE EXCEPTION ''Not authorized''; END IF;',
       'IF NOT public.cl_user_has_role(p_group_id, ARRAY[''treasurer'']::text[]) THEN RAISE EXCEPTION ''Not authorized''; END IF;');
     EXECUTE v_def;
-  ELSIF position('cl_user_has_role(p_group_id, ARRAY[''treasurer'']::text[])' in v_def) = 0 THEN
+  ELSIF position('cl_user_has_role(p_group_id, array[''treasurer'']::text[])' in lower(v_def)) = 0 THEN
     RAISE EXCEPTION 'Unexpected update_group_contribution_settings authorization guard';
   END IF;
 
@@ -74,7 +74,7 @@ BEGIN
       'auth.uid() <> v_owner_user_id and coalesce(v_role,'''') not in (''admin'',''chairperson'')',
       'NOT public.cl_user_has_role(p_group_id, ARRAY[''treasurer'']::text[])');
     EXECUTE v_def;
-  ELSIF position('NOT public.cl_user_has_role(p_group_id, ARRAY[''treasurer'']::text[])' in v_def) = 0 THEN
+  ELSIF position('not public.cl_user_has_role(p_group_id, array[''treasurer'']::text[])' in lower(v_def)) = 0 THEN
     RAISE EXCEPTION 'Unexpected update_group_contribution_cycle_settings authorization guard';
   END IF;
 
