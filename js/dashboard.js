@@ -4083,8 +4083,8 @@ function renderLoadErrors() {
       "cumulativeUpToDateCount",
       "cumulativeArrearsCount",
       "cumulativeCreditCount",
-      "cumulativeTotalArrears",
-      "cumulativeTotalCredit"
+      "cumulativeArrearsAmount",
+      "cumulativeCreditAmount"
     ].forEach(id => setText(id, "—"));
 
     const progressBar = el("progressBar");
