@@ -102,6 +102,63 @@ AS $function$
     );
 $function$;
 
+
+CREATE OR REPLACE FUNCTION public.current_user_role(p_group_id uuid)
+RETURNS text
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $function$
+  SELECT CASE
+    WHEN EXISTS (
+      SELECT 1
+      FROM public.members a
+      WHERE (a.user_id = auth.uid() OR a.auth_user_id = auth.uid())
+        AND lower(coalesce(a.status, 'active')) = 'active'
+        AND lower(coalesce(a.onboarding_status, 'active')) = 'active'
+        AND lower(btrim(coalesce(a.role, 'member'))) IN ('admin', 'administrator')
+    ) THEN 'admin'
+    ELSE (
+      SELECT CASE lower(btrim(coalesce(m.role, 'member')))
+        WHEN 'vice chairperson' THEN 'chairperson'
+        WHEN 'vice-chairperson' THEN 'chairperson'
+        WHEN 'vice secretary' THEN 'secretary'
+        WHEN 'vice-secretary' THEN 'secretary'
+        WHEN 'administrator' THEN 'admin'
+        ELSE lower(btrim(coalesce(m.role, 'member')))
+      END
+      FROM public.members m
+      WHERE m.group_id = p_group_id
+        AND (m.user_id = auth.uid() OR m.auth_user_id = auth.uid())
+        AND lower(coalesce(m.status, 'active')) = 'active'
+        AND lower(coalesce(m.onboarding_status, 'active')) = 'active'
+      ORDER BY m.id
+      LIMIT 1
+    )
+  END;
+$function$;
+
+CREATE OR REPLACE FUNCTION public.my_role(target_group uuid)
+RETURNS text
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $function$
+  SELECT public.current_user_role(target_group);
+$function$;
+
+CREATE OR REPLACE FUNCTION public.can_manage_members(p_group_id uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $function$
+  SELECT public.cl_user_has_role(p_group_id, ARRAY['admin','chairperson']::text[]);
+$function$;
+
 -- Contribution writes: secretary and treasurer retain their existing duties.
 -- Admin and chair roles are not granted treasury mutation access by policy.
 DROP POLICY IF EXISTS contributions_insert_finance_role ON public.contributions;
