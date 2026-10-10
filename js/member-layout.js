@@ -708,6 +708,39 @@ function injectStyles() {
       }
     }
 
+    /* Chrome Android "Desktop site" uses a desktop-sized CSS viewport.
+       Keep dropdowns out of the horizontally scrolling nav clipping area. */
+    @media (min-width: 821px) and (max-width: 1100px) {
+      .topbar .top-nav {
+        min-width: 0;
+        overflow-x: auto;
+        overflow-y: visible;
+        -webkit-overflow-scrolling: touch;
+        touch-action: pan-x;
+      }
+      .chama-member-nav {
+        width: max-content;
+        flex: 0 0 auto;
+      }
+      .chama-member-group-panel {
+        position: fixed;
+        top: auto;
+        left: 8px;
+        right: 8px;
+        bottom: 12px;
+        width: auto;
+        min-width: 0;
+        max-height: min(70vh, 520px);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        z-index: 20002;
+      }
+      .chama-member-group-panel a {
+        min-height: 46px;
+        touch-action: manipulation;
+      }
+    }
+
     @media (max-width: 520px) {
       .chama-member-bottom-nav a {
         font-size: 9px;
