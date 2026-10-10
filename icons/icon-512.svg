@@ -1,9 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#0a7d3b"/>
-  <circle cx="180" cy="166" r="42" fill="#fff"/>
-  <circle cx="332" cy="166" r="42" fill="#fff"/>
-  <circle cx="256" cy="122" r="35" fill="#d9f99d"/>
-  <path d="M90 285c0-48 35-79 78-79s78 31 78 79v20H90zM266 285c0-48 35-79 78-79s78 31 78 79v20H266z" fill="#fff"/>
-  <rect x="170" y="245" width="172" height="176" rx="58" fill="#d9f99d"/>
-  <path d="m210 333 31 31 62-72" fill="none" stroke="#0a7d3b" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="ChamaLive app icon">
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#20b43b"/><stop offset="1" stop-color="#006b32"/></linearGradient><linearGradient id="lime" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#b8ff12"/><stop offset="1" stop-color="#7df000"/></linearGradient></defs>
+  <rect width="512" height="512" rx="92" fill="url(#bg)"/>
+  <path d="M389 127A174 174 0 1 0 391 378l-43-25A124 124 0 1 1 348 160z" fill="#fff"/>
+  <circle cx="256" cy="173" r="28" fill="#fff"/>
+  <circle cx="190" cy="211" r="22" fill="#fff"/>
+  <circle cx="322" cy="211" r="22" fill="#fff"/>
+  <path d="M207 266c0-34 21-56 49-56s49 22 49 56v17H207z" fill="#fff"/>
+  <path d="M155 279c0-25 15-43 36-43 10 0 18 3 24 9-9 14-13 28-13 44v8h-47zM297 289v-8c0-16-4-30-13-44 6-6 14-9 24-9 21 0 36 18 36 43v18z" fill="#fff"/>
+  <path d="M160 316c60-43 132-43 192 0l-22 25c-53-30-95-30-148 0z" fill="url(#lime)"/>
+  <path d="M185 354c46-25 96-25 142 0l-20 20c-33-16-69-16-102 0z" fill="#36d72d"/>
 </svg>
