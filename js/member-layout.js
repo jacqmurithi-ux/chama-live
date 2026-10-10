@@ -471,6 +471,19 @@ function injectStyles() {
       position: relative;
     }
 
+    /* Keep the opened dropdown above adjacent navigation groups in desktop-site mobile view. */
+    .chama-member-group[open] {
+      z-index: 30003;
+    }
+
+    .chama-member-group[open] > .chama-member-group-panel {
+      display: block;
+      visibility: visible;
+      opacity: 1;
+      z-index: 30004;
+      pointer-events: auto;
+    }
+
     .chama-member-group-panel {
       position: absolute; top: 46px; left: 0; min-width: 220px;
       padding: 6px; background: #ffffff; border: 1px solid #e5e7eb;
