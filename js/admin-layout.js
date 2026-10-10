@@ -697,8 +697,67 @@ function injectStyles() {
         padding-bottom: calc(78px + env(safe-area-inset-bottom)) !important;
       }
 
+      /* Keep the primary top navigation usable on touch screens.
+         Do not hide it and force users into the separate drawer. */
+      .topbar-inner {
+        flex-wrap: wrap;
+        align-items: center;
+      }
+
+      .top-nav {
+        display: block !important;
+        order: 3;
+        flex: 1 1 100%;
+        width: 100%;
+        max-width: 100%;
+        overflow: visible;
+      }
+
       .chama-admin-nav {
-        display: none;
+        display: flex !important;
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: 4px;
+        width: 100%;
+        max-width: 100%;
+        overflow-x: auto;
+        overflow-y: visible;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        padding: 5px 0 8px;
+        touch-action: pan-x;
+      }
+
+      .chama-admin-group {
+        flex: 0 0 auto;
+      }
+
+      .chama-admin-group > summary {
+        min-height: 44px;
+        padding: 10px 12px;
+        font-size: 13px;
+        touch-action: manipulation;
+      }
+
+      .chama-admin-group-panel {
+        position: fixed;
+        top: auto;
+        left: 8px;
+        right: 8px;
+        bottom: calc(72px + env(safe-area-inset-bottom));
+        width: auto;
+        min-width: 0;
+        max-height: min(58vh, 420px);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        z-index: 20002;
+      }
+
+      .chama-admin-group-panel a {
+        min-height: 46px;
+        font-size: 14px;
+        white-space: normal;
+        touch-action: manipulation;
       }
 
       .menu-toggle {
