@@ -85,6 +85,8 @@ let activities = 0;
 let milestones = 0;
 let assets = 0;
 let contributionGoals = 0;
+let optionalLoadErrors = Object.create(null);
+let canonicalAccountingError = null;
 
 let monthlyContribution = 0;
 
@@ -2387,23 +2389,52 @@ async function loadData() {
   cumulativePositions = [];
   cumulativePositionsComplete = false;
 
-  // Load live group data only. No demo/sample-data branch.
-  await Promise.all([
-    loadMembers(),
-    loadContributions(),
-    loadExpenses(),
-    loadMeetings(),
-    loadSupportCases(),
-    loadPlans(),
-    loadActivities(),
-    loadMilestones(),
-    loadAssets(),
-    loadContributionGoals(),
-    loadAttendance()
-  ]);
+  // Read-only operational panels load independently. A single optional
+  // table/RLS/schema failure must not leave every dashboard section stuck
+  // on its initial "Loading..." placeholder.
+  optionalLoadErrors = Object.create(null);
+  canonicalAccountingError = null;
 
-  // Accounting figures must come from the canonical accounting RPCs.
-  await loadCanonicalAccounting();
+  const optionalLoaders = [
+    ["members", loadMembers],
+    ["contributions", loadContributions],
+    ["expenses", loadExpenses],
+    ["meetings", loadMeetings],
+    ["supportCases", loadSupportCases],
+    ["plans", loadPlans],
+    ["activities", loadActivities],
+    ["milestones", loadMilestones],
+    ["assets", loadAssets],
+    ["contributionGoals", loadContributionGoals],
+    ["attendance", loadAttendance]
+  ];
+
+  const loadResults = await Promise.allSettled(
+    optionalLoaders.map(([, loader]) => loader())
+  );
+
+  loadResults.forEach((result, index) => {
+    if (result.status !== "rejected") return;
+    const key = optionalLoaders[index][0];
+    optionalLoadErrors[key] = result.reason;
+    console.error(
+      `CHAMA LIVE: optional dashboard data unavailable (${key}).`,
+      result.reason
+    );
+  });
+
+  // Canonical accounting remains authoritative. If an accounting RPC fails,
+  // show that section as unavailable without blocking unrelated read-only panels.
+  try {
+    await loadCanonicalAccounting();
+  } catch (error) {
+    canonicalAccountingError = error;
+    monthlyStatus = [];
+    canonicalSummary = null;
+    cumulativePositions = [];
+    cumulativePositionsComplete = false;
+    console.error("CHAMA LIVE: canonical dashboard accounting unavailable.", error);
+  }
 
   try {
     await loadCustomContributionStatuses();
@@ -3912,6 +3943,103 @@ function renderOperationsSnapshot() {
 
 
 /* =========================================================
+   VISIBLE PARTIAL-LOAD AND ACCOUNTING ERRORS
+========================================================= */
+
+function renderLoadErrors() {
+  const tableErrors = [
+    ["contributions", "recentContributionRows", 4, "Recent contributions"],
+    ["expenses", "recentExpenseRows", 4, "Recent expenses"],
+    ["meetings", "upcomingMeetingRows", 4, "Upcoming meetings"]
+  ];
+
+  for (const [key, id, colspan, label] of tableErrors) {
+    if (!optionalLoadErrors[key]) continue;
+    const container = el(id);
+    if (!container) continue;
+    container.innerHTML = `
+      <tr><td colspan="${colspan}">
+        <div class="empty-state" role="status">
+          <strong>${label} could not be loaded</strong>
+          <span>Use Refresh to try again. The cause is recorded in the browser console.</span>
+        </div>
+      </td></tr>`;
+  }
+
+  if (optionalLoadErrors.members) {
+    setText("activeMembers", "—");
+    setText("membersCount", "Member data unavailable");
+  }
+
+  const operationErrorTargets = [
+    ["supportCases", "operationsSupportCases"],
+    ["plans", "operationsPlans"],
+    ["activities", "operationsActivities"],
+    ["milestones", "operationsMilestones"],
+    ["assets", "operationsAssets"],
+    ["contributionGoals", "operationsContributionGoals"]
+  ];
+  for (const [key, id] of operationErrorTargets) {
+    if (optionalLoadErrors[key]) setText(id, "—");
+  }
+
+  if (optionalLoadErrors.attendance) {
+    [
+      "adminAttendanceRecords",
+      "adminAttendancePresent",
+      "adminAttendanceLate",
+      "adminAttendanceApology",
+      "adminAttendanceAbsent",
+      "adminAttendanceRate"
+    ].forEach(id => setText(id, "—"));
+  }
+
+  if (canonicalAccountingError) {
+    const accountingTables = [
+      ["memberStatusRows", 7, "Monthly member payment status"],
+      ["cumulativePositionRows", 6, "Cumulative contribution position"]
+    ];
+    for (const [id, colspan, label] of accountingTables) {
+      const container = el(id);
+      if (!container) continue;
+      container.innerHTML = `
+        <tr><td colspan="${colspan}">
+          <div class="empty-state" role="alert">
+            <strong>${label} is unavailable</strong>
+            <span>Canonical accounting could not be retrieved. Refresh to retry; no financial figures have been fabricated.</span>
+          </div>
+        </td></tr>`;
+    }
+
+    [
+      "monthlyExpected",
+      "currentBalance",
+      "monthlyCollected",
+      "progressPercentage",
+      "progressText",
+      "contributorsCount",
+      "contributorsPercentage",
+      "monthlyOutstanding",
+      "progressApplied",
+      "progressCarryForward",
+      "progressOutstanding",
+      "cumulativeUpToDateCount",
+      "cumulativeArrearsCount",
+      "cumulativeCreditCount",
+      "cumulativeTotalArrears",
+      "cumulativeTotalCredit"
+    ].forEach(id => setText(id, "—"));
+
+    const progressBar = el("progressBar");
+    if (progressBar) {
+      progressBar.style.width = "0%";
+      progressBar.setAttribute("aria-valuenow", "0");
+    }
+  }
+}
+
+
+/* =========================================================
    RENDER DASHBOARD
 ========================================================= */
 
@@ -3936,6 +4064,8 @@ function renderDashboard() {
   renderAttendanceSummary();
 
   renderOperationsSnapshot();
+
+  renderLoadErrors();
 
 }
 
@@ -4066,9 +4196,8 @@ export async function initDashboard() {
     initialized =
       false;
 
-    showError(
-      error
-    );
+    showError(error);
+    renderLoadErrors();
 
   }
 
@@ -4126,9 +4255,8 @@ export async function refreshDashboard() {
   }
   catch (error) {
 
-    showError(
-      error
-    );
+    showError(error);
+    renderLoadErrors();
 
   }
 
