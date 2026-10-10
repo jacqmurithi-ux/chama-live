@@ -442,7 +442,7 @@ BEGIN
         'public.update_group_monthly_contribution_settings(uuid,integer,integer,boolean,numeric)',
         $pat$if v_actor<>v_owner_user_id and coalesce\(v_role,''\) not in \('admin','chairperson'\) then$pat$,
         $rep$if not public.cl_user_has_role(p_group_id, ARRAY['treasurer']::text[]) then$rep$
-      ),
+      )
     ) AS updates(signature, pattern, replacement)
   LOOP
     v_oid := to_regprocedure(r.signature);
