@@ -17,13 +17,12 @@ import { getMyGroup, getMyMember } from "./auth.js";
 import { finesApi } from "./api/fines.js";
 
 const MANUAL_FINE_ROLES = new Set([
-  "chairperson",
   "treasurer",
-  "secretary"
+  "secretary",
+  "vice secretary"
 ]);
 
 const CORRECTION_ROLES = new Set([
-  "chairperson",
   "treasurer"
 ]);
 
