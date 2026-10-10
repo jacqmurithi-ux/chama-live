@@ -4,7 +4,7 @@
  */
 "use strict";
 
-const CACHE_NAME = "chamalive-public-shell-v1";
+const CACHE_NAME = "chamalive-public-shell-v2";
 const SAFE_ASSETS = [
   "/offline.html",
   "/icons/icon-192.svg",
