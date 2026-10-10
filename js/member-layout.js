@@ -580,8 +580,67 @@ function injectStyles() {
     }
 
     @media (max-width: 820px) {
+      /* Keep the actual top navigation available on mobile;
+         use a touch-scrollable row and a reachable dropdown panel. */
+      .topbar-inner {
+        flex-wrap: wrap;
+        align-items: center;
+      }
+
+      .top-nav {
+        display: block !important;
+        order: 3;
+        flex: 1 1 100%;
+        width: 100%;
+        max-width: 100%;
+        overflow: visible;
+      }
+
       .chama-member-nav {
-        display: none !important;
+        display: flex !important;
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: 4px;
+        width: 100%;
+        max-width: 100%;
+        overflow-x: auto;
+        overflow-y: visible;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        padding: 5px 0 8px;
+        touch-action: pan-x;
+      }
+
+      .chama-member-group {
+        flex: 0 0 auto;
+      }
+
+      .chama-member-group > summary {
+        min-height: 44px;
+        padding: 10px 12px;
+        font-size: 13px;
+        touch-action: manipulation;
+      }
+
+      .chama-member-group-panel {
+        position: fixed;
+        top: auto;
+        left: 8px;
+        right: 8px;
+        bottom: calc(72px + env(safe-area-inset-bottom));
+        width: auto;
+        min-width: 0;
+        max-height: min(58vh, 420px);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        z-index: 20002;
+      }
+
+      .chama-member-group-panel a {
+        min-height: 46px;
+        font-size: 14px;
+        white-space: normal;
+        touch-action: manipulation;
       }
 
       /*
