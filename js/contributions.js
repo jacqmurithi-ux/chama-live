@@ -407,33 +407,27 @@ const MEMBER_EVIDENCE_STATUSES = {
 
 const RECORDER_ROLES = new Set([
 
-  "admin",
-
-  "administrator",
-
-  "chairperson",
-
   "treasurer",
 
-  "secretary"
+  "secretary",
+
+  "vice secretary"
 
 ]);
 
 
 const CUSTOM_CONTRIBUTION_ACTIVATOR_ROLES = new Set([
 
-  "chairperson"
+  "treasurer"
 
 ]);
 
 
 const VERIFIER_ROLES = new Set([
 
-  "admin",
-
-  "chairperson",
-
   "secretary",
+
+  "vice secretary",
 
   "treasurer"
 
