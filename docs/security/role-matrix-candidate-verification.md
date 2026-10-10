@@ -1,9 +1,13 @@
 # CHAMA LIVE role matrix candidate verification
 
-## Status — NOT YET VERIFIED
-The development branch and candidate migration are staged, but the SQL migration
-has not been applied to a disposable candidate database and no browser/RPC denial
-tests have been run. Production has not been changed.
+## Status — NOT YET VERIFIED (migration applied to free test project)
+The candidate migration is committed on the development branch and has been
+applied successfully to the free test project `onzaonflquipqmhgslxi` only.
+Post-migration inspection confirms one treasurer-only expense DELETE policy remains;
+the duplicate permissive DELETE policy was removed. Required RPC signatures were
+checked before application. No authenticated browser/direct-RPC denial tests have
+been run yet, so the role matrix remains unverified. Production project
+`ptktftwyltxmtcodyzoa` has not been changed.
 
 Do not apply the migration to production. Use a disposable candidate database with
 synthetic groups and users. Never use live contribution, expense, fine,
@@ -50,7 +54,7 @@ and context-switching UI is also not yet implemented.
 - Audit every SECURITY DEFINER mutation RPC and every direct-membership RLS policy.
   The initial migration intentionally rewrites only identified role guards and
   policies; any remaining treasury mutation path is a blocker.
-- Check SQL migration against a disposable clone and run Supabase security advisors.
+- Check SQL migration against the free test project and run Supabase security advisors. Initial security advisor output includes existing RLS-enabled/no-policy findings and one mutable search-path warning; triage these separately before release.
 - Verify the resulting pg_policies definitions and function source after migration.
 - Run browser tests for role-dependent UI and direct RPC denial tests.
 - Production stays locked/read-only until all checks pass and a separate deployment
