@@ -373,6 +373,13 @@ function injectStyles() {
        Wrap the navigation onto its own row instead of putting dropdowns
        inside a horizontally scrolling/clipping container. */
     @media (max-width: 1100px) and (min-width: 821px) {
+      /* Keep the entire header above page content so dropdowns receive taps. */
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 30000 !important;
+        isolation: isolate;
+      }
       .topbar-inner { flex-wrap: wrap; gap: 8px; padding-right: 12px; padding-left: 12px; }
       .topbar .topbar-actions { gap: 6px; }
       .topbar [data-user-name] { max-width: 80px; }
@@ -382,6 +389,9 @@ function injectStyles() {
         overflow: visible; justify-content: flex-start;
       }
       .chama-member-nav {
+        position: relative;
+        z-index: 30001;
+        pointer-events: auto;
         gap: 4px; width: 100%; max-width: 100%;
         flex: 1 1 100%; flex-wrap: wrap; justify-content: flex-start;
       }
@@ -430,6 +440,9 @@ function injectStyles() {
     }
 
     .chama-member-nav summary {
+      pointer-events: auto;
+      position: relative;
+      z-index: 30002;
       display: inline-flex; align-items: center; justify-content: center;
       min-height: 40px; padding: 8px 10px; border-radius: 10px;
       color: #344054; font-size: 12px; font-weight: 700;
@@ -741,6 +754,7 @@ function injectStyles() {
     @media (min-width: 821px) and (max-width: 1100px) {
       .topbar .top-nav { overflow: visible; }
       .chama-member-group-panel {
+        pointer-events: auto;
         z-index: 20002;
         max-height: min(70vh, 520px);
         overflow-y: auto;
