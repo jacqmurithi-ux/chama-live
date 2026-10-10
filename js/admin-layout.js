@@ -642,6 +642,19 @@ function injectStyles() {
       position: relative;
     }
 
+    /* Keep the opened dropdown above adjacent navigation groups in desktop-site mobile view. */
+    .chama-admin-group[open] {
+      z-index: 30003;
+    }
+
+    .chama-admin-group[open] > .chama-admin-group-panel {
+      display: block;
+      visibility: visible;
+      opacity: 1;
+      z-index: 30004;
+      pointer-events: auto;
+    }
+
     .chama-admin-group summary {
       pointer-events: auto;
       position: relative;
