@@ -1772,7 +1772,6 @@ function renderDraftCustomContributionList() {
 
 
   const canActivate =
-    isGroupOwner ||
     CUSTOM_CONTRIBUTION_ACTIVATOR_ROLES.has(
       getCurrentMemberRole()
     );
@@ -7428,7 +7427,6 @@ async function activateExistingCustomContribution(
 ) {
 
   if (
-    !isGroupOwner &&
     !CUSTOM_CONTRIBUTION_ACTIVATOR_ROLES.has(
       getCurrentMemberRole()
     )
@@ -7436,7 +7434,7 @@ async function activateExistingCustomContribution(
 
     showError(
       new Error(
-        "You are not authorised to activate custom contributions."
+        "Only the group treasurer can activate custom contributions."
       )
     );
 
