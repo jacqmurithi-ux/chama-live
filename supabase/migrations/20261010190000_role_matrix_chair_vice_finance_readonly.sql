@@ -260,6 +260,7 @@ WITH CHECK (
   )
 );
 
+DROP POLICY IF EXISTS expenses_delete_finance_role ON public.expenses;
 DROP POLICY IF EXISTS expenses_delete_treasurer_admin ON public.expenses;
 CREATE POLICY expenses_delete_treasurer_admin
 ON public.expenses
@@ -442,11 +443,6 @@ BEGIN
         $pat$if v_actor<>v_owner_user_id and coalesce\(v_role,''\) not in \('admin','chairperson'\) then$pat$,
         $rep$if not public.cl_user_has_role(p_group_id, ARRAY['treasurer']::text[]) then$rep$
       ),
-      (
-        'public.refresh_my_group_contribution_accounting(uuid,text)',
-        $pat$ARRAY\[\s*'chairperson'\s*,\s*'treasurer'\s*,\s*'secretary'\s*,\s*'owner'\s*,\s*'administrator'\s*\]::text\[\]$pat$,
-        $rep$ARRAY['secretary','treasurer']::text[]$rep$
-      )
     ) AS updates(signature, pattern, replacement)
   LOOP
     v_oid := to_regprocedure(r.signature);
