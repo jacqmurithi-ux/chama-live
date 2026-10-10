@@ -2392,9 +2392,22 @@ function applyFinancialReport(
    No direct monthly_closings INSERT.
 ========================================================= */
 
+function canManageFinancialClosing() {
+
+  return String(currentMember?.role || "")
+    .trim()
+    .toLowerCase() === "treasurer";
+
+}
+
+
 async function closeMonth() {
 
   try {
+
+    if (!canManageFinancialClosing()) {
+      throw new Error("Only the group treasurer may close a financial month.");
+    }
 
     clearError();
 
@@ -2816,6 +2829,10 @@ async function reopenMonth() {
 
   try {
 
+    if (!canManageFinancialClosing()) {
+      throw new Error("Only the group treasurer may reopen a financial month.");
+    }
+
     clearError();
 
 
@@ -3204,6 +3221,16 @@ export async function initPage() {
 
     currentMember =
       await getMyMember();
+
+
+    /* Treasury action controls are hidden for non-treasurer roles. */
+    const canManageClosing = canManageFinancialClosing();
+    [closeButton, reopenButton].forEach(button => {
+      if (button) {
+        button.hidden = !canManageClosing;
+        button.disabled = !canManageClosing;
+      }
+    });
 
 
     if (!currentMember) {
