@@ -1,9 +1,18 @@
 # CHAMA LIVE role matrix candidate verification
 
-## Status
-Candidate-only test plan. Do not apply the migration to production. Use a disposable
-candidate database with synthetic groups and users. Never use live contribution,
-expense, fine, payment-evidence, or closing records as test fixtures.
+## Status — NOT YET VERIFIED
+The development branch and candidate migration are staged, but the SQL migration
+has not been applied to a disposable candidate database and no browser/RPC denial
+tests have been run. Production has not been changed.
+
+Do not apply the migration to production. Use a disposable candidate database with
+synthetic groups and users. Never use live contribution, expense, fine,
+payment-evidence, or closing records as test fixtures.
+
+**Release blockers:** audit every direct-membership RLS policy and every
+SECURITY DEFINER financial mutation RPC; helper-backed cross-group admin access
+alone does not prove full platform-wide access. A cross-group admin group-picker
+and context-switching UI is also not yet implemented.
 
 ## Roles to provision
 - Group A and Group B, each with synthetic members for admin, chairperson,
