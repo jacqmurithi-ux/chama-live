@@ -369,13 +369,25 @@ function injectStyles() {
       border-radius: 10px; background: #ffffff; color: #344054;
       box-shadow: none; font-size: 12px; font-weight: 700;
     }
+    /* Android Chrome Desktop-site can expose a desktop CSS width on a phone.
+       Wrap the navigation onto its own row instead of putting dropdowns
+       inside a horizontally scrolling/clipping container. */
     @media (max-width: 1100px) and (min-width: 821px) {
-      .topbar-inner { gap: 8px; padding-right: 12px; padding-left: 12px; }
+      .topbar-inner { flex-wrap: wrap; gap: 8px; padding-right: 12px; padding-left: 12px; }
       .topbar .topbar-actions { gap: 6px; }
       .topbar [data-user-name] { max-width: 80px; }
-      .topbar .top-nav { justify-content: flex-start; overflow-x: auto; scrollbar-width: thin; }
-      .chama-member-nav { gap: 2px; width: max-content; flex-wrap: nowrap; }
-      .chama-member-nav a, .chama-member-nav summary { padding-right: 7px; padding-left: 7px; font-size: 11px; }
+      .topbar .top-nav {
+        display: flex !important; order: 3; flex: 1 1 100%;
+        width: 100%; max-width: 100%; min-width: 0;
+        overflow: visible; justify-content: flex-start;
+      }
+      .chama-member-nav {
+        gap: 4px; width: 100%; max-width: 100%;
+        flex: 1 1 100%; flex-wrap: wrap; justify-content: flex-start;
+      }
+      .chama-member-nav a, .chama-member-nav summary {
+        padding-right: 9px; padding-left: 9px; font-size: 12px;
+      }
     }
     @media (max-width: 820px) {
       .topbar-inner {
@@ -724,35 +736,18 @@ function injectStyles() {
       }
     }
 
-    /* Chrome Android "Desktop site" uses a desktop-sized CSS viewport.
-       Keep dropdowns out of the horizontally scrolling nav clipping area. */
+    /* Keep desktop-site dropdowns attached to their native <details>
+       groups; the parent navigation now wraps and does not clip panels. */
     @media (min-width: 821px) and (max-width: 1100px) {
-      .topbar .top-nav {
-        min-width: 0;
-        overflow-x: auto;
-        overflow-y: visible;
-        -webkit-overflow-scrolling: touch;
-        touch-action: pan-x;
-      }
-      .chama-member-nav {
-        width: max-content;
-        flex: 0 0 auto;
-      }
+      .topbar .top-nav { overflow: visible; }
       .chama-member-group-panel {
-        position: fixed;
-        top: auto;
-        left: 8px;
-        right: 8px;
-        bottom: 12px;
-        width: auto;
-        min-width: 0;
+        z-index: 20002;
         max-height: min(70vh, 520px);
         overflow-y: auto;
         overscroll-behavior: contain;
-        z-index: 20002;
       }
       .chama-member-group-panel a {
-        min-height: 46px;
+        min-height: 44px;
         touch-action: manipulation;
       }
     }
@@ -1149,31 +1144,6 @@ function renderDesktopNavigation() {
     });
 
     details.appendChild(panel);
-
-    /* In Android Chrome's Desktop-site viewport, the nav row can be
-       horizontally scrollable. Reparent open menus to <body> so they
-       are not clipped by that scrolling container. */
-    details.addEventListener("toggle", () => {
-      const compactDesktopViewport =
-        window.matchMedia("(min-width: 821px) and (max-width: 1100px)").matches;
-
-      if (!compactDesktopViewport) {
-        return;
-      }
-
-      if (details.open && panel.parentElement !== document.body) {
-        document.body.appendChild(panel);
-      } else if (!details.open && panel.parentElement === document.body) {
-        details.appendChild(panel);
-      }
-    });
-
-    if (
-      details.open &&
-      window.matchMedia("(min-width: 821px) and (max-width: 1100px)").matches
-    ) {
-      document.body.appendChild(panel);
-    }
 
     nav.appendChild(details);
   }
