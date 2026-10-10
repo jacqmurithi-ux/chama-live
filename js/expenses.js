@@ -137,6 +137,24 @@ function money(value) {
   );
 }
 
+function currentRole() {
+  return String(currentMember?.role || "").trim().toLowerCase();
+}
+
+function canRecordExpense() {
+  return ["secretary", "vice secretary", "treasurer"].includes(currentRole());
+}
+
+function canManageExpenses() {
+  return currentRole() === "treasurer";
+}
+
+function applyExpensePermissions() {
+  const canRecord = canRecordExpense();
+  if (form) form.hidden = !canRecord;
+  if (saveButton) saveButton.disabled = !canRecord;
+}
+
 /* =========================================================
 DATE
 ========================================================= */
@@ -629,6 +647,8 @@ function renderExpenses() {
   const list =
     getFilteredExpenses();
 
+  const canManage = canManageExpenses();
+
   if (!list.length) {
     expenseRows.innerHTML = `
       <tr>
@@ -671,6 +691,7 @@ function renderExpenses() {
         ----------------------------------------------- */
 
         if (
+          canManage &&
           status === "pending"
         ) {
           actions += `
@@ -699,6 +720,7 @@ function renderExpenses() {
         ----------------------------------------------- */
 
         else if (
+          canManage &&
           status === "approved"
         ) {
           actions += `
@@ -717,7 +739,7 @@ function renderExpenses() {
            REJECTED
         ----------------------------------------------- */
 
-        else {
+        else if (canManage) {
           actions += `
             <button
               type="button"
@@ -734,7 +756,7 @@ function renderExpenses() {
            DELETE
         ----------------------------------------------- */
 
-        actions += `
+        if (canManage) actions += `
           <button
             type="button"
             class="btn btn-action-delete"
@@ -807,6 +829,11 @@ CREATE EXPENSE
 
 async function createExpense(event) {
   event.preventDefault();
+
+  if (!canRecordExpense()) {
+    showPageError(new Error("Only the secretary or treasurer may record an expense."));
+    return;
+  }
 
   clearError();
 
@@ -1072,6 +1099,10 @@ async function updateStatus(
   id,
   newStatus
 ) {
+  if (!canManageExpenses()) {
+    throw new Error("Only the treasurer may approve, reject, or restore an expense.");
+  }
+
   const allowed = [
     "pending",
     "approved",
@@ -1168,6 +1199,10 @@ DELETE
 ========================================================= */
 
 async function deleteExpense(id) {
+  if (!canManageExpenses()) {
+    throw new Error("Only the treasurer may delete an expense.");
+  }
+
   if (!id) {
     throw new Error(
       "Expense ID is missing."
@@ -1474,6 +1509,8 @@ export async function initPage() {
         "No member record is linked to this account."
       );
     }
+
+    applyExpensePermissions();
 
     /* =====================================================
        GROUP
