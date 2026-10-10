@@ -1017,6 +1017,32 @@ function renderDesktopNavigation() {
     }
 
     details.appendChild(panel);
+
+    /* In Android Chrome's Desktop-site viewport, the nav row can be
+       horizontally scrollable. Reparent open menus to <body> so they
+       are not clipped by that scrolling container. */
+    details.addEventListener("toggle", () => {
+      const compactDesktopViewport =
+        window.matchMedia("(min-width: 821px) and (max-width: 1100px)").matches;
+
+      if (!compactDesktopViewport) {
+        return;
+      }
+
+      if (details.open && panel.parentElement !== document.body) {
+        document.body.appendChild(panel);
+      } else if (!details.open && panel.parentElement === document.body) {
+        details.appendChild(panel);
+      }
+    });
+
+    if (
+      details.open &&
+      window.matchMedia("(min-width: 821px) and (max-width: 1100px)").matches
+    ) {
+      document.body.appendChild(panel);
+    }
+
     nav.appendChild(details);
   }
 
