@@ -170,12 +170,13 @@ function canCorrectFines() {
 function setPermissions() {
   const manualAllowed = canManageManualFines();
   const correctionAllowed = canCorrectFines();
+  const typeAllowed = roleName(state.member?.role) === "treasurer";
 
   const manualForm = byId("manualFineForm");
   const typeForm = byId("fineTypeForm");
 
   if (manualForm) manualForm.hidden = !manualAllowed;
-  if (typeForm) typeForm.hidden = !manualAllowed;
+  if (typeForm) typeForm.hidden = !typeAllowed;
 
   const officerNote = byId("fineOfficerNote");
   if (officerNote) {
@@ -193,7 +194,7 @@ function setPermissions() {
 
   byId("fineRulesReadonlyNote")?.replaceChildren(
     document.createTextNode(
-      manualAllowed
+      typeAllowed
         ? "Fine types are managed here through the approved backend rule RPC."
         : "Fine types are read-only for this role."
     )
