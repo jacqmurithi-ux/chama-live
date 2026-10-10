@@ -458,5 +458,113 @@ BEGIN
 END;
 $additional_role_guard_updates$;
 
+
+-- Complete the direct-RPC audit for treasury operations. These guarded edits
+-- preserve the existing transaction/idempotency bodies while replacing only
+-- the authorization predicate. A mismatch aborts candidate migration.
+DO $direct_treasury_guard_updates$
+DECLARE
+  r record;
+  v_oid oid;
+  v_definition text;
+  v_updated text;
+BEGIN
+  FOR r IN
+    SELECT *
+    FROM (VALUES
+      (
+        'public.activate_custom_contribution(uuid,uuid,uuid)',
+        $pat$if not exists\s*\(select 1 from public\.groups g where g\.id=p_group_id and g\.owner_user_id=v_auth_user_id\)\s+and not public\.cl_user_has_role\(p_group_id,array\['chairperson'\]::text\[\]\) then$pat$,
+        $rep$if not public.cl_user_has_role(p_group_id,array['treasurer']::text[]) then$rep$
+      ),
+      (
+        'public.generate_next_custom_contribution_period(uuid,uuid,uuid)',
+        $pat$if not exists\s*\(select 1 from public\.groups g where g\.id=p_group_id and g\.owner_user_id=v_auth\)\s+and not public\.cl_user_has_role\(p_group_id,array\['chairperson'\]::text\[\]\)\s*then$pat$,
+        $rep$if not public.cl_user_has_role(p_group_id,array['treasurer']::text[]) then$rep$
+      ),
+      (
+        'public.create_custom_contribution(uuid,text,text,numeric,text,date,date,date,integer,boolean,numeric,uuid)',
+        $pat$IF NOT EXISTS \(SELECT 1 FROM public\.groups g WHERE g\.id=p_group_id AND g\.owner_user_id=v_auth_user_id\)\s+AND NOT public\.cl_user_has_role\(p_group_id,ARRAY\['chairperson','treasurer'\]::text\[\]\) THEN$pat$,
+        $rep$IF NOT public.cl_user_has_role(p_group_id,ARRAY['treasurer']::text[]) THEN$rep$
+      ),
+      (
+        'public.record_custom_contribution_payment(uuid,uuid,uuid,numeric,date,text,text,text,uuid)',
+        $pat$if not exists\s*\(\s*select 1 from public\.groups g\s+where g\.id = p_group_id and g\.owner_user_id = v_auth_user_id\s*\)\s*and not public\.cl_user_has_role\(\s*p_group_id, array\['chairperson','treasurer','secretary'\]::text\[\]\s*\) then$pat$,
+        $rep$if not public.cl_user_has_role(p_group_id, array['secretary','treasurer']::text[]) then$rep$
+      ),
+      (
+        'public.record_contribution_initiative_payment(uuid,uuid,numeric,date,text,text,text,text,uuid)',
+        $pat$public\.can_manage_members\(v_member_group\)$pat$,
+        $rep$public.cl_user_has_role(v_member_group, ARRAY['secretary','treasurer']::text[])$rep$
+      ),
+      (
+        'public.record_recurring_contribution_initiative_payment(uuid,uuid,numeric,date,text,text,text,text,uuid)',
+        $pat$public\.can_manage_members\(v_i\.group_id\)$pat$,
+        $rep$public.cl_user_has_role(v_i.group_id, ARRAY['secretary','treasurer']::text[])$rep$
+      ),
+      (
+        'public.cl_fine_generate_contribution(uuid,uuid,uuid,timestamp with time zone)',
+        $pat$ARRAY\['chairperson','treasurer'\]$pat$,
+        $rep$ARRAY['treasurer']$rep$
+      ),
+      (
+        'public.create_and_record_automatic_charge_payment(uuid,text,uuid,numeric)',
+        $pat$ARRAY\['admin','chairperson','secretary','treasurer'\]$pat$,
+        $rep$ARRAY['secretary','treasurer']$rep$
+      ),
+      (
+        'public.record_charge_payment(uuid,uuid,numeric)',
+        $pat$ARRAY\['admin','chairperson','secretary','treasurer'\]$pat$,
+        $rep$ARRAY['secretary','treasurer']$rep$
+      ),
+      (
+        'public.cl_import_financial_batch_atomic(uuid)',
+        $pat$ARRAY\[\s*'admin'\s*,\s*'chairperson'\s*,\s*'secretary'\s*,\s*'treasurer'\s*\]$pat$,
+        $rep$ARRAY['treasurer']$rep$
+      ),
+      (
+        'public.cl_import_financial_batch_atomic(uuid)',
+        $pat$ARRAY\['admin','chairperson','treasurer'\]$pat$,
+        $rep$ARRAY['treasurer']$rep$
+      ),
+      (
+        'public.update_group_contribution_cycle_settings(uuid,smallint,smallint)',
+        $pat$if auth\.uid\(\) <> v_owner_user_id and coalesce\(v_role,''\) not in \('admin','chairperson'\) then$pat$,
+        $rep$if not public.cl_user_has_role(p_group_id, ARRAY['treasurer']::text[]) then$rep$
+      ),
+      (
+        'public.update_group_contribution_settings(uuid,smallint)',
+        $pat$IF NOT public\.can_manage_members\(p_group_id\) THEN RAISE EXCEPTION 'Not authorized'; END IF;$pat$,
+        $rep$IF NOT public.cl_user_has_role(p_group_id, ARRAY['treasurer']::text[]) THEN RAISE EXCEPTION 'Not authorized'; END IF;$rep$
+      ),
+      (
+        'public.update_group_monthly_contribution_settings(uuid,integer,integer,boolean,numeric)',
+        $pat$if v_actor<>v_owner_user_id and coalesce\(v_role,''\) not in \('admin','chairperson'\) then$pat$,
+        $rep$if not public.cl_user_has_role(p_group_id, ARRAY['treasurer']::text[]) then$rep$
+      ),
+      (
+        'public.refresh_my_group_contribution_accounting(uuid,text)',
+        $pat$ARRAY\[\s*'chairperson'\s*,\s*'treasurer'\s*,\s*'secretary'\s*,\s*'owner'\s*,\s*'administrator'\s*\]::text\[\]$pat$,
+        $rep$ARRAY['secretary','treasurer']::text[]$rep$
+      )
+    ) AS updates(signature, pattern, replacement)
+  LOOP
+    v_oid := to_regprocedure(r.signature);
+    IF v_oid IS NULL THEN
+      RAISE EXCEPTION 'Required treasury RPC not found: %', r.signature;
+    END IF;
+
+    v_definition := pg_get_functiondef(v_oid);
+    v_updated := regexp_replace(v_definition, r.pattern, r.replacement, 'gi');
+
+    IF v_updated = v_definition THEN
+      RAISE EXCEPTION 'Expected treasury authorization guard not found in %', r.signature;
+    END IF;
+
+    EXECUTE v_updated;
+  END LOOP;
+END;
+$direct_treasury_guard_updates$;
+
 COMMENT ON FUNCTION public.cl_user_has_role(uuid,text[]) IS
   'Role matrix: vice chairperson inherits chairperson; vice secretary inherits secretary; platform admin is not implicitly granted treasurer-only permissions.';
