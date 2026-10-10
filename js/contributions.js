@@ -6510,12 +6510,9 @@ function openCustomContributionEditor() {
     return;
   }
 
-  if (
-    !isGroupOwner &&
-    !["admin", "chairperson", "treasurer"].includes(getCurrentMemberRole())
-  ) {
+  if (getCurrentMemberRole() !== "treasurer") {
     showCustomContributionEditorMessage(
-      "Only the group owner, chairperson or treasurer can create a custom contribution draft.",
+      "Only the group treasurer can create a custom contribution draft.",
       "error"
     );
     return;
@@ -7981,10 +7978,8 @@ export async function initContributions(
       Boolean(applicationContext.isOwner);
 
     if (newCustomContributionButton) {
-      newCustomContributionButton.hidden = !(
-        isGroupOwner ||
-        ["admin", "chairperson", "treasurer"].includes(getCurrentMemberRole())
-      );
+      newCustomContributionButton.hidden =
+        getCurrentMemberRole() !== "treasurer";
     }
 
 
