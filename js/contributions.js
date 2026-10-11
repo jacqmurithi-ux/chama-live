@@ -406,23 +406,20 @@ const MEMBER_EVIDENCE_STATUSES = {
 
 
 const RECORDER_ROLES = new Set([
-
+  "admin",
   "treasurer"
-
 ]);
 
 
 const CUSTOM_CONTRIBUTION_ACTIVATOR_ROLES = new Set([
-
+  "admin",
   "treasurer"
-
 ]);
 
 
 const VERIFIER_ROLES = new Set([
-
+  "admin",
   "treasurer"
-
 ]);
 
 
