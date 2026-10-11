@@ -471,8 +471,18 @@ async function submitGroupApplication(
    */
 
   setStatus(
-    "✓ Email confirmed and group application submitted successfully. Your application is now pending platform-admin review."
+    "✓ Email confirmed and group application submitted successfully. Opening your applicant sign-in now..."
   );
+
+  /*
+   * Applicant authentication is now independent of group approval.
+   * Route to a limited holding page, not to a group dashboard.
+   * Group/member creation remains exclusively behind platform-admin
+   * approval. This change is on the isolated preview branch only.
+   */
+  window.setTimeout(() => {
+    window.location.replace("application-pending.html");
+  }, 900);
 
 
   /*
