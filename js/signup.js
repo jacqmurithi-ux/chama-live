@@ -77,18 +77,16 @@ import {
 ========================================================= */
 
 /*
- * Production confirmation callback.
+ * Environment-specific confirmation callback.
  *
- * Supabase Authentication must also have this exact URL
- * configured under:
- *
- * Authentication → URL Configuration → Redirect URLs
- *
- * https://chamalive.co.ke/confirm.html
+ * Use the current site origin so isolated preview signups
+ * return to this preview, not the production portal.
+ * The callback URL must be allowlisted in the TEST Supabase
+ * project's Authentication → URL Configuration → Redirect URLs.
  */
 
 const CONFIRM_PAGE =
-  "https://chamalive.co.ke/confirm.html";
+  new URL("/confirm.html", window.location.origin).href;
 
 
 /* =========================================================
