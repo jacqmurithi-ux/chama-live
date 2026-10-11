@@ -29,16 +29,20 @@ const ROLE_ALIASES = new Map([
   ["vice secretary", "vice secretary"]
 ]);
 
+export function getGroupRoles(member = {}) {
+  // A group administrator is not a platform administrator and must
+  // never satisfy one of the three expense approval slots.
+  const technicalRole = normalize(member.role || "member");
+  const officeRole = normalize(member.actual_position_name || member.actual_position);
+  const normalizeRole = raw => ROLE_ALIASES.get(raw) || raw;
+  const roles = new Set([normalizeRole(technicalRole)]);
+  if (officeRole) roles.add(normalizeRole(officeRole));
+  return roles;
+}
+
 export function normalizeGroupRole(member = {}) {
-  // Actual office is the preferred source for vice-office holders;
-  // the technical membership role remains a separate field.
-  const raw = normalize(
-    member.actual_position_name ||
-    member.actual_position ||
-    member.role ||
-    "member"
-  );
-  return ROLE_ALIASES.get(raw) || raw;
+  const roles = getGroupRoles(member);
+  return roles.has("admin") ? "admin" : [...roles][0] || "member";
 }
 
 const GROUP_MANAGEMENT = new Set([
@@ -135,25 +139,42 @@ const POLICY = {
   }
 };
 
-const roleCan = (role, page, action) => {
+const roleCan = (roles, page, action, member) => {
   const rule = POLICY[page]?.[action];
-  return rule instanceof Set && rule.has(role);
+  if (!(rule instanceof Set)) return false;
+
+  // Platform administrators and group administrators cannot act as
+  // any of the three required expense approver slots.
+  if (
+    normalize(page) === "expenses" &&
+    ["approve-chair", "approve-treasurer", "approve-secretary"].includes(normalize(action)) &&
+    (roles.has("admin") || member?.is_platform_admin === true)
+  ) return false;
+
+  return [...roles].some(role => rule.has(role));
 };
 
 export function canWrite(page, action, member, options = {}) {
-  // Platform Admin is a distinct authority, supplied only by a
-  // verified platform-admin guard—not inferred from group role.
-  if (options.isVerifiedPlatformAdmin === true) return true;
-  const role = normalizeGroupRole(member);
-  return roleCan(role, normalize(page), normalize(action));
+  // Platform admin is intentionally not a group-office permission.
+  // A verified platform-admin guard does not satisfy group approvals.
+  const roles = getGroupRoles(member);
+  if (
+    options.isVerifiedPlatformAdmin === true &&
+    normalize(page) === "expenses" &&
+    ["approve-chair", "approve-treasurer", "approve-secretary"].includes(normalize(action))
+  ) return false;
+  return roleCan(roles, normalize(page), normalize(action), member);
 }
 
 export function pageHasReadOnlyAccess(page, member, options = {}) {
   if (options.isVerifiedPlatformAdmin === true) return false;
-  const role = normalizeGroupRole(member);
+  const roles = getGroupRoles(member);
   const rules = POLICY[normalize(page)];
   if (!rules) return true;
-  return Object.keys(rules).every(action => !roleCan(role, normalize(page), action) || action === "view");
+  const readActions = new Set(["view", "search", "filter", "export"]);
+  return Object.keys(rules).every(action =>
+    readActions.has(action) || !roleCan(roles, normalize(page), action, member)
+  );
 }
 
 function ensureBadge(root) {
