@@ -146,8 +146,8 @@ function currentRole() {
     currentMember?.actual_position ||
     technicalRole
   ).trim().toLowerCase();
-  if (["vice-chairperson", "vice chair"].includes(office)) return "vice chairperson";
-  if (["vice-secretary"].includes(office)) return "vice secretary";
+  if (["vice-chairperson", "vice_chairperson", "vice chair"].includes(office)) return "vice chairperson";
+  if (["vice-secretary", "vice_secretary"].includes(office)) return "vice secretary";
   return office;
 }
 
@@ -167,7 +167,9 @@ function canManageExpenses() {
 
 function applyExpensePermissions() {
   const canRecord = canRecordExpense();
-  if (form) form.hidden = !canRecord;
+  // Keep the page and form visible for readable roles. The shared
+  // permission helper disables the form fields for non-writers.
+  if (form) form.hidden = false;
   if (saveButton) saveButton.disabled = !canRecord;
 }
 
@@ -769,7 +771,7 @@ async function createExpense(event) {
   event.preventDefault();
 
   if (!canRecordExpense()) {
-    showPageError(new Error("Only the secretary or treasurer may record an expense."));
+    showPageError(new Error("Only the Chairperson/Vice Chairperson, Treasurer or Secretary/Vice Secretary may submit an expense."));
     return;
   }
 
