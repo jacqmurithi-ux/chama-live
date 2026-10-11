@@ -1,5 +1,5 @@
 -- Candidate-only safety gate for the three-person expense approval workflow.
--- expenses.recorded_by references public.members.id, not auth.users.id.
+-- expenses.recorded_by references auth.users.id in the verified schema.
 -- Apply to the candidate database only until the release gate is approved.
 CREATE OR REPLACE FUNCTION public.submit_expense_approval(
   p_expense_id uuid,
@@ -14,7 +14,6 @@ AS $function$
 DECLARE
   v_user_id uuid := auth.uid();
   v_expense public.expenses%ROWTYPE;
-  v_recorder public.members%ROWTYPE;
   v_approver public.members%ROWTYPE;
   v_member_count integer;
   v_slot text;
@@ -45,21 +44,12 @@ BEGIN
     RAISE EXCEPTION 'Only pending expenses can receive approvals';
   END IF;
 
-  -- Fail closed if recorded_by is NULL, stale, or points outside this group.
+  -- Fail closed for legacy expenses without a recorder. recorded_by references auth.users.id.
   IF v_expense.recorded_by IS NULL THEN
     RAISE EXCEPTION 'Expense recorder is missing; approval is blocked';
   END IF;
 
-  SELECT m.* INTO v_recorder
-  FROM public.members m
-  WHERE m.id = v_expense.recorded_by
-    AND m.group_id = v_expense.group_id;
-
-  IF NOT FOUND THEN
-    RAISE EXCEPTION 'Expense recorder cannot be resolved to a member in this group; approval is blocked';
-  END IF;
-
-  IF v_recorder.user_id = v_user_id OR v_recorder.auth_user_id = v_user_id THEN
+  IF v_expense.recorded_by = v_user_id THEN
     RAISE EXCEPTION 'The expense recorder cannot approve or reject their own expense';
   END IF;
 
