@@ -202,8 +202,8 @@ export function pageHasReadOnlyAccess(page, member, options = {}) {
   const rules = POLICY[normalize(page)];
   if (!rules) return true;
   const readActions = new Set(["view", "search", "filter", "export"]);
-  return Object.keys(rules).every(action =>
-    readActions.has(action) || !roleCan(roles, normalize(page), action, member)
+  return !Object.keys(rules).some(action =>
+    !readActions.has(action) && roleCan(roles, normalize(page), action, member)
   );
 }
 
