@@ -208,25 +208,35 @@ export function pageHasReadOnlyAccess(page, member, options = {}) {
 }
 
 function ensureBadge(root) {
-  if (root.querySelector("[data-role-view-only-badge]")) return;
+  if (!root) return;
+  const isControl = ["FORM", "BUTTON", "FIELDSET", "DETAILS"].includes(root.tagName);
+  const container = isControl ? root.parentElement : root;
+  if (container?.querySelector?.("[data-role-view-only-badge]")) return;
   const badge = document.createElement("span");
   badge.dataset.roleViewOnlyBadge = "true";
   badge.className = "role-view-only-badge";
   badge.textContent = "View only";
   badge.setAttribute("role", "status");
   badge.style.cssText = "display:inline-flex;align-items:center;margin-inline-start:.5rem;padding:.2rem .5rem;border:1px solid #d0d5dd;border-radius:999px;color:#475467;background:#f8fafc;font-size:.75rem;font-weight:600";
-  const heading = root.querySelector("h1, [data-page-title]");
+  if (isControl && root.parentElement) {
+    root.insertAdjacentElement("beforebegin", badge);
+    return;
+  }
+  const heading = root.querySelector?.("h1, [data-page-title]");
   (heading || root.firstElementChild || root).appendChild(badge);
 }
 
 function disableControl(control) {
   if (control.tagName === "FORM") {
-    // Capture phase prevents page-level submit handlers from issuing
-    // requests when a read-only form is submitted by Enter or script.
-    control.addEventListener("submit", event => {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-    }, { capture: true });
+    // Bind the submit guard once; it blocks Enter/script submissions before
+    // page-level handlers can issue requests.
+    if (control.dataset.permissionSubmitGuarded !== "true") {
+      control.addEventListener("submit", event => {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }, { capture: true });
+      control.dataset.permissionSubmitGuarded = "true";
+    }
     control.querySelectorAll("input, select, textarea, button").forEach(field => {
       field.disabled = true;
       field.setAttribute("aria-disabled", "true");
@@ -239,6 +249,7 @@ function disableControl(control) {
     control.setAttribute("aria-disabled", "true");
   } else if ("disabled" in control) {
     control.disabled = true;
+    control.setAttribute("aria-disabled", "true");
   } else {
     control.setAttribute("aria-disabled", "true");
     control.setAttribute("tabindex", "-1");
@@ -246,6 +257,8 @@ function disableControl(control) {
   control.dataset.permissionDenied = "true";
   control.title = control.title || "You have view-only access.";
 }
+
+const permissionObservers = new WeakMap();
 
 export function applyRolePermissions({
   page,
@@ -257,22 +270,57 @@ export function applyRolePermissions({
   const context = { isVerifiedPlatformAdmin };
   let deniedCount = 0;
 
-  root.querySelectorAll("[data-permission-action]").forEach(control => {
+  const enforce = control => {
+    if (!control || !control.dataset) return;
     const declaredPage = normalize(control.dataset.permissionPage || pageKey);
     if (declaredPage !== pageKey) return;
     const action = normalize(control.dataset.permissionAction);
     if (!canWrite(pageKey, action, member, context)) {
+      const alreadyDenied = control.dataset.permissionDenied === "true";
       disableControl(control);
-      if (["DETAILS", "FIELDSET"].includes(control.tagName)) ensureBadge(control);
-      deniedCount++;
+      if (["FORM", "DETAILS", "FIELDSET"].includes(control.tagName)) ensureBadge(control);
+      if (!alreadyDenied) deniedCount++;
     }
-  });
+  };
+
+  const scan = node => {
+    if (!node || node.nodeType !== 1) return;
+    // Dynamic descendants of a denied form must remain disabled even if a
+    // page renderer inserts them after the first permission pass.
+    const deniedForm = node.closest?.('form[data-permission-denied="true"]');
+    if (deniedForm) {
+      if (node.matches?.("input, select, textarea, button")) {
+        node.disabled = true;
+        node.setAttribute("aria-disabled", "true");
+      }
+      node.querySelectorAll?.("input, select, textarea, button").forEach(field => {
+        field.disabled = true;
+        field.setAttribute("aria-disabled", "true");
+      });
+    }
+    if (node.matches?.("[data-permission-action]")) enforce(node);
+    node.querySelectorAll?.("[data-permission-action]").forEach(enforce);
+  };
+
+  root.querySelectorAll("[data-permission-action]").forEach(enforce);
+
+  // Observe dynamically rendered rows/modals/actions. Each page root gets one
+  // observer, and controls are still authorized using the same closed policy.
+  if (typeof MutationObserver !== "undefined" && !permissionObservers.has(root)) {
+    const target = root === document ? document.documentElement : root;
+    if (target) {
+      const observer = new MutationObserver(records => {
+        for (const record of records) {
+          record.addedNodes.forEach(scan);
+        }
+      });
+      observer.observe(target, { childList: true, subtree: true });
+      permissionObservers.set(root, observer);
+    }
+  }
 
   // A page is never hidden solely because the role is read-only.
-  // Page modules should mark mutation forms/buttons explicitly.
-  if (pageHasReadOnlyAccess(pageKey, member, context)) {
-    ensureBadge(root);
-  }
+  if (pageHasReadOnlyAccess(pageKey, member, context)) ensureBadge(root);
 
   return { page: pageKey, deniedCount };
 }
