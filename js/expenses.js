@@ -116,6 +116,9 @@ let groupId =
 let expenses =
   [];
 
+let expenseApprovals =
+  [];
+
 let initialized =
   false;
 
@@ -158,9 +161,16 @@ function canRecordExpense() {
   ].includes(currentRole());
 }
 
-// Fail closed: this page's current schema stores one status only and
-// cannot prove the three distinct Chair, Treasurer and Secretary slots.
-// The candidate RLS migration also denies direct status updates/deletes.
+// Approval eligibility is only a UI hint. The database RPC enforces the
+// three distinct approval slots and blocks self-approval.
+function canApproveExpense() {
+  return [
+    "chairperson", "vice chairperson",
+    "treasurer",
+    "secretary", "vice secretary"
+  ].includes(currentRole());
+}
+
 function canManageExpenses() {
   return false;
 }
@@ -487,6 +497,20 @@ async function loadExpenses() {
 
   expenses =
     data || [];
+
+  const {
+    data: approvalData,
+    error: approvalError
+  } = await supabase
+    .from("expense_approvals")
+    .select("expense_id, approver_user_id, approval_slot, decision")
+    .eq("group_id", groupId);
+
+  if (approvalError) {
+    throw approvalError;
+  }
+
+  expenseApprovals = approvalData || [];
 }
 
 /* =========================================================
@@ -701,10 +725,31 @@ function renderExpenses() {
             expense.category
           );
 
-        const actions = `
-          <span class="muted" role="status">
-            Approval actions unavailable until all three distinct approval slots are supported.
-          </span>
+        const approvedSlots = expenseApprovals.filter(
+          approval => approval.expense_id === expense.id &&
+            approval.decision === "approved"
+        ).length;
+
+        const alreadyVoted = expenseApprovals.some(
+          approval => approval.expense_id === expense.id &&
+            approval.approver_user_id === currentUser?.id
+        );
+
+        const canVote = status === "pending" &&
+          canApproveExpense() &&
+          expense.recorded_by !== currentUser?.id &&
+          !alreadyVoted;
+
+        const actions = canVote ? `
+          <button type="button" data-action="approve" data-id="${escapeHtml(expense.id)}">
+            Approve
+          </button>
+          <button type="button" data-action="reject" data-id="${escapeHtml(expense.id)}">
+            Reject
+          </button>
+          <span class="muted" role="status">${approvedSlots}/3 approvals</span>
+        ` : `
+          <span class="muted" role="status">${approvedSlots}/3 approvals</span>
         `;
 
         return `
@@ -1039,99 +1084,41 @@ async function updateStatus(
   id,
   newStatus
 ) {
-  if (!canManageExpenses()) {
-    throw new Error("Only the treasurer may approve, reject, or restore an expense.");
+  const decision = String(newStatus || "").trim().toLowerCase();
+
+  if (!["approved", "rejected"].includes(decision)) {
+    throw new Error("Only approve or reject decisions are accepted.");
   }
 
-  const allowed = [
-    "pending",
-    "approved",
-    "rejected"
-  ];
-
-  const status =
-    String(
-      newStatus || ""
-    )
-      .trim()
-      .toLowerCase();
-
-  if (
-    !allowed.includes(status)
-  ) {
-    throw new Error(
-      "Invalid expense status."
-    );
+  if (!id || !groupId) {
+    throw new Error("Expense or group context is missing.");
   }
 
-  if (!id) {
-    throw new Error(
-      "Expense ID is missing."
-    );
-  }
-
-  if (!groupId) {
-    throw new Error(
-      "Group context is missing."
-    );
-  }
-
-  const {
-    data,
-    error
-  } =
-    await supabase
-      .from("expenses")
-      .update({
-        approval_status:
-          status
-      })
-      .eq(
-        "id",
-        id
-      )
-      .eq(
-        "group_id",
-        groupId
-      )
-      .select(`
-        id,
-        group_id,
-        description,
-        category,
-        amount,
-        date,
-        recorded_by,
-        receipt_url,
-        approval_status,
-        created_at
-      `)
-      .single();
+  const { data, error } = await supabase.rpc("submit_expense_approval", {
+    p_expense_id: id,
+    p_decision: decision,
+    p_note: null
+  });
 
   if (error) {
     throw error;
   }
 
-  if (!data) {
-    throw new Error(
-      "Expense was not updated. You may not have permission to modify it."
-    );
-  }
-
   await loadExpenses();
-
   renderMetrics();
-
   renderExpenses();
 
+  const resultingStatus = data?.approval_status || "pending";
+  const approvedSlots = Number(data?.approved_slots || 0);
   showStatus(
-    `Expense marked ${status}.`
+    resultingStatus === "approved"
+      ? "Expense approved by all three required offices."
+      : resultingStatus === "rejected"
+        ? "Expense rejected."
+        : `Approval recorded. ${approvedSlots}/3 approvals received.`
   );
 
-  setTimeout(
-    () => showStatus(""),
-    3000
-  );
+  setTimeout(() => showStatus(""), 3000);
 }
 
 /* =========================================================
