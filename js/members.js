@@ -2540,16 +2540,23 @@ async function changeMemberStatus(memberId, button) {
   }
 
   try {
-    const { data, error } = await supabase
-      .from("members")
-      .update({ status: nextStatus })
-      .eq("id", member.id)
-      .eq("group_id", groupId)
-      .eq("status", member.status)
-      .select("id, status");
+    const { data, error } = await supabase.rpc(
+      "cl_set_member_status",
+      {
+        p_member_id: member.id,
+        p_status: nextStatus
+      }
+    );
 
     if (error) throw error;
-    if (!Array.isArray(data) || data.length !== 1) {
+    const changed = Array.isArray(data)
+      ? data.some(row =>
+          String(row.member_id || row.id) === String(member.id) &&
+          normalize(row.status) === nextStatus
+        )
+      : Boolean(data && normalize(data.status) === nextStatus);
+
+    if (!changed) {
       throw new Error(
         "The member status was not changed. Refresh the directory and verify your permissions."
       );
