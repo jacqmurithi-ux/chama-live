@@ -146,7 +146,7 @@ function normalizeOffice(value) {
     .toLowerCase()
     .replaceAll("_", " ")
     .replaceAll("-", " ")
-    .replace(/\\s+/g, " ");
+    .replace(/\s+/g, " ");
 }
 
 function currentRole() {
