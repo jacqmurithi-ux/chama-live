@@ -140,17 +140,39 @@ function money(value) {
   );
 }
 
+function normalizeOffice(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replaceAll("_", " ")
+    .replaceAll("-", " ")
+    .replace(/\\s+/g, " ");
+}
+
 function currentRole() {
-  const technicalRole = String(currentMember?.role || "member").trim().toLowerCase();
-  // Group Admin remains distinct from any declared group office.
+  const technicalRole = normalizeOffice(currentMember?.role || "member");
+  const position = normalizeOffice(currentMember?.actual_position);
+  const positionName = normalizeOffice(currentMember?.actual_position_name);
+
+  // Group Admin is not an expense approval office.
   if (technicalRole === "admin" || technicalRole === "administrator") return "admin";
-  const office = String(
-    currentMember?.actual_position_name ||
-    currentMember?.actual_position ||
-    technicalRole
-  ).trim().toLowerCase();
-  if (["vice-chairperson", "vice_chairperson", "vice chair"].includes(office)) return "vice chairperson";
-  if (["vice-secretary", "vice_secretary"].includes(office)) return "vice secretary";
+
+  const offices = new Set([
+    "chairperson", "vice chairperson", "chair", "vice chair",
+    "treasurer", "secretary", "vice secretary"
+  ]);
+
+  // Prefer the structured office field when it contains a real office.
+  // Older member rows sometimes have a generic "member"/"other" value
+  // in actual_position while actual_position_name carries the office.
+  const office = offices.has(position)
+    ? position
+    : offices.has(positionName)
+      ? positionName
+      : technicalRole;
+
+  if (["vice chairperson", "chair", "vice chair"].includes(office)) return office === "chair" ? "chairperson" : "vice chairperson";
+  if (office === "vice secretary") return "vice secretary";
   return office;
 }
 
