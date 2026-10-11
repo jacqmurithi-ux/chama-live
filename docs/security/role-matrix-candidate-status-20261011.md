@@ -55,7 +55,7 @@ Seven distinct synthetic Auth users are still required for:
 - Treasurer
 - Ordinary Member
 
-No supported Auth-user provisioning action was available through the connected tools. Do not insert directly into `auth.users` or repurpose the real account. Create synthetic users through the isolated test project's Supabase Dashboard → Authentication → Users, then link their generated UUIDs to the designated test member fixtures through a controlled test-only operation.
+No supported Auth-user provisioning action was available through the connected tools. Do not insert directly into `auth.users` or repurpose the real account. Create synthetic users through the isolated test project's Supabase Dashboard → Authentication → Users, then link their generated UUIDs to the designated test member fixtures through a controlled test-only operation. The existing position-history trigger also rejects direct office-position edits; Vice Chair/Vice Secretary fixtures must be assigned through `set_member_actual_position()` after authentication is linked, not by bypassing the trigger.
 
 **Authenticated positive/negative tests have not yet passed.** In particular, role-specific RLS/RPC tests, member privacy tests, canonical contribution idempotency/closed-period regressions, and the full expense approval matrix remain pending.
 
