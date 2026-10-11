@@ -407,6 +407,7 @@ const MEMBER_EVIDENCE_STATUSES = {
 
 const RECORDER_ROLES = new Set([
 
+  "admin",
   "treasurer"
 
 ]);
@@ -414,6 +415,7 @@ const RECORDER_ROLES = new Set([
 
 const CUSTOM_CONTRIBUTION_ACTIVATOR_ROLES = new Set([
 
+  "admin",
   "treasurer"
 
 ]);
@@ -421,6 +423,7 @@ const CUSTOM_CONTRIBUTION_ACTIVATOR_ROLES = new Set([
 
 const VERIFIER_ROLES = new Set([
 
+  "admin",
   "treasurer"
 
 ]);
@@ -6506,9 +6509,9 @@ function openCustomContributionEditor() {
     return;
   }
 
-  if (getCurrentMemberRole() !== "treasurer") {
+  if (!["admin", "treasurer"].includes(getCurrentMemberRole())) {
     showCustomContributionEditorMessage(
-      "Only the group treasurer can create a custom contribution draft.",
+      "Only the group admin or treasurer can create a custom contribution draft.",
       "error"
     );
     return;
@@ -7067,7 +7070,7 @@ async function saveCustomContributionDraft(
        Treasurers may create drafts but cannot activate them.
     ===================================================== */
 
-    if (getCurrentMemberRole() === "treasurer") {
+    if (["admin", "treasurer"].includes(getCurrentMemberRole())) {
       await loadDraftCustomContributions();
       await loadActiveCustomContributions();
       renderDraftCustomContributionList();
@@ -7427,7 +7430,7 @@ async function activateExistingCustomContribution(
 
     showError(
       new Error(
-        "Only the group treasurer can activate custom contributions."
+        "Only the group admin or treasurer can activate custom contributions."
       )
     );
 
@@ -7975,7 +7978,7 @@ export async function initContributions(
 
     if (newCustomContributionButton) {
       newCustomContributionButton.hidden =
-        getCurrentMemberRole() !== "treasurer";
+        !["admin", "treasurer"].includes(getCurrentMemberRole());
     }
 
 
