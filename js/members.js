@@ -210,6 +210,11 @@ function effectiveMemberRoles(member = currentMember) {
   return roles;
 }
 
+function isGroupAdmin(member = currentMember) {
+  const role = normalizedOfficeRole(member?.role || "member");
+  return role === "admin" || role === "administrator";
+}
+
 function isManager() {
   const roles = effectiveMemberRoles();
   return ["admin", "administrator", "chairperson", "vice chairperson", "treasurer"]
@@ -629,6 +634,16 @@ function createMemberRow(member) {
             Edit
           </button>
         ` : ""}
+        ${isGroupAdmin() ? `
+          <button
+            type="button"
+            class="btn btn-small"
+            data-member-action="toggle-status"
+            data-member-id="${escapeHtml(member.id)}"
+          >
+            ${normalize(member.status) === "active" ? "Mark Inactive" : "Reactivate"}
+          </button>
+        ` : ""}
       </div>
     </td>
   `;
@@ -761,6 +776,16 @@ function createMemberCard(member) {
           Edit
         </button>
       ` : ""}
+        ${isGroupAdmin() ? `
+          <button
+            type="button"
+            class="btn btn-small"
+            data-member-action="toggle-status"
+            data-member-id="${escapeHtml(member.id)}"
+          >
+            ${normalize(member.status) === "active" ? "Mark Inactive" : "Reactivate"}
+          </button>
+        ` : ""}
 
     </div>
   `;
@@ -2485,6 +2510,77 @@ async function inviteMember(memberId) {
 }
 
 
+async function changeMemberStatus(memberId, button) {
+  if (!isGroupAdmin()) {
+    showError("Only the group admin can change a member's status.");
+    return;
+  }
+
+  const member = memberById(memberId);
+  if (!member) {
+    showError("The member could not be found. Refresh the directory and try again.");
+    return;
+  }
+
+  const isActive = normalize(member.status) === "active";
+  const nextStatus = isActive ? "inactive" : "active";
+  const memberLabel = text(member.name) || "This member";
+  const actionLabel = isActive ? "mark inactive" : "reactivate";
+
+  const confirmed = window.confirm(
+    isActive
+      ? `Mark ${memberLabel} as inactive? Their financial history will be retained. Confirm separately how your group handles any future obligations before using this for accounting decisions.`
+      : `Reactivate ${memberLabel}? Their existing historical records will remain linked to the same member.`
+  );
+  if (!confirmed) return;
+
+  if (button) {
+    button.disabled = true;
+    button.textContent = isActive ? "Marking inactive…" : "Reactivating…";
+  }
+
+  try {
+    const { data, error } = await supabase.rpc(
+      "cl_set_member_status",
+      {
+        p_member_id: member.id,
+        p_status: nextStatus
+      }
+    );
+
+    if (error) throw error;
+    const changed = Array.isArray(data)
+      ? data.some(row =>
+          String(row.member_id || row.id) === String(member.id) &&
+          normalize(row.status) === nextStatus
+        )
+      : Boolean(data && normalize(data.status) === nextStatus);
+
+    if (!changed) {
+      throw new Error(
+        "The member status was not changed. Refresh the directory and verify your permissions."
+      );
+    }
+
+    await loadMembers();
+    filterMembers();
+    showSuccess(
+      `${memberLabel} was marked ${nextStatus}. Historical financial records were not deleted.`
+    );
+  } catch (error) {
+    console.error("CHAMA LIVE: member status change failed:", error);
+    showError(
+      error?.message ||
+      "Unable to change this member's status. No financial history was intentionally deleted."
+    );
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = actionLabel;
+    }
+  }
+}
+
 /* =========================================================
    ACTION DELEGATION
 ========================================================= */
@@ -2516,6 +2612,11 @@ function handleMemberAction(event) {
 
   if (action === "edit") {
     openEditMember(memberId);
+    return;
+  }
+
+  if (action === "toggle-status") {
+    void changeMemberStatus(memberId, button);
   }
 }
 

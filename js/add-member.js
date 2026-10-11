@@ -242,7 +242,7 @@ function mapRpcError(error) {
       "Your account must be an active member of this group.",
 
     MEMBER_MANAGEMENT_NOT_AUTHORIZED:
-      "Only a group admin, chairperson, or treasurer can add members.",
+      "You have view-only access to member management. Contact your group admin if you need write access.",
 
     MEMBER_NUMBER_ALREADY_EXISTS:
       "That member number already exists in this group.",
@@ -594,10 +594,16 @@ async function loadMonthlyContributionType(
     the known contribution_types relationship.
   */
 
+  /*
+    Use the canonical Monthly type by its stable code first.
+    Other CHAMA LIVE pages rely on contribution_types.id and
+    code='monthly'; matching only a display label can select
+    a row that cannot be used by the member-creation RPC.
+  */
   const result =
     await supabase
       .from("contribution_types")
-      .select("*")
+      .select("id,group_id,name,code")
       .eq("group_id", groupId);
 
   if (result.error) {
@@ -615,31 +621,26 @@ async function loadMonthlyContributionType(
       : [];
 
   const monthly =
-    rows.find((row) => {
-      const type =
-        String(
-          row.type ??
-          row.frequency ??
-          row.name ??
-          ""
-        ).toLowerCase();
-
-      const name =
-        String(
-          row.name ??
-          ""
-        ).toLowerCase();
-
-      return (
-        type === "monthly" ||
-        name === "monthly"
-      );
-    });
+    rows.find((row) =>
+      String(row.code || "").trim().toLowerCase() === "monthly" &&
+      Boolean(row.id)
+    ) ||
+    rows.find((row) =>
+      String(row.name || "").trim().toLowerCase() === "monthly" &&
+      Boolean(row.id)
+    ) ||
+    null;
 
   state.monthlyType =
-    monthly || null;
+    monthly;
 
   renderMonthlyType();
+
+  if (!monthly) {
+    throw new Error(
+      "The group's canonical Monthly contribution type could not be loaded with its ID. Check Group Management → Contribution Types before adding a member."
+    );
+  }
 
   return monthly;
 }
@@ -2005,16 +2006,22 @@ export async function addMemberInit() {
     );
 
     const role = String(context.role || context.member?.role || "").trim().toLowerCase();
+    const isGroupAdmin = ["admin", "administrator"].includes(role);
     const secretaryViewOnly = ["secretary", "vice secretary"].includes(role);
 
-    if (!canAddMembers && !secretaryViewOnly) {
+    /*
+     * Admin must never be placed in view-only mode by a stale or
+     * narrower frontend preflight. The canonical creation RPC remains
+     * the final authorization boundary; backend parity is a release gate.
+     */
+    if (!isGroupAdmin && !canAddMembers && !secretaryViewOnly) {
       showAccessError(
-        "Only a group admin, chairperson, or treasurer can add members."
+        "You have view-only access to member management. Contact your group admin if you need write access."
       );
       return;
     }
 
-    state.readOnly = !canAddMembers;
+    state.readOnly = !isGroupAdmin && !canAddMembers;
 
     console.info(
       "CHAMA LIVE Add Member: loading Monthly contribution type."

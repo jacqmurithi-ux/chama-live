@@ -16,6 +16,8 @@ import {
   getMyApplicationContext
 } from "./auth.js";
 
+import { supabase } from "./supabase.js";
+
 
 /* =========================================================
    ALLOWED MANAGEMENT ROLES
@@ -203,7 +205,7 @@ async function performLogin() {
        STEP 1 — AUTHENTICATE WITH SUPABASE
        ------------------------------------------------------- */
 
-    await signIn(email, password);
+    const authResult = await signIn(email, password);
 
 
     /* -------------------------------------------------------
@@ -218,7 +220,58 @@ async function performLogin() {
        - client-supplied values
        ------------------------------------------------------- */
 
-    const context = await getMyApplicationContext();
+    let context;
+    try {
+      context = await getMyApplicationContext();
+    } catch (contextError) {
+      const metadata = authResult?.user?.user_metadata || {};
+
+      /*
+       * Compatibility repair for older TEST-preview applicants.
+       * Before automatic onboarding was enabled, these accounts
+       * could authenticate but have only a pending application,
+       * with no group/member context. Re-submit their own stored
+       * signup metadata through the authenticated RPC; the server
+       * verifies email/ownership and is idempotent for completed
+       * applications. No browser-supplied group ID is used.
+       */
+      if (metadata.chama_onboarding === true) {
+        const { data: setupResult, error: setupError } =
+          await supabase.rpc("submit_group_application", {
+            p_group_name: metadata.group_name,
+            p_category: metadata.category || null,
+            p_description: metadata.description || null,
+            p_admin_name: metadata.admin_name,
+            p_admin_phone: metadata.admin_phone,
+            p_country: metadata.country || "Kenya",
+            p_location: metadata.location,
+            p_town: metadata.town
+          });
+
+        if (setupError) {
+          throw new Error(
+            "Your confirmed test account could not finish group setup: " +
+            setupError.message
+          );
+        }
+
+        if (
+          !setupResult?.success ||
+          setupResult.status !== "approved" ||
+          !setupResult.group_id ||
+          !setupResult.member_id
+        ) {
+          throw new Error(
+            "Your confirmed test account has no complete group setup. Please contact support."
+          );
+        }
+
+        // Re-read canonical member/group context after server setup.
+        context = await getMyApplicationContext();
+      } else {
+        throw contextError;
+      }
+    }
 
     const user = context?.user;
     const member = context?.member;

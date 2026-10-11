@@ -75,17 +75,16 @@ import {
 ======================================================= */
 
 /*
- * CHAMA LIVE production URL.
+ * Use the origin that is serving this page.
  *
- * Keep this explicit rather than deriving it from
- * window.location.origin.
- *
- * This prevents an accidental staging/legacy host from
- * becoming the authentication callback destination.
+ * Production resolves to https://chamalive.co.ke.
+ * Preview deployments resolve to their own Vercel origin,
+ * keeping confirmation, session cleanup and login isolated
+ * from the production portal.
  */
 
 const APP_URL =
-  "https://chamalive.co.ke";
+  window.location.origin;
 
 
 const CONFIRM_URL =
@@ -162,26 +161,12 @@ function showError(message) {
 /* =======================================================
    SUBMIT GROUP APPLICATION
    -------------------------------------------------------
-   IMPORTANT
+   TEST PREVIEW FLOW
    -------------------------------------------------------
-   Email confirmation does NOT create a group.
-
-   The authenticated user submits a pending application
-   through the server-side RPC:
-
-     submit_group_application(
-       p_group_name,
-       p_category,
-       p_description,
-       p_admin_name,
-       p_admin_phone,
-       p_country,
-       p_location,
-       p_town
-     )
-
-   Platform Admin approval remains the group-creation
-   boundary.
+   After email confirmation, the authenticated server-side
+   RPC creates the group, creator membership, first financial
+   period and initial subscription records atomically.
+   Production retains its existing platform-admin workflow.
 ======================================================= */
 
 async function submitGroupApplication(
@@ -348,7 +333,7 @@ async function submitGroupApplication(
   ====================================================== */
 
   setStatus(
-    "Email confirmed. Submitting your group application for review..."
+    "Email confirmed. Creating your group account..."
   );
 
 
@@ -432,18 +417,17 @@ async function submitGroupApplication(
 
 
   /* =====================================================
-     VERIFY PENDING STATE
+     VERIFY AUTO-CREATED GROUP
   ====================================================== */
 
   if (
-    application.status !==
-    "pending"
+    application.status !== "approved" ||
+    !application.group_id ||
+    !application.member_id
   ) {
-
     throw new Error(
-      "Your application was submitted, but its review status could not be confirmed."
+      "Your email was confirmed, but automatic group setup could not be verified. Please sign in again or contact support."
     );
-
   }
 
 
@@ -451,40 +435,13 @@ async function submitGroupApplication(
      SUCCESS
   ====================================================== */
 
-  /*
-   * IMPORTANT:
-   *
-   * No group was created here.
-   *
-   * The database has only accepted the authenticated
-   * group application.
-   *
-   * Platform Admin approval remains responsible for:
-   *
-   *   group creation
-   *   creator member creation
-   *   financial period creation
-   *   subscription initialization
-   *   invoice/cycle initialization
-   *
-   * The user therefore stops at the pending-review
-   * boundary.
-   */
-
   setStatus(
-    "✓ Email confirmed and group application submitted successfully. Your application is now pending platform-admin review."
+    "✓ Email confirmed. Your group account is ready. Opening your dashboard..."
   );
 
-
-  /*
-   * Do not redirect to the dashboard.
-   *
-   * The account does not have an approved group yet.
-   *
-   * Keep the user on this confirmation page so the
-   * application remains explicitly separated from
-   * group creation.
-   */
+  window.setTimeout(() => {
+    window.location.replace("dashboard.html");
+  }, 700);
 
 }
 
@@ -820,7 +777,7 @@ async function init() {
     if (!session) {
 
       throw new Error(
-        "Your email was confirmed, but a login session could not be established. Please sign in and try again."
+        "Your email may already be confirmed, but this browser has no active login session. Open the sign-in page for this same site, sign in with the account you just confirmed, and then continue. Do not reuse the old email link."
       );
 
     }

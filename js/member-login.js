@@ -423,7 +423,7 @@ async function performLogin() {
        SUPABASE AUTH
     ----------------------------------------------------- */
 
-    await signIn(
+    const authResult = await signIn(
       email,
       password
     );
@@ -433,8 +433,50 @@ async function performLogin() {
        LOAD AUTHORITATIVE APPLICATION / MEMBER CONTEXT
     ----------------------------------------------------- */
 
-    const context =
-      await getMyApplicationContext();
+    let context;
+    try {
+      context = await getMyApplicationContext();
+    } catch (contextError) {
+      const metadata = authResult?.user?.user_metadata || {};
+
+      // Repair legacy applicant setup only through the authenticated,
+      // server-side onboarding RPC. Ordinary member accounts are unchanged.
+      if (metadata.chama_onboarding === true) {
+        const { data: setupResult, error: setupError } =
+          await supabase.rpc("submit_group_application", {
+            p_group_name: metadata.group_name,
+            p_category: metadata.category || null,
+            p_description: metadata.description || null,
+            p_admin_name: metadata.admin_name,
+            p_admin_phone: metadata.admin_phone,
+            p_country: metadata.country || "Kenya",
+            p_location: metadata.location,
+            p_town: metadata.town
+          });
+
+        if (setupError) {
+          throw new Error(
+            "Your confirmed test account could not finish group setup: " +
+            setupError.message
+          );
+        }
+
+        if (
+          !setupResult?.success ||
+          setupResult.status !== "approved" ||
+          !setupResult.group_id ||
+          !setupResult.member_id
+        ) {
+          throw new Error(
+            "Your confirmed test account has no complete group setup. Please contact support."
+          );
+        }
+
+        context = await getMyApplicationContext();
+      } else {
+        throw contextError;
+      }
+    }
 
 
     /* -----------------------------------------------------

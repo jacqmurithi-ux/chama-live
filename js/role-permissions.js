@@ -187,16 +187,21 @@ const POLICY = {
 };
 
 const roleCan = (roles, page, action, member) => {
-  const rule = POLICY[page]?.[action];
-  if (!(rule instanceof Set)) return false;
+  const normalizedPage = normalize(page);
+  const normalizedAction = normalize(action);
 
-  // Platform administrators and group administrators cannot act as
-  // any of the three required expense approver slots.
-  if (
-    normalize(page) === "expenses" &&
-    ["approve-chair", "approve-treasurer", "approve-secretary"].includes(normalize(action)) &&
-    (roles.has("admin") || member?.is_platform_admin === true)
-  ) return false;
+  /*
+   * Group admin is the full-control role for every group page and
+   * action. This check intentionally precedes policy lookup so a
+   * newly added page/action cannot accidentally put an admin into
+   * view-only mode. Backend authorization must implement the same
+   * group-admin rule. This is not a platform-admin identity check.
+   */
+  if (roles.has("admin")) return true;
+
+  // Unknown page/action pairs fail closed for every non-admin role.
+  const rule = POLICY[normalizedPage]?.[normalizedAction];
+  if (!(rule instanceof Set)) return false;
 
   return [...roles].some(role => rule.has(role));
 };
@@ -216,6 +221,9 @@ export function canWrite(page, action, member, options = {}) {
 export function pageHasReadOnlyAccess(page, member, options = {}) {
   if (options.isVerifiedPlatformAdmin === true) return false;
   const roles = getGroupRoles(member);
+  // Group admins never receive a view-only badge, including on newly
+  // introduced pages that have not yet been added to POLICY.
+  if (roles.has("admin")) return false;
   const rules = POLICY[normalize(page)];
   if (!rules) return true;
   const readActions = new Set(["view", "search", "filter", "export"]);

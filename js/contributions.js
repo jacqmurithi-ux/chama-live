@@ -407,6 +407,7 @@ const MEMBER_EVIDENCE_STATUSES = {
 
 const RECORDER_ROLES = new Set([
 
+  "admin",
   "treasurer"
 
 ]);
@@ -414,6 +415,7 @@ const RECORDER_ROLES = new Set([
 
 const CUSTOM_CONTRIBUTION_ACTIVATOR_ROLES = new Set([
 
+  "admin",
   "treasurer"
 
 ]);
@@ -421,6 +423,7 @@ const CUSTOM_CONTRIBUTION_ACTIVATOR_ROLES = new Set([
 
 const VERIFIER_ROLES = new Set([
 
+  "admin",
   "treasurer"
 
 ]);
@@ -2615,21 +2618,13 @@ async function loadMembers() {
 
 
   /*
-   * Keep all active members available.
-   * Backend authorization remains authoritative.
+   * Retain every member in the in-memory list so historical
+   * records and member references are not lost when status
+   * changes. In the new-record selector, show inactive members
+   * explicitly but disable them to prevent new contribution
+   * recording against an inactive member.
    */
-  members =
-    (data || [])
-      .filter(
-        member =>
-          String(
-            member.status ||
-            "active"
-          )
-            .trim()
-            .toLowerCase() ===
-          "active"
-      );
+  members = data || [];
 
 
   if (!memberSelect) {
@@ -2654,14 +2649,21 @@ async function loadMembers() {
           "option"
         );
 
+      const isActive =
+        String(
+          member.status || "active"
+        ).trim().toLowerCase() === "active";
 
       option.value =
         member.id;
 
-
       option.textContent =
-        member.name;
+        isActive
+          ? member.name
+          : `${member.name} (Inactive)`;
 
+      option.disabled =
+        !isActive;
 
       memberSelect.appendChild(
         option
@@ -4985,6 +4987,23 @@ function renderMemberStatus() {
 
   if (!canonicalMemberStatus.length) {
 
+    const monthLabel =
+      formatAccountingMonth(
+        accountingMonth
+      );
+
+    const monthContributionCount =
+      contributions.filter(
+        item =>
+          getContributionMonth(item) ===
+          accountingMonth
+      ).length;
+
+    const emptyMessage =
+      monthContributionCount > 0
+        ? `No canonical member-accounting rows were returned for ${monthLabel}. ${monthContributionCount} contribution record${monthContributionCount === 1 ? "" : "s"} dated in this month remain in the contribution ledger. This empty status table does not mean that no contribution was recorded. Monthly status excludes inactive members and members who joined after the selected month.`
+        : `No contribution records were found for ${monthLabel}, and no canonical member-accounting rows were returned. Monthly status includes only active members who joined on or before the selected month.`;
+
     memberStatusRows.innerHTML = `
 
       <tr>
@@ -4994,13 +5013,7 @@ function renderMemberStatus() {
           class="cl-empty-table"
         >
 
-          No canonical accounting rows are
-          available for
-          ${escapeHtml(
-            formatAccountingMonth(
-              accountingMonth
-            )
-          )}.
+          ${escapeHtml(emptyMessage)}
 
         </td>
 
@@ -6506,9 +6519,9 @@ function openCustomContributionEditor() {
     return;
   }
 
-  if (getCurrentMemberRole() !== "treasurer") {
+  if (!["admin", "treasurer"].includes(getCurrentMemberRole())) {
     showCustomContributionEditorMessage(
-      "Only the group treasurer can create a custom contribution draft.",
+      "Only the group admin or treasurer can create a custom contribution draft.",
       "error"
     );
     return;
@@ -7067,7 +7080,7 @@ async function saveCustomContributionDraft(
        Treasurers may create drafts but cannot activate them.
     ===================================================== */
 
-    if (getCurrentMemberRole() === "treasurer") {
+    if (["admin", "treasurer"].includes(getCurrentMemberRole())) {
       await loadDraftCustomContributions();
       await loadActiveCustomContributions();
       renderDraftCustomContributionList();
@@ -7427,7 +7440,7 @@ async function activateExistingCustomContribution(
 
     showError(
       new Error(
-        "Only the group treasurer can activate custom contributions."
+        "Only the group admin or treasurer can activate custom contributions."
       )
     );
 
@@ -7975,7 +7988,7 @@ export async function initContributions(
 
     if (newCustomContributionButton) {
       newCustomContributionButton.hidden =
-        getCurrentMemberRole() !== "treasurer";
+        !["admin", "treasurer"].includes(getCurrentMemberRole());
     }
 
 
