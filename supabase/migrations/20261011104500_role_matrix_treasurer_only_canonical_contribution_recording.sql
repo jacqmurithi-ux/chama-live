@@ -7,7 +7,7 @@ DECLARE
   v_def text;
   v_before text;
 BEGIN
-  v_oid := 'public.cl_2b_record_contribution(uuid,uuid,uuid,numeric,date,text,text,text,uuid,text)'::regprocedure;
+  v_oid := 'public.cl_2b_record_contribution(uuid,uuid,uuid,numeric,date,text,text,text,text,uuid,text)'::regprocedure;
   v_def := pg_get_functiondef(v_oid);
   v_before := v_def;
   v_def := replace(
