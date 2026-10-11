@@ -594,10 +594,16 @@ async function loadMonthlyContributionType(
     the known contribution_types relationship.
   */
 
+  /*
+    Use the canonical Monthly type by its stable code first.
+    Other CHAMA LIVE pages rely on contribution_types.id and
+    code='monthly'; matching only a display label can select
+    a row that cannot be used by the member-creation RPC.
+  */
   const result =
     await supabase
       .from("contribution_types")
-      .select("*")
+      .select("id,group_id,name,code")
       .eq("group_id", groupId);
 
   if (result.error) {
@@ -615,31 +621,26 @@ async function loadMonthlyContributionType(
       : [];
 
   const monthly =
-    rows.find((row) => {
-      const type =
-        String(
-          row.type ??
-          row.frequency ??
-          row.name ??
-          ""
-        ).toLowerCase();
-
-      const name =
-        String(
-          row.name ??
-          ""
-        ).toLowerCase();
-
-      return (
-        type === "monthly" ||
-        name === "monthly"
-      );
-    });
+    rows.find((row) =>
+      String(row.code || "").trim().toLowerCase() === "monthly" &&
+      Boolean(row.id)
+    ) ||
+    rows.find((row) =>
+      String(row.name || "").trim().toLowerCase() === "monthly" &&
+      Boolean(row.id)
+    ) ||
+    null;
 
   state.monthlyType =
-    monthly || null;
+    monthly;
 
   renderMonthlyType();
+
+  if (!monthly) {
+    throw new Error(
+      "The group's canonical Monthly contribution type could not be loaded with its ID. Check Group Management → Contribution Types before adding a member."
+    );
+  }
 
   return monthly;
 }
