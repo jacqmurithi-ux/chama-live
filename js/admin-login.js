@@ -203,7 +203,7 @@ async function performLogin() {
        STEP 1 — AUTHENTICATE WITH SUPABASE
        ------------------------------------------------------- */
 
-    await signIn(email, password);
+    const authResult = await signIn(email, password);
 
 
     /* -------------------------------------------------------
@@ -218,7 +218,17 @@ async function performLogin() {
        - client-supplied values
        ------------------------------------------------------- */
 
-    const context = await getMyApplicationContext();
+    let context;
+    try {
+      context = await getMyApplicationContext();
+    } catch (contextError) {
+      const metadata = authResult?.user?.user_metadata || {};
+      if (metadata.chama_onboarding === true) {
+        window.location.replace("application-pending.html");
+        return;
+      }
+      throw contextError;
+    }
 
     const user = context?.user;
     const member = context?.member;
