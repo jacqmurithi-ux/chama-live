@@ -188,11 +188,24 @@ function canRecordExpense() {
 // Approval eligibility is only a UI hint. The database RPC enforces the
 // three distinct approval slots and blocks self-approval.
 function canApproveExpense() {
-  return [
-    "chairperson", "vice chairperson",
-    "treasurer",
-    "secretary", "vice secretary"
-  ].includes(currentRole());
+  const role = currentRole();
+  if (["chairperson", "vice chairperson", "treasurer", "secretary", "vice secretary"].includes(role)) return true;
+
+  // An Admin has no approval slot by default. Permit the UI action only
+  // when a separate qualifying office is recorded; the RPC independently
+  // enforces office eligibility, no self-approval, and distinct approvers.
+  if (role !== "admin") return false;
+  const normalize = value => normalizeOffice(value)
+    .replaceAll("_", " ")
+    .replaceAll("-", " ");
+  const offices = [
+    normalize(currentMember?.actual_position),
+    normalize(currentMember?.actual_position_name)
+  ];
+  return offices.some(office => [
+    "chairperson", "vice chairperson", "chair", "vice chair",
+    "treasurer", "secretary", "vice secretary"
+  ].includes(office));
 }
 
 function canManageExpenses() {
