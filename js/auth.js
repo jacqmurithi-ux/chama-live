@@ -96,13 +96,15 @@ export {
 
 
 /* =========================================================
-   PRODUCTION BASE URL
+   CURRENT SITE BASE URL
    ---------------------------------------------------------
-   Canonical CHAMA LIVE production deployment.
+   Use the origin serving this app. Production resolves to
+   chamalive.co.ke; isolated preview deployments stay on
+   their own preview origin and never redirect into production.
 ========================================================= */
 
 export const BASE_URL =
-  "https://chamalive.co.ke";
+  window.location.origin;
 
 
 /* =========================================================
