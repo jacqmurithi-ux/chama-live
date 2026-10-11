@@ -2393,11 +2393,11 @@ function applyFinancialReport(
 ========================================================= */
 
 function canManageFinancialClosing() {
-
-  return String(currentMember?.role || "")
+  const role = String(currentMember?.role || "")
     .trim()
-    .toLowerCase() === "treasurer";
-
+    .toLowerCase();
+  // Group Admin may run validated close/reopen RPCs; the RPC remains authoritative.
+  return role === "admin" || role === "administrator" || role === "treasurer";
 }
 
 
@@ -2406,7 +2406,7 @@ async function closeMonth() {
   try {
 
     if (!canManageFinancialClosing()) {
-      throw new Error("Only the group treasurer may close a financial month.");
+      throw new Error("Only an authorised group Admin or Treasurer may close a financial month.");
     }
 
     clearError();
