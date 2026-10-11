@@ -2200,7 +2200,7 @@ export async function boot() {
      * data-permission-action are disabled here.
      */
     applyRolePermissions({
-      page: page.replace(/\\.html$/i, ""),
+      page: page.replace(/\.html$/i, ""),
       member: context.member,
       isVerifiedPlatformAdmin: false
     });
