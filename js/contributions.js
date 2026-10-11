@@ -1074,14 +1074,13 @@ function clearError() {
 ========================================================= */
 
 function getCurrentMemberRole() {
-
-  return String(
-    currentMember?.role ||
-    ""
-  )
-    .trim()
-    .toLowerCase();
-
+  const technicalRole = String(currentMember?.role || "member")
+    .trim().toLowerCase().replace(/[_-]+/g, " ").replace(/\\s+/g, " ");
+  if (technicalRole === "admin" || technicalRole === "administrator") return "admin";
+  const officeRole = String(
+    currentMember?.actual_position_name || currentMember?.actual_position || ""
+  ).trim().toLowerCase().replace(/[_-]+/g, " ").replace(/\\s+/g, " ");
+  return officeRole && officeRole !== "other" ? officeRole : technicalRole;
 }
 
 
