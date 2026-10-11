@@ -161,26 +161,12 @@ function showError(message) {
 /* =======================================================
    SUBMIT GROUP APPLICATION
    -------------------------------------------------------
-   IMPORTANT
+   TEST PREVIEW FLOW
    -------------------------------------------------------
-   Email confirmation does NOT create a group.
-
-   The authenticated user submits a pending application
-   through the server-side RPC:
-
-     submit_group_application(
-       p_group_name,
-       p_category,
-       p_description,
-       p_admin_name,
-       p_admin_phone,
-       p_country,
-       p_location,
-       p_town
-     )
-
-   Platform Admin approval remains the group-creation
-   boundary.
+   After email confirmation, the authenticated server-side
+   RPC creates the group, creator membership, first financial
+   period and initial subscription records atomically.
+   Production retains its existing platform-admin workflow.
 ======================================================= */
 
 async function submitGroupApplication(
@@ -347,7 +333,7 @@ async function submitGroupApplication(
   ====================================================== */
 
   setStatus(
-    "Email confirmed. Submitting your group application for review..."
+    "Email confirmed. Creating your group account..."
   );
 
 
@@ -431,18 +417,17 @@ async function submitGroupApplication(
 
 
   /* =====================================================
-     VERIFY PENDING STATE
+     VERIFY AUTO-CREATED GROUP
   ====================================================== */
 
   if (
-    application.status !==
-    "pending"
+    application.status !== "approved" ||
+    !application.group_id ||
+    !application.member_id
   ) {
-
     throw new Error(
-      "Your application was submitted, but its review status could not be confirmed."
+      "Your email was confirmed, but automatic group setup could not be verified. Please sign in again or contact support."
     );
-
   }
 
 
@@ -450,50 +435,13 @@ async function submitGroupApplication(
      SUCCESS
   ====================================================== */
 
-  /*
-   * IMPORTANT:
-   *
-   * No group was created here.
-   *
-   * The database has only accepted the authenticated
-   * group application.
-   *
-   * Platform Admin approval remains responsible for:
-   *
-   *   group creation
-   *   creator member creation
-   *   financial period creation
-   *   subscription initialization
-   *   invoice/cycle initialization
-   *
-   * The user therefore stops at the pending-review
-   * boundary.
-   */
-
   setStatus(
-    "✓ Email confirmed and group application submitted successfully. Opening your applicant sign-in now..."
+    "✓ Email confirmed. Your group account is ready. Opening your dashboard..."
   );
 
-  /*
-   * Applicant authentication is now independent of group approval.
-   * Route to a limited holding page, not to a group dashboard.
-   * Group/member creation remains exclusively behind platform-admin
-   * approval. This change is on the isolated preview branch only.
-   */
   window.setTimeout(() => {
-    window.location.replace("application-pending.html");
-  }, 900);
-
-
-  /*
-   * Do not redirect to the dashboard.
-   *
-   * The account does not have an approved group yet.
-   *
-   * Keep the user on this confirmation page so the
-   * application remains explicitly separated from
-   * group creation.
-   */
+    window.location.replace("dashboard.html");
+  }, 700);
 
 }
 
