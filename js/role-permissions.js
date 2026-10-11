@@ -86,6 +86,7 @@ const POLICY = {
   },
   contributions: {
     view: GROUP_MANAGEMENT,
+    "submit-evidence": new Set(["member"]),
     create: new Set(["treasurer"]),
     record: new Set(["treasurer"]),
     verify: new Set(["treasurer"]),
@@ -190,7 +191,17 @@ function ensureBadge(root) {
 }
 
 function disableControl(control) {
-  if ("disabled" in control) {
+  if (control.tagName === "FORM") {
+    // Capture phase prevents page-level submit handlers from issuing
+    // requests when a read-only form is submitted by Enter or script.
+    control.addEventListener("submit", event => {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }, { capture: true });
+    control.querySelectorAll("button[type=submit], input[type=submit]").forEach(button => {
+      button.disabled = true;
+    });
+  } else if ("disabled" in control) {
     control.disabled = true;
   } else {
     control.setAttribute("aria-disabled", "true");
