@@ -17,12 +17,14 @@ import { getMyGroup, getMyMember } from "./auth.js";
 import { finesApi } from "./api/fines.js";
 
 const MANUAL_FINE_ROLES = new Set([
+  "admin",
   "treasurer",
   "secretary",
   "vice secretary"
 ]);
 
 const CORRECTION_ROLES = new Set([
+  "admin",
   "treasurer"
 ]);
 
@@ -177,7 +179,7 @@ function canCorrectFines() {
 function setPermissions() {
   const manualAllowed = canManageManualFines();
   const correctionAllowed = canCorrectFines();
-  const typeAllowed = roleName(state.member) === "treasurer";
+  const typeAllowed = ["admin", "treasurer"].includes(roleName(state.member));
 
   const manualForm = byId("manualFineForm");
   const typeForm = byId("fineTypeForm");
