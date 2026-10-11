@@ -192,12 +192,13 @@ const roleCan = (roles, page, action, member) => {
   const rule = POLICY[page]?.[action];
   if (!(rule instanceof Set)) return false;
 
-  // Platform administrators and group administrators cannot act as
-  // any of the three required expense approver slots.
+  // Platform administrators cannot act as group expense approvers.
+  // A group Admin alone has no slot because "admin" is absent from the slot
+  // sets; an Admin with a separately recorded qualifying office may qualify.
   if (
     normalize(page) === "expenses" &&
     ["approve-chair", "approve-treasurer", "approve-secretary"].includes(normalize(action)) &&
-    (roles.has("admin") || member?.is_platform_admin === true)
+    member?.is_platform_admin === true
   ) return false;
 
   return [...roles].some(role => rule.has(role));
