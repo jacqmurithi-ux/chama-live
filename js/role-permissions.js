@@ -100,8 +100,9 @@ const POLICY = {
   "add-member": {
     view: GROUP_MANAGEMENT,
     create: new Set(["admin", "chairperson", "vice chairperson", "treasurer"]),
-    // Admin may create a member, but historical-payment entry is read-only for Admin.
-    // Admin can add members with historical contributions; the canonical RPC validates and records the history.
+    // Admin may create members and record historical onboarding payments.
+    // The canonical RPC validates and records history; frontend access does not
+    // permit direct writes to canonical accounting tables.
     "historical-payment": new Set(["admin", "treasurer"])
   },
   dashboard: {
