@@ -25,8 +25,10 @@ const normalize = value => String(value ?? "").trim().toLowerCase();
 const ROLE_ALIASES = new Map([
   ["administrator", "admin"],
   ["vice-chairperson", "vice chairperson"],
+  ["vice_chairperson", "vice chairperson"],
   ["vice chair", "vice chairperson"],
-  ["vice secretary", "vice secretary"]
+  ["vice secretary", "vice secretary"],
+  ["vice_secretary", "vice secretary"]
 ]);
 
 export function getGroupRoles(member = {}) {
