@@ -73,10 +73,11 @@ const MANAGEMENT_ROLES = [
   "admin",
   "administrator",
   "chairperson",
-  "treasurer"
+  "vice chairperson",
+  "treasurer",
+  "secretary",
+  "vice secretary"
 ];
-
-const DELETE_ROLE = "admin";
 
 
 /* =========================================================
@@ -186,9 +187,8 @@ function canManageAssets() {
 }
 
 function canDeleteAssets() {
-  return (
-    normalizeRole(state.currentMember?.role) ===
-    DELETE_ROLE
+  return MANAGEMENT_ROLES.includes(
+    normalizeRole(state.currentMember?.role)
   );
 }
 
