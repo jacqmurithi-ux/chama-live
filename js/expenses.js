@@ -4,7 +4,7 @@ COMPLETE STABLE VERSION
 
 ## DATABASE RULE
 
-expenses.recorded_by -> members.id
+expenses.recorded_by -> auth.users.id
 
 Therefore:
 recorded_by = currentMember.id
@@ -154,43 +154,63 @@ function currentRole() {
   const position = normalizeOffice(currentMember?.actual_position);
   const positionName = normalizeOffice(currentMember?.actual_position_name);
 
-  // Group Admin is not an expense approval office.
-  if (technicalRole === "admin" || technicalRole === "administrator") return "admin";
-
   const offices = new Set([
     "chairperson", "vice chairperson", "chair", "vice chair",
     "treasurer", "secretary", "vice secretary"
   ]);
 
-  // Prefer the structured office field when it contains a real office.
-  // Older member rows sometimes have a generic "member"/"other" value
-  // in actual_position while actual_position_name carries the office.
+  // Preserve a declared office for ordinary page permissions. Approval
+  // eligibility is checked separately and never inferred from technical role.
   const office = offices.has(position)
     ? position
     : offices.has(positionName)
       ? positionName
-      : technicalRole;
+      : null;
 
-  if (["vice chairperson", "chair", "vice chair"].includes(office)) return office === "chair" ? "chairperson" : "vice chairperson";
-  if (office === "vice secretary") return "vice secretary";
-  return office;
+  if (office) {
+    if (["chair", "vice chair", "vice chairperson"].includes(office)) return "chairperson";
+    if (office === "vice secretary") return "secretary";
+    return office;
+  }
+
+  if (technicalRole === "administrator") return "admin";
+  return technicalRole;
 }
 
 function canRecordExpense() {
+  // Group Admin may submit a pending expense, but cannot approve it by virtue
+  // of Admin access. The three-office approval is enforced separately.
   return [
-    "chairperson", "vice chairperson",
+    "admin", "chairperson", "vice chairperson",
     "secretary", "vice secretary", "treasurer"
   ].includes(currentRole());
 }
 
-// Approval eligibility is only a UI hint. The database RPC enforces the
-// three distinct approval slots and blocks self-approval.
+function currentApprovalSlot() {
+  const position = normalizeOffice(currentMember?.actual_position);
+  const positionName = normalizeOffice(currentMember?.actual_position_name);
+  const office = new Set([
+    "chairperson", "vice chairperson", "chair", "vice chair",
+    "treasurer", "secretary", "vice secretary"
+  ]);
+
+  const declaredOffice = office.has(position)
+    ? position
+    : office.has(positionName)
+      ? positionName
+      : null;
+
+  if (["chairperson", "vice chairperson", "chair", "vice chair"].includes(declaredOffice)) {
+    return "chair";
+  }
+  if (declaredOffice === "treasurer") return "treasurer";
+  if (["secretary", "vice secretary"].includes(declaredOffice)) return "secretary";
+  return null;
+}
+
+// UI hint only; the database RPC remains authoritative.
 function canApproveExpense() {
-  return [
-    "chairperson", "vice chairperson",
-    "treasurer",
-    "secretary", "vice secretary"
-  ].includes(currentRole());
+  return Boolean(currentApprovalSlot());
 }
 
 function canManageExpenses() {
@@ -757,10 +777,21 @@ function renderExpenses() {
             approval.approver_user_id === currentUser?.id
         );
 
+        const mySlot = currentApprovalSlot();
+
+        // A Chair and Vice Chair share one slot; a Secretary and Vice Secretary
+        // share one slot. Hide actions once that office-family slot is occupied.
+        const slotAlreadyFilled = Boolean(mySlot) && expenseApprovals.some(
+          approval => approval.expense_id === expense.id &&
+            approval.approval_slot === mySlot
+        );
+
         const canVote = status === "pending" &&
           canApproveExpense() &&
+          Boolean(mySlot) &&
           expense.recorded_by !== currentUser?.id &&
-          !alreadyVoted;
+          !alreadyVoted &&
+          !slotAlreadyFilled;
 
         const actions = canVote ? `
           <button type="button" data-action="approve" data-id="${escapeHtml(expense.id)}">
@@ -986,7 +1017,7 @@ async function createExpense(event) {
     /* =====================================================
        INSERT
 
-       recorded_by = MEMBER ID
+       recorded_by = AUTH USER ID
     ====================================================== */
 
     const payload = {
@@ -1006,7 +1037,7 @@ async function createExpense(event) {
         date,
 
       recorded_by:
-        currentMember.id,
+        currentUser.id,
 
       receipt_url:
         receiptUrl ||
