@@ -1,0 +1,129 @@
+-- CHAMA LIVE candidate-only regression fix.
+-- Keeps canonical monthly accounting semantics aligned:
+-- monthly due includes rule-backed obligations, so monthly allocations must too.
+-- Do not apply to production until candidate regression and authenticated tests pass.
+
+CREATE OR REPLACE FUNCTION public.get_canonical_member_monthly_status(
+  p_group_id uuid,
+  p_month text
+)
+RETURNS TABLE(
+  member_id uuid,
+  member_number text,
+  member_name text,
+  monthly_due numeric,
+  previous_outstanding numeric,
+  previous_credit numeric,
+  current_month_payment numeric,
+  applied_this_month numeric,
+  carry_forward numeric,
+  current_outstanding numeric,
+  total_paid_to_date numeric,
+  total_due_to_date numeric,
+  status text
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_month date;
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Authentication required';
+  END IF;
+
+  IF NOT public.cl_user_in_group(p_group_id) THEN
+    RAISE EXCEPTION 'You do not have access to this group';
+  END IF;
+
+  IF p_month IS NULL OR p_month !~ '^[0-9]{4}-[0-9]{2}$' THEN
+    RAISE EXCEPTION 'Month must use YYYY-MM format';
+  END IF;
+
+  v_month := (p_month || '-01')::date;
+
+  RETURN QUERY
+  WITH member_set AS (
+    SELECT m.id, m.member_number::text, m.name
+    FROM public.members m
+    WHERE m.group_id = p_group_id
+      AND lower(coalesce(m.status, 'active')) = 'active'
+      AND (m.join_date IS NULL OR date_trunc('month', m.join_date)::date <= v_month)
+  ),
+  obligations AS (
+    SELECT o.member_id, o.obligation_month, o.due_amount::numeric AS due_amount
+    FROM public.contribution_obligations o
+    WHERE o.group_id = p_group_id
+      AND o.obligation_month <= v_month
+      AND o.rule_id IS NOT NULL
+  ),
+  obligation_totals AS (
+    SELECT o.member_id,
+      coalesce(sum(o.due_amount) FILTER (WHERE o.obligation_month = v_month), 0)::numeric AS monthly_due,
+      coalesce(sum(o.due_amount) FILTER (WHERE o.obligation_month < v_month), 0)::numeric AS prior_due,
+      coalesce(sum(o.due_amount), 0)::numeric AS total_due
+    FROM obligations o
+    GROUP BY o.member_id
+  ),
+  payments AS (
+    SELECT c.id, c.member_id, c.amount::numeric AS amount, c.contribution_date
+    FROM public.contributions c
+    WHERE c.group_id = p_group_id
+      AND lower(trim(coalesce(c.contribution_type, ''))) = 'monthly'
+      AND c.contribution_date IS NOT NULL
+      AND c.contribution_date < (v_month + interval '1 month')::date
+  ),
+  payment_totals AS (
+    SELECT p.member_id,
+      coalesce(sum(p.amount) FILTER (
+        WHERE p.contribution_date >= v_month
+          AND p.contribution_date < (v_month + interval '1 month')::date
+      ), 0)::numeric AS current_month_payment,
+      coalesce(sum(p.amount), 0)::numeric AS total_paid
+    FROM payments p
+    GROUP BY p.member_id
+  ),
+  allocation_totals AS (
+    SELECT o.member_id,
+      coalesce(sum(ca.amount) FILTER (WHERE o.obligation_month < v_month), 0)::numeric AS prior_allocated,
+      coalesce(sum(ca.amount) FILTER (WHERE o.obligation_month = v_month), 0)::numeric AS current_allocated,
+      coalesce(sum(ca.amount), 0)::numeric AS total_allocated
+    FROM public.contribution_allocations ca
+    JOIN public.contribution_obligations o ON o.id = ca.obligation_id
+    WHERE o.group_id = p_group_id
+      AND o.obligation_month <= v_month
+      -- Critical regression fix: match the rule-backed obligation set above.
+      AND o.rule_id IS NOT NULL
+    GROUP BY o.member_id
+  )
+  SELECT
+    ms.id,
+    ms.member_number,
+    ms.name,
+    coalesce(ot.monthly_due, 0)::numeric,
+    greatest(coalesce(ot.prior_due, 0) - coalesce(at.prior_allocated, 0), 0)::numeric,
+    greatest(coalesce(at.prior_allocated, 0) - coalesce(ot.prior_due, 0), 0)::numeric,
+    coalesce(pt.current_month_payment, 0)::numeric,
+    coalesce(at.current_allocated, 0)::numeric,
+    greatest(coalesce(pt.total_paid, 0) - coalesce(at.total_allocated, 0), 0)::numeric,
+    greatest(coalesce(ot.monthly_due, 0) - coalesce(at.current_allocated, 0), 0)::numeric,
+    coalesce(pt.total_paid, 0)::numeric,
+    coalesce(ot.total_due, 0)::numeric,
+    CASE
+      WHEN greatest(coalesce(ot.monthly_due, 0) - coalesce(at.current_allocated, 0), 0) = 0
+        AND greatest(coalesce(pt.total_paid, 0) - coalesce(at.total_allocated, 0), 0) > 0 THEN 'credit'
+      WHEN greatest(coalesce(ot.monthly_due, 0) - coalesce(at.current_allocated, 0), 0) = 0 THEN 'paid'
+      WHEN coalesce(at.current_allocated, 0) > 0 THEN 'partial'
+      ELSE 'outstanding'
+    END::text
+  FROM member_set ms
+  LEFT JOIN obligation_totals ot ON ot.member_id = ms.id
+  LEFT JOIN payment_totals pt ON pt.member_id = ms.id
+  LEFT JOIN allocation_totals at ON at.member_id = ms.id
+  ORDER BY ms.name;
+END;
+$function$;
+
+COMMENT ON FUNCTION public.get_canonical_member_monthly_status(uuid, text) IS
+'Candidate regression fix: monthly applied amounts count only rule-backed monthly obligations, matching the canonical monthly due set. Preserve existing canonical accounting contract.';
