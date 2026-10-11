@@ -651,7 +651,7 @@
         </div>
 
         <div class="section-body">
-          <form id="assetForm">
+          <form id="assetForm" data-permission-page="assets" data-permission-action="create">
             <input type="hidden" id="assetId">
 
             <div class="form-grid">
@@ -748,7 +748,7 @@
                 type="submit"
                 class="btn btn-primary"
                 id="saveAsset"
-              >
+               data-permission-page="assets" data-permission-action="create">
                 Save Asset
               </button>
 

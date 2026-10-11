@@ -193,32 +193,43 @@ function memberById(id) {
   ) || null;
 }
 
-function isManager() {
-  const role = normalize(
-    currentMember?.role
-  );
-
-  return (
-    role === "admin" ||
-    role === "chairperson"
-  );
+function normalizedOfficeRole(value) {
+  return normalize(value)
+    .replace(/[_-]+/g, " ")
+    .replace(/\\s+/g, " ")
+    .trim();
 }
 
-function isOfficialPortalRole(role) {
-  return new Set([
-    "admin",
-    "chairperson",
-    "secretary",
-    "treasurer",
-    "vice chairperson",
-    "vice secretary"
-  ]).has(
-    normalize(role)
-  );
+function effectiveMemberRoles(member = currentMember) {
+  const technical = normalizedOfficeRole(member?.role || "member");
+  // A group admin remains a distinct role and cannot inherit an office role.
+  if (technical === "admin" || technical === "administrator") return new Set(["admin"]);
+  const roles = new Set([technical]);
+  const office = normalizedOfficeRole(member?.actual_position_name || member?.actual_position);
+  if (office && office !== "other") roles.add(office);
+  return roles;
+}
+
+function isManager() {
+  const roles = effectiveMemberRoles();
+  return ["admin", "administrator", "chairperson", "vice chairperson", "treasurer"]
+    .some(role => roles.has(role));
+}
+
+function isTreasurer() {
+  return effectiveMemberRoles().has("treasurer");
+}
+
+function isOfficialPortalRole(memberOrRole) {
+  const roles = memberOrRole && typeof memberOrRole === "object"
+    ? effectiveMemberRoles(memberOrRole)
+    : new Set([normalizedOfficeRole(memberOrRole)]);
+  return ["admin", "administrator", "chairperson", "vice chairperson",
+    "secretary", "vice secretary", "treasurer"].some(role => roles.has(role));
 }
 
 function portalLabelForMember(member) {
-  return isOfficialPortalRole(member?.role)
+  return isOfficialPortalRole(member)
     ? "Admin Portal"
     : "Member Portal";
 }
@@ -611,6 +622,7 @@ function createMemberRow(member) {
           <button
             type="button"
             class="btn btn-small"
+            data-permission-page="members" data-permission-action="edit"
             data-member-action="edit"
             data-member-id="${escapeHtml(member.id)}"
           >
@@ -742,6 +754,7 @@ function createMemberCard(member) {
         <button
           type="button"
           class="btn btn-small"
+          data-permission-page="members" data-permission-action="edit"
           data-member-action="edit"
           data-member-id="${escapeHtml(member.id)}"
         >
@@ -945,32 +958,38 @@ async function loadMemberAccounting(member) {
     );
   }
 
-  /*
-   * Canonical synchronization is best effort.
-   * A refresh failure must not block profile identity.
-   */
-  const refresh =
-    await supabase.rpc(
-      "refresh_my_managed_member_accounting",
-      {
-        p_member_id: member.id
-      }
-    );
+  const isOwnMember =
+    String(member.id) === String(currentMember?.id);
 
-  if (refresh.error) {
-    console.warn(
-      "CHAMA LIVE: member accounting refresh returned an error:",
-      refresh.error
-    );
+  /*
+   * Only refresh the signed-in member's own accounting from this page.
+   * Group-level views use the role-guarded summary RPC and never call the
+   * member-specific position RPC for another person's member ID.
+   */
+  if (isOwnMember) {
+    const refresh =
+      await supabase.rpc(
+        "refresh_my_managed_member_accounting",
+        { p_member_id: member.id }
+      );
+
+    if (refresh.error) {
+      console.warn(
+        "CHAMA LIVE: member accounting refresh returned an error:",
+        refresh.error
+      );
+    }
   }
 
-  const positionResult =
-    await supabase.rpc(
-      "get_member_contribution_position",
-      {
-        p_member_id: member.id
-      }
-    );
+  const positionResult = isOwnMember
+    ? await supabase.rpc(
+        "get_member_contribution_position",
+        { p_member_id: member.id }
+      )
+    : await supabase.rpc(
+        "get_group_contribution_positions",
+        { p_group_id: groupId || member.group_id }
+      );
 
   if (positionResult.error) {
     console.error(
@@ -980,13 +999,12 @@ async function loadMemberAccounting(member) {
     throw positionResult.error;
   }
 
-  const raw =
-    positionResult.data;
-
-  const position =
-    Array.isArray(raw)
-      ? raw[0] || null
-      : raw || null;
+  const raw = positionResult.data;
+  const position = Array.isArray(raw)
+    ? (isOwnMember
+        ? raw[0] || null
+        : raw.find(row => String(row.member_id) === String(member.id)) || null)
+    : raw || null;
 
   /*
    * Total Contributed is the sum of contribution rows.
@@ -1223,6 +1241,9 @@ function ensureProfileActions() {
     button.id =
       "memberModalEdit";
 
+    button.dataset.permissionPage = "members";
+    button.dataset.permissionAction = "edit";
+
     button.type =
       "button";
 
@@ -1252,6 +1273,9 @@ function ensureProfileActions() {
 
     button.id =
       "memberModalInvite";
+
+    button.dataset.permissionPage = "members";
+    button.dataset.permissionAction = "invite";
 
     button.type =
       "button";
@@ -1616,7 +1640,7 @@ function openEditMember(memberId) {
 
   if (!isManager()) {
     showError(
-      "Only an admin or chairperson can edit members."
+      "Only an administrator, chairperson or treasurer can edit members."
     );
     return;
   }
@@ -2072,7 +2096,7 @@ function preparePositionEditor(member) {
 
   if (reconcile) {
     reconcile.hidden =
-      !isManager();
+      !isTreasurer();
   }
 }
 
@@ -2083,7 +2107,7 @@ async function savePositionChange() {
 
   if (!isManager()) {
     showError(
-      "Only an admin or chairperson can change a member position."
+      "Only an administrator, chairperson or treasurer can change a member position."
     );
     return;
   }
@@ -2220,9 +2244,9 @@ async function reconcileHistoricalPayments() {
     return;
   }
 
-  if (!isManager()) {
+  if (!isTreasurer()) {
     showError(
-      "Only an admin or chairperson can reconcile historical payments."
+      "Only the treasurer can reconcile historical payments."
     );
     return;
   }
@@ -2318,7 +2342,7 @@ async function inviteMember(memberId) {
 
   if (!isManager()) {
     showError(
-      "Only an admin or chairperson can send portal invitations."
+      "Only an administrator, chairperson or treasurer can send portal invitations."
     );
     return;
   }

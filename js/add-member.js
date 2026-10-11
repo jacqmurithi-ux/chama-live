@@ -51,6 +51,7 @@ const state = {
   requestId: null,
   monthlyType: null,
   context: null,
+  readOnly: false,
 };
 
 /* =========================================================
@@ -2003,13 +2004,17 @@ export async function addMemberInit() {
       canAddMembers
     );
 
-    if (!canAddMembers) {
+    const role = String(context.role || context.member?.role || "").trim().toLowerCase();
+    const secretaryViewOnly = ["secretary", "vice secretary"].includes(role);
+
+    if (!canAddMembers && !secretaryViewOnly) {
       showAccessError(
         "Only a group admin, chairperson, or treasurer can add members."
       );
-
       return;
     }
+
+    state.readOnly = !canAddMembers;
 
     console.info(
       "CHAMA LIVE Add Member: loading Monthly contribution type."

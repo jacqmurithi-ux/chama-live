@@ -134,7 +134,7 @@
         </div>
         <div class="fine-card">
           <div id="fineOfficerNote" class="fine-officer-note">Checking fine-management permissions…</div>
-          <form id="manualFineForm" class="fine-form-grid" hidden>
+          <form id="manualFineForm" data-permission-page="fines" data-permission-action="create" class="fine-form-grid" hidden>
             <div class="field">
               <label for="manualFineMember">Member</label>
               <select id="manualFineMember" required><option value="">Select member</option></select>
@@ -156,7 +156,7 @@
               <textarea id="manualFineReason" rows="3" maxlength="1000" required placeholder="Explain why the fine was imposed."></textarea>
             </div>
             <div class="fine-form-actions full">
-              <button id="applyManualFineButton" type="submit" class="button">Apply fine</button>
+              <button id="applyManualFineButton" data-permission-page="fines" data-permission-action="create" type="submit" class="button">Apply fine</button>
             </div>
           </form>
         </div>
@@ -170,7 +170,7 @@
           </div>
         </div>
         <div class="fine-card">
-          <form id="fineTypeForm" class="fine-config-grid" hidden>
+          <form id="fineTypeForm" data-permission-page="fines" data-permission-action="generate-contribution" class="fine-config-grid" hidden>
             <div class="field">
               <label for="fineTypeName">Fine type</label>
               <input id="fineTypeName" type="text" maxlength="120" required placeholder="e.g. Meeting Absence">
@@ -184,7 +184,7 @@
               <textarea id="fineTypeDescription" rows="2" maxlength="500" placeholder="Describe when this fine type is used."></textarea>
             </div>
             <div class="fine-config-actions full">
-              <button id="createFineTypeButton" type="submit" class="button secondary">Add fine type</button>
+              <button id="createFineTypeButton" data-permission-page="fines" data-permission-action="generate-contribution" type="submit" class="button secondary">Add fine type</button>
             </div>
           </form>
           <div id="fineRulesReadonlyNote" class="fine-readonly-note">Fine types are read-only for this role.</div>
@@ -226,7 +226,7 @@
             </div>
           </div>
 
-          <form id="adjustFineForm" class="fine-form-grid">
+          <form id="adjustFineForm" data-permission-page="fines" data-permission-action="adjust" class="fine-form-grid">
             <div class="field">
               <label for="fineAdjustDirection">Direction</label>
               <select id="fineAdjustDirection">
@@ -243,11 +243,11 @@
               <textarea id="fineAdjustReason" rows="3" maxlength="1000" required placeholder="Explain the financial correction."></textarea>
             </div>
             <div class="fine-form-actions full">
-              <button id="submitFineAdjustment" type="submit" class="button">Record adjustment</button>
+              <button id="submitFineAdjustment" data-permission-page="fines" data-permission-action="adjust" type="submit" class="button">Record adjustment</button>
             </div>
           </form>
 
-          <form id="waiveFineForm" class="fine-form-grid" hidden>
+          <form id="waiveFineForm" data-permission-page="fines" data-permission-action="waive" class="fine-form-grid" hidden>
             <div class="field">
               <label for="fineWaiveAmount">Waiver amount (KSh)</label>
               <input id="fineWaiveAmount" type="number" min="0.01" step="0.01" required>
@@ -257,11 +257,11 @@
               <textarea id="fineWaiveReason" rows="3" maxlength="1000" required placeholder="Explain why the fine is being waived."></textarea>
             </div>
             <div class="fine-form-actions full">
-              <button id="submitFineWaiver" type="submit" class="button">Record waiver</button>
+              <button id="submitFineWaiver" data-permission-page="fines" data-permission-action="waive" type="submit" class="button">Record waiver</button>
             </div>
           </form>
 
-          <form id="allocateFineForm" class="fine-form-grid" hidden>
+          <form id="allocateFineForm" data-permission-page="fines" data-permission-action="allocate" class="fine-form-grid" hidden>
             <div class="field full">
               <label for="finePayment">Existing member payment</label>
               <select id="finePayment"><option value="">Select an existing member payment</option></select>
@@ -278,7 +278,7 @@
               </select>
             </div>
             <div class="fine-form-actions full">
-              <button id="submitFineAllocation" type="submit" class="button">Allocate payment</button>
+              <button id="submitFineAllocation" data-permission-page="fines" data-permission-action="allocate" type="submit" class="button">Allocate payment</button>
             </div>
           </form>
 

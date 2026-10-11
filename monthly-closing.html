@@ -1864,7 +1864,7 @@
                   rows="5"
                   placeholder="Enter notes, explanations or observations for this month's closing..."
                   aria-label="Closing notes"
-                ></textarea>
+                 data-permission-page="monthly-closing" data-permission-action="close"></textarea>
 
               </div>
 
@@ -1875,7 +1875,7 @@
                   class="btn btn-primary close-month-button"
                   id="closeMonth"
                   type="button"
-                >
+                 data-permission-page="monthly-closing" data-permission-action="close">
                   Close Month
                 </button>
 
@@ -1884,7 +1884,7 @@
                   id="reopenMonth"
                   type="button"
                   hidden
-                >
+                 data-permission-page="monthly-closing" data-permission-action="reopen">
                   Reopen Month
                 </button>
 

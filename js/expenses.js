@@ -138,20 +138,38 @@ function money(value) {
 }
 
 function currentRole() {
-  return String(currentMember?.role || "").trim().toLowerCase();
+  const technicalRole = String(currentMember?.role || "member").trim().toLowerCase();
+  // Group Admin remains distinct from any declared group office.
+  if (technicalRole === "admin" || technicalRole === "administrator") return "admin";
+  const office = String(
+    currentMember?.actual_position_name ||
+    currentMember?.actual_position ||
+    technicalRole
+  ).trim().toLowerCase();
+  if (["vice-chairperson", "vice_chairperson", "vice chair"].includes(office)) return "vice chairperson";
+  if (["vice-secretary", "vice_secretary"].includes(office)) return "vice secretary";
+  return office;
 }
 
 function canRecordExpense() {
-  return ["secretary", "vice secretary", "treasurer"].includes(currentRole());
+  return [
+    "chairperson", "vice chairperson",
+    "secretary", "vice secretary", "treasurer"
+  ].includes(currentRole());
 }
 
+// Fail closed: this page's current schema stores one status only and
+// cannot prove the three distinct Chair, Treasurer and Secretary slots.
+// The candidate RLS migration also denies direct status updates/deletes.
 function canManageExpenses() {
-  return currentRole() === "treasurer";
+  return false;
 }
 
 function applyExpensePermissions() {
   const canRecord = canRecordExpense();
-  if (form) form.hidden = !canRecord;
+  // Keep the page and form visible for readable roles. The shared
+  // permission helper disables the form fields for non-writers.
+  if (form) form.hidden = false;
   if (saveButton) saveButton.disabled = !canRecord;
 }
 
@@ -683,88 +701,10 @@ function renderExpenses() {
             expense.category
           );
 
-        let actions =
-          "";
-
-        /* -----------------------------------------------
-           PENDING
-        ----------------------------------------------- */
-
-        if (
-          canManage &&
-          status === "pending"
-        ) {
-          actions += `
-            <button
-              type="button"
-              class="btn btn-action-approve"
-              data-action="approve"
-              data-id="${escapeHtml(expense.id)}"
-            >
-              Approve
-            </button>
-
-            <button
-              type="button"
-              class="btn btn-action-reject"
-              data-action="reject"
-              data-id="${escapeHtml(expense.id)}"
-            >
-              Reject
-            </button>
-          `;
-        }
-
-        /* -----------------------------------------------
-           APPROVED
-        ----------------------------------------------- */
-
-        else if (
-          canManage &&
-          status === "approved"
-        ) {
-          actions += `
-            <button
-              type="button"
-              class="btn btn-secondary"
-              data-action="reject"
-              data-id="${escapeHtml(expense.id)}"
-            >
-              Reject
-            </button>
-          `;
-        }
-
-        /* -----------------------------------------------
-           REJECTED
-        ----------------------------------------------- */
-
-        else if (canManage) {
-          actions += `
-            <button
-              type="button"
-              class="btn btn-action-restore"
-              data-action="pending"
-              data-id="${escapeHtml(expense.id)}"
-            >
-              Restore
-            </button>
-          `;
-        }
-
-        /* -----------------------------------------------
-           DELETE
-        ----------------------------------------------- */
-
-        if (canManage) actions += `
-          <button
-            type="button"
-            class="btn btn-action-delete"
-            data-action="delete"
-            data-id="${escapeHtml(expense.id)}"
-          >
-            Delete
-          </button>
+        const actions = `
+          <span class="muted" role="status">
+            Approval actions unavailable until all three distinct approval slots are supported.
+          </span>
         `;
 
         return `
@@ -831,7 +771,7 @@ async function createExpense(event) {
   event.preventDefault();
 
   if (!canRecordExpense()) {
-    showPageError(new Error("Only the secretary or treasurer may record an expense."));
+    showPageError(new Error("Only the Chairperson/Vice Chairperson, Treasurer or Secretary/Vice Secretary may submit an expense."));
     return;
   }
 

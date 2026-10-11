@@ -407,11 +407,7 @@ const MEMBER_EVIDENCE_STATUSES = {
 
 const RECORDER_ROLES = new Set([
 
-  "treasurer",
-
-  "secretary",
-
-  "vice secretary"
+  "treasurer"
 
 ]);
 
@@ -424,10 +420,6 @@ const CUSTOM_CONTRIBUTION_ACTIVATOR_ROLES = new Set([
 
 
 const VERIFIER_ROLES = new Set([
-
-  "secretary",
-
-  "vice secretary",
 
   "treasurer"
 
@@ -1082,14 +1074,13 @@ function clearError() {
 ========================================================= */
 
 function getCurrentMemberRole() {
-
-  return String(
-    currentMember?.role ||
-    ""
-  )
-    .trim()
-    .toLowerCase();
-
+  const technicalRole = String(currentMember?.role || "member")
+    .trim().toLowerCase().replace(/[_-]+/g, " ").replace(/\\s+/g, " ");
+  if (technicalRole === "admin" || technicalRole === "administrator") return "admin";
+  const officeRole = String(
+    currentMember?.actual_position_name || currentMember?.actual_position || ""
+  ).trim().toLowerCase().replace(/[_-]+/g, " ").replace(/\\s+/g, " ");
+  return officeRole && officeRole !== "other" ? officeRole : technicalRole;
 }
 
 
@@ -1930,6 +1921,7 @@ function renderDraftCustomContributionList() {
                       <button
                         type="button"
                         class="cl-draft-activate-button"
+                        data-permission-page="contributions" data-permission-action="create"
                         data-activate-custom-contribution="${escapeHtml(
                           item.id
                         )}"
@@ -2141,6 +2133,7 @@ function renderActiveCustomContributionList() {
                         <button
                           type="button"
                           class="cl-verifier-button"
+                          data-permission-page="contributions" data-permission-action="record"
                           data-select-custom-contribution="${escapeHtml(
                             typeId
                           )}"
@@ -3887,6 +3880,7 @@ function renderVerifierPaymentEvidence() {
                 <button
                   type="button"
                   class="cl-verifier-button"
+                  data-permission-page="contributions" data-permission-action="verify"
                   data-verifier-evidence-id="${escapeHtml(
                     evidence.id
                   )}"
@@ -4059,6 +4053,7 @@ function showVerifierPaymentEvidenceDetail(
             cl-verifier-button
             cl-verifier-button-primary
           "
+          data-permission-page="contributions" data-permission-action="verify"
           data-verify-evidence-id="${escapeHtml(
             evidence.id
           )}"
@@ -4072,6 +4067,7 @@ function showVerifierPaymentEvidenceDetail(
             cl-verifier-button
             cl-verifier-button-danger
           "
+          data-permission-page="contributions" data-permission-action="reject"
           data-reject-evidence-id="${escapeHtml(
             evidence.id
           )}"
@@ -7071,7 +7067,7 @@ async function saveCustomContributionDraft(
        Treasurers may create drafts but cannot activate them.
     ===================================================== */
 
-    if (getCurrentMemberRole() === "treasurer" && !isGroupOwner) {
+    if (getCurrentMemberRole() === "treasurer") {
       await loadDraftCustomContributions();
       await loadActiveCustomContributions();
       renderDraftCustomContributionList();

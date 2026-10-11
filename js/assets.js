@@ -73,10 +73,11 @@ const MANAGEMENT_ROLES = [
   "admin",
   "administrator",
   "chairperson",
-  "treasurer"
+  "vice chairperson",
+  "treasurer",
+  "secretary",
+  "vice secretary"
 ];
-
-const DELETE_ROLE = "admin";
 
 
 /* =========================================================
@@ -176,20 +177,28 @@ function normalizeRole(role) {
       : role || ""
   )
     .trim()
-    .toLowerCase();
+    .toLowerCase()
+    .replace(/[_-]+/g, " ")
+    .replace(/\\s+/g, " ");
+}
+
+function memberHasManagementRole(member) {
+  const technical = normalizeRole(member?.role || "member");
+  // Group Admin cannot inherit authority from a separate office field.
+  if (technical === "admin" || technical === "administrator") return true;
+  const roles = new Set([
+    technical,
+    normalizeRole(member?.actual_position_name || member?.actual_position)
+  ]);
+  return MANAGEMENT_ROLES.some(role => roles.has(normalizeRole(role)));
 }
 
 function canManageAssets() {
-  return MANAGEMENT_ROLES.includes(
-    normalizeRole(state.currentMember?.role)
-  );
+  return memberHasManagementRole(state.currentMember);
 }
 
 function canDeleteAssets() {
-  return (
-    normalizeRole(state.currentMember?.role) ===
-    DELETE_ROLE
-  );
+  return memberHasManagementRole(state.currentMember);
 }
 
 
@@ -670,6 +679,7 @@ function renderAssets() {
               <button
                 type="button"
                 class="asset-action"
+                data-permission-page="assets" data-permission-action="edit"
                 data-action="edit"
                 data-id="${escapeHtml(asset.id)}"
               >
@@ -684,6 +694,7 @@ function renderAssets() {
               <button
                 type="button"
                 class="asset-action delete"
+                data-permission-page="assets" data-permission-action="delete"
                 data-action="delete"
                 data-id="${escapeHtml(asset.id)}"
               >

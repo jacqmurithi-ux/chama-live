@@ -260,6 +260,7 @@ WITH CHECK (
   )
 );
 
+DROP POLICY IF EXISTS expenses_delete_finance_role ON public.expenses;
 DROP POLICY IF EXISTS expenses_delete_treasurer_admin ON public.expenses;
 CREATE POLICY expenses_delete_treasurer_admin
 ON public.expenses
@@ -384,7 +385,7 @@ BEGIN
       ),
       (
         'public.create_custom_contribution(uuid,text,text,numeric,text,date,date,date,integer,boolean,numeric,uuid)',
-        $pat$IF NOT EXISTS \(SELECT 1 FROM public\.groups g WHERE g\.id=p_group_id AND g\.owner_user_id=v_auth_user_id\)\s+AND NOT public\.cl_user_has_role\(p_group_id,ARRAY\['chairperson','treasurer'\]::text\[\]\) THEN$pat$,
+        $pat$IF NOT EXISTS \(SELECT 1 FROM public\.groups g WHERE g\.id=p_group_id AND g\.owner_user_id=v_auth_user_id\)\s+AND NOT public\.cl_user_has_role\(p_group_id,ARRAY\['chairperson'\]::text\[\]\) THEN$pat$,
         $rep$IF NOT public.cl_user_has_role(p_group_id,ARRAY['treasurer']::text[]) THEN$rep$
       ),
       (
@@ -441,11 +442,6 @@ BEGIN
         'public.update_group_monthly_contribution_settings(uuid,integer,integer,boolean,numeric)',
         $pat$if v_actor<>v_owner_user_id and coalesce\(v_role,''\) not in \('admin','chairperson'\) then$pat$,
         $rep$if not public.cl_user_has_role(p_group_id, ARRAY['treasurer']::text[]) then$rep$
-      ),
-      (
-        'public.refresh_my_group_contribution_accounting(uuid,text)',
-        $pat$ARRAY\[\s*'chairperson'\s*,\s*'treasurer'\s*,\s*'secretary'\s*,\s*'owner'\s*,\s*'administrator'\s*\]::text\[\]$pat$,
-        $rep$ARRAY['secretary','treasurer']::text[]$rep$
       )
     ) AS updates(signature, pattern, replacement)
   LOOP

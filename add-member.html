@@ -197,7 +197,7 @@
         <form
           id="addMemberForm"
           novalidate
-        >
+         data-permission-page="add-member" data-permission-action="create">
 
           <!-- =================================================
                1. MEMBER DETAILS
@@ -796,7 +796,7 @@
 
           <section class="add-member-card">
 
-            <details id="addMemberHistoricalDetails">
+            <details id="addMemberHistoricalDetails" data-permission-page="add-member" data-permission-action="historical-payment">
 
               <summary>
                 <span>
@@ -1016,7 +1016,7 @@
               id="addMemberAnother"
               class="btn btn-primary"
               type="button"
-            >
+             data-permission-page="add-member" data-permission-action="create">
               Add Another Member
             </button>
 

@@ -42,7 +42,10 @@ const MANAGEMENT_ROLES = [
   "admin",
   "administrator",
   "chairperson",
-  "secretary"
+  "vice chairperson",
+  "treasurer",
+  "secretary",
+  "vice secretary"
 ];
 
 const state = {
@@ -288,16 +291,19 @@ function normalizeRole(role) {
   if (role && typeof role === "object") {
     role = role.role ?? role.name ?? "";
   }
-
   return String(role || "")
     .trim()
-    .toLowerCase();
+    .toLowerCase()
+    .replace(/[_-]+/g, " ")
+    .replace(/\\s+/g, " ");
 }
 
 function canManage() {
-  return MANAGEMENT_ROLES.includes(
-    normalizeRole(state.currentMember?.role)
-  );
+  const member = state.currentMember || {};
+  const technical = normalizeRole(member.role || "member");
+  if (technical === "admin" || technical === "administrator") return true;
+  const roles = new Set([technical, normalizeRole(member.actual_position_name || member.actual_position)]);
+  return MANAGEMENT_ROLES.some(role => roles.has(normalizeRole(role)));
 }
 
 /* =========================================================
@@ -629,7 +635,7 @@ function renderPlans() {
                     ? `
                       <button
                         class="action"
-                        data-plan-action="active"
+                        data-plan-action="active" data-permission-page="plans-activities" data-permission-action="edit"
                         data-id="${escapeHtml(plan.id)}"
                         type="button"
                       >
@@ -644,7 +650,7 @@ function renderPlans() {
                     ? `
                       <button
                         class="action"
-                        data-plan-action="completed"
+                        data-plan-action="completed" data-permission-page="plans-activities" data-permission-action="edit"
                         data-id="${escapeHtml(plan.id)}"
                         type="button"
                       >
@@ -659,7 +665,7 @@ function renderPlans() {
                     ? `
                       <button
                         class="action"
-                        data-plan-action="paused"
+                        data-plan-action="paused" data-permission-page="plans-activities" data-permission-action="edit"
                         data-id="${escapeHtml(plan.id)}"
                         type="button"
                       >
@@ -674,7 +680,7 @@ function renderPlans() {
                     ? `
                       <button
                         class="action"
-                        data-plan-action="cancelled"
+                        data-plan-action="cancelled" data-permission-page="plans-activities" data-permission-action="edit"
                         data-id="${escapeHtml(plan.id)}"
                         type="button"
                       >
@@ -793,7 +799,7 @@ function renderActivities() {
                     ? `
                       <button
                         class="action"
-                        data-activity-action="in_progress"
+                        data-activity-action="in_progress" data-permission-page="plans-activities" data-permission-action="edit"
                         data-id="${escapeHtml(activity.id)}"
                         type="button"
                       >
@@ -808,7 +814,7 @@ function renderActivities() {
                     ? `
                       <button
                         class="action"
-                        data-activity-action="completed"
+                        data-activity-action="completed" data-permission-page="plans-activities" data-permission-action="edit"
                         data-id="${escapeHtml(activity.id)}"
                         type="button"
                       >
@@ -825,7 +831,7 @@ function renderActivities() {
                     ? `
                       <button
                         class="action"
-                        data-activity-action="delayed"
+                        data-activity-action="delayed" data-permission-page="plans-activities" data-permission-action="edit"
                         data-id="${escapeHtml(activity.id)}"
                         type="button"
                       >
@@ -841,7 +847,7 @@ function renderActivities() {
                     ? `
                       <button
                         class="action"
-                        data-activity-action="cancelled"
+                        data-activity-action="cancelled" data-permission-page="plans-activities" data-permission-action="edit"
                         data-id="${escapeHtml(activity.id)}"
                         type="button"
                       >
@@ -939,8 +945,7 @@ async function createPlan(event) {
 
   if (!canManage()) {
     throw new Error(
-      "Only an authorised group admin, chairperson, " +
-      "or secretary can create plans."
+      "Only an authorised group management role can create plans."
     );
   }
 
@@ -1071,8 +1076,7 @@ async function createActivity(event) {
 
   if (!canManage()) {
     throw new Error(
-      "Only an authorised group admin, chairperson, " +
-      "or secretary can create activities."
+      "Only an authorised group management role can create activities."
     );
   }
 
