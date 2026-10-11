@@ -194,14 +194,12 @@ function memberById(id) {
 }
 
 function isManager() {
-  const role = normalize(
-    currentMember?.role
-  );
+  const role = normalize(currentMember?.role);
+  return ["admin", "chairperson", "treasurer"].includes(role);
+}
 
-  return (
-    role === "admin" ||
-    role === "chairperson"
-  );
+function isTreasurer() {
+  return normalize(currentMember?.role) === "treasurer";
 }
 
 function isOfficialPortalRole(role) {
@@ -1616,7 +1614,7 @@ function openEditMember(memberId) {
 
   if (!isManager()) {
     showError(
-      "Only an admin or chairperson can edit members."
+      "Only an administrator, chairperson or treasurer can edit members."
     );
     return;
   }
@@ -2072,7 +2070,7 @@ function preparePositionEditor(member) {
 
   if (reconcile) {
     reconcile.hidden =
-      !isManager();
+      !isTreasurer();
   }
 }
 
@@ -2083,7 +2081,7 @@ async function savePositionChange() {
 
   if (!isManager()) {
     showError(
-      "Only an admin or chairperson can change a member position."
+      "Only an administrator, chairperson or treasurer can change a member position."
     );
     return;
   }
@@ -2220,9 +2218,9 @@ async function reconcileHistoricalPayments() {
     return;
   }
 
-  if (!isManager()) {
+  if (!isTreasurer()) {
     showError(
-      "Only an admin or chairperson can reconcile historical payments."
+      "Only the treasurer can reconcile historical payments."
     );
     return;
   }
@@ -2318,7 +2316,7 @@ async function inviteMember(memberId) {
 
   if (!isManager()) {
     showError(
-      "Only an admin or chairperson can send portal invitations."
+      "Only an administrator, chairperson or treasurer can send portal invitations."
     );
     return;
   }
