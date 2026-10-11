@@ -63,8 +63,15 @@ const formatDateTime = value => {
       });
 };
 
-const roleName = role =>
-  String(role || "").trim().toLowerCase();
+const roleName = value => {
+  const member = value && typeof value === "object" ? value : null;
+  const technical = String(member?.role ?? value ?? "member")
+    .trim().toLowerCase().replace(/[_-]+/g, " ").replace(/\\s+/g, " ");
+  if (technical === "admin" || technical === "administrator") return "admin";
+  const office = String(member?.actual_position_name || member?.actual_position || "")
+    .trim().toLowerCase().replace(/[_-]+/g, " ").replace(/\\s+/g, " ");
+  return office && office !== "other" ? office : technical;
+};
 
 const byId = id => document.getElementById(id);
 
@@ -157,20 +164,20 @@ function isFineSettled(fine) {
 
 function canManageManualFines() {
   return MANUAL_FINE_ROLES.has(
-    roleName(state.member?.role)
+    roleName(state.member)
   );
 }
 
 function canCorrectFines() {
   return CORRECTION_ROLES.has(
-    roleName(state.member?.role)
+    roleName(state.member)
   );
 }
 
 function setPermissions() {
   const manualAllowed = canManageManualFines();
   const correctionAllowed = canCorrectFines();
-  const typeAllowed = roleName(state.member?.role) === "treasurer";
+  const typeAllowed = roleName(state.member) === "treasurer";
 
   const manualForm = byId("manualFineForm");
   const typeForm = byId("fineTypeForm");
