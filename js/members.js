@@ -622,6 +622,7 @@ function createMemberRow(member) {
           <button
             type="button"
             class="btn btn-small"
+            data-permission-page="members" data-permission-action="edit"
             data-member-action="edit"
             data-member-id="${escapeHtml(member.id)}"
           >
@@ -753,6 +754,7 @@ function createMemberCard(member) {
         <button
           type="button"
           class="btn btn-small"
+          data-permission-page="members" data-permission-action="edit"
           data-member-action="edit"
           data-member-id="${escapeHtml(member.id)}"
         >
