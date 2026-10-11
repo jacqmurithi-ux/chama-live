@@ -75,17 +75,16 @@ import {
 ======================================================= */
 
 /*
- * CHAMA LIVE production URL.
+ * Use the origin that is serving this page.
  *
- * Keep this explicit rather than deriving it from
- * window.location.origin.
- *
- * This prevents an accidental staging/legacy host from
- * becoming the authentication callback destination.
+ * Production resolves to https://chamalive.co.ke.
+ * Preview deployments resolve to their own Vercel origin,
+ * keeping confirmation, session cleanup and login isolated
+ * from the production portal.
  */
 
 const APP_URL =
-  "https://chamalive.co.ke";
+  window.location.origin;
 
 
 const CONFIRM_URL =
@@ -820,7 +819,7 @@ async function init() {
     if (!session) {
 
       throw new Error(
-        "Your email was confirmed, but a login session could not be established. Please sign in and try again."
+        "Your email may already be confirmed, but this browser has no active login session. Open the sign-in page for this same site, sign in with the account you just confirmed, and then continue. Do not reuse the old email link."
       );
 
     }
