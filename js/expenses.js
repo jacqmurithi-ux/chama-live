@@ -4,7 +4,7 @@ COMPLETE STABLE VERSION
 
 ## DATABASE RULE
 
-expenses.recorded_by -> members.id
+expenses.recorded_by -> auth.users.id
 
 Therefore:
 recorded_by = currentMember.id
@@ -789,7 +789,7 @@ function renderExpenses() {
         const canVote = status === "pending" &&
           canApproveExpense() &&
           Boolean(mySlot) &&
-          expense.recorded_by !== currentMember?.id &&
+          expense.recorded_by !== currentUser?.id &&
           !alreadyVoted &&
           !slotAlreadyFilled;
 
@@ -1017,7 +1017,7 @@ async function createExpense(event) {
     /* =====================================================
        INSERT
 
-       recorded_by = MEMBER ID
+       recorded_by = AUTH USER ID
     ====================================================== */
 
     const payload = {
@@ -1037,7 +1037,7 @@ async function createExpense(event) {
         date,
 
       recorded_by:
-        currentMember.id,
+        currentUser.id,
 
       receipt_url:
         receiptUrl ||
