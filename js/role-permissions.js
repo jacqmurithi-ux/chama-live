@@ -191,15 +191,31 @@ const POLICY = {
 };
 
 const roleCan = (roles, page, action, member) => {
-  const rule = POLICY[page]?.[action];
+  const normalizedPage = normalize(page);
+  const normalizedAction = normalize(action);
+  const rule = POLICY[normalizedPage]?.[normalizedAction];
   if (!(rule instanceof Set)) return false;
 
-  // Platform administrators and group administrators cannot act as
-  // any of the three required expense approver slots.
+  /*
+   * A group admin has full group-portal control in the UI.
+   * Preserve separation of duties for the three distinct-person
+   * expense approval slots; backend RPC/RLS authorization remains
+   * authoritative for every operation.
+   */
+  if (roles.has("admin")) {
+    if (
+      normalizedPage === "expenses" &&
+      ["approve-chair", "approve-treasurer", "approve-secretary"].includes(normalizedAction)
+    ) return false;
+    return true;
+  }
+
+  // Platform administrators are not group-office permissions and
+  // cannot satisfy any of the three required expense approver slots.
   if (
-    normalize(page) === "expenses" &&
-    ["approve-chair", "approve-treasurer", "approve-secretary"].includes(normalize(action)) &&
-    (roles.has("admin") || member?.is_platform_admin === true)
+    normalizedPage === "expenses" &&
+    ["approve-chair", "approve-treasurer", "approve-secretary"].includes(normalizedAction) &&
+    member?.is_platform_admin === true
   ) return false;
 
   return [...roles].some(role => rule.has(role));
