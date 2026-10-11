@@ -34,13 +34,22 @@ const ROLE_ALIASES = new Map([
 export function getGroupRoles(member = {}) {
   // A group administrator is not a platform administrator and must
   // never satisfy one of the three expense approval slots.
-  const technicalRole = normalize(member.role || "member");
+  const normalizeRole = raw => ROLE_ALIASES.get(normalize(raw)) || normalize(raw);
+  // Normalize aliases on the technical role too. Application context can
+  // supply "administrator" even though the permission policy uses "admin".
+  const technicalRole = normalizeRole(member.role || "member");
   const officeRole = normalize(member.actual_position_name || member.actual_position);
-  const normalizeRole = raw => ROLE_ALIASES.get(raw) || raw;
-  // Group Admin is a distinct group role: never inherit a declared
-  // office role that could grant treasury or approval-slot authority.
-  if (technicalRole === "admin") return new Set(["admin"]);
+  // Admin receives group-management access but does not automatically
+  // inherit an approval office. A separately recorded qualifying office
+  // may satisfy its own expense slot, subject to backend distinct-person checks.
   const normalizedOffice = normalizeRole(officeRole);
+  if (technicalRole === "admin") {
+    const adminRoles = new Set(["admin"]);
+    if (["chairperson", "vice chairperson", "treasurer", "secretary", "vice secretary"].includes(normalizedOffice)) {
+      adminRoles.add(normalizedOffice);
+    }
+    return adminRoles;
+  }
   const officialOfficeRoles = new Set([
     "chairperson", "vice chairperson", "treasurer",
     "secretary", "vice secretary"
@@ -93,7 +102,7 @@ const POLICY = {
   "add-member": {
     view: GROUP_MANAGEMENT,
     create: new Set(["admin", "chairperson", "vice chairperson", "treasurer"]),
-    "historical-payment": new Set(["treasurer"])
+    "historical-payment": new Set(["admin", "treasurer"])
   },
   dashboard: {
     view: GROUP_MANAGEMENT,
