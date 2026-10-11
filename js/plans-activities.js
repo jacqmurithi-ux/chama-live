@@ -635,7 +635,7 @@ function renderPlans() {
                     ? `
                       <button
                         class="action"
-                        data-plan-action="active"
+                        data-plan-action="active" data-permission-page="plans-activities" data-permission-action="edit"
                         data-id="${escapeHtml(plan.id)}"
                         type="button"
                       >
@@ -650,7 +650,7 @@ function renderPlans() {
                     ? `
                       <button
                         class="action"
-                        data-plan-action="completed"
+                        data-plan-action="completed" data-permission-page="plans-activities" data-permission-action="edit"
                         data-id="${escapeHtml(plan.id)}"
                         type="button"
                       >
@@ -665,7 +665,7 @@ function renderPlans() {
                     ? `
                       <button
                         class="action"
-                        data-plan-action="paused"
+                        data-plan-action="paused" data-permission-page="plans-activities" data-permission-action="edit"
                         data-id="${escapeHtml(plan.id)}"
                         type="button"
                       >
@@ -680,7 +680,7 @@ function renderPlans() {
                     ? `
                       <button
                         class="action"
-                        data-plan-action="cancelled"
+                        data-plan-action="cancelled" data-permission-page="plans-activities" data-permission-action="edit"
                         data-id="${escapeHtml(plan.id)}"
                         type="button"
                       >
@@ -799,7 +799,7 @@ function renderActivities() {
                     ? `
                       <button
                         class="action"
-                        data-activity-action="in_progress"
+                        data-activity-action="in_progress" data-permission-page="plans-activities" data-permission-action="edit"
                         data-id="${escapeHtml(activity.id)}"
                         type="button"
                       >
@@ -814,7 +814,7 @@ function renderActivities() {
                     ? `
                       <button
                         class="action"
-                        data-activity-action="completed"
+                        data-activity-action="completed" data-permission-page="plans-activities" data-permission-action="edit"
                         data-id="${escapeHtml(activity.id)}"
                         type="button"
                       >
@@ -831,7 +831,7 @@ function renderActivities() {
                     ? `
                       <button
                         class="action"
-                        data-activity-action="delayed"
+                        data-activity-action="delayed" data-permission-page="plans-activities" data-permission-action="edit"
                         data-id="${escapeHtml(activity.id)}"
                         type="button"
                       >
@@ -847,7 +847,7 @@ function renderActivities() {
                     ? `
                       <button
                         class="action"
-                        data-activity-action="cancelled"
+                        data-activity-action="cancelled" data-permission-page="plans-activities" data-permission-action="edit"
                         data-id="${escapeHtml(activity.id)}"
                         type="button"
                       >
