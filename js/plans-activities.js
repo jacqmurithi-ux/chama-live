@@ -291,16 +291,19 @@ function normalizeRole(role) {
   if (role && typeof role === "object") {
     role = role.role ?? role.name ?? "";
   }
-
   return String(role || "")
     .trim()
-    .toLowerCase();
+    .toLowerCase()
+    .replace(/[_-]+/g, " ")
+    .replace(/\\s+/g, " ");
 }
 
 function canManage() {
-  return MANAGEMENT_ROLES.includes(
-    normalizeRole(state.currentMember?.role)
-  );
+  const member = state.currentMember || {};
+  const technical = normalizeRole(member.role || "member");
+  if (technical === "admin" || technical === "administrator") return true;
+  const roles = new Set([technical, normalizeRole(member.actual_position_name || member.actual_position)]);
+  return MANAGEMENT_ROLES.some(role => roles.has(normalizeRole(role)));
 }
 
 /* =========================================================
