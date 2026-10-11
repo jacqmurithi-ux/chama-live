@@ -84,11 +84,11 @@ BEGIN
 
   v_position := lower(regexp_replace(
     replace(replace(btrim(coalesce(v_approver.actual_position, '')), '_', ' '), '-', ' '),
-    '\\s+', ' ', 'g'
+    '[[:space:]]+', ' ', 'g'
   ));
   v_position_name := lower(regexp_replace(
     replace(replace(btrim(coalesce(v_approver.actual_position_name, '')), '_', ' '), '-', ' '),
-    '\\s+', ' ', 'g'
+    '[[:space:]]+', ' ', 'g'
   ));
 
   -- Office position, not technical system role, controls the approval slot.
