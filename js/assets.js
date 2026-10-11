@@ -679,6 +679,7 @@ function renderAssets() {
               <button
                 type="button"
                 class="asset-action"
+                data-permission-page="assets" data-permission-action="edit"
                 data-action="edit"
                 data-id="${escapeHtml(asset.id)}"
               >
@@ -693,6 +694,7 @@ function renderAssets() {
               <button
                 type="button"
                 class="asset-action delete"
+                data-permission-page="assets" data-permission-action="delete"
                 data-action="delete"
                 data-id="${escapeHtml(asset.id)}"
               >
