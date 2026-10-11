@@ -193,30 +193,19 @@ const POLICY = {
 const roleCan = (roles, page, action, member) => {
   const normalizedPage = normalize(page);
   const normalizedAction = normalize(action);
-  const rule = POLICY[normalizedPage]?.[normalizedAction];
-  if (!(rule instanceof Set)) return false;
 
   /*
-   * A group admin has full group-portal control in the UI.
-   * Preserve separation of duties for the three distinct-person
-   * expense approval slots; backend RPC/RLS authorization remains
-   * authoritative for every operation.
+   * Group admin is the full-control role for every group page and
+   * action. This check intentionally precedes policy lookup so a
+   * newly added page/action cannot accidentally put an admin into
+   * view-only mode. Backend authorization must implement the same
+   * group-admin rule. This is not a platform-admin identity check.
    */
-  if (roles.has("admin")) {
-    if (
-      normalizedPage === "expenses" &&
-      ["approve-chair", "approve-treasurer", "approve-secretary"].includes(normalizedAction)
-    ) return false;
-    return true;
-  }
+  if (roles.has("admin")) return true;
 
-  // Platform administrators are not group-office permissions and
-  // cannot satisfy any of the three required expense approver slots.
-  if (
-    normalizedPage === "expenses" &&
-    ["approve-chair", "approve-treasurer", "approve-secretary"].includes(normalizedAction) &&
-    member?.is_platform_admin === true
-  ) return false;
+  // Unknown page/action pairs fail closed for every non-admin role.
+  const rule = POLICY[normalizedPage]?.[normalizedAction];
+  if (!(rule instanceof Set)) return false;
 
   return [...roles].some(role => rule.has(role));
 };
@@ -236,6 +225,9 @@ export function canWrite(page, action, member, options = {}) {
 export function pageHasReadOnlyAccess(page, member, options = {}) {
   if (options.isVerifiedPlatformAdmin === true) return false;
   const roles = getGroupRoles(member);
+  // Group admins never receive a view-only badge, including on newly
+  // introduced pages that have not yet been added to POLICY.
+  if (roles.has("admin")) return false;
   const rules = POLICY[normalize(page)];
   if (!rules) return true;
   const readActions = new Set(["view", "search", "filter", "export"]);
