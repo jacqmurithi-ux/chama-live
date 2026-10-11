@@ -39,17 +39,13 @@ export function getGroupRoles(member = {}) {
   // supply "administrator" even though the permission policy uses "admin".
   const technicalRole = normalizeRole(member.role || "member");
   const officeRole = normalize(member.actual_position_name || member.actual_position);
-  // Admin receives group-management access but does not automatically
-  // inherit an approval office. A separately recorded qualifying office
-  // may satisfy its own expense slot, subject to backend distinct-person checks.
+  // A technical group Admin gets admin permissions only. A declared
+  // office must not be inherited by this technical role to satisfy one of
+  // the three distinct-person expense-approval slots. Backend checks remain
+  // authoritative even when a person holds more than one recorded role.
+  if (technicalRole === "admin") return new Set(["admin"]);
+
   const normalizedOffice = normalizeRole(officeRole);
-  if (technicalRole === "admin") {
-    const adminRoles = new Set(["admin"]);
-    if (["chairperson", "vice chairperson", "treasurer", "secretary", "vice secretary"].includes(normalizedOffice)) {
-      adminRoles.add(normalizedOffice);
-    }
-    return adminRoles;
-  }
   const officialOfficeRoles = new Set([
     "chairperson", "vice chairperson", "treasurer",
     "secretary", "vice secretary"
