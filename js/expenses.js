@@ -159,8 +159,8 @@ function currentRole() {
     "treasurer", "secretary", "vice secretary"
   ]);
 
-  // The actual office determines the approval slot. A technical group Admin
-  // role alone must never count as Chair, Treasurer, or Secretary.
+  // Preserve a declared office for ordinary page permissions. Approval
+  // eligibility is checked separately and never inferred from technical role.
   const office = offices.has(position)
     ? position
     : offices.has(positionName)
@@ -173,29 +173,44 @@ function currentRole() {
     return office;
   }
 
-  // Legacy technical roles remain a fallback for office roles, but Admin
-  // and Administrator are deliberately not approval offices.
-  if (technicalRole === "admin" || technicalRole === "administrator") return "admin";
-  if (["vice chairperson", "chair", "vice chair"].includes(technicalRole)) return "chairperson";
-  if (technicalRole === "vice secretary") return "secretary";
+  if (technicalRole === "administrator") return "admin";
   return technicalRole;
 }
 
 function canRecordExpense() {
+  // Group Admin may submit a pending expense, but cannot approve it by virtue
+  // of Admin access. The three-office approval is enforced separately.
   return [
-    "chairperson", "vice chairperson",
+    "admin", "chairperson", "vice chairperson",
     "secretary", "vice secretary", "treasurer"
   ].includes(currentRole());
 }
 
-// Approval eligibility is only a UI hint. The database RPC enforces the
-// three distinct approval slots and blocks self-approval.
+function currentApprovalSlot() {
+  const position = normalizeOffice(currentMember?.actual_position);
+  const positionName = normalizeOffice(currentMember?.actual_position_name);
+  const office = new Set([
+    "chairperson", "vice chairperson", "chair", "vice chair",
+    "treasurer", "secretary", "vice secretary"
+  ]);
+
+  const declaredOffice = office.has(position)
+    ? position
+    : office.has(positionName)
+      ? positionName
+      : null;
+
+  if (["chairperson", "vice chairperson", "chair", "vice chair"].includes(declaredOffice)) {
+    return "chair";
+  }
+  if (declaredOffice === "treasurer") return "treasurer";
+  if (["secretary", "vice secretary"].includes(declaredOffice)) return "secretary";
+  return null;
+}
+
+// UI hint only; the database RPC remains authoritative.
 function canApproveExpense() {
-  return [
-    "chairperson", "vice chairperson",
-    "treasurer",
-    "secretary", "vice secretary"
-  ].includes(currentRole());
+  return Boolean(currentApprovalSlot());
 }
 
 function canManageExpenses() {
@@ -762,14 +777,7 @@ function renderExpenses() {
             approval.approver_user_id === currentUser?.id
         );
 
-        const roleForApproval = currentRole();
-        const mySlot = roleForApproval === "chairperson"
-          ? "chair"
-          : roleForApproval === "treasurer"
-            ? "treasurer"
-            : roleForApproval === "secretary"
-              ? "secretary"
-              : null;
+        const mySlot = currentApprovalSlot();
 
         // A Chair and Vice Chair share one slot; a Secretary and Vice Secretary
         // share one slot. Hide actions once that office-family slot is occupied.
