@@ -762,10 +762,28 @@ function renderExpenses() {
             approval.approver_user_id === currentUser?.id
         );
 
+        const roleForApproval = currentRole();
+        const mySlot = roleForApproval === "chairperson"
+          ? "chair"
+          : roleForApproval === "treasurer"
+            ? "treasurer"
+            : roleForApproval === "secretary"
+              ? "secretary"
+              : null;
+
+        // A Chair and Vice Chair share one slot; a Secretary and Vice Secretary
+        // share one slot. Hide actions once that office-family slot is occupied.
+        const slotAlreadyFilled = Boolean(mySlot) && expenseApprovals.some(
+          approval => approval.expense_id === expense.id &&
+            approval.approval_slot === mySlot
+        );
+
         const canVote = status === "pending" &&
           canApproveExpense() &&
+          Boolean(mySlot) &&
           expense.recorded_by !== currentMember?.id &&
-          !alreadyVoted;
+          !alreadyVoted &&
+          !slotAlreadyFilled;
 
         const actions = canVote ? `
           <button type="button" data-action="approve" data-id="${escapeHtml(expense.id)}">
