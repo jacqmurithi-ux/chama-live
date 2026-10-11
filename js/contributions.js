@@ -407,11 +407,7 @@ const MEMBER_EVIDENCE_STATUSES = {
 
 const RECORDER_ROLES = new Set([
 
-  "treasurer",
-
-  "secretary",
-
-  "vice secretary"
+  "treasurer"
 
 ]);
 
@@ -424,10 +420,6 @@ const CUSTOM_CONTRIBUTION_ACTIVATOR_ROLES = new Set([
 
 
 const VERIFIER_ROLES = new Set([
-
-  "secretary",
-
-  "vice secretary",
 
   "treasurer"
 
@@ -7071,7 +7063,7 @@ async function saveCustomContributionDraft(
        Treasurers may create drafts but cannot activate them.
     ===================================================== */
 
-    if (getCurrentMemberRole() === "treasurer" && !isGroupOwner) {
+    if (getCurrentMemberRole() === "treasurer") {
       await loadDraftCustomContributions();
       await loadActiveCustomContributions();
       renderDraftCustomContributionList();
