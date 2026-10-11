@@ -154,26 +154,31 @@ function currentRole() {
   const position = normalizeOffice(currentMember?.actual_position);
   const positionName = normalizeOffice(currentMember?.actual_position_name);
 
-  // Group Admin is not an expense approval office.
-  if (technicalRole === "admin" || technicalRole === "administrator") return "admin";
-
   const offices = new Set([
     "chairperson", "vice chairperson", "chair", "vice chair",
     "treasurer", "secretary", "vice secretary"
   ]);
 
-  // Prefer the structured office field when it contains a real office.
-  // Older member rows sometimes have a generic "member"/"other" value
-  // in actual_position while actual_position_name carries the office.
+  // The actual office determines the approval slot. A technical group Admin
+  // role alone must never count as Chair, Treasurer, or Secretary.
   const office = offices.has(position)
     ? position
     : offices.has(positionName)
       ? positionName
-      : technicalRole;
+      : null;
 
-  if (["vice chairperson", "chair", "vice chair"].includes(office)) return office === "chair" ? "chairperson" : "vice chairperson";
-  if (office === "vice secretary") return "vice secretary";
-  return office;
+  if (office) {
+    if (["chair", "vice chair", "vice chairperson"].includes(office)) return "chairperson";
+    if (office === "vice secretary") return "secretary";
+    return office;
+  }
+
+  // Legacy technical roles remain a fallback for office roles, but Admin
+  // and Administrator are deliberately not approval offices.
+  if (technicalRole === "admin" || technicalRole === "administrator") return "admin";
+  if (["vice chairperson", "chair", "vice chair"].includes(technicalRole)) return "chairperson";
+  if (technicalRole === "vice secretary") return "secretary";
+  return technicalRole;
 }
 
 function canRecordExpense() {
@@ -759,7 +764,7 @@ function renderExpenses() {
 
         const canVote = status === "pending" &&
           canApproveExpense() &&
-          expense.recorded_by !== currentUser?.id &&
+          expense.recorded_by !== currentMember?.id &&
           !alreadyVoted;
 
         const actions = canVote ? `
