@@ -74,6 +74,8 @@ const GROUP_MANAGEMENT = new Set([
 const CHAIR_SLOT = new Set(["chairperson", "vice chairperson"]);
 const SECRETARY_SLOT = new Set(["secretary", "vice secretary"]);
 const MEMBER_RECORDS_FULL = new Set(["admin", "chairperson", "vice chairperson", "treasurer"]);
+const CONTRIBUTION_OPERATORS = new Set(["admin", "chairperson", "treasurer"]);
+const MONTH_CLOSE_OFFICERS = new Set(["chairperson", "treasurer"]);
 
 const MEMBER_PORTAL_ROLES = new Set([
   "member", "admin", "chairperson", "vice chairperson",
@@ -132,17 +134,20 @@ const POLICY = {
   contributions: {
     view: GROUP_MANAGEMENT,
     "submit-evidence": new Set(["member"]),
-    create: new Set(["treasurer"]),
-    record: new Set(["treasurer"]),
-    verify: new Set(["treasurer"]),
-    approve: new Set(["treasurer"]),
-    reject: new Set(["treasurer"]),
-    reverse: new Set(["treasurer"]),
+    // Admin, Chairperson and Treasurer can manage contribution records.
+    // Canonical accounting writes remain backend RPC-controlled.
+    create: CONTRIBUTION_OPERATORS,
+    record: CONTRIBUTION_OPERATORS,
+    verify: CONTRIBUTION_OPERATORS,
+    approve: CONTRIBUTION_OPERATORS,
+    reject: CONTRIBUTION_OPERATORS,
+    reverse: CONTRIBUTION_OPERATORS,
     settings: new Set(["treasurer"])
   },
   expenses: {
     view: GROUP_MANAGEMENT,
-    create: new Set(["chairperson", "vice chairperson", "treasurer", "secretary", "vice secretary"]),
+    // Admin may submit expenses but cannot fill any required approval slot.
+    create: new Set(["admin", "chairperson", "vice chairperson", "treasurer", "secretary", "vice secretary"]),
     // The current schema has only one approval_status field. Until a
     // distinct-person three-slot backend workflow exists, all approval,
     // edit and delete actions fail closed in the UI.
@@ -162,12 +167,13 @@ const POLICY = {
   },
   "monthly-closing": {
     view: GROUP_MANAGEMENT,
-    close: new Set(["treasurer"]),
-    reopen: new Set(["treasurer"])
+    close: MONTH_CLOSE_OFFICERS,
+    reopen: MONTH_CLOSE_OFFICERS
   },
   "data-migration": {
-    view: new Set(["admin", "treasurer"]),
-    import: new Set(["treasurer"]),
+    view: new Set(["admin", "chairperson", "treasurer"]),
+    import: CONTRIBUTION_OPERATORS,
+    // Posting imported data remains a Treasurer-controlled action.
     post: new Set(["treasurer"])
   },
   "group-management": {
