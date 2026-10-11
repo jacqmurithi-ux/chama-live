@@ -958,32 +958,38 @@ async function loadMemberAccounting(member) {
     );
   }
 
-  /*
-   * Canonical synchronization is best effort.
-   * A refresh failure must not block profile identity.
-   */
-  const refresh =
-    await supabase.rpc(
-      "refresh_my_managed_member_accounting",
-      {
-        p_member_id: member.id
-      }
-    );
+  const isOwnMember =
+    String(member.id) === String(currentMember?.id);
 
-  if (refresh.error) {
-    console.warn(
-      "CHAMA LIVE: member accounting refresh returned an error:",
-      refresh.error
-    );
+  /*
+   * Only refresh the signed-in member's own accounting from this page.
+   * Group-level views use the role-guarded summary RPC and never call the
+   * member-specific position RPC for another person's member ID.
+   */
+  if (isOwnMember) {
+    const refresh =
+      await supabase.rpc(
+        "refresh_my_managed_member_accounting",
+        { p_member_id: member.id }
+      );
+
+    if (refresh.error) {
+      console.warn(
+        "CHAMA LIVE: member accounting refresh returned an error:",
+        refresh.error
+      );
+    }
   }
 
-  const positionResult =
-    await supabase.rpc(
-      "get_member_contribution_position",
-      {
-        p_member_id: member.id
-      }
-    );
+  const positionResult = isOwnMember
+    ? await supabase.rpc(
+        "get_member_contribution_position",
+        { p_member_id: member.id }
+      )
+    : await supabase.rpc(
+        "get_group_contribution_positions",
+        { p_group_id: groupId || member.group_id }
+      );
 
   if (positionResult.error) {
     console.error(
@@ -993,13 +999,12 @@ async function loadMemberAccounting(member) {
     throw positionResult.error;
   }
 
-  const raw =
-    positionResult.data;
-
-  const position =
-    Array.isArray(raw)
-      ? raw[0] || null
-      : raw || null;
+  const raw = positionResult.data;
+  const position = Array.isArray(raw)
+    ? (isOwnMember
+        ? raw[0] || null
+        : raw.find(row => String(row.member_id) === String(member.id)) || null)
+    : raw || null;
 
   /*
    * Total Contributed is the sum of contribution rows.
