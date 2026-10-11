@@ -460,16 +460,16 @@ function actionButtons(fine) {
 
   return `
     <div class="fine-action-buttons">
-      <button type="button" class="button secondary small" data-fine-action="manage" data-fine-id="${esc(fine.id)}">
+      <button type="button" class="button secondary small" data-permission-page="fines" data-permission-action="adjust" data-fine-action="manage" data-fine-id="${esc(fine.id)}">
         Manage
       </button>
-      <button type="button" class="button secondary small" data-fine-action="adjust" data-fine-id="${esc(fine.id)}" ${disabled}>
+      <button type="button" class="button secondary small" data-permission-page="fines" data-permission-action="adjust" data-fine-action="adjust" data-fine-id="${esc(fine.id)}" ${disabled}>
         Adjust
       </button>
-      <button type="button" class="button secondary small" data-fine-action="waive" data-fine-id="${esc(fine.id)}" ${disabled}>
+      <button type="button" class="button secondary small" data-permission-page="fines" data-permission-action="waive" data-fine-action="waive" data-fine-id="${esc(fine.id)}" ${disabled}>
         Waive
       </button>
-      <button type="button" class="button secondary small" data-fine-action="allocate" data-fine-id="${esc(fine.id)}" ${disabled}>
+      <button type="button" class="button secondary small" data-permission-page="fines" data-permission-action="allocate" data-fine-action="allocate" data-fine-id="${esc(fine.id)}" ${disabled}>
         Allocate
       </button>
     </div>
