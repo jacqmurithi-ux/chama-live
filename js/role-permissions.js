@@ -40,8 +40,19 @@ export function getGroupRoles(member = {}) {
   // Group Admin is a distinct group role: never inherit a declared
   // office role that could grant treasury or approval-slot authority.
   if (technicalRole === "admin") return new Set(["admin"]);
+  const normalizedOffice = normalizeRole(officeRole);
+  const officialOfficeRoles = new Set([
+    "chairperson", "vice chairperson", "treasurer",
+    "secretary", "vice secretary"
+  ]);
   const roles = new Set([normalizeRole(technicalRole)]);
-  if (officeRole) roles.add(normalizeRole(officeRole));
+  if (normalizedOffice) roles.add(normalizedOffice);
+  // A member who holds a recognized office is not treated as an ordinary
+  // member for group-portal permissions. Member-portal permissions explicitly
+  // list official roles where their own evidence/profile actions are allowed.
+  if (officialOfficeRoles.has(normalizedOffice) && normalizeRole(technicalRole) === "member") {
+    roles.delete("member");
+  }
   return roles;
 }
 
@@ -127,13 +138,14 @@ const POLICY = {
   expenses: {
     view: GROUP_MANAGEMENT,
     create: new Set(["chairperson", "vice chairperson", "treasurer", "secretary", "vice secretary"]),
-    edit: new Set(["treasurer"]),
-    delete: new Set(["treasurer"]),
-    // An individual role can submit its own slot only. Full
-    // three-slot completion is enforced by backend workflow.
-    "approve-chair": CHAIR_SLOT,
-    "approve-treasurer": new Set(["treasurer"]),
-    "approve-secretary": SECRETARY_SLOT
+    // The current schema has only one approval_status field. Until a
+    // distinct-person three-slot backend workflow exists, all approval,
+    // edit and delete actions fail closed in the UI.
+    edit: new Set(),
+    delete: new Set(),
+    "approve-chair": new Set(),
+    "approve-treasurer": new Set(),
+    "approve-secretary": new Set()
   },
   fines: {
     view: GROUP_MANAGEMENT,
