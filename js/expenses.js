@@ -177,8 +177,10 @@ function currentRole() {
 }
 
 function canRecordExpense() {
+  // Admin may submit a pending expense, but cannot occupy an approval slot
+  // unless they separately hold the qualifying office in the backend record.
   return [
-    "chairperson", "vice chairperson",
+    "admin", "chairperson", "vice chairperson",
     "secretary", "vice secretary", "treasurer"
   ].includes(currentRole());
 }
