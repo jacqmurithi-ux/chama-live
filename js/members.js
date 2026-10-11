@@ -638,10 +638,10 @@ function createMemberRow(member) {
           <button
             type="button"
             class="btn btn-small"
-            data-member-action="delete"
+            data-member-action="toggle-status"
             data-member-id="${escapeHtml(member.id)}"
           >
-            Delete
+            ${normalize(member.status) === "active" ? "Mark Inactive" : "Reactivate"}
           </button>
         ` : ""}
       </div>
@@ -780,10 +780,10 @@ function createMemberCard(member) {
           <button
             type="button"
             class="btn btn-small"
-            data-member-action="delete"
+            data-member-action="toggle-status"
             data-member-id="${escapeHtml(member.id)}"
           >
-            Delete
+            ${normalize(member.status) === "active" ? "Mark Inactive" : "Reactivate"}
           </button>
         ` : ""}
 
@@ -2510,9 +2510,9 @@ async function inviteMember(memberId) {
 }
 
 
-async function deleteMember(memberId, button) {
+async function changeMemberStatus(memberId, button) {
   if (!isGroupAdmin()) {
-    showError("Only the group admin can delete a member.");
+    showError("Only the group admin can change a member's status.");
     return;
   }
 
@@ -2522,57 +2522,57 @@ async function deleteMember(memberId, button) {
     return;
   }
 
-  if (
-    String(member.auth_user_id || "") === String(currentUser?.id || "") ||
-    String(member.user_id || "") === String(currentUser?.id || "")
-  ) {
-    showError("You cannot delete your own member record.");
-    return;
-  }
+  const isActive = normalize(member.status) === "active";
+  const nextStatus = isActive ? "inactive" : "active";
+  const memberLabel = text(member.name) || "This member";
+  const actionLabel = isActive ? "mark inactive" : "reactivate";
 
-  const memberLabel = text(member.name) || "this member";
   const confirmed = window.confirm(
-    `Delete ${memberLabel} from this group? Continue only for a disposable test member. The database may block deletion when linked financial history must be preserved.`
+    isActive
+      ? `Mark ${memberLabel} as inactive? Their financial history will be retained. Confirm separately how your group handles any future obligations before using this for accounting decisions.`
+      : `Reactivate ${memberLabel}? Their existing historical records will remain linked to the same member.`
   );
   if (!confirmed) return;
 
   if (button) {
     button.disabled = true;
-    button.textContent = "Deleting…";
+    button.textContent = isActive ? "Marking inactive…" : "Reactivating…";
   }
 
   try {
     const { data, error } = await supabase
       .from("members")
-      .delete()
+      .update({ status: nextStatus })
       .eq("id", member.id)
       .eq("group_id", groupId)
-      .select("id");
+      .eq("status", member.status)
+      .select("id, status");
 
     if (error) throw error;
     if (!Array.isArray(data) || data.length !== 1) {
       throw new Error(
-        "The member was not deleted. The database may have blocked the operation or the row is not accessible."
+        "The member status was not changed. Refresh the directory and verify your permissions."
       );
     }
 
     await loadMembers();
     filterMembers();
-    showSuccess(`${memberLabel} was deleted.`);
+    showSuccess(
+      `${memberLabel} was marked ${nextStatus}. Historical financial records were not deleted.`
+    );
   } catch (error) {
-    console.error("CHAMA LIVE: member delete failed:", error);
+    console.error("CHAMA LIVE: member status change failed:", error);
     showError(
       error?.message ||
-      "Unable to delete this member. Financial history and related records have been preserved."
+      "Unable to change this member's status. No financial history was intentionally deleted."
     );
   } finally {
     if (button) {
       button.disabled = false;
-      button.textContent = "Delete";
+      button.textContent = actionLabel;
     }
   }
 }
-
 
 /* =========================================================
    ACTION DELEGATION
@@ -2608,8 +2608,8 @@ function handleMemberAction(event) {
     return;
   }
 
-  if (action === "delete") {
-    void deleteMember(memberId, button);
+  if (action === "toggle-status") {
+    void changeMemberStatus(memberId, button);
   }
 }
 
