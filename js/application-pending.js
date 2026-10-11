@@ -43,7 +43,7 @@ async function init() {
       // Expected before approval: the applicant has no group member record yet.
     }
 
-    setStatus("Signed in successfully. Your group application is awaiting platform-admin review.");
+    setStatus("Your email is confirmed, but automatic group setup could not be verified. Sign in again; if the issue persists, contact support.");
   } catch (error) {
     console.error("CHAMA LIVE applicant access check failed:", error);
     setStatus("Your session could not be verified. Please return to sign-in and try again.");
