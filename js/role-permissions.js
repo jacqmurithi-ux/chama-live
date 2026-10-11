@@ -37,10 +37,17 @@ export function getGroupRoles(member = {}) {
   const technicalRole = normalize(member.role || "member");
   const officeRole = normalize(member.actual_position_name || member.actual_position);
   const normalizeRole = raw => ROLE_ALIASES.get(raw) || raw;
-  // Group Admin is a distinct group role: never inherit a declared
-  // office role that could grant treasury or approval-slot authority.
-  if (technicalRole === "admin") return new Set(["admin"]);
+  // Admin receives group-management access but does not automatically
+  // inherit an approval office. A separately recorded qualifying office
+  // may satisfy its own expense slot, subject to backend distinct-person checks.
   const normalizedOffice = normalizeRole(officeRole);
+  if (technicalRole === "admin") {
+    const adminRoles = new Set(["admin"]);
+    if (["chairperson", "vice chairperson", "treasurer", "secretary", "vice secretary"].includes(normalizedOffice)) {
+      adminRoles.add(normalizedOffice);
+    }
+    return adminRoles;
+  }
   const officialOfficeRoles = new Set([
     "chairperson", "vice chairperson", "treasurer",
     "secretary", "vice secretary"
@@ -162,8 +169,8 @@ const POLICY = {
   },
   "data-migration": {
     view: new Set(["admin", "treasurer"]),
-    import: new Set(["treasurer"]),
-    post: new Set(["treasurer"])
+    import: new Set(["admin", "treasurer"]),
+    post: new Set(["admin", "treasurer"])
   },
   "group-management": {
     view: GROUP_MANAGEMENT,
