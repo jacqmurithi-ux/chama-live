@@ -231,6 +231,12 @@ function disableControl(control) {
       field.disabled = true;
       field.setAttribute("aria-disabled", "true");
     });
+  } else if (["DETAILS", "FIELDSET"].includes(control.tagName)) {
+    control.querySelectorAll("input, select, textarea, button").forEach(field => {
+      field.disabled = true;
+      field.setAttribute("aria-disabled", "true");
+    });
+    control.setAttribute("aria-disabled", "true");
   } else if ("disabled" in control) {
     control.disabled = true;
   } else {
@@ -257,6 +263,7 @@ export function applyRolePermissions({
     const action = normalize(control.dataset.permissionAction);
     if (!canWrite(pageKey, action, member, context)) {
       disableControl(control);
+      if (["DETAILS", "FIELDSET"].includes(control.tagName)) ensureBadge(control);
       deniedCount++;
     }
   });
