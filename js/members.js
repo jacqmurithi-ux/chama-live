@@ -1241,6 +1241,9 @@ function ensureProfileActions() {
     button.id =
       "memberModalEdit";
 
+    button.dataset.permissionPage = "members";
+    button.dataset.permissionAction = "edit";
+
     button.type =
       "button";
 
@@ -1270,6 +1273,9 @@ function ensureProfileActions() {
 
     button.id =
       "memberModalInvite";
+
+    button.dataset.permissionPage = "members";
+    button.dataset.permissionAction = "invite";
 
     button.type =
       "button";
