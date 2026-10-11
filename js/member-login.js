@@ -423,7 +423,7 @@ async function performLogin() {
        SUPABASE AUTH
     ----------------------------------------------------- */
 
-    await signIn(
+    const authResult = await signIn(
       email,
       password
     );
@@ -433,8 +433,17 @@ async function performLogin() {
        LOAD AUTHORITATIVE APPLICATION / MEMBER CONTEXT
     ----------------------------------------------------- */
 
-    const context =
-      await getMyApplicationContext();
+    let context;
+    try {
+      context = await getMyApplicationContext();
+    } catch (contextError) {
+      const metadata = authResult?.user?.user_metadata || {};
+      if (metadata.chama_onboarding === true) {
+        window.location.replace("application-pending.html");
+        return;
+      }
+      throw contextError;
+    }
 
 
     /* -----------------------------------------------------
