@@ -42,7 +42,10 @@ const MANAGEMENT_ROLES = [
   "admin",
   "administrator",
   "chairperson",
-  "secretary"
+  "vice chairperson",
+  "treasurer",
+  "secretary",
+  "vice secretary"
 ];
 
 const state = {
@@ -939,8 +942,7 @@ async function createPlan(event) {
 
   if (!canManage()) {
     throw new Error(
-      "Only an authorised group admin, chairperson, " +
-      "or secretary can create plans."
+      "Only an authorised group management role can create plans."
     );
   }
 
@@ -1071,8 +1073,7 @@ async function createActivity(event) {
 
   if (!canManage()) {
     throw new Error(
-      "Only an authorised group admin, chairperson, " +
-      "or secretary can create activities."
+      "Only an authorised group management role can create activities."
     );
   }
 
