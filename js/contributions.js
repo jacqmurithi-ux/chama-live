@@ -2618,21 +2618,13 @@ async function loadMembers() {
 
 
   /*
-   * Keep all active members available.
-   * Backend authorization remains authoritative.
+   * Retain every member in the in-memory list so historical
+   * records and member references are not lost when status
+   * changes. In the new-record selector, show inactive members
+   * explicitly but disable them to prevent new contribution
+   * recording against an inactive member.
    */
-  members =
-    (data || [])
-      .filter(
-        member =>
-          String(
-            member.status ||
-            "active"
-          )
-            .trim()
-            .toLowerCase() ===
-          "active"
-      );
+  members = data || [];
 
 
   if (!memberSelect) {
@@ -2657,14 +2649,21 @@ async function loadMembers() {
           "option"
         );
 
+      const isActive =
+        String(
+          member.status || "active"
+        ).trim().toLowerCase() === "active";
 
       option.value =
         member.id;
 
-
       option.textContent =
-        member.name;
+        isActive
+          ? member.name
+          : `${member.name} (Inactive)`;
 
+      option.disabled =
+        !isActive;
 
       memberSelect.appendChild(
         option
