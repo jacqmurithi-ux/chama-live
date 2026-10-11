@@ -31,6 +31,8 @@ import {
   signOut
 } from "./auth.js";
 
+import { applyRolePermissions } from "./role-permissions.js";
+
 
 /* =========================================================
    CONFIGURATION
@@ -1522,6 +1524,12 @@ export async function boot() {
     renderBottomNavigation();
 
     await loadCurrentPageFeature();
+
+    applyRolePermissions({
+      page: currentPage.replace(/\.html$/i, ""),
+      member: context.member,
+      isVerifiedPlatformAdmin: false
+    });
 
     hideLayoutLoading();
 
