@@ -73,9 +73,9 @@ The candidate policies are being narrowed/expanded to match the approved matrix,
 
 The isolated test project's latest Supabase security advisor reports:
 - 25 RLS-enabled tables without policies across `cl_demo`, `private` and `public`;
-- one mutable-search-path warning for `private.cl_other_payment_request_guard`;
+- the mutable-search-path warning for `private.cl_other_payment_request_guard` was cleared by the candidate migration;
 - one extension-in-public warning;
-- 17 anonymous-executable SECURITY DEFINER functions;
+- 16 anonymous-executable SECURITY DEFINER functions (down from 17 after revoking anonymous access to the authorization helpers);
 - 150 authenticated-executable SECURITY DEFINER functions;
 - leaked-password protection disabled.
 
@@ -87,6 +87,8 @@ Some findings may be intentional (for example private request tables or token-ga
 - [x] Shared permission helper wired into admin and member layout boots
 - [x] Key static write forms tagged for role-aware disabling
 - [x] Candidate RLS/RPC hardening applied to isolated test project
+- [x] Removed the cross-group group-admin fallback and restricted anonymous execution of group authorization helpers
+- [x] Cleared the mutable search-path warning for `private.cl_other_payment_request_guard`
 - [x] Three-slot expense blocker documented and expense status changes fail closed
 - [ ] Finish dynamic-control coverage across all pages
 - [ ] Create/link seven synthetic Auth users
