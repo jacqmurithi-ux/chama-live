@@ -210,6 +210,11 @@ function effectiveMemberRoles(member = currentMember) {
   return roles;
 }
 
+function isGroupAdmin(member = currentMember) {
+  const role = normalizedOfficeRole(member?.role || "member");
+  return role === "admin" || role === "administrator";
+}
+
 function isManager() {
   const roles = effectiveMemberRoles();
   return ["admin", "administrator", "chairperson", "vice chairperson", "treasurer"]
@@ -629,6 +634,16 @@ function createMemberRow(member) {
             Edit
           </button>
         ` : ""}
+        ${isGroupAdmin() ? `
+          <button
+            type="button"
+            class="btn btn-small"
+            data-member-action="delete"
+            data-member-id="${escapeHtml(member.id)}"
+          >
+            Delete
+          </button>
+        ` : ""}
       </div>
     </td>
   `;
@@ -761,6 +776,16 @@ function createMemberCard(member) {
           Edit
         </button>
       ` : ""}
+        ${isGroupAdmin() ? `
+          <button
+            type="button"
+            class="btn btn-small"
+            data-member-action="delete"
+            data-member-id="${escapeHtml(member.id)}"
+          >
+            Delete
+          </button>
+        ` : ""}
 
     </div>
   `;
@@ -2485,6 +2510,70 @@ async function inviteMember(memberId) {
 }
 
 
+async function deleteMember(memberId, button) {
+  if (!isGroupAdmin()) {
+    showError("Only the group admin can delete a member.");
+    return;
+  }
+
+  const member = memberById(memberId);
+  if (!member) {
+    showError("The member could not be found. Refresh the directory and try again.");
+    return;
+  }
+
+  if (
+    String(member.auth_user_id || "") === String(currentUser?.id || "") ||
+    String(member.user_id || "") === String(currentUser?.id || "")
+  ) {
+    showError("You cannot delete your own member record.");
+    return;
+  }
+
+  const memberLabel = text(member.name) || "this member";
+  const confirmed = window.confirm(
+    `Delete ${memberLabel} from this group? Continue only for a disposable test member. The database may block deletion when linked financial history must be preserved.`
+  );
+  if (!confirmed) return;
+
+  if (button) {
+    button.disabled = true;
+    button.textContent = "Deleting…";
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("members")
+      .delete()
+      .eq("id", member.id)
+      .eq("group_id", groupId)
+      .select("id");
+
+    if (error) throw error;
+    if (!Array.isArray(data) || data.length !== 1) {
+      throw new Error(
+        "The member was not deleted. The database may have blocked the operation or the row is not accessible."
+      );
+    }
+
+    await loadMembers();
+    filterMembers();
+    showSuccess(`${memberLabel} was deleted.`);
+  } catch (error) {
+    console.error("CHAMA LIVE: member delete failed:", error);
+    showError(
+      error?.message ||
+      "Unable to delete this member. Financial history and related records have been preserved."
+    );
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = "Delete";
+    }
+  }
+}
+
+
 /* =========================================================
    ACTION DELEGATION
 ========================================================= */
@@ -2516,6 +2605,11 @@ function handleMemberAction(event) {
 
   if (action === "edit") {
     openEditMember(memberId);
+    return;
+  }
+
+  if (action === "delete") {
+    void deleteMember(memberId, button);
   }
 }
 
