@@ -27,6 +27,7 @@ Candidate migrations added from `20261011100000` onward:
 - Remove the group-admin cross-group fallback from `cl_user_has_role`.
 - Expand RLS for meetings, meeting documents, plans, activities and assets to the approved group-management roles.
 - Scope `current_user_role` to the requested group, allow Treasurer member-management operations, restrict ordinary-member member-row reads to their own row, and allow authorized management roles to read the group directory.
+- Normalize Vice Chairperson and Vice Secretary from the protected `actual_position` assignment in both `current_user_role` and the shared `cl_user_has_role` predicate. Added candidate migrations `20261011150000_role_matrix_current_user_role_position_normalization.sql` and `20261011151500_role_matrix_shared_role_predicate_position_normalization.sql` after test evidence showed the original shared predicate did not recognize vice-office fixtures.
 - Restrict historical payment posting to Treasurer, including historical onboarding through the combined member-creation RPC.
 
 No table or column was added by these migrations.
@@ -46,18 +47,11 @@ Because the instruction is not to change database design, no columns or tables h
 
 ## Authentication and test status
 
-Seven distinct synthetic Auth users are still required for:
-- Group Admin
-- Chairperson
-- Vice Chairperson
-- Secretary
-- Vice Secretary
-- Treasurer
-- Ordinary Member
+Seven synthetic Auth user UUIDs have now been supplied and linked in the isolated test project to seven designated member fixtures: Group Admin, Chairperson, Vice Chairperson, Secretary, Vice Secretary, Treasurer and Ordinary Member. The user UUIDs were not written into this public status document. The two vice-office assignments were recorded using `set_member_actual_position()` with the Chairperson fixture as actor; no direct office-position update or trigger bypass was used.
 
-No supported Auth-user provisioning action was available through the connected tools. Do not insert directly into `auth.users` or repurpose the real account. Create synthetic users through the isolated test project's Supabase Dashboard → Authentication → Users, then link their generated UUIDs to the designated test member fixtures through a controlled test-only operation. The existing position-history trigger also rejects direct office-position edits; Vice Chair/Vice Secretary fixtures must be assigned through `set_member_actual_position()` after authentication is linked, not by bypassing the trigger.
+**SQL helper smoke tests passed** for all seven expected `current_user_role` mappings. A positive/negative matrix for `can_manage_members` and `can_add_group_members` also passed after the vice-office normalization fix: Admin, Chairperson, Vice Chairperson and Treasurer are allowed; Secretary, Vice Secretary and Ordinary Member are denied those member-management writes.
 
-**Authenticated positive/negative tests have not yet passed.** In particular, role-specific RLS/RPC tests, member privacy tests, canonical contribution idempotency/closed-period regressions, and the full expense approval matrix remain pending.
+These are isolated SQL helper tests using simulated JWT subject claims, not full browser-authenticated RLS/RPC end-to-end tests. Role-specific RLS/RPC tests, member privacy tests, canonical contribution idempotency/closed-period regressions, and the full expense approval matrix remain pending.
 
 ## Reconciliation findings
 
@@ -91,7 +85,8 @@ Some findings may be intentional (for example private request tables or token-ga
 - [x] Cleared the mutable search-path warning for `private.cl_other_payment_request_guard`
 - [x] Three-slot expense blocker documented and expense status changes fail closed
 - [ ] Finish dynamic-control coverage across all pages
-- [ ] Create/link seven synthetic Auth users
+- [x] Link seven supplied synthetic Auth user UUIDs to isolated test fixtures; assign vice offices through the protected position-history RPC
+- [x] SQL role-normalization and member-management helper matrix passes for all seven test roles
 - [ ] Run positive and negative authenticated tests for every role
 - [ ] Complete canonical accounting regression tests
 - [ ] Classify/remediate relevant security-advisor findings
