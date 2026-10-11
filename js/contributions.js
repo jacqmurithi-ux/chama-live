@@ -4987,6 +4987,23 @@ function renderMemberStatus() {
 
   if (!canonicalMemberStatus.length) {
 
+    const monthLabel =
+      formatAccountingMonth(
+        accountingMonth
+      );
+
+    const monthContributionCount =
+      contributions.filter(
+        item =>
+          getContributionMonth(item) ===
+          accountingMonth
+      ).length;
+
+    const emptyMessage =
+      monthContributionCount > 0
+        ? `No canonical member-accounting rows were returned for ${monthLabel}. ${monthContributionCount} contribution record${monthContributionCount === 1 ? "" : "s"} dated in this month remain in the contribution ledger. This empty status table does not mean that no contribution was recorded. Monthly status excludes inactive members and members who joined after the selected month.`
+        : `No contribution records were found for ${monthLabel}, and no canonical member-accounting rows were returned. Monthly status includes only active members who joined on or before the selected month.`;
+
     memberStatusRows.innerHTML = `
 
       <tr>
@@ -4996,13 +5013,7 @@ function renderMemberStatus() {
           class="cl-empty-table"
         >
 
-          No canonical accounting rows are
-          available for
-          ${escapeHtml(
-            formatAccountingMonth(
-              accountingMonth
-            )
-          )}.
+          ${escapeHtml(emptyMessage)}
 
         </td>
 
