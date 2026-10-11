@@ -100,7 +100,8 @@ const POLICY = {
   "add-member": {
     view: GROUP_MANAGEMENT,
     create: new Set(["admin", "chairperson", "vice chairperson", "treasurer"]),
-    "historical-payment": new Set(["admin", "treasurer"])
+    // Admin may create a member, but historical-payment entry is read-only for Admin.
+    "historical-payment": new Set(["treasurer"])
   },
   dashboard: {
     view: GROUP_MANAGEMENT,
