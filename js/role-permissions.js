@@ -77,6 +77,11 @@ const POLICY = {
     "edit-own": MEMBER_PORTAL_ROLES
   },
   "member-getting-started": { view: MEMBER_PORTAL_ROLES },
+  "add-member": {
+    view: GROUP_MANAGEMENT,
+    create: new Set(["admin", "chairperson", "vice chairperson", "treasurer"]),
+    "historical-payment": new Set(["treasurer"])
+  },
   dashboard: {
     view: GROUP_MANAGEMENT,
     export: GROUP_MANAGEMENT
@@ -220,8 +225,9 @@ function disableControl(control) {
       event.preventDefault();
       event.stopImmediatePropagation();
     }, { capture: true });
-    control.querySelectorAll("button[type=submit], input[type=submit]").forEach(button => {
-      button.disabled = true;
+    control.querySelectorAll("input, select, textarea, button").forEach(field => {
+      field.disabled = true;
+      field.setAttribute("aria-disabled", "true");
     });
   } else if ("disabled" in control) {
     control.disabled = true;
