@@ -242,7 +242,7 @@ function mapRpcError(error) {
       "Your account must be an active member of this group.",
 
     MEMBER_MANAGEMENT_NOT_AUTHORIZED:
-      "Only a group admin, chairperson, or treasurer can add members.",
+      "You have view-only access to member management. Contact your group admin if you need write access.",
 
     MEMBER_NUMBER_ALREADY_EXISTS:
       "That member number already exists in this group.",
@@ -2006,16 +2006,22 @@ export async function addMemberInit() {
     );
 
     const role = String(context.role || context.member?.role || "").trim().toLowerCase();
+    const isGroupAdmin = ["admin", "administrator"].includes(role);
     const secretaryViewOnly = ["secretary", "vice secretary"].includes(role);
 
-    if (!canAddMembers && !secretaryViewOnly) {
+    /*
+     * Admin must never be placed in view-only mode by a stale or
+     * narrower frontend preflight. The canonical creation RPC remains
+     * the final authorization boundary; backend parity is a release gate.
+     */
+    if (!isGroupAdmin && !canAddMembers && !secretaryViewOnly) {
       showAccessError(
-        "Only a group admin, chairperson, or treasurer can add members."
+        "You have view-only access to member management. Contact your group admin if you need write access."
       );
       return;
     }
 
-    state.readOnly = !canAddMembers;
+    state.readOnly = !isGroupAdmin && !canAddMembers;
 
     console.info(
       "CHAMA LIVE Add Member: loading Monthly contribution type."
