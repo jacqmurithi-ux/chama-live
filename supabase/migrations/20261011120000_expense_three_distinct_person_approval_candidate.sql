@@ -23,7 +23,16 @@ DROP POLICY IF EXISTS expense_approvals_select_same_group ON public.expense_appr
 CREATE POLICY expense_approvals_select_same_group
   ON public.expense_approvals
   FOR SELECT TO authenticated
-  USING (public.cl_user_in_group(group_id));
+  USING (
+    EXISTS (
+      SELECT 1
+      FROM public.members m
+      WHERE m.group_id = expense_approvals.group_id
+        AND (m.user_id = auth.uid() OR m.auth_user_id = auth.uid())
+        AND lower(coalesce(m.status, '')) = 'active'
+        AND lower(coalesce(m.onboarding_status, '')) = 'active'
+    )
+  );
 
 REVOKE ALL ON TABLE public.expense_approvals FROM anon, authenticated;
 GRANT SELECT ON TABLE public.expense_approvals TO authenticated;
