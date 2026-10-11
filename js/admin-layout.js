@@ -80,6 +80,8 @@ import {
   signOut
 } from "./auth.js";
 
+import { applyRolePermissions } from "./role-permissions.js";
+
 
 /* =========================================================
    ADMIN ROLES
@@ -2190,6 +2192,18 @@ export async function boot() {
 
 
     await loadCurrentPageFeature();
+
+    /*
+     * Apply the shared candidate permission contract after the
+     * feature renders its controls. This does not replace backend
+     * authorization. Only controls explicitly tagged with
+     * data-permission-action are disabled here.
+     */
+    applyRolePermissions({
+      page: page.replace(/\\.html$/i, ""),
+      member: context.member,
+      isVerifiedPlatformAdmin: false
+    });
 
 
     /* -------------------------------------------------------
