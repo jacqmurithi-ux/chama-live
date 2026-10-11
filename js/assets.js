@@ -177,19 +177,28 @@ function normalizeRole(role) {
       : role || ""
   )
     .trim()
-    .toLowerCase();
+    .toLowerCase()
+    .replace(/[_-]+/g, " ")
+    .replace(/\\s+/g, " ");
+}
+
+function memberHasManagementRole(member) {
+  const technical = normalizeRole(member?.role || "member");
+  // Group Admin cannot inherit authority from a separate office field.
+  if (technical === "admin" || technical === "administrator") return true;
+  const roles = new Set([
+    technical,
+    normalizeRole(member?.actual_position_name || member?.actual_position)
+  ]);
+  return MANAGEMENT_ROLES.some(role => roles.has(normalizeRole(role)));
 }
 
 function canManageAssets() {
-  return MANAGEMENT_ROLES.includes(
-    normalizeRole(state.currentMember?.role)
-  );
+  return memberHasManagementRole(state.currentMember);
 }
 
 function canDeleteAssets() {
-  return MANAGEMENT_ROLES.includes(
-    normalizeRole(state.currentMember?.role)
-  );
+  return memberHasManagementRole(state.currentMember);
 }
 
 
