@@ -93,7 +93,7 @@ const POLICY = {
   "add-member": {
     view: GROUP_MANAGEMENT,
     create: new Set(["admin", "chairperson", "vice chairperson", "treasurer"]),
-    "historical-payment": new Set(["treasurer"])
+    "historical-payment": new Set(["admin", "treasurer"])
   },
   dashboard: {
     view: GROUP_MANAGEMENT,
@@ -127,38 +127,38 @@ const POLICY = {
   contributions: {
     view: GROUP_MANAGEMENT,
     "submit-evidence": new Set(["member"]),
-    create: new Set(["treasurer"]),
-    record: new Set(["treasurer"]),
-    verify: new Set(["treasurer"]),
-    approve: new Set(["treasurer"]),
-    reject: new Set(["treasurer"]),
-    reverse: new Set(["treasurer"]),
-    settings: new Set(["treasurer"])
+    create: new Set(["admin", "treasurer"]),
+    record: new Set(["admin", "treasurer"]),
+    verify: new Set(["admin", "treasurer"]),
+    approve: new Set(["admin", "treasurer"]),
+    reject: new Set(["admin", "treasurer"]),
+    reverse: new Set(["admin", "treasurer"]),
+    settings: new Set(["admin", "treasurer"])
   },
   expenses: {
     view: GROUP_MANAGEMENT,
-    create: new Set(["chairperson", "vice chairperson", "treasurer", "secretary", "vice secretary"]),
-    // The current schema has only one approval_status field. Until a
-    // distinct-person three-slot backend workflow exists, all approval,
-    // edit and delete actions fail closed in the UI.
+    create: new Set(["admin", "chairperson", "vice chairperson", "treasurer", "secretary", "vice secretary"]),
+    // Expense approval remains office-specific and backend-enforced:
+    // Chair/Vice Chair, Treasurer, and Secretary/Vice Secretary must be
+    // three distinct people. Group Admin alone is not an approval office.
     edit: new Set(),
     delete: new Set(),
-    "approve-chair": new Set(),
-    "approve-treasurer": new Set(),
-    "approve-secretary": new Set()
+    "approve-chair": CHAIR_SLOT,
+    "approve-treasurer": new Set(["treasurer"]),
+    "approve-secretary": SECRETARY_SLOT
   },
   fines: {
     view: GROUP_MANAGEMENT,
-    create: new Set(["secretary", "vice secretary", "treasurer"]),
-    adjust: new Set(["treasurer"]),
-    waive: new Set(["treasurer"]),
-    allocate: new Set(["treasurer"]),
-    "generate-contribution": new Set(["treasurer"])
+    create: new Set(["admin", "secretary", "vice secretary", "treasurer"]),
+    adjust: new Set(["admin", "treasurer"]),
+    waive: new Set(["admin", "treasurer"]),
+    allocate: new Set(["admin", "treasurer"]),
+    "generate-contribution": new Set(["admin", "treasurer"])
   },
   "monthly-closing": {
     view: GROUP_MANAGEMENT,
-    close: new Set(["treasurer"]),
-    reopen: new Set(["treasurer"])
+    close: new Set(["admin", "treasurer"]),
+    reopen: new Set(["admin", "treasurer"])
   },
   "data-migration": {
     view: new Set(["admin", "treasurer"]),
@@ -169,7 +169,7 @@ const POLICY = {
     view: GROUP_MANAGEMENT,
     // Treasury settings are separately protected by backend RPCs.
     edit: new Set(["admin", "chairperson", "vice chairperson"]),
-    "edit-contribution-settings": new Set(["treasurer"])
+    "edit-contribution-settings": new Set(["admin", "treasurer"])
   },
   welfare: {
     view: GROUP_MANAGEMENT, create: GROUP_MANAGEMENT,
