@@ -193,30 +193,43 @@ function memberById(id) {
   ) || null;
 }
 
+function normalizedOfficeRole(value) {
+  return normalize(value)
+    .replace(/[_-]+/g, " ")
+    .replace(/\\s+/g, " ")
+    .trim();
+}
+
+function effectiveMemberRoles(member = currentMember) {
+  const technical = normalizedOfficeRole(member?.role || "member");
+  // A group admin remains a distinct role and cannot inherit an office role.
+  if (technical === "admin" || technical === "administrator") return new Set(["admin"]);
+  const roles = new Set([technical]);
+  const office = normalizedOfficeRole(member?.actual_position_name || member?.actual_position);
+  if (office && office !== "other") roles.add(office);
+  return roles;
+}
+
 function isManager() {
-  const role = normalize(currentMember?.role);
-  return ["admin", "chairperson", "treasurer"].includes(role);
+  const roles = effectiveMemberRoles();
+  return ["admin", "administrator", "chairperson", "vice chairperson", "treasurer"]
+    .some(role => roles.has(role));
 }
 
 function isTreasurer() {
-  return normalize(currentMember?.role) === "treasurer";
+  return effectiveMemberRoles().has("treasurer");
 }
 
-function isOfficialPortalRole(role) {
-  return new Set([
-    "admin",
-    "chairperson",
-    "secretary",
-    "treasurer",
-    "vice chairperson",
-    "vice secretary"
-  ]).has(
-    normalize(role)
-  );
+function isOfficialPortalRole(memberOrRole) {
+  const roles = memberOrRole && typeof memberOrRole === "object"
+    ? effectiveMemberRoles(memberOrRole)
+    : new Set([normalizedOfficeRole(memberOrRole)]);
+  return ["admin", "administrator", "chairperson", "vice chairperson",
+    "secretary", "vice secretary", "treasurer"].some(role => roles.has(role));
 }
 
 function portalLabelForMember(member) {
-  return isOfficialPortalRole(member?.role)
+  return isOfficialPortalRole(member)
     ? "Admin Portal"
     : "Member Portal";
 }
