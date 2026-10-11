@@ -5,14 +5,15 @@ import {
 
 /* =========================================================
    CHAMA LIVE — SUPABASE
+   Candidate preview configuration only.
+   Do not point candidate builds at production.
 ========================================================= */
 
 const SUPABASE_URL =
-  "https://ptktftwyltxmtcodyzoa.supabase.co";
-
+  "https://onzaonflquipqmhgslxi.supabase.co";
 
 const SUPABASE_PUBLISHABLE_KEY =
-  "sb_publishable_Nfuc0Xj1LuSU-qJmSXpH5A_GSTMvmSS";
+  "sb_publishable_0jhKFtRCnOx0WDcO3PwcMg_GGsnN3kc";
 
 
 /* =========================================================
@@ -27,34 +28,16 @@ export const supabase =
       auth: {
         persistSession: true,
         autoRefreshToken: true,
-
         /*
          * CHAMA LIVE uses the PKCE verification flow.
-         *
-         * signup.js
-         *      ↓
-         * Supabase Auth
-         *      ↓
-         * email verification
-         *      ↓
-         * confirm.html
-         *
-         * confirm.html is responsible for the explicit
-         * exchangeCodeForSession() call.
-         *
-         * Automatic URL detection is therefore disabled.
-         * This prevents the shared client from consuming
-         * the authorization code before confirm.html can
-         * perform the PKCE exchange with its verifier.
+         * confirm.html explicitly exchanges the code.
          */
         detectSessionInUrl: false,
-
         flowType: "pkce"
       }
     }
   );
 
-
 console.log(
-  "CHAMA LIVE: Supabase client loaded."
+  "CHAMA LIVE: Candidate Supabase client loaded."
 );
