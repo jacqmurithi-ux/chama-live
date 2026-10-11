@@ -1921,6 +1921,7 @@ function renderDraftCustomContributionList() {
                       <button
                         type="button"
                         class="cl-draft-activate-button"
+                        data-permission-page="contributions" data-permission-action="create"
                         data-activate-custom-contribution="${escapeHtml(
                           item.id
                         )}"
@@ -2132,6 +2133,7 @@ function renderActiveCustomContributionList() {
                         <button
                           type="button"
                           class="cl-verifier-button"
+                          data-permission-page="contributions" data-permission-action="record"
                           data-select-custom-contribution="${escapeHtml(
                             typeId
                           )}"
@@ -3878,6 +3880,7 @@ function renderVerifierPaymentEvidence() {
                 <button
                   type="button"
                   class="cl-verifier-button"
+                  data-permission-page="contributions" data-permission-action="verify"
                   data-verifier-evidence-id="${escapeHtml(
                     evidence.id
                   )}"
@@ -4050,6 +4053,7 @@ function showVerifierPaymentEvidenceDetail(
             cl-verifier-button
             cl-verifier-button-primary
           "
+          data-permission-page="contributions" data-permission-action="verify"
           data-verify-evidence-id="${escapeHtml(
             evidence.id
           )}"
@@ -4063,6 +4067,7 @@ function showVerifierPaymentEvidenceDetail(
             cl-verifier-button
             cl-verifier-button-danger
           "
+          data-permission-page="contributions" data-permission-action="reject"
           data-reject-evidence-id="${escapeHtml(
             evidence.id
           )}"
