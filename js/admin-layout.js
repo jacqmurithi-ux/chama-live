@@ -2201,7 +2201,14 @@ export async function boot() {
      */
     applyRolePermissions({
       page: page.replace(/\.html$/i, ""),
-      member: context.member,
+      // Use the role resolved by the authenticated application context.
+      // Some accounts expose the effective group role on context.role while
+      // context.member.role may be stale or normalized differently. Preserve
+      // the separately recorded office so expense approval remains slot-specific.
+      member: {
+        ...context.member,
+        role: context.role || context.member?.role || "member"
+      },
       isVerifiedPlatformAdmin: false
     });
 
