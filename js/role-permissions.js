@@ -35,6 +35,9 @@ export function getGroupRoles(member = {}) {
   const technicalRole = normalize(member.role || "member");
   const officeRole = normalize(member.actual_position_name || member.actual_position);
   const normalizeRole = raw => ROLE_ALIASES.get(raw) || raw;
+  // Group Admin is a distinct group role: never inherit a declared
+  // office role that could grant treasury or approval-slot authority.
+  if (technicalRole === "admin") return new Set(["admin"]);
   const roles = new Set([normalizeRole(technicalRole)]);
   if (officeRole) roles.add(normalizeRole(officeRole));
   return roles;
