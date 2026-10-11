@@ -155,7 +155,7 @@ BEGIN
       date_trunc('month',v_member_horizon)::date
   );
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.refresh_my_managed_member_accounting(p_member_id uuid)
@@ -205,7 +205,7 @@ BEGIN
 
   RETURN v_result;
 END;
-$function$
+$function$;
 
 
 REVOKE ALL ON FUNCTION public.refresh_canonical_contribution_accounting(uuid,text,uuid) FROM PUBLIC, anon, authenticated;
