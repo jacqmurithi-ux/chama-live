@@ -57,7 +57,26 @@ const CHAIR_SLOT = new Set(["chairperson", "vice chairperson"]);
 const SECRETARY_SLOT = new Set(["secretary", "vice secretary"]);
 const MEMBER_RECORDS_FULL = new Set(["admin", "chairperson", "vice chairperson", "treasurer"]);
 
+const MEMBER_PORTAL_ROLES = new Set([
+  "member", "admin", "chairperson", "vice chairperson",
+  "treasurer", "secretary", "vice secretary"
+]);
+
 const POLICY = {
+  "member-dashboard": { view: MEMBER_PORTAL_ROLES },
+  "member-accounting": { view: MEMBER_PORTAL_ROLES },
+  "member-contributions": {
+    view: MEMBER_PORTAL_ROLES,
+    "submit-evidence": MEMBER_PORTAL_ROLES
+  },
+  "member-activities": { view: MEMBER_PORTAL_ROLES },
+  "member-assets": { view: MEMBER_PORTAL_ROLES },
+  "member-milestones": { view: MEMBER_PORTAL_ROLES },
+  "member-profile": {
+    view: MEMBER_PORTAL_ROLES,
+    "edit-own": MEMBER_PORTAL_ROLES
+  },
+  "member-getting-started": { view: MEMBER_PORTAL_ROLES },
   dashboard: {
     view: GROUP_MANAGEMENT,
     export: GROUP_MANAGEMENT
