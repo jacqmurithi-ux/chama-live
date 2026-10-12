@@ -1858,6 +1858,7 @@ function canonicalRowStatus(row) {
 
 function canonicalApplied(row) {
   return numberValue(
+    row.applied_this_month ??
     row.applied ??
     row.allocated ??
     row.total_allocated ??
@@ -1879,6 +1880,7 @@ function canonicalOutstanding(row) {
 function canonicalCredit(row) {
   return numberValue(
     row.carry_forward_credit ??
+    row.carry_forward ??
     row.previous_credit ??
     row.credit ??
     row.current_credit ??
@@ -1888,6 +1890,7 @@ function canonicalCredit(row) {
 
 function canonicalDue(row) {
   return numberValue(
+    row.monthly_due ??
     row.due ??
     row.amount_due ??
     row.obligation ??
