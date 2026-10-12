@@ -496,6 +496,9 @@ async function loadMeetings() {
       agenda,
       minutes,
       resolution,
+      resolution_not_required,
+      status_reason,
+      postponed_to,
       status,
       created_at
     `)
@@ -1745,6 +1748,7 @@ function renderMeetings(rows) {
       "<td>" + escapeHTML(row.title || "Meeting") + "</td>" +
       "<td>" + escapeHTML(row.venue || "—") + "</td>" +
       "<td>" + escapeHTML(statusLabel) + "</td>" +
+      "<td>" + escapeHTML(row.status_reason || "—") + "</td>" +
       "<td>" + escapeHTML(agenda || "—") + "</td>" +
       "<td>" + escapeHTML(row.resolution || (row.resolution_not_required ? "No resolution made" : "—")) + "</td>" +
       "</tr>";
