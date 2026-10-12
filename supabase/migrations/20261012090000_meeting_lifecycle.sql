@@ -43,7 +43,16 @@ create policy meeting_status_history_read_group
   on public.meeting_status_history
   for select
   to authenticated
-  using (public.cl_user_in_group(group_id));
+  using (
+    exists (
+      select 1
+      from public.members m
+      where m.group_id = meeting_status_history.group_id
+        and (m.user_id = auth.uid() or m.auth_user_id = auth.uid())
+        and lower(coalesce(m.status, 'active')) = 'active'
+        and lower(coalesce(m.onboarding_status, 'active')) = 'active'
+    )
+  );
 
 -- The UI permits all four group officers to manage meeting attendance.
 -- The previous SELECT policy omitted admin, and UPDATE omitted chairperson
