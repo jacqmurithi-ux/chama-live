@@ -2079,17 +2079,23 @@ function cumulativePositionForMember(memberId) {
   ) || null;
 }
 
-function previousOutstandingFromCumulative(monthlyRow) {
-  const position = cumulativePositionForMember(monthlyRow?.member_id);
-  if (!position) return null;
+function previousOutstandingForMonth(monthlyRow) {
+  // Do not infer opening arrears by subtracting this month's outstanding
+  // from lifetime cumulative arrears: cumulative arrears may include older
+  // monthly obligations and non-monthly/custom obligations. Use only an
+  // explicit value supplied by canonical monthly accounting. If the RPC
+  // does not supply one, render an unavailable marker instead of a false zero.
+  const value =
+    monthlyRow?.previous_outstanding ??
+    monthlyRow?.prior_outstanding ??
+    monthlyRow?.opening_arrears ??
+    monthlyRow?.opening_outstanding;
 
-  // Cumulative arrears are canonical lifetime arrears. Remove any
-  // outstanding amount already attributed to the selected month so the
-  // previous-period figure does not double-count this month's shortfall.
-  return Math.max(
-    numberValue(position.arrears) - canonicalOutstanding(monthlyRow),
-    0
-  );
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+
+  return Math.max(numberValue(value), 0);
 }
 
 function renderMonthlyStatusReport(rows) {
@@ -2120,7 +2126,7 @@ function renderMonthlyStatusReport(rows) {
           ${
             rows.length
               ? rows.map(row => {
-                  const previousOutstanding = previousOutstandingFromCumulative(row);
+                  const previousOutstanding = previousOutstandingForMonth(row);
                   return `
                     <tr>
                       <td>${escapeHTML(getMemberName(row.member_id))}</td>
@@ -2184,7 +2190,7 @@ function renderMonthlyArrearsReport(rows) {
                     )}</td>
 
                     <td>${formatCurrency(
-                      previousOutstandingFromCumulative(row) ??
+                      previousOutstandingForMonth(row) ??
                       row.previous_outstanding ??
                       row.previous_arrears ??
                       row.outstanding_before ??
@@ -4647,7 +4653,7 @@ function renderFilteredMemberAccounting(rows, title) {
               <td>${escapeHTML(getMemberName(row.member_id))}</td>
               <td>${escapeHTML(getMemberNumber(row.member_id) || "—")}</td>
               <td>${formatCurrency(
-                previousOutstandingFromCumulative(row) ??
+                previousOutstandingForMonth(row) ??
                 row.previous_outstanding ??
                 row.previous_arrears ??
                 row.outstanding_before ??
@@ -5355,7 +5361,7 @@ function exportCSV() {
           getMemberName(row.member_id),
           getMemberNumber(row.member_id),
           canonicalDue(row),
-          previousOutstandingFromCumulative(row) ?? "",
+          previousOutstandingForMonth(row) ?? "",
           canonicalApplied(row),
           canonicalOutstanding(row),
           canonicalCredit(row),
@@ -5702,7 +5708,7 @@ function exportExcel() {
                   )}</td>
 
                   <td>${excelEscape(
-                    previousOutstandingFromCumulative(row) ?? ""
+                    previousOutstandingForMonth(row) ?? ""
                   )}</td>
 
                   <td>${excelEscape(
