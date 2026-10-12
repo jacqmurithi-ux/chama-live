@@ -6,8 +6,10 @@ on:
       - candidate/reports-reconciliation-20261012
     paths:
       - "meetings.html"
+      - "reports.html"
       - "js/meetings.js"
       - "js/reports.js"
+      - "js/supabase.js"
       - "supabase/migrations/**"
       - "tests/**"
       - ".github/workflows/candidate-static-regression.yml"
