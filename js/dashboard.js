@@ -2292,6 +2292,13 @@ async function loadCumulativePositions() {
   const rows = Array.isArray(data) ? data : [];
   const expectedIds = new Set(expectedMembers.map(member => String(member.id)));
   const seenIds = new Set();
+  const paidByMember = new Map();
+  for (const payment of contributions) {
+    const key = String(payment.member_id || "");
+    if (!key) continue;
+    paidByMember.set(key, (paidByMember.get(key) || 0) + numberValue(payment.amount));
+  }
+
   const positions = rows.map(row => {
     if (!row?.member_id || String(row.group_id) !== String(currentGroupId)) {
       throw new Error("Cumulative accounting returned a missing member or a position outside the current group.");
@@ -2307,6 +2314,7 @@ async function loadCumulativePositions() {
     return {
       memberId: row.member_id,
       groupId: row.group_id,
+      totalPaid: paidByMember.get(String(row.member_id)) || 0,
       totalDue: numberValue(row.total_due),
       totalAllocated: numberValue(row.total_allocated),
       arrears: numberValue(row.arrears),
@@ -3453,6 +3461,14 @@ function renderCumulativePosition() {
                     )
                   )}
                 </strong>
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  money(
+                    position.totalPaid
+                  )
+                )}
               </td>
 
               <td>
