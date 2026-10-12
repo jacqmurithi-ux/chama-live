@@ -40,6 +40,7 @@ BEGIN
       AND m.status = 'active'
       AND m.onboarding_status = 'active'
       AND (m.user_id = auth.uid() OR m.auth_user_id = auth.uid())
+      AND lower(coalesce(m.role, '')) IN ('admin', 'chairperson', 'secretary', 'treasurer')
   ) THEN
     RAISE EXCEPTION 'MEETING_DOCUMENT_UPLOAD_NOT_AUTHORIZED';
   END IF;
