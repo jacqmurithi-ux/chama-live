@@ -2,7 +2,7 @@
 
 ## Scope and status
 
-This matrix was assembled from the isolated test project's current `pg_policies`, selected RPC definitions, and the current `main` frontend permission matrix. It is an audit/review artifact, not proof of authenticated end-to-end behavior. Candidate migrations in this branch have **not** been applied to any database. Production remains unchanged.
+This matrix was assembled from the isolated test project's current `pg_policies`, selected RPC definitions, and the current `main` frontend permission matrix. It is an audit/review artifact, not proof of authenticated end-to-end behavior. Candidate migrations in this branch were applied to the isolated Supabase test project only on 2026-10-12 for verification. They have not been applied to production. Production remains unchanged.
 
 Role labels: **Admin** = group Admin; **Chair/Vice-Chair**, **Secretary/Vice-Secretary**, and **Treasurer** are distinct group offices. Platform-admin access is not group-admin access.
 
@@ -42,4 +42,24 @@ Role labels: **Admin** = group Admin; **Chair/Vice-Chair**, **Secretary/Vice-Sec
 - **Cross-group isolation:** each write/read RPC and RLS path using an ID from another group must fail without changing either group's records.
 - **Accounting invariants:** ledger/allocations/obligations remain RPC-owned; duplicate idempotency key is safe; closed financial period is protected; balances reconcile before/after; three distinct eligible approvers remain required.
 - **Authenticated browser:** test each role against relevant pages, dynamic controls, save/error messages, refresh persistence, and view-only data loading on mobile and desktop.
-- **Release gate:** this audit session did not execute real authenticated role sessions, and the candidate migrations have not been applied to the isolated test DB. Do not merge, deploy, or apply migrations until these tests pass.
+## Isolated verification run (2026-10-12)
+
+The two candidate migrations were applied to the isolated test project only. Temporary write tests were run in rollback-only transactions where supported; a separate position-history fixture repair was made through the supported `set_member_actual_position()` RPC.
+
+| Check | Result | Evidence / limitation |
+|---|---|---|
+| Position-history fixture repair | PASS | Treasurer member's active position-history row and member snapshot now both say `treasurer`, effective 2026-10-12. |
+| Three distinct expense approvals | PASS (SQL/RPC simulation) | Temporary expense reached `approved` after distinct Chair, Secretary and Treasurer accounts filled `chair`, `secretary`, and `treasurer` slots. Three approval rows, three distinct approvers and three distinct slots were observed; transaction rolled back. |
+| Expense recorder cannot approve own expense | PASS (SQL/RPC simulation) | Approval RPC rejected the recorder's own approval attempt. |
+| One person cannot fill another office's slot | PASS (SQL/RPC simulation) | Second account sharing the Chair slot was rejected. |
+| Admin cannot bypass expense approval slots | PASS (SQL/RPC simulation) | Admin attempt was rejected as not eligible for an office slot. |
+| Contribution-type authorized writes | PASS (SQL/RLS simulation) | Admin and Treasurer insert attempts succeeded in rollback-only transactions. |
+| Contribution-type unauthorized writes | PASS (SQL/RLS simulation) | Secretary insert was rejected by RLS. |
+| Cross-group read/write | PASS (SQL/RLS simulation) | Admin's read of the other group's contribution types returned zero rows; attempted insert into the other group was rejected by RLS. |
+| Direct contribution-ledger write | PASS (SQL/RLS simulation) | Direct insert was rejected by RLS; canonical accounting write boundary remains intact. |
+| No test residue | PASS | Follow-up checks found no temporary expense, approval, contribution-type or ledger test records. |
+| Authenticated browser page verification | BLOCKED / NOT RUN | Available tools confirmed the candidate Vercel preview deployment is READY, but no authenticated browser automation/session tool is available in this run. UI behavior, persistence and responsive checks are not claimed as passed. |
+
+SQL role-claim tests are useful isolated database/RPC tests but are not a substitute for real browser-authenticated end-to-end sessions.
+
+- **Release gate:** database/RPC checks above passed in the isolated project, but authenticated browser checks remain outstanding. Do not merge to `main`, deploy to production, or apply candidate migrations to production until browser verification passes.
