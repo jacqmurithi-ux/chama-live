@@ -3795,6 +3795,22 @@ function drawMonthlyStatusChart(
     const credit =
       canonicalCredit(row);
 
+    const due = canonicalDue(row);
+    const applied = canonicalApplied(row);
+
+    // A status label alone is not evidence of payment. If the server
+    // returned no obligation, allocation, arrears or credit, do not
+    // count this row as paid just because its label says "paid".
+    if (
+      due <= 0 &&
+      applied <= 0 &&
+      outstanding <= 0 &&
+      credit <= 0
+    ) {
+      counts.other += 1;
+      continue;
+    }
+
     if (credit > 0) {
       counts.credit += 1;
       continue;
@@ -4570,7 +4586,10 @@ function renderVisualInsights(
         )}</strong> outstanding,
         <strong>${formatNumber(
           statusResult.credit
-        )}</strong> with credit.
+        )}</strong> with credit,
+        <strong>${formatNumber(
+          statusResult.other
+        )}</strong> unclassified (no non-zero accounting values).
       `
     );
   }
