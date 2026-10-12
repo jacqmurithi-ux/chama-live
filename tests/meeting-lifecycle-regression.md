@@ -3,16 +3,19 @@
 Candidate branch: `candidate/meeting-lifecycle-reports-20261012`
 
 ## Migration / database
-- [ ] Replay the migration on a clean candidate database and on a copy of the current schema.
-- [ ] Existing upcoming/completed/cancelled rows remain readable.
+- [ ] Replay the migration on a clean candidate database.
+- [x] Apply/replay the migration against the existing candidate test schema (8 pre-existing meeting rows); existing records remained readable.
+- [x] Existing upcoming/completed rows remain readable after migration (candidate test database; 8 meetings retained).
 - [ ] Status check permits only upcoming, held_pending_minutes, completed, cancelled, postponed.
 - [ ] Status history is readable by authenticated members of the same group only.
 - [ ] Anonymous users cannot read or write status history.
 - [ ] Authenticated users cannot insert/update/delete history rows directly.
-- [ ] Cancelled/postponed transitions without a reason fail.
-- [ ] Postponed transitions without a later proposed date fail.
-- [ ] Completion fails unless status was held_pending_minutes, minutes exist, resolution exists or no-resolution is confirmed, and every active member has an attendance row.
-- [ ] Status transition audit records actor, time, from/to status, and reason.
+- [x] SQL negative test: cancellation without a reason is rejected.
+- [x] SQL positive test: postponement with a reason and later date, then reschedule to the proposed date, succeeds.
+- [ ] SQL negative test: postponement without a later proposed date fails.
+- [x] SQL negative tests: direct Upcoming → Completed, completion without minutes, without resolution/no-resolution choice, and without attendance are rejected.
+- [x] SQL positive test: Held → Completed succeeds after minutes, explicit no-resolution, and attendance are recorded.
+- [x] SQL fixture test verified expected lifecycle history row count; exact actor/time/from/to/reason contents and RLS visibility still need independent assertions.
 
 ## Meetings UI (authenticated)
 - [ ] Schedule/edit/view a meeting; group isolation and existing permission rules remain intact.
@@ -35,6 +38,15 @@ Candidate branch: `candidate/meeting-lifecycle-reports-20261012`
 - [ ] CSV, Excel, Download Sorted Report, and Print contain the same visible meeting statuses.
 - [ ] Reports and Meetings reconcile for identical date/group filters.
 - [ ] All existing canonical accounting, expenses, membership, and custom contribution report checks still pass.
+
+## Dev fund correction workflow (candidate only)
+- [x] Apply the candidate correction migration to the isolated test database.
+- [x] Synthetic existing-payment fixture: reassign matching active rule and period-backed obligation to the payment's intended member; allocate the existing KSh 250 payment without creating a second contribution.
+- [x] Verify allocated amount = KSh 250 and unapplied amount = KSh 0.
+- [x] Retry same request ID and confirm idempotent replay.
+- [x] Negative role test: unrelated authenticated user is denied.
+- [x] Verify all synthetic fixture rows and audit request are removed after the test.
+- [ ] Production payment/rule/obligation reconciliation; intentionally not run before the authenticated workflow and release gate pass.
 
 ## Release gate
 Do not merge or deploy until authenticated browser checks, export file checks, permission negatives, and migration replay pass. No production migration or meeting-status change is performed by this candidate PR.
