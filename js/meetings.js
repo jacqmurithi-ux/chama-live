@@ -881,6 +881,13 @@ function renderDetails() {
   }
 
   loadMeetingAttendance().catch(showError);
+  loadMeetingStatusHistory(selectedMeeting.id).catch(error => {
+    console.error("Meeting status history could not be loaded", error);
+    const historyContent = document.getElementById("meetingStatusHistoryContent");
+    if (historyContent && String(selectedMeeting?.id || "") === String(historyHost?.dataset?.meetingId || "")) {
+      historyContent.textContent = "Status history is unavailable. Refresh and try again.";
+    }
+  });
 }
 
 
