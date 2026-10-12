@@ -39,7 +39,8 @@ Candidate branch: `candidate/meeting-lifecycle-reports-20261012`
 ## Expense approval workflow (candidate only)
 - [x] Candidate SQL JWT-claim test: expense recorder cannot approve their own pending expense.
 - [x] Candidate SQL JWT-claim test: chair, treasurer, and secretary approve as three distinct users; status remains pending after approvals one and two, then becomes approved after the third.
-- [ ] Browser-authenticated officer tests, duplicate-slot/duplicate-person negatives, rejection path, and ordinary-member denial remain required before release.
+- [x] Candidate SQL JWT-claim negative tests: vice-chair duplicate chair slot rejected; treasurer rejection marks the expense rejected.
+- [ ] Browser-authenticated officer tests and ordinary-member denial remain required before release.
 
 ## Reports and exports
 - [x] Candidate data arithmetic check: existing 8-meeting fixture counts sum to Total (1 Upcoming + 7 Completed = 8); status-category sum formula includes held, cancelled, postponed, and Other/Review.
