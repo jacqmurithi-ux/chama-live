@@ -1720,11 +1720,13 @@
               </div>
 
               <div class="meeting-card">
-                <span>Completed</span>
+                <span>Held — minutes pending</span>
+                <strong id="heldPendingMeetings">0</strong>
+              </div>
 
-                <strong id="completedMeetings">
-                  0
-                </strong>
+              <div class="meeting-card">
+                <span>Completed</span>
+                <strong id="completedMeetings">0</strong>
               </div>
 
               <div class="meeting-card">
@@ -1736,11 +1738,13 @@
               </div>
 
               <div class="meeting-card">
-                <span>Other / Review</span>
+                <span>Postponed</span>
+                <strong id="postponedMeetings">0</strong>
+              </div>
 
-                <strong id="otherMeetings">
-                  0
-                </strong>
+              <div class="meeting-card">
+                <span>Other / Review</span>
+                <strong id="otherMeetings">0</strong>
               </div>
 
             </div>
@@ -1755,7 +1759,10 @@
                     <th>Title</th>
                     <th>Venue</th>
                     <th>Status</th>
+                    <th>Reason / follow-up</th>
                     <th>Agenda</th>
+                    <th>Minutes</th>
+                    <th>Attendance</th>
                     <th>Resolution</th>
                   </tr>
                 </thead>
@@ -1764,7 +1771,7 @@
 
                   <tr>
                     <td
-                      colspan="6"
+                      colspan="9"
                       class="report-empty">
                       No meetings.
                     </td>

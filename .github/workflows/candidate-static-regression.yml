@@ -1,0 +1,36 @@
+name: CHAMA LIVE candidate static regression
+on:
+  pull_request:
+    branches:
+      - main
+      - candidate/reports-reconciliation-20261012
+    paths:
+      - "meetings.html"
+      - "reports.html"
+      - "js/meetings.js"
+      - "js/reports.js"
+      - "js/supabase.js"
+      - "supabase/migrations/**"
+      - "tests/**"
+      - ".github/workflows/candidate-static-regression.yml"
+  push:
+    branches:
+      - candidate/reports-reconciliation-20261012
+      - candidate/meeting-lifecycle-reports-20261012
+jobs:
+  static-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check browser JavaScript syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in js/meetings.js js/reports.js; do
+            node --input-type=module --check < "$file"
+          done
+      - name: Check candidate source contracts
+        run: node tests/candidate-static-regression.mjs

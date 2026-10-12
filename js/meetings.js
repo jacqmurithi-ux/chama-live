@@ -172,35 +172,10 @@ function escapeHtml(value) {
 ========================================================= */
 
 function normalizeStatus(value) {
-
-  const status =
-    String(
-      value || "upcoming"
-    )
-      .trim()
-      .toLowerCase();
-
-
-  if (
-    status === "completed"
-  ) {
-
-    return "completed";
-
-  }
-
-
-  if (
-    status === "cancelled"
-  ) {
-
-    return "cancelled";
-
-  }
-
-
-  return "upcoming";
-
+  const status = String(value || "upcoming").trim().toLowerCase();
+  return ["upcoming", "held_pending_minutes", "completed", "cancelled", "postponed"].includes(status)
+    ? status
+    : "review";
 }
 
 
@@ -512,6 +487,9 @@ async function loadMeetings() {
         agenda,
         minutes,
         resolution,
+        resolution_not_required,
+        status_reason,
+        postponed_to,
         status,
         created_at
       `)
@@ -547,70 +525,39 @@ async function loadMeetings() {
 ========================================================= */
 
 function renderMetrics() {
-
+  const today = getToday();
   let upcoming = 0;
-
+  let held = 0;
   let completed = 0;
-
   let cancelled = 0;
+  let postponed = 0;
+  let actionRequired = 0;
 
-
-  meetings.forEach(
-    meeting => {
-
-      const status =
-        normalizeStatus(
-          meeting.status
-        );
-
-
-      if (
-        status === "upcoming"
-      ) {
-
-        upcoming++;
-
-      }
-      else if (
-        status === "completed"
-      ) {
-
-        completed++;
-
-      }
-      else {
-
-        cancelled++;
-
-      }
-
+  meetings.forEach(meeting => {
+    const status = normalizeStatus(meeting.status);
+    if (status === "upcoming" && meeting.date && meeting.date < today) {
+      actionRequired++;
+    } else if (status === "review") {
+      actionRequired++;
+    } else if (status === "upcoming") {
+      upcoming++;
+    } else if (status === "held_pending_minutes") {
+      held++;
+    } else if (status === "completed") {
+      completed++;
+    } else if (status === "cancelled") {
+      cancelled++;
+    } else if (status === "postponed") {
+      postponed++;
     }
-  );
+  });
 
-
-  if (upcomingCount) {
-
-    upcomingCount.textContent =
-      upcoming;
-
-  }
-
-
-  if (completedCount) {
-
-    completedCount.textContent =
-      completed;
-
-  }
-
-
-  if (cancelledCount) {
-
-    cancelledCount.textContent =
-      cancelled;
-
-  }
-
+  if (upcomingCount) upcomingCount.textContent = upcoming;
+  if (document.getElementById("heldPendingCount")) document.getElementById("heldPendingCount").textContent = held;
+  if (completedCount) completedCount.textContent = completed;
+  if (cancelledCount) cancelledCount.textContent = cancelled;
+  if (document.getElementById("postponedCount")) document.getElementById("postponedCount").textContent = postponed;
+  if (document.getElementById("actionRequiredCount")) document.getElementById("actionRequiredCount").textContent = actionRequired;
 }
 
 
@@ -653,20 +600,23 @@ function getFilteredMeetings() {
    STATUS BADGE
 ========================================================= */
 
-function statusBadge(status) {
+function statusLabel(status) {
+  const labels = {
+    upcoming: "Upcoming",
+    held_pending_minutes: "Held — minutes pending",
+    completed: "Completed",
+    cancelled: "Cancelled",
+    postponed: "Postponed",
+    review: "Unknown status — review"
+  };
+  return labels[normalizeStatus(status)] || "Unknown status — review";
+}
 
-  const normalized =
-    normalizeStatus(status);
-
-
-  return `
-    <span
-      class="meeting-status meeting-status-${normalized}"
-    >
-      ${escapeHtml(normalized)}
-    </span>
-  `;
-
+function statusBadge(status, meeting = null) {
+  const normalized = normalizeStatus(status);
+  const overdue = normalized === "upcoming" && meeting?.date && meeting.date < getToday();
+  const label = overdue ? "Action required · confirm outcome" : statusLabel(normalized);
+  return `<span class="meeting-status-badge ${escapeHtml(normalized)}">${escapeHtml(label)}</span>`;
 }
 
 
@@ -763,7 +713,7 @@ function renderMeetings() {
 
 
               <td>
-                ${statusBadge(status)}
+                ${statusBadge(status, meeting)}
               </td>
 
 
@@ -808,12 +758,19 @@ function renderDetails() {
 
   if (!selectedMeeting) {
     detailsCard.hidden = true;
+    detailsCard.classList.remove("is-visible");
+    const lifecycleEditor = document.getElementById("meetingLifecycleEditor");
+    const historyHost = document.getElementById("meetingStatusHistory");
+    if (lifecycleEditor) lifecycleEditor.hidden = true;
+    if (historyHost) historyHost.hidden = true;
     if (meetingAttendance) meetingAttendance.hidden = true;
     if (meetingRsvpSummary) meetingRsvpSummary.hidden = true;
     return;
   }
 
   const status = normalizeStatus(selectedMeeting.status);
+  const lifecycleEditor = document.getElementById("meetingLifecycleEditor");
+  const historyHost = document.getElementById("meetingStatusHistory");
 
   const agenda = agendaToArray(selectedMeeting.agenda);
 
@@ -842,7 +799,7 @@ function renderDetails() {
         </div>
       </div>
       <div>
-        ${statusBadge(status)}
+        ${statusBadge(status, selectedMeeting)}
       </div>
     </div>
 
@@ -865,10 +822,10 @@ function renderDetails() {
 
       <div class="meeting-meta-box">
         <span class="meeting-meta-label">Status</span>
-        <span class="meeting-meta-value">
-          ${escapeHtml(status)}
-        </span>
+        <span class="meeting-meta-value">${escapeHtml(statusLabel(status))}</span>
       </div>
+      ${selectedMeeting.status_reason ? `<div class="meeting-meta-box"><span class="meeting-meta-label">Reason / follow-up</span><span class="meeting-meta-value">${escapeHtml(selectedMeeting.status_reason)}</span></div>` : ""}
+      ${selectedMeeting.postponed_to ? `<div class="meeting-meta-box"><span class="meeting-meta-label">Proposed new date</span><span class="meeting-meta-value">${escapeHtml(formatDate(selectedMeeting.postponed_to))}</span></div>` : ""}
 
     </div>
 
@@ -882,32 +839,95 @@ function renderDetails() {
     minutesInput.value = selectedMeeting.minutes || "";
   }
 
-  if (resolutionInput) {
-    resolutionInput.value = selectedMeeting.resolution || "";
-  }
+  if (resolutionInput) resolutionInput.value = selectedMeeting.resolution || "";
+  const noResolutionInput = document.getElementById("resolutionNotRequired");
+  if (noResolutionInput) noResolutionInput.checked = Boolean(selectedMeeting.resolution_not_required);
+  const reasonInput = document.getElementById("meetingStatusReason");
+  if (reasonInput) reasonInput.value = "";
+  const postponedDateInput = document.getElementById("postponedToDate");
+  if (postponedDateInput) postponedDateInput.value = selectedMeeting.postponed_to || "";
 
   detailsCard.hidden = false;
+  detailsCard.classList.add("is-visible");
+  if (lifecycleEditor) lifecycleEditor.hidden = false;
+  if (historyHost) historyHost.hidden = false;
+  const setVisible = (id, visible) => { const el = document.getElementById(id); if (el) el.hidden = !visible; };
+  setVisible("markMeetingHeld", status === "upcoming");
+  setVisible("markMeetingCompleted", status === "held_pending_minutes");
+  setVisible("cancelMeetingLifecycle", !["cancelled", "completed", "review"].includes(status));
+  setVisible("postponeMeetingLifecycle", !["cancelled", "completed", "review"].includes(status));
+  setVisible("restorePostponedMeeting", status === "postponed");
+  setVisible("restoreCancelledMeeting", status === "cancelled");
+  const hint = document.getElementById("meetingCompletionHint");
+  if (hint) hint.textContent = status === "held_pending_minutes"
+    ? "Meeting held. Record minutes, attendance, and a resolution — or confirm no resolution was made — before completing."
+    : status === "upcoming"
+      ? "After the meeting date, confirm whether it was held, cancelled, or postponed."
+      : status === "postponed"
+        ? "Use the proposed date below to return this meeting to the upcoming schedule."
+        : status === "completed"
+          ? "Completed record. Save any authorised corrections to the minutes or resolution below."
+          : "Record the meeting outcome and keep the status current.";
   if (meetingAttendance) meetingAttendance.hidden = false;
 
-  if (completeMeeting) {
-    completeMeeting.hidden = status !== "upcoming";
-  }
+  // Legacy one-click controls bypass required minutes/attendance/reason fields.
+  if (completeMeeting) completeMeeting.hidden = true;
 
-  if (cancelMeeting) {
-    cancelMeeting.hidden =
-      status === "cancelled" ||
-      status === "completed";
-  }
+  if (cancelMeeting) cancelMeeting.hidden = true;
 
-  if (restoreMeeting) {
-    restoreMeeting.hidden = status !== "cancelled";
-  }
+  if (restoreMeeting) restoreMeeting.hidden = true;
 
   if (deleteMeeting) {
     deleteMeeting.hidden = false;
   }
 
   loadMeetingAttendance().catch(showError);
+  loadMeetingStatusHistory(selectedMeeting.id).catch(error => {
+    console.error("Meeting status history could not be loaded", error);
+    const historyContent = document.getElementById("meetingStatusHistoryContent");
+    if (historyContent && String(selectedMeeting?.id || "") === String(historyHost?.dataset?.meetingId || "")) {
+      historyContent.textContent = "Status history is unavailable. Refresh and try again.";
+    }
+  });
+}
+
+
+async function loadMeetingStatusHistory(meetingId) {
+  const host = document.getElementById("meetingStatusHistory");
+  const content = document.getElementById("meetingStatusHistoryContent");
+  if (!host || !content || !meetingId || !groupId) return;
+
+  host.hidden = false;
+  host.dataset.meetingId = String(meetingId);
+  content.textContent = "Loading status history…";
+
+  const { data, error } = await supabase
+    .from("meeting_status_history")
+    .select("from_status,to_status,reason,actor_name,changed_at")
+    .eq("group_id", groupId)
+    .eq("meeting_id", meetingId)
+    .order("changed_at", { ascending: false });
+
+  if (error) throw error;
+  if (String(selectedMeeting?.id || "") !== String(meetingId)) return;
+
+  if (!data?.length) {
+    content.innerHTML = '<p class="meeting-empty-text">No status changes recorded yet.</p>';
+    return;
+  }
+
+  content.innerHTML = '<ol class="meeting-history-list">' + data.map(item => {
+    const from = item.from_status ? statusLabel(item.from_status) : "Meeting created";
+    const to = statusLabel(item.to_status);
+    const actor = item.actor_name || "Officer / system not identified";
+    const reason = item.reason || "No reason recorded";
+    const changedAt = item.changed_at ? new Date(item.changed_at).toLocaleString() : "Time not recorded";
+    return '<li class="meeting-history-item">' +
+      '<div class="meeting-history-transition"><strong>' + escapeHtml(from) + '</strong> → <strong>' + escapeHtml(to) + '</strong></div>' +
+      '<div class="meeting-history-meta">' + escapeHtml(actor) + ' · ' + escapeHtml(changedAt) + '</div>' +
+      '<p class="meeting-history-reason">' + escapeHtml(reason) + '</p>' +
+      '</li>';
+  }).join("") + '</ol>';
 }
 
 
@@ -1006,9 +1026,8 @@ async function loadMeetingAttendance() {
   const [membersResult, attendanceResult] = await Promise.all([
     supabase
       .from("members")
-      .select("id, name, member_number, membership_number")
+      .select("id, name, member_number, membership_number, status")
       .eq("group_id", groupId)
-      .eq("status", "active")
       .order("name", { ascending: true }),
 
     supabase
@@ -1021,7 +1040,7 @@ async function loadMeetingAttendance() {
   if (attendanceResult.error) throw attendanceResult.error;
 
   attendanceMembers = Array.isArray(membersResult.data)
-    ? membersResult.data
+    ? membersResult.data.filter(member => String(member.status || "active").trim().toLowerCase() === "active")
     : [];
 
   attendanceRows = new Map(
@@ -1425,111 +1444,64 @@ function viewMeeting(id) {
    UPDATE STATUS
 ========================================================= */
 
-async function updateMeetingStatus(
-  newStatus
-) {
+async function updateMeetingStatus(newStatus) {
+  if (!selectedMeeting) throw new Error("Select a meeting first.");
+  const allowed = ["upcoming", "held_pending_minutes", "completed", "cancelled", "postponed"];
+  if (!allowed.includes(newStatus)) throw new Error("Invalid meeting status.");
 
-  if (!selectedMeeting) {
+  const reason = String(document.getElementById("meetingStatusReason")?.value || "").trim();
+  const postponedTo = String(document.getElementById("postponedToDate")?.value || "").trim();
+  const minutes = String(minutesInput?.value || "").trim();
+  const resolution = String(resolutionInput?.value || "").trim();
+  const noResolution = Boolean(document.getElementById("resolutionNotRequired")?.checked);
+  const payload = {
+    status: newStatus,
+    status_reason: ["cancelled", "postponed"].includes(newStatus) ? reason : null,
+    postponed_to: newStatus === "postponed" ? postponedTo : null
+  };
 
-    throw new Error(
-      "Select a meeting first."
-    );
-
+  if (["cancelled", "postponed"].includes(newStatus) && !reason) {
+    throw new Error("A reason is required before cancelling or postponing this meeting.");
+  }
+  if (newStatus === "postponed") {
+    if (!postponedTo) throw new Error("Choose the proposed new meeting date.");
+    if (postponedTo <= selectedMeeting.date) throw new Error("The new date must be later than the current meeting date.");
+  }
+  if (newStatus === "completed") {
+    if (!minutes) throw new Error("Record the meeting minutes before marking it completed.");
+    if (!resolution && !noResolution) throw new Error("Record a resolution or confirm that no resolution was made.");
+    const missingAttendance = attendanceMembers.filter(member => !attendanceRows.has(String(member.id)));
+    if (missingAttendance.length) throw new Error("Save attendance for every active member before completing the meeting.");
+    payload.minutes = minutes;
+    payload.resolution = resolution || null;
+    payload.resolution_not_required = noResolution;
+  }
+  if (newStatus === "upcoming" && selectedMeeting.status === "postponed") {
+    if (!selectedMeeting.postponed_to) throw new Error("This postponed meeting has no proposed new date.");
+    payload.date = selectedMeeting.postponed_to;
+  }
+  if (newStatus === "upcoming") {
+    payload.status_reason = null;
+    payload.postponed_to = null;
   }
 
+  const { data, error } = await supabase
+    .from("meetings")
+    .update(payload)
+    .eq("id", selectedMeeting.id)
+    .eq("group_id", groupId)
+    .select(`id, group_id, title, date, venue, agenda, minutes, resolution, resolution_not_required, status_reason, postponed_to, status, created_at`)
+    .single();
+  if (error) throw error;
+  if (!data) throw new Error("Meeting status was not updated.");
 
-  const allowed = [
-    "upcoming",
-    "completed",
-    "cancelled"
-  ];
-
-
-  if (
-    !allowed.includes(
-      newStatus
-    )
-  ) {
-
-    throw new Error(
-      "Invalid meeting status."
-    );
-
-  }
-
-
-  const {
-    data,
-    error
-  } =
-    await supabase
-      .from("meetings")
-      .update({
-        status:
-          newStatus
-      })
-      .eq(
-        "id",
-        selectedMeeting.id
-      )
-      .eq(
-        "group_id",
-        groupId
-      )
-      .select(`
-        id,
-        group_id,
-        title,
-        date,
-        venue,
-        agenda,
-        minutes,
-        resolution,
-        status,
-        created_at
-      `)
-      .single();
-
-
-  if (error) {
-
-    throw error;
-
-  }
-
-
-  if (!data) {
-
-    throw new Error(
-      "Meeting was not updated."
-    );
-
-  }
-
-
-  selectedMeeting =
-    data;
-
-
+  selectedMeeting = data;
   await loadMeetings();
-
   renderMetrics();
-
   renderMeetings();
-
   renderDetails();
-
-
-  showStatus(
-    `Meeting marked ${newStatus}.`
-  );
-
-
-  setTimeout(
-    () => showStatus(""),
-    3000
-  );
-
+  showStatus(`Meeting status updated: ${statusLabel(newStatus)}.`);
+  setTimeout(() => showStatus(""), 3000);
 }
 
 
@@ -1537,128 +1509,41 @@ async function updateMeetingStatus(
    SAVE MINUTES
 ========================================================= */
 
+
+
 async function saveMeetingMinutes() {
-
-  if (!selectedMeeting) {
-
-    throw new Error(
-      "Select a meeting first."
-    );
-
-  }
-
-
-  const minutes =
-    String(
-      minutesInput?.value ||
-      ""
-    ).trim();
-
-
-  const resolution =
-    String(
-      resolutionInput?.value ||
-      ""
-    ).trim();
-
+  if (!selectedMeeting) throw new Error("Select a meeting first.");
+  const minutes = String(minutesInput?.value || "").trim();
+  const resolution = String(resolutionInput?.value || "").trim();
+  const resolutionNotRequired = Boolean(document.getElementById("resolutionNotRequired")?.checked);
+  if (!minutes) throw new Error("Minutes are required to save the official meeting record.");
+  if (!resolution && !resolutionNotRequired) throw new Error("Record a resolution or confirm no resolution was made.");
 
   if (saveMinutes) {
-
-    saveMinutes.disabled =
-      true;
-
-    saveMinutes.textContent =
-      "Saving...";
-
+    saveMinutes.disabled = true;
+    saveMinutes.textContent = "Saving...";
   }
-
-
-  const {
-    data,
-    error
-  } =
-    await supabase
+  try {
+    const { data, error } = await supabase
       .from("meetings")
-      .update({
-
-        minutes:
-          minutes ||
-          null,
-
-        resolution:
-          resolution ||
-          null
-
-      })
-      .eq(
-        "id",
-        selectedMeeting.id
-      )
-      .eq(
-        "group_id",
-        groupId
-      )
-      .select(`
-        id,
-        group_id,
-        title,
-        date,
-        venue,
-        agenda,
-        minutes,
-        resolution,
-        status,
-        created_at
-      `)
+      .update({ minutes, resolution: resolution || null, resolution_not_required: resolutionNotRequired })
+      .eq("id", selectedMeeting.id)
+      .eq("group_id", groupId)
+      .select(`id, group_id, title, date, venue, agenda, minutes, resolution, resolution_not_required, status_reason, postponed_to, status, created_at`)
       .single();
-
-
-  if (error) {
-
-    throw error;
-
+    if (error) throw error;
+    if (!data) throw new Error("Meeting record could not be saved.");
+    selectedMeeting = data;
+    await loadMeetings();
+    renderDetails();
+    showStatus("Meeting record saved. Mark it completed when attendance and record are complete.");
+    setTimeout(() => showStatus(""), 3000);
+  } finally {
+    if (saveMinutes) {
+      saveMinutes.disabled = false;
+      saveMinutes.textContent = "Save Meeting Record";
+    }
   }
-
-
-  if (!data) {
-
-    throw new Error(
-      "Minutes could not be saved."
-    );
-
-  }
-
-
-  selectedMeeting =
-    data;
-
-
-  await loadMeetings();
-
-  renderDetails();
-
-
-  showStatus(
-    "Minutes and resolutions saved successfully."
-  );
-
-
-  setTimeout(
-    () => showStatus(""),
-    3000
-  );
-
-
-  if (saveMinutes) {
-
-    saveMinutes.disabled =
-      false;
-
-    saveMinutes.textContent =
-      "Save Minutes & Resolutions";
-
-  }
-
 }
 
 
@@ -1865,6 +1750,26 @@ function setupButtons() {
   );
 
 
+  document.getElementById("meetingLifecycleEditor")?.addEventListener("click", async event => {
+    const button = event.target.closest("button[data-lifecycle-action]");
+    if (!button) return;
+    const action = button.dataset.lifecycleAction;
+    try {
+      clearError();
+      button.disabled = true;
+      if (action === "held") await updateMeetingStatus("held_pending_minutes");
+      else if (action === "completed") await updateMeetingStatus("completed");
+      else if (action === "cancelled") await updateMeetingStatus("cancelled");
+      else if (action === "postponed") await updateMeetingStatus("postponed");
+      else if (action === "restore-upcoming") await updateMeetingStatus("upcoming");
+      else if (action === "save-record") await saveMeetingMinutes();
+    } catch (error) {
+      showError(error);
+    } finally {
+      button.disabled = false;
+    }
+  });
+
   saveMeetingAttendance?.addEventListener(
     "click",
     async () => {
@@ -1918,75 +1823,6 @@ function setupButtons() {
   );
 
 
-  completeMeeting?.addEventListener(
-    "click",
-    async () => {
-
-      try {
-
-        clearError();
-
-        await updateMeetingStatus(
-          "completed"
-        );
-
-      }
-      catch (error) {
-
-        showError(error);
-
-      }
-
-    }
-  );
-
-
-  cancelMeeting?.addEventListener(
-    "click",
-    async () => {
-
-      try {
-
-        clearError();
-
-        await updateMeetingStatus(
-          "cancelled"
-        );
-
-      }
-      catch (error) {
-
-        showError(error);
-
-      }
-
-    }
-  );
-
-
-  restoreMeeting?.addEventListener(
-    "click",
-    async () => {
-
-      try {
-
-        clearError();
-
-        await updateMeetingStatus(
-          "upcoming"
-        );
-
-      }
-      catch (error) {
-
-        showError(error);
-
-      }
-
-    }
-  );
-
-
   deleteMeeting?.addEventListener(
     "click",
     async () => {
@@ -2008,35 +1844,7 @@ function setupButtons() {
   );
 
 
-  saveMinutes?.addEventListener(
-    "click",
-    async () => {
 
-      try {
-
-        clearError();
-
-        await saveMeetingMinutes();
-
-      }
-      catch (error) {
-
-        showError(error);
-
-        if (saveMinutes) {
-
-          saveMinutes.disabled =
-            false;
-
-          saveMinutes.textContent =
-            "Save Minutes & Resolutions";
-
-        }
-
-      }
-
-    }
-  );
 
 }
 

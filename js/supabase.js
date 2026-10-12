@@ -7,12 +7,11 @@ import {
    CHAMA LIVE — SUPABASE
 ========================================================= */
 
-const SUPABASE_URL =
-  "https://ptktftwyltxmtcodyzoa.supabase.co";
-
-
-const SUPABASE_PUBLISHABLE_KEY =
-  "sb_publishable_Nfuc0Xj1LuSU-qJmSXpH5A_GSTMvmSS";
+// Official CHAMA LIVE client configuration.
+// Candidate verification uses isolated database tests and repository CI;
+// this browser bundle does not route through Vercel preview hostnames.
+const SUPABASE_URL = "https://ptktftwyltxmtcodyzoa.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_Nfuc0Xj1LuSU-qJmSXpH5A_GSTMvmSS";
 
 
 /* =========================================================

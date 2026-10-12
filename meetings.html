@@ -65,7 +65,7 @@
 
     .meeting-metrics {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
       gap: 16px;
       margin-bottom: 24px;
     }
@@ -316,6 +316,41 @@
 
     .meeting-content-section h3 {
       margin-bottom: 12px;
+    }
+
+    .meeting-status-history {
+      border-top: 1px solid #eaecf0;
+      margin-top: 8px;
+    }
+
+    .meeting-history-list {
+      list-style: none;
+      margin: 12px 0 0;
+      padding: 0;
+    }
+
+    .meeting-history-item {
+      border-left: 3px solid #12b76a;
+      margin: 0 0 14px;
+      padding: 2px 0 2px 14px;
+    }
+
+    .meeting-history-transition {
+      color: #101828;
+      font-size: 14px;
+    }
+
+    .meeting-history-meta {
+      color: #667085;
+      font-size: 12px;
+      margin-top: 4px;
+    }
+
+    .meeting-history-reason {
+      color: #475467;
+      font-size: 13px;
+      margin: 5px 0 0;
+      overflow-wrap: anywhere;
     }
 
     .meeting-agenda-list {
@@ -587,6 +622,24 @@
       }
     }
 
+    .meeting-lifecycle-editor { border-top: 1px solid #eaecf0; }
+    .meeting-lifecycle-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; }
+    .meeting-lifecycle-fields .form-group-full { grid-column: 1 / -1; }
+    .meeting-lifecycle-fields textarea, .meeting-lifecycle-fields input { width: 100%; box-sizing: border-box; }
+    .meeting-no-resolution { display: flex; align-items: center; gap: 8px; grid-column: 1 / -1; }
+    .meeting-lifecycle-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+    .meeting-history-list { padding-left: 22px; }
+    .meeting-history-list li { margin: 0 0 14px; }
+    .meeting-history-list span, .meeting-history-list small { display: block; color: #667085; }
+    .meeting-status-badge.held_pending_minutes { background: #fffaeb; color: #93370d; }
+    .meeting-status-badge.postponed { background: #f4f3ff; color: #5925dc; }
+    .meeting-status-badge.review { background: #fef3f2; color: #b42318; }
+    @media (max-width: 700px) {
+      .meeting-lifecycle-fields { grid-template-columns: 1fr; }
+      .meeting-lifecycle-fields .form-group-full { grid-column: auto; }
+      .meeting-lifecycle-actions > button { width: 100%; }
+    }
+
     @media print {
       body * {
         visibility: hidden !important;
@@ -723,6 +776,11 @@
         </article>
 
         <article class="meeting-metric">
+          <span class="meeting-metric-label">Held — minutes pending</span>
+          <strong id="heldPendingCount" class="meeting-metric-value">0</strong>
+        </article>
+
+        <article class="meeting-metric">
           <span class="meeting-metric-label">
             Completed
           </span>
@@ -733,6 +791,16 @@
           >
             0
           </strong>
+        </article>
+
+        <article class="meeting-metric">
+          <span class="meeting-metric-label">Postponed</span>
+          <strong id="postponedCount" class="meeting-metric-value">0</strong>
+        </article>
+
+        <article class="meeting-metric">
+          <span class="meeting-metric-label">Action required</span>
+          <strong id="actionRequiredCount" class="meeting-metric-value">0</strong>
         </article>
 
         <article class="meeting-metric">
@@ -913,13 +981,11 @@
                 Upcoming
               </option>
 
-              <option value="completed">
-                Completed
-              </option>
-
-              <option value="cancelled">
-                Cancelled
-              </option>
+              <option value="held_pending_minutes">Held — minutes pending</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+              <option value="postponed">Postponed</option>
+              <option value="review">Unknown status — review</option>
 
             </select>
 
@@ -997,6 +1063,47 @@
 
           <!-- Populated by meetings.js -->
 
+        </div>
+
+        <div id="meetingLifecycleEditor" class="meeting-section-body meeting-lifecycle-editor" hidden>
+          <h3>Meeting outcome and official record</h3>
+          <p id="meetingCompletionHint" class="meeting-form-help">After the meeting date, confirm whether it was held, cancelled, or postponed.</p>
+          <div class="meeting-lifecycle-fields">
+            <div class="form-group form-group-full">
+              <label for="minutes">Minutes (required before completion)</label>
+              <textarea id="minutes" rows="6" maxlength="20000" placeholder="Record the discussions and decisions made."></textarea>
+            </div>
+            <div class="form-group form-group-full">
+              <label for="resolution">Resolution / action items</label>
+              <textarea id="resolution" rows="4" maxlength="12000" placeholder="Record resolutions and assigned actions, if any."></textarea>
+            </div>
+            <label class="meeting-no-resolution"><input id="resolutionNotRequired" type="checkbox"> No resolution was made at this meeting</label>
+            <div class="form-group">
+              <label for="meetingStatusReason">Reason (required for cancellation or postponement)</label>
+              <input id="meetingStatusReason" type="text" maxlength="1000" placeholder="Explain the change or follow-up needed.">
+            </div>
+            <div class="form-group">
+              <label for="postponedToDate">Proposed new date (for postponement)</label>
+              <input id="postponedToDate" type="date">
+            </div>
+          </div>
+          <div class="meeting-lifecycle-actions">
+            <button type="button" class="btn btn-primary" id="saveMinutes" data-lifecycle-action="save-record" data-permission-page="meetings" data-permission-action="edit">Save Meeting Record</button>
+            <button type="button" class="btn btn-primary" id="markMeetingHeld" data-lifecycle-action="held" data-permission-page="meetings" data-permission-action="edit">Meeting took place — minutes pending</button>
+            <button type="button" class="btn btn-primary" id="markMeetingCompleted" data-lifecycle-action="completed" data-permission-page="meetings" data-permission-action="edit" hidden>Mark completed</button>
+            <button type="button" class="btn btn-secondary" id="cancelMeetingLifecycle" data-lifecycle-action="cancelled" data-permission-page="meetings" data-permission-action="edit" hidden>Cancel meeting</button>
+            <button type="button" class="btn btn-secondary" id="postponeMeetingLifecycle" data-lifecycle-action="postponed" data-permission-page="meetings" data-permission-action="edit" hidden>Postpone meeting</button>
+            <button type="button" class="btn btn-secondary" id="restorePostponedMeeting" data-lifecycle-action="restore-upcoming" data-permission-page="meetings" data-permission-action="edit" hidden>Use proposed date and reschedule</button>
+            <button type="button" class="btn btn-secondary" id="restoreCancelledMeeting" data-lifecycle-action="restore-upcoming" data-permission-page="meetings" data-permission-action="edit" hidden>Restore cancelled meeting</button>
+          </div>
+        </div>
+
+        <div id="meetingStatusHistory" class="meeting-section-body meeting-status-history" hidden aria-live="polite">
+          <h3>Status history</h3>
+          <p class="meeting-form-help">A read-only audit trail of meeting status changes, who made them, when, and why.</p>
+          <div id="meetingStatusHistoryContent">
+            <p class="meeting-empty-text">Select a meeting to view its status history.</p>
+          </div>
         </div>
 
       </section>
