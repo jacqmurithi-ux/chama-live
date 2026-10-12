@@ -2286,10 +2286,16 @@ async function loadCumulativePositions() {
   const rows = Array.isArray(data) ? data : [];
   const expectedIds = new Set(expectedMembers.map(member => String(member.id)));
   const seenIds = new Set();
+  // Match the canonical cumulative RPC: monthly contributions only,
+  // through the current reporting month. Dev fund/Other Contribution and
+  // future-dated rows must never inflate "Monthly Paid to Date".
+  const reportingMonth = getCurrentMonth();
   const paidByMember = new Map();
   for (const payment of contributions) {
     const key = String(payment.member_id || "");
-    if (!key) continue;
+    const type = String(payment.contribution_type || "").trim().toLowerCase();
+    const paymentDate = normalizeDate(payment.contribution_date);
+    if (!key || type !== "monthly" || !paymentDate || paymentDate.substring(0, 7) > reportingMonth) continue;
     paidByMember.set(key, (paidByMember.get(key) || 0) + numberValue(payment.amount));
   }
 
