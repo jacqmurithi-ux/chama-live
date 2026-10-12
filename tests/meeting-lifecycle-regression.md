@@ -70,6 +70,6 @@ Candidate branch: `candidate/meeting-lifecycle-reports-20261012`
 
 ## Release gate
 - [x] GitHub Actions candidate static regression passed for commit 18dc1051b5a47f8d708d6137284ebafa739fc398: JavaScript syntax and source-contract checks passed.
-- [ ] Re-run GitHub Actions after removing Vercel preview routing and adding canonical refresh-schema assertions.
+- [x] GitHub Actions rerun after removing Vercel preview routing and adding canonical refresh-schema assertions; run 38263957110 passed.
 - [x] Candidate Vercel preview client now routes matching candidate deployment hostnames to isolated Supabase project onzaonflquipqmhgslxi; official portal hosts continue to use production project. Preview HTML/JS return HTTP 200.
 Do not merge or deploy until authenticated browser checks, export file checks, permission negatives, and migration replay pass. No production migration or meeting-status change is performed by this candidate PR.
