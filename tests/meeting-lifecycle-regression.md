@@ -4,7 +4,8 @@ Candidate branch: `candidate/meeting-lifecycle-reports-20261012`
 
 ## Migration / database
 - [ ] Replay the migration on a clean candidate database.
-- [x] Apply/replay the migration against the existing candidate test schema (8 pre-existing meeting rows); existing records remained readable.
+- [x] Apply/replay the meeting lifecycle, guard-trigger patch, and Dev fund workflow migrations twice against the existing candidate test schema; each replay succeeded.
+- [x] Existing candidate data remained readable after replay (8 meeting rows retained).
 - [x] Existing upcoming/completed rows remain readable after migration (candidate test database; 8 meetings retained).
 - [ ] Status check permits only upcoming, held_pending_minutes, completed, cancelled, postponed.
 - [ ] Status history is readable by authenticated members of the same group only.
@@ -35,8 +36,10 @@ Candidate branch: `candidate/meeting-lifecycle-reports-20261012`
 - [ ] Upcoming, Held — minutes pending, Completed, Cancelled, Postponed, and Other/Review counts sum exactly to Total.
 - [ ] October 11 Invest appears as Held — minutes pending after the authorised transition, until its record is completed.
 - [ ] Agenda, status, reason, and resolution are rendered accurately.
-- [ ] CSV, Excel, Download Sorted Report, and Print contain the same visible meeting statuses.
-- [ ] Reports and Meetings reconcile for identical date/group filters.
+- [x] Candidate source/preview checks: Meetings and Reports HTML/JS respond HTTP 200; the Meetings page has one status-history host/content ID; filters include all five lifecycle states plus Review.
+- [x] Candidate source check: Reports table, CSV, Excel, and sorted-view export include lifecycle status labels, reason/follow-up, minutes state, attendance summary, and resolution/no-resolution label.
+- [ ] Browser-authenticated CSV, Excel, Download Sorted Report, and Print downloads verified byte-for-byte against visible meeting rows.
+- [ ] Reports and Meetings reconcile for identical date/group filters in authenticated browser sessions, including attendance and minutes.
 - [ ] All existing canonical accounting, expenses, membership, and custom contribution report checks still pass.
 
 ## Dev fund correction workflow (candidate only)
