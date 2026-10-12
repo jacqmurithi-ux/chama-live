@@ -1190,7 +1190,7 @@ async function loadCanonicalAccounting(
   } =
     await supabase
       .rpc(
-        "get_canonical_monthly_accounting_summary",
+        "get_monthly_financial_report",
         {
           p_group_id:
             groupId,
@@ -1247,92 +1247,14 @@ async function loadCanonicalAccounting(
 
   /* -------------------------------------------------------
      APPROVED EXPENSES
+
+     Use the same backend financial report as Reports.
+     Do not independently reconstruct the expense total in
+     the browser; that can drift from the closing RPC.
   ------------------------------------------------------- */
 
-  const monthStart =
-    `${month}-01`;
-
-
-  const monthDate =
-    new Date(
-      `${month}-01T00:00:00`
-    );
-
-
-  monthDate.setMonth(
-    monthDate.getMonth() + 1
-  );
-
-
-  const monthEnd =
-    [
-      monthDate.getFullYear(),
-
-      String(
-        monthDate.getMonth() + 1
-      ).padStart(
-        2,
-        "0"
-      ),
-
-      "01"
-    ].join("-");
-
-
-  const {
-    data: expenseRows,
-    error: expenseError
-  } =
-    await supabase
-      .from("expenses")
-      .select(`
-        id,
-        amount,
-        date,
-        approval_status
-      `)
-      .eq(
-        "group_id",
-        groupId
-      )
-      .gte(
-        "date",
-        monthStart
-      )
-      .lt(
-        "date",
-        monthEnd
-      )
-      .eq(
-        "approval_status",
-        "approved"
-      );
-
-
-  if (expenseError) {
-    throw expenseError;
-  }
-
-
   const approvedExpenses =
-    (
-      expenseRows || []
-    ).reduce(
-      (
-        total,
-        expense
-      ) => {
-
-        return (
-          total +
-          Number(
-            expense.amount || 0
-          )
-        );
-
-      },
-      0
-    );
+    Number(summary.approved_expenses ?? 0);
 
 
   /* -------------------------------------------------------
@@ -1340,8 +1262,9 @@ async function loadCanonicalAccounting(
   ------------------------------------------------------- */
 
   const openingBalance =
-    await getOpeningBalance(
-      month
+    Number(
+      summary.opening_balance ??
+      await getOpeningBalance(month)
     );
 
 
@@ -1428,34 +1351,29 @@ async function loadCanonicalAccounting(
   ------------------------------------------------------- */
 
   const closingBalance =
-    openingBalance +
-    totalCollected -
-    approvedExpenses;
+    Number(
+      summary.closing_balance ??
+      (
+        openingBalance +
+        totalCollected -
+        approvedExpenses
+      )
+    );
 
 
   /* -------------------------------------------------------
      APPLICATION RATE
   ------------------------------------------------------- */
 
-  let collectionRate =
-    0;
-
-
-  if (expected > 0) {
-
-    collectionRate =
-      Math.min(
-        100,
-        Math.max(
-          0,
-          (
-            applied /
-            expected
-          ) * 100
-        )
-      );
-
-  }
+  const collectionRate =
+    Number(
+      summary.collection_rate ??
+      (
+        expected > 0
+          ? Math.min(100, Math.max(0, (applied / expected) * 100))
+          : 0
+      )
+    );
 
 
   calculatedData = {
@@ -2394,9 +2312,43 @@ function applyFinancialReport(
 
 function canManageFinancialClosing() {
 
-  return String(currentMember?.role || "")
-    .trim()
-    .toLowerCase() === "treasurer";
+  /*
+    Match the database close/reopen RPC authorization:
+    admin, treasurer and secretary.
+
+    The database remains authoritative; these checks only
+    control whether the UI presents the action buttons.
+  */
+  const normalizeRole = value => {
+    const role = String(value || "")
+      .trim()
+      .toLowerCase()
+      .replaceAll("_", " ")
+      .replaceAll("-", " ");
+
+    if (role === "administrator") return "admin";
+    if (role === "vice secretary") return "secretary";
+    if (role === "vice chairperson") return "chairperson";
+
+    return role;
+  };
+
+  /*
+    Mirror cl_user_has_role(): actual_position overrides the
+    stored role only when it explicitly identifies a vice role.
+  */
+  const actualPosition = normalizeRole(
+    currentMember?.actual_position
+  );
+
+  const role = [
+    "vice secretary",
+    "vice chairperson"
+  ].includes(actualPosition)
+    ? normalizeRole(actualPosition)
+    : normalizeRole(currentMember?.role);
+
+  return ["admin", "treasurer", "secretary"].includes(role);
 
 }
 

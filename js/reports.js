@@ -79,7 +79,8 @@ const STATUS_LABELS = {
   credit: "Credit",
   up_to_date: "Up to Date",
   "up-to-date": "Up to Date",
-  current: "Up to Date"
+  current: "Up to Date",
+  no_payment: "No Payment"
 };
 
 
@@ -863,7 +864,7 @@ async function loadCanonical(month) {
     ),
 
     supabase.rpc(
-      "get_canonical_monthly_accounting_summary",
+      "get_monthly_financial_report",
       {
         p_group_id: groupId,
         p_month: month
@@ -1858,6 +1859,7 @@ function canonicalRowStatus(row) {
 
 function canonicalApplied(row) {
   return numberValue(
+    row.applied_this_month ??
     row.applied ??
     row.allocated ??
     row.total_allocated ??
@@ -1879,6 +1881,7 @@ function canonicalOutstanding(row) {
 function canonicalCredit(row) {
   return numberValue(
     row.carry_forward_credit ??
+    row.carry_forward ??
     row.previous_credit ??
     row.credit ??
     row.current_credit ??
@@ -1888,6 +1891,7 @@ function canonicalCredit(row) {
 
 function canonicalDue(row) {
   return numberValue(
+    row.monthly_due ??
     row.due ??
     row.amount_due ??
     row.obligation ??
@@ -3795,6 +3799,22 @@ function drawMonthlyStatusChart(
     const credit =
       canonicalCredit(row);
 
+    const due = canonicalDue(row);
+    const applied = canonicalApplied(row);
+
+    // A status label alone is not evidence of payment. If the server
+    // returned no obligation, allocation, arrears or credit, do not
+    // count this row as paid just because its label says "paid".
+    if (
+      due <= 0 &&
+      applied <= 0 &&
+      outstanding <= 0 &&
+      credit <= 0
+    ) {
+      counts.other += 1;
+      continue;
+    }
+
     if (credit > 0) {
       counts.credit += 1;
       continue;
@@ -4531,10 +4551,15 @@ function renderVisualInsights(
       cumulativeRows
     );
 
+  // The chart describes approved spending; pending and rejected
+  // expenses remain available in the expense table and status totals.
+  const approvedExpenseRows = expenseRows.filter(row =>
+    lower(row.approval_status) === "approved"
+  );
   const expenseResult =
     drawExpenseCategoryChart(
       $("reportExpenseCategoryChart"),
-      expenseRows
+      approvedExpenseRows
   );
 
   if (cashResult) {
@@ -4565,7 +4590,10 @@ function renderVisualInsights(
         )}</strong> outstanding,
         <strong>${formatNumber(
           statusResult.credit
-        )}</strong> with credit.
+        )}</strong> with credit,
+        <strong>${formatNumber(
+          statusResult.other
+        )}</strong> unclassified (no non-zero accounting values).
       `
     );
   }
@@ -4594,7 +4622,7 @@ function renderVisualInsights(
     setHTML(
       "reportExpenseCategoryChartSummary",
       `
-        Largest category:
+        Largest approved expense category:
         <strong>${escapeHTML(
           top.category
         )}</strong>
@@ -5049,8 +5077,13 @@ async function generateReport() {
       contributionRows
     );
 
+    // This table is explicitly labelled as approved spending.
+    // Keep pending/rejected records visible in Expense Entries and
+    // their separate summary totals, but exclude them from this breakdown.
     renderExpenseBreakdown(
-      expenseRows
+      expenseRows.filter(row =>
+        lower(row.approval_status) === "approved"
+      )
     );
 
     renderContributionEntries(
@@ -5499,7 +5532,7 @@ function exportCSV() {
     lines.push("");
     lines.push(["MEETINGS"].map(csvEscape).join(","));
     lines.push(
-      ["Date", "Meeting", "Venue", "Status", "Agenda", "Resolution"]
+      ["Date", "Meeting", "Venue", "Status", "Agenda", "Minutes", "Resolution"]
         .map(csvEscape).join(",")
     );
     for (const row of meetingRows) {
@@ -5509,7 +5542,8 @@ function exportCSV() {
           row.title,
           row.venue,
           row.status,
-          row.agenda,
+          Array.isArray(row.agenda) ? row.agenda.join("; ") : row.agenda,
+          row.minutes,
           row.resolution
         ].map(csvEscape).join(",")
       );
@@ -5889,6 +5923,7 @@ function exportExcel() {
                 <th>Venue</th>
                 <th>Status</th>
                 <th>Agenda</th>
+                <th>Minutes</th>
                 <th>Resolution</th>
               </tr>
             </thead>
@@ -5913,7 +5948,11 @@ function exportExcel() {
                   )}</td>
 
                   <td>${excelEscape(
-                    row.agenda
+                    Array.isArray(row.agenda) ? row.agenda.join("; ") : row.agenda
+                  )}</td>
+
+                  <td>${excelEscape(
+                    row.minutes
                   )}</td>
 
                   <td>${excelEscape(
