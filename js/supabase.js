@@ -2,59 +2,70 @@ import {
   createClient
 } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
-
 /* =========================================================
-   CHAMA LIVE — SUPABASE
+   CHAMA LIVE — SUPABASE PROJECT ROUTING
+
+   Production domain -> production Supabase project.
+   Vercel previews and other non-production hosts -> candidate
+   project, so test logins do not silently use production.
+
+   Publishable/anon client keys are designed for browser use.
+   Never place a service-role or secret key in this file.
 ========================================================= */
 
-const SUPABASE_URL =
+const PRODUCTION_HOSTS = new Set([
+  "chamalive.co.ke",
+  "www.chamalive.co.ke"
+]);
+
+const PRODUCTION_SUPABASE_URL =
+  "https://ptktftwyltxmtcodyzoa.supabase.co";
+
+const PRODUCTION_PUBLISHABLE_KEY =
+  "sb_publishable_WFptuzqTTfPvFit8mfh-og_5UaxqvbO";
+
+const CANDIDATE_SUPABASE_URL =
   "https://onzaonflquipqmhgslxi.supabase.co";
 
-
-const SUPABASE_PUBLISHABLE_KEY =
+const CANDIDATE_PUBLISHABLE_KEY =
   "sb_publishable_0jhKFtRCnOx0WDcO3PwcMg_GGsnN3kc";
 
+const isProductionHost =
+  typeof window !== "undefined" &&
+  PRODUCTION_HOSTS.has(window.location.hostname.toLowerCase());
+
+const SUPABASE_URL = isProductionHost
+  ? PRODUCTION_SUPABASE_URL
+  : CANDIDATE_SUPABASE_URL;
+
+const SUPABASE_PUBLISHABLE_KEY = isProductionHost
+  ? PRODUCTION_PUBLISHABLE_KEY
+  : CANDIDATE_PUBLISHABLE_KEY;
 
 /* =========================================================
    CLIENT
 ========================================================= */
 
-export const supabase =
-  createClient(
-    SUPABASE_URL,
-    SUPABASE_PUBLISHABLE_KEY,
-    {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
+export const supabase = createClient(
+  SUPABASE_URL,
+  SUPABASE_PUBLISHABLE_KEY,
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
 
-        /*
-         * CHAMA LIVE uses the PKCE verification flow.
-         *
-         * signup.js
-         *      ↓
-         * Supabase Auth
-         *      ↓
-         * email verification
-         *      ↓
-         * confirm.html
-         *
-         * confirm.html is responsible for the explicit
-         * exchangeCodeForSession() call.
-         *
-         * Automatic URL detection is therefore disabled.
-         * This prevents the shared client from consuming
-         * the authorization code before confirm.html can
-         * perform the PKCE exchange with its verifier.
-         */
-        detectSessionInUrl: false,
-
-        flowType: "pkce"
-      }
+      /*
+       * CHAMA LIVE uses the PKCE verification flow.
+       * confirm.html performs the explicit exchangeCodeForSession()
+       * call, so automatic URL detection stays disabled.
+       */
+      detectSessionInUrl: false,
+      flowType: "pkce"
     }
-  );
+  }
+);
 
-
-console.log(
-  "CHAMA LIVE: Supabase client loaded."
+console.info(
+  "CHAMA LIVE: Supabase client loaded.",
+  isProductionHost ? "production project" : "candidate project"
 );
