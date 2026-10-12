@@ -760,6 +760,7 @@ function renderDetails() {
     detailsCard.hidden = true;
     detailsCard.classList.remove("is-visible");
     const lifecycleEditor = document.getElementById("meetingLifecycleEditor");
+    const historyHost = document.getElementById("meetingStatusHistory");
     if (lifecycleEditor) lifecycleEditor.hidden = true;
     if (historyHost) historyHost.hidden = true;
     if (meetingAttendance) meetingAttendance.hidden = true;
