@@ -10,7 +10,9 @@ Candidate branch: `candidate/meeting-lifecycle-reports-20261012`
 - [x] Candidate database status check permits only upcoming, held_pending_minutes, completed, cancelled, postponed.
 - [ ] Status history is readable by authenticated members of the same group only.
 - [x] Candidate database grants: anonymous SELECT/INSERT denied; authenticated SELECT granted; authenticated INSERT/UPDATE/DELETE denied for status history.
-- [ ] RLS same-group visibility and cross-group denial verified with real authenticated sessions.
+- [x] Candidate SQL RLS test with authenticated JWT claims: same-group member can read meeting status history; an admin belonging only to another group cannot read it.
+- [x] Candidate SQL negative test: authenticated direct INSERT into meeting status history is denied.
+- [ ] Repeat RLS checks in real browser-authenticated sessions; SQL JWT-claim tests are not browser E2E.
 - [x] SQL negative test: cancellation without a reason is rejected.
 - [x] SQL positive test: postponement with a reason and later date, then reschedule to the proposed date, succeeds.
 - [ ] SQL negative test: postponement without a later proposed date fails.
@@ -20,7 +22,8 @@ Candidate branch: `candidate/meeting-lifecycle-reports-20261012`
 - [x] SQL fixture test verified expected lifecycle history row count; exact actor/time/from/to/reason contents and RLS visibility still need independent assertions.
 
 ## Meetings UI (authenticated)
-- [ ] Schedule/edit/view a meeting; group isolation and existing permission rules remain intact.
+- [ ] Schedule/edit/view a meeting in browser; group isolation and existing permission rules remain intact.
+- [x] Candidate SQL RLS test with authenticated JWT claims: admin, chairperson, secretary, and treasurer can read/update group attendance; an ordinary member sees only their own attendance and cannot update another member's row.
 - [ ] Upcoming → Held — minutes pending.
 - [ ] Held → Completed with minutes, resolution or explicit no-resolution, and full attendance.
 - [ ] Attempt completion with missing minutes, resolution choice, or attendance; clear actionable validation appears and DB remains unchanged.
@@ -44,7 +47,7 @@ Candidate branch: `candidate/meeting-lifecycle-reports-20261012`
 - [ ] All existing canonical accounting, expenses, membership, and custom contribution report checks still pass.
 
 ## Dev fund correction workflow (candidate only)
-- [x] Apply the candidate correction migration to the isolated test database.
+- [x] Apply/replay the candidate correction migration to the isolated test database after the allocation-schema compatibility change; synthetic fixture still passes.
 - [x] Synthetic existing-payment fixture: reassign matching active rule and period-backed obligation to the payment's intended member; allocate the existing KSh 250 payment without creating a second contribution.
 - [x] Read-only production schema review: `contribution_allocations` has only the canonical `payment_id`, `obligation_id`, and `amount` fields; the candidate function now selects a compatible insert shape based on actual columns.
 - [ ] Exercise the canonical three-column allocation branch on an isolated production-shaped database before release.
