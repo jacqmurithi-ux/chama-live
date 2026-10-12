@@ -45,6 +45,22 @@ const renderBlock = reportsJs.slice(renderStart, renderEnd);
 assert.equal((renderBlock.match(/"<td>"/g) || []).length, 9,
   "Reports renderer must emit nine cells for each meeting");
 
+const selectedMeetingsStart = reportsJs.indexOf("function renderMeetingsReport(rows)");
+const selectedMeetingsEnd = reportsJs.indexOf("function renderFullReport(", selectedMeetingsStart);
+const selectedMeetings = reportsJs.slice(selectedMeetingsStart, selectedMeetingsEnd);
+assert.equal((selectedMeetings.match(/<th>/g) || []).length, 9,
+  "Selected Meetings report must expose all nine lifecycle fields");
+assert.ok(selectedMeetings.includes("row.minutes") && selectedMeetings.includes("attendance_expected_count"),
+  "Selected Meetings report must include actual minutes and attendance summary");
+
+const fullMeetingStart = reportsJs.indexOf("function buildMeetingTable(rows)");
+const fullMeetingEnd = reportsJs.indexOf("VISUAL INSIGHTS", fullMeetingStart);
+const fullMeeting = reportsJs.slice(fullMeetingStart, fullMeetingEnd);
+assert.equal((fullMeeting.match(/<th>/g) || []).length, 9,
+  "Full/executive report meeting table must expose all nine lifecycle fields");
+assert.ok(reportsJs.includes('String(row.minutes || "").trim() ? row.minutes : "Pending"'),
+  "Meeting exports must include actual minutes text or Pending");
+
 assert.ok(reportsJs.includes('["Date", "Meeting", "Venue", "Status", "Reason / follow-up", "Agenda", "Minutes", "Attendance", "Resolution"]'),
   "CSV export must include all meeting lifecycle fields");
 assert.ok(reportsJs.includes("<th>Attendance</th>") && reportsJs.includes("<th>Minutes</th>"),
