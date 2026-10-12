@@ -1900,6 +1900,28 @@ function canonicalRowStatus(row) {
   );
 }
 
+function monthlyStatusDisplay(row) {
+  const due = canonicalDue(row);
+  const applied = canonicalApplied(row);
+  const outstanding = canonicalOutstanding(row);
+  const credit = canonicalCredit(row);
+
+  // Presentation only: do not recalculate or mutate canonical accounting.
+  if (due <= 0 && outstanding <= 0 && applied > 0) {
+    return "Payment recorded — no monthly obligation";
+  }
+
+  if (outstanding <= 0 && credit > 0 && due > 0 && applied >= due) {
+    return "Paid + credit available";
+  }
+
+  if (outstanding <= 0 && credit > 0) {
+    return "Credit available";
+  }
+
+  return getStatusLabel(canonicalMonthlyStatus(row));
+}
+
 function canonicalMonthlyStatus(row) {
   const due = canonicalDue(row);
   const applied = canonicalApplied(row);
@@ -2174,12 +2196,16 @@ function renderMemberContributions(rows) {
 }
 
 function renderMonthlyStatusReport(rows) {
-  const target =
-    $("reportOutput");
+  const target = $("reportOutput");
 
   if (!target) return;
 
   target.innerHTML = `
+    <div class="report-explanation" role="note" style="margin:0 0 12px;padding:12px 14px;border-left:4px solid #16803c;background:#f3faf5;border-radius:6px;color:#23352a;line-height:1.5">
+      <strong>How to read this:</strong>
+      <span>Monthly Due is the obligation for the selected month. Previous Outstanding is unpaid balance brought into the month. Applied is the amount canonical accounting allocated to this month's obligation. Carry-forward Credit is an available surplus after applicable allocations; it is shown separately and must not be subtracted a second time. Current Outstanding is the amount still owed for this month's obligation.</span>
+      <div style="margin-top:6px"> <strong>Paid + credit available</strong> means this month's due is covered and a surplus remains. A credit does not by itself prove that a separate previous outstanding was cleared.</div>
+    </div>
     <div class="report-table-wrap">
       <table class="report-table">
         <thead>
@@ -2188,43 +2214,25 @@ function renderMonthlyStatusReport(rows) {
             <th>Member No.</th>
             <th>Monthly Due</th>
             <th>Previous Outstanding</th>
-            <th>Applied</th>
-            <th>Current Outstanding</th>
+            <th>Applied to This Month</th>
             <th>Carry-forward Credit</th>
+            <th>Current Outstanding</th>
             <th>Monthly Status</th>
           </tr>
         </thead>
-
         <tbody>
           ${
             rows.length
               ? rows.map(row => `
                   <tr>
-                    <td>${escapeHTML(
-                      getMemberName(row.member_id)
-                    )}</td>
-
-                    <td>${escapeHTML(
-                      getMemberNumber(row.member_id) || "—"
-                    )}</td>
-
+                    <td>${escapeHTML(getMemberName(row.member_id))}</td>
+                    <td>${escapeHTML(getMemberNumber(row.member_id) || "—")}</td>
                     <td>${formatCurrency(canonicalDue(row))}</td>
-
                     <td>${formatCurrency(canonicalPreviousOutstanding(row))}</td>
-
                     <td>${formatCurrency(canonicalApplied(row))}</td>
-
+                    <td>${formatCurrency(canonicalCredit(row))}</td>
                     <td>${formatCurrency(canonicalOutstanding(row))}</td>
-
-                    <td>${formatCurrency(
-                      canonicalCredit(row)
-                    )}</td>
-
-                    <td>${escapeHTML(
-                      getStatusLabel(
-                        canonicalMonthlyStatus(row)
-                      )
-                    )}</td>
+                    <td>${escapeHTML(monthlyStatusDisplay(row))}</td>
                   </tr>
                 `).join("")
               : `<tr><td colspan="8">No monthly accounting records.</td></tr>`
@@ -2697,6 +2705,7 @@ function renderFullReport(
 
 function buildCanonicalTable(rows) {
   return `
+    <p class="report-note">Monthly Due is this month's obligation. Previous Outstanding is brought forward from earlier months. Applied is the canonical allocation to this month's obligation. Carry-forward Credit is surplus remaining after applicable allocations; do not subtract it twice. Current Outstanding is what remains due for this month. "Paid + credit available" means the monthly due is covered and surplus remains.</p>
     <div class="report-table-wrap">
       <table class="report-table">
         <thead>
@@ -2704,9 +2713,9 @@ function buildCanonicalTable(rows) {
             <th>Member</th>
             <th>Monthly Due</th>
             <th>Previous Outstanding</th>
-            <th>Applied</th>
-            <th>Current Outstanding</th>
+            <th>Applied to This Month</th>
             <th>Carry-forward Credit</th>
+            <th>Current Outstanding</th>
             <th>Monthly Status</th>
           </tr>
         </thead>
@@ -2715,24 +2724,13 @@ function buildCanonicalTable(rows) {
             rows.length
               ? rows.map(row => `
                   <tr>
-                    <td>${escapeHTML(
-                      getMemberName(row.member_id)
-                    )}</td>
-
+                    <td>${escapeHTML(getMemberName(row.member_id))}</td>
                     <td>${formatCurrency(canonicalDue(row))}</td>
                     <td>${formatCurrency(canonicalPreviousOutstanding(row))}</td>
                     <td>${formatCurrency(canonicalApplied(row))}</td>
+                    <td>${formatCurrency(canonicalCredit(row))}</td>
                     <td>${formatCurrency(canonicalOutstanding(row))}</td>
-
-                    <td>${formatCurrency(
-                      canonicalCredit(row)
-                    )}</td>
-
-                    <td>${escapeHTML(
-                      getStatusLabel(
-                        canonicalMonthlyStatus(row)
-                      )
-                    )}</td>
+                    <td>${escapeHTML(monthlyStatusDisplay(row))}</td>
                   </tr>
                 `).join("")
               : `<tr><td colspan="7">No monthly accounting data.</td></tr>`
@@ -5787,9 +5785,9 @@ function exportExcel() {
                 <th>Member Number</th>
                 <th>Monthly Due</th>
                 <th>Previous Outstanding</th>
-                <th>Applied</th>
-                <th>Current Outstanding</th>
+                <th>Applied to This Month</th>
                 <th>Carry-forward Credit</th>
+                <th>Current Outstanding</th>
                 <th>Monthly Status</th>
               </tr>
             </thead>
@@ -5808,17 +5806,9 @@ function exportExcel() {
                   <td>${excelEscape(canonicalDue(row))}</td>
                   <td>${excelEscape(canonicalPreviousOutstanding(row))}</td>
                   <td>${excelEscape(canonicalApplied(row))}</td>
+                  <td>${excelEscape(canonicalCredit(row))}</td>
                   <td>${excelEscape(canonicalOutstanding(row))}</td>
-
-                  <td>${excelEscape(
-                    canonicalCredit(row)
-                  )}</td>
-
-                  <td>${excelEscape(
-                    getStatusLabel(
-                      canonicalMonthlyStatus(row)
-                    )
-                  )}</td>
+                  <td>${excelEscape(monthlyStatusDisplay(row))}</td>
                 </tr>
               `).join("")}
             </tbody>
