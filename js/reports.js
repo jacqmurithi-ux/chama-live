@@ -938,8 +938,12 @@ async function loadCumulativePositions() {
   );
   const seenIds = new Set();
 
+  // This RPC reports the lifetime position for the Monthly contribution type.
+  // Keep the paid column on the same basis; adding Dev fund/Other Contribution
+  // cash here makes it disagree with monthly obligations, allocations and credit.
   const paidByMember = new Map();
   for (const payment of contributions) {
+    if (lower(payment.contribution_type) !== "monthly") continue;
     const key = String(payment.member_id || "");
     if (!key) continue;
     paidByMember.set(key, (paidByMember.get(key) || 0) + numberValue(payment.amount));
@@ -1821,7 +1825,7 @@ function renderCumulativePosition(rows) {
           <tr>
             <th>Member</th>
             <th>Member No.</th>
-            <th>Total Paid</th>
+            <th>Monthly Paid to Date</th>
             <th>Total Due</th>
             <th>Total Allocated</th>
             <th>Arrears</th>
@@ -2733,7 +2737,7 @@ function buildCumulativeTable(rows) {
         <thead>
           <tr>
             <th>Member</th>
-            <th>Total Paid</th>
+            <th>Monthly Paid to Date</th>
             <th>Total Due</th>
             <th>Total Allocated</th>
             <th>Arrears</th>
@@ -5557,7 +5561,7 @@ function exportCSV() {
       [
         "Member",
         "Member Number",
-        "Total Paid",
+        "Monthly Paid to Date",
         "Total Due",
         "Total Allocated",
         "Arrears",
@@ -5941,7 +5945,7 @@ function exportExcel() {
               <tr>
                 <th>Member</th>
                 <th>Member Number</th>
-                <th>Total Paid</th>
+                <th>Monthly Paid to Date</th>
                 <th>Total Due</th>
                 <th>Total Allocated</th>
                 <th>Arrears</th>
