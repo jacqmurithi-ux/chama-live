@@ -3347,7 +3347,7 @@ function renderCumulativePosition() {
 
     container.innerHTML = `
       <tr>
-        <td colspan="5">
+        <td colspan="7">
           <div class="empty-state">
             <strong>
               Cumulative position unavailable
@@ -3372,7 +3372,7 @@ function renderCumulativePosition() {
 
     container.innerHTML = `
       <tr>
-        <td colspan="5">
+        <td colspan="7">
           <div class="empty-state">
             <strong>
               No group members
