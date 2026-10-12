@@ -647,7 +647,7 @@ function statusBadge(status, meeting = null) {
   const normalized = normalizeStatus(status);
   const overdue = normalized === "upcoming" && meeting?.date && meeting.date < getToday();
   const label = overdue ? "Action required · confirm outcome" : statusLabel(normalized);
-  return `<span class="meeting-status meeting-status-${escapeHtml(normalized)}">${escapeHtml(label)}</span>`;
+  return `<span class="meeting-status-badge ${escapeHtml(normalized)}">${escapeHtml(label)}</span>`;
 }
 
 
@@ -789,6 +789,7 @@ function renderDetails() {
 
   if (!selectedMeeting) {
     detailsCard.hidden = true;
+    detailsCard.classList.remove("is-visible");
     const lifecycleEditor = document.getElementById("meetingLifecycleEditor");
     const statusHistory = document.getElementById("meetingStatusHistory");
     if (lifecycleEditor) lifecycleEditor.hidden = true;
@@ -878,6 +879,7 @@ function renderDetails() {
   if (postponedDateInput) postponedDateInput.value = selectedMeeting.postponed_to || "";
 
   detailsCard.hidden = false;
+  detailsCard.classList.add("is-visible");
   if (lifecycleEditor) lifecycleEditor.hidden = false;
   if (statusHistory) statusHistory.hidden = false;
   const setVisible = (id, visible) => { const el = document.getElementById(id); if (el) el.hidden = !visible; };
