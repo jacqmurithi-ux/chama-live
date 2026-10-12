@@ -3456,28 +3456,11 @@ function renderCumulativePosition() {
             );
 
 
-          let statusAmount = 0;
+          const arrearsAmount =
+            Math.max(0, numberValue(position.arrears));
 
-
-          if (
-            status ===
-            "ARREARS"
-          ) {
-
-            statusAmount =
-              position.arrears;
-
-          }
-          else if (
-            status ===
-            "CREDIT"
-          ) {
-
-            statusAmount =
-              position.credit;
-
-          }
-
+          const creditAmount =
+            Math.max(0, numberValue(position.credit));
 
           return `
             <tr>
@@ -3517,11 +3500,23 @@ function renderCumulativePosition() {
               </td>
 
               <td>
-                ${escapeHtml(
-                  money(
-                    statusAmount
-                  )
-                )}
+                <strong>
+                  ${escapeHtml(
+                    money(
+                      arrearsAmount
+                    )
+                  )}
+                </strong>
+              </td>
+
+              <td>
+                <strong>
+                  ${escapeHtml(
+                    money(
+                      creditAmount
+                    )
+                  )}
+                </strong>
               </td>
 
               <td>
