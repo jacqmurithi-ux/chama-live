@@ -1534,16 +1534,18 @@ function renderContributionBreakdown(rows) {
 
   if (!breakdown.length) {
     target.innerHTML =
-      `<tr><td colspan="3">No contribution data for the selected period.</td></tr>`;
+      `<tr><td colspan="4">No contribution data for the selected period.</td></tr>`;
     return;
   }
 
+  const total = breakdown.reduce((sum, row) => sum + row.amount, 0);
   target.innerHTML =
     breakdown.map(row => `
       <tr>
         <td>${escapeHTML(row.type)}</td>
         <td>${formatNumber(row.count)}</td>
         <td>${formatCurrency(row.amount)}</td>
+        <td>${total > 0 ? ((row.amount / total) * 100).toFixed(1) + "%" : "—"}</td>
       </tr>
     `).join("");
 }
@@ -1594,16 +1596,18 @@ function renderExpenseBreakdown(rows) {
 
   if (!breakdown.length) {
     target.innerHTML =
-      `<tr><td colspan="3">No approved expense data for the selected period.</td></tr>`;
+      `<tr><td colspan="4">No approved expense data for the selected period.</td></tr>`;
     return;
   }
 
+  const total = breakdown.reduce((sum, row) => sum + row.amount, 0);
   target.innerHTML =
     breakdown.map(row => `
       <tr>
         <td>${escapeHTML(row.category)}</td>
         <td>${formatNumber(row.count)}</td>
         <td>${formatCurrency(row.amount)}</td>
+        <td>${total > 0 ? ((row.amount / total) * 100).toFixed(1) + "%" : "—"}</td>
       </tr>
     `).join("");
 }
