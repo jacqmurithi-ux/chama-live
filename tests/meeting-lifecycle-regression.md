@@ -8,7 +8,7 @@ Candidate branch: `candidate/meeting-lifecycle-reports-20261012`
 - [x] Existing candidate data remained readable after replay (8 meeting rows retained).
 - [x] Existing upcoming/completed rows remain readable after migration (candidate test database; 8 meetings retained).
 - [x] Candidate database status check permits only upcoming, held_pending_minutes, completed, cancelled, postponed.
-- [ ] Status history is readable by authenticated members of the same group only.
+- [x] Candidate SQL JWT-claim visibility test confirms history is readable by active members of the same group only; real authenticated browser sessions remain pending.
 - [x] Candidate database grants: anonymous SELECT/INSERT denied; authenticated SELECT granted; authenticated INSERT/UPDATE/DELETE denied for status history.
 - [x] Candidate SQL RLS test with authenticated JWT claims: same-group member can read meeting status history; an admin belonging only to another group cannot read it. The first test exposed the global-admin fallback in cl_user_in_group; the history policy was narrowed to direct same-group membership and the retest passed.
 - [x] Candidate SQL negative test: authenticated direct INSERT into meeting status history is denied.
@@ -67,4 +67,5 @@ Candidate branch: `candidate/meeting-lifecycle-reports-20261012`
 - [ ] Production payment/rule/obligation reconciliation; intentionally not run before the authenticated workflow and release gate pass.
 
 ## Release gate
+- [x] Added a GitHub Actions workflow for candidate JavaScript syntax and source-contract checks; the workflow execution result has not yet been confirmed through the available GitHub Actions result interface.
 Do not merge or deploy until authenticated browser checks, export file checks, permission negatives, and migration replay pass. No production migration or meeting-status change is performed by this candidate PR.
