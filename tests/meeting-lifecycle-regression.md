@@ -67,5 +67,6 @@ Candidate branch: `candidate/meeting-lifecycle-reports-20261012`
 - [ ] Production payment/rule/obligation reconciliation; intentionally not run before the authenticated workflow and release gate pass.
 
 ## Release gate
-- [x] Added a GitHub Actions workflow for candidate JavaScript syntax and source-contract checks; the workflow execution result has not yet been confirmed through the available GitHub Actions result interface.
+- [x] GitHub Actions candidate static regression completed successfully for commit 759791526e34c3198bbdba3a29f001f6712fb7bf: JavaScript syntax and source-contract checks passed.
+- [x] Candidate Vercel preview client now routes matching candidate deployment hostnames to isolated Supabase project onzaonflquipqmhgslxi; official portal hosts continue to use production project. Preview HTML/JS return HTTP 200.
 Do not merge or deploy until authenticated browser checks, export file checks, permission negatives, and migration replay pass. No production migration or meeting-status change is performed by this candidate PR.
