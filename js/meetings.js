@@ -791,9 +791,7 @@ function renderDetails() {
     detailsCard.hidden = true;
     detailsCard.classList.remove("is-visible");
     const lifecycleEditor = document.getElementById("meetingLifecycleEditor");
-    const statusHistory = document.getElementById("meetingStatusHistory");
     if (lifecycleEditor) lifecycleEditor.hidden = true;
-    if (statusHistory) statusHistory.hidden = true;
     if (meetingAttendance) meetingAttendance.hidden = true;
     if (meetingRsvpSummary) meetingRsvpSummary.hidden = true;
     return;
@@ -881,7 +879,8 @@ function renderDetails() {
   detailsCard.hidden = false;
   detailsCard.classList.add("is-visible");
   if (lifecycleEditor) lifecycleEditor.hidden = false;
-  if (statusHistory) statusHistory.hidden = false;
+  const historyHost = document.getElementById("meetingStatusHistory");
+  if (historyHost) historyHost.hidden = true;
   const setVisible = (id, visible) => { const el = document.getElementById(id); if (el) el.hidden = !visible; };
   setVisible("markMeetingHeld", status === "upcoming" || status === "review");
   setVisible("markMeetingCompleted", status === "held_pending_minutes");
@@ -899,7 +898,6 @@ function renderDetails() {
         : status === "completed"
           ? "Completed record. Save any authorised corrections to the minutes or resolution below."
           : "Record the meeting outcome and keep the status current.";
-  loadMeetingStatusHistory().catch(showError);
   if (meetingAttendance) meetingAttendance.hidden = false;
 
   if (completeMeeting) {
@@ -921,31 +919,6 @@ function renderDetails() {
   }
 
   loadMeetingAttendance().catch(showError);
-}
-
-
-async function loadMeetingStatusHistory() {
-  const host = document.getElementById("meetingStatusHistory");
-  if (!host || !selectedMeeting || !groupId) return;
-  host.innerHTML = '<h3>Status history</h3><p class="meeting-form-help">Loading history…</p>';
-  const { data, error } = await supabase
-    .from("meeting_status_history")
-    .select("from_status,to_status,reason,changed_at,actor_member_id,actor_name")
-    .eq("meeting_id", selectedMeeting.id)
-    .eq("group_id", groupId)
-    .order("changed_at", { ascending: false });
-  if (error) throw error;
-  if (!data?.length) {
-    host.innerHTML = '<h3>Status history</h3><p class="muted">No status changes recorded yet.</p>';
-    return;
-  }
-  host.innerHTML = '<h3>Status history</h3><p class="meeting-form-help">Who changed the status, when, and why.</p><ol class="meeting-history-list">' + data.map(item =>
-    '<li><strong>' + escapeHtml(statusLabel(item.to_status)) + '</strong><span>' +
-    escapeHtml(new Date(item.changed_at).toLocaleString("en-KE")) + '</span><small>' +
-    escapeHtml(item.from_status ? statusLabel(item.from_status) + " → " : "") +
-    escapeHtml(item.actor_name || "Officer") + '</small>' +
-    (item.reason ? '<p>' + escapeHtml(item.reason) + '</p>' : '') + '</li>'
-  ).join("") + '</ol>';
 }
 
 
@@ -1551,7 +1524,7 @@ async function saveMeetingMinutes() {
       .select(`id, group_id, title, date, venue, agenda, minutes, resolution, resolution_not_required, status_reason, postponed_to, status, created_at`)
       .single();
     if (error) throw error;
-    if (!data) throw new Error("Minutes could not be saved.");
+    if (!data) throw new Error("Meeting record could not be saved.");
     selectedMeeting = data;
     await loadMeetings();
     renderDetails();
