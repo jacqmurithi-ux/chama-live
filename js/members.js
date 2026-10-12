@@ -1512,7 +1512,7 @@ async function openMemberProfile(memberId) {
 
     if (byId("viewContributionTotal")) {
       byId("viewContributionTotal").textContent =
-        formatMoney(totalDue);
+        formatMoney(accounting.totalContributed);
     }
 
     if (byId("viewContributionDue")) {
@@ -1536,10 +1536,9 @@ async function openMemberProfile(memberId) {
     }
 
     /*
-     * The existing HTML calls this card "Total Due".
-     * We repurpose the hidden/available label to show the
-     * actual total contributed where possible without
-     * synthesizing it from accounting position.
+     * Total Paid is the sum of recorded payment rows.
+     * Allocations apply those same payments to obligations;
+     * adding allocations would double-count cash.
      */
     const totalCard =
       document.querySelector(
