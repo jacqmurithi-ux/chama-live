@@ -612,19 +612,33 @@ function renderCumulativePosition(position) {
 ========================================================= */
 
 async function loadTotalPaid() {
-  const { data, error } = await supabase
-    .from("contributions")
-    .select("amount")
-    .eq("group_id", state.groupId)
-    .eq("member_id", state.memberId);
+  const pageSize = 1000;
+  let offset = 0;
+  let total = 0;
 
-  if (error) throw error;
+  // Count each recorded payment once. Fine allocations refer to the same
+  // contribution payment IDs and must not be added a second time.
+  while (true) {
+    const { data, error } = await supabase
+      .from("contributions")
+      .select("id, amount")
+      .eq("group_id", state.groupId)
+      .eq("member_id", state.memberId)
+      .order("id", { ascending: true })
+      .range(offset, offset + pageSize - 1);
 
-  // Each contribution row is a recorded payment. Fine-payment
-  // allocations reference these same payment IDs and are not
-  // added again to this total.
-  state.totalPaid = (Array.isArray(data) ? data : [])
-    .reduce((sum, row) => sum + Number(row.amount || 0), 0);
+    if (error) throw error;
+
+    const batch = Array.isArray(data) ? data : [];
+    total += batch.reduce(
+      (sum, row) => sum + Number(row.amount || 0),
+      0
+    );
+    if (batch.length < pageSize) break;
+    offset += pageSize;
+  }
+
+  state.totalPaid = total;
 
   if (els.cumulativeDue) {
     els.cumulativeDue.textContent = formatMoney(state.totalPaid);
