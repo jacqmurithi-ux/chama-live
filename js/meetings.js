@@ -1026,9 +1026,8 @@ async function loadMeetingAttendance() {
   const [membersResult, attendanceResult] = await Promise.all([
     supabase
       .from("members")
-      .select("id, name, member_number, membership_number")
+      .select("id, name, member_number, membership_number, status")
       .eq("group_id", groupId)
-      .eq("status", "active")
       .order("name", { ascending: true }),
 
     supabase
@@ -1041,7 +1040,7 @@ async function loadMeetingAttendance() {
   if (attendanceResult.error) throw attendanceResult.error;
 
   attendanceMembers = Array.isArray(membersResult.data)
-    ? membersResult.data
+    ? membersResult.data.filter(member => String(member.status || "active").trim().toLowerCase() === "active")
     : [];
 
   attendanceRows = new Map(
