@@ -525,70 +525,39 @@ async function loadMeetings() {
 ========================================================= */
 
 function renderMetrics() {
-
+  const today = getToday();
   let upcoming = 0;
-
+  let held = 0;
   let completed = 0;
-
   let cancelled = 0;
+  let postponed = 0;
+  let actionRequired = 0;
 
-
-  meetings.forEach(
-    meeting => {
-
-      const status =
-        normalizeStatus(
-          meeting.status
-        );
-
-
-      if (
-        status === "upcoming"
-      ) {
-
-        upcoming++;
-
-      }
-      else if (
-        status === "completed"
-      ) {
-
-        completed++;
-
-      }
-      else {
-
-        cancelled++;
-
-      }
-
+  meetings.forEach(meeting => {
+    const status = normalizeStatus(meeting.status);
+    if (status === "upcoming" && meeting.date && meeting.date < today) {
+      actionRequired++;
+    } else if (status === "review") {
+      actionRequired++;
+    } else if (status === "upcoming") {
+      upcoming++;
+    } else if (status === "held_pending_minutes") {
+      held++;
+    } else if (status === "completed") {
+      completed++;
+    } else if (status === "cancelled") {
+      cancelled++;
+    } else if (status === "postponed") {
+      postponed++;
     }
-  );
+  });
 
-
-  if (upcomingCount) {
-
-    upcomingCount.textContent =
-      upcoming;
-
-  }
-
-
-  if (completedCount) {
-
-    completedCount.textContent =
-      completed;
-
-  }
-
-
-  if (cancelledCount) {
-
-    cancelledCount.textContent =
-      cancelled;
-
-  }
-
+  if (upcomingCount) upcomingCount.textContent = upcoming;
+  if (document.getElementById("heldPendingCount")) document.getElementById("heldPendingCount").textContent = held;
+  if (completedCount) completedCount.textContent = completed;
+  if (cancelledCount) cancelledCount.textContent = cancelled;
+  if (document.getElementById("postponedCount")) document.getElementById("postponedCount").textContent = postponed;
+  if (document.getElementById("actionRequiredCount")) document.getElementById("actionRequiredCount").textContent = actionRequired;
 }
 
 
@@ -900,19 +869,12 @@ function renderDetails() {
           : "Record the meeting outcome and keep the status current.";
   if (meetingAttendance) meetingAttendance.hidden = false;
 
-  if (completeMeeting) {
-    completeMeeting.hidden = status !== "upcoming";
-  }
+  // Legacy one-click controls bypass required minutes/attendance/reason fields.
+  if (completeMeeting) completeMeeting.hidden = true;
 
-  if (cancelMeeting) {
-    cancelMeeting.hidden =
-      status === "cancelled" ||
-      status === "completed";
-  }
+  if (cancelMeeting) cancelMeeting.hidden = true;
 
-  if (restoreMeeting) {
-    restoreMeeting.hidden = status !== "cancelled";
-  }
+  if (restoreMeeting) restoreMeeting.hidden = true;
 
   if (deleteMeeting) {
     deleteMeeting.hidden = false;
@@ -1810,75 +1772,6 @@ function setupButtons() {
       clearError();
 
       showStatus("");
-
-    }
-  );
-
-
-  completeMeeting?.addEventListener(
-    "click",
-    async () => {
-
-      try {
-
-        clearError();
-
-        await updateMeetingStatus(
-          "completed"
-        );
-
-      }
-      catch (error) {
-
-        showError(error);
-
-      }
-
-    }
-  );
-
-
-  cancelMeeting?.addEventListener(
-    "click",
-    async () => {
-
-      try {
-
-        clearError();
-
-        await updateMeetingStatus(
-          "cancelled"
-        );
-
-      }
-      catch (error) {
-
-        showError(error);
-
-      }
-
-    }
-  );
-
-
-  restoreMeeting?.addEventListener(
-    "click",
-    async () => {
-
-      try {
-
-        clearError();
-
-        await updateMeetingStatus(
-          "upcoming"
-        );
-
-      }
-      catch (error) {
-
-        showError(error);
-
-      }
 
     }
   );
