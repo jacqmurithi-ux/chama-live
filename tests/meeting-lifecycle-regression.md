@@ -58,7 +58,8 @@ Candidate branch: `candidate/meeting-lifecycle-reports-20261012`
 - [x] Synthetic existing-payment fixture: reassign matching active rule and period-backed obligation to the payment's intended member; allocate the existing KSh 250 payment without creating a second contribution.
 - [x] Read-only production schema review: `contribution_allocations` has only the canonical `payment_id`, `obligation_id`, and `amount` fields; the candidate function now selects a compatible insert shape based on actual columns.
 - [x] Transactionally exercise the canonical three-column allocation INSERT against a temporary production-shaped table definition; trigger reached the expected payment guard, and rollback restored all three candidate-only columns, the original RLS policy, and the original 98 allocation rows.
-- [ ] Run the full reconciliation function end-to-end against an isolated production-shaped database before release.
+- [x] Full correction RPC end-to-end against a temporary production-shaped allocation table inside a candidate transaction, using the production canonical refresh function definition: existing payment preserved, exactly one KSh 250 allocation, obligation and rule reassigned to the intended candidate member, idempotent retry, and unauthorized role rejected.
+- [x] Transaction rollback verified: candidate allocation schema restored with all 98 original allocation rows; synthetic member/payment/request absent.
 - [x] Verify allocated amount = KSh 250 and unapplied amount = KSh 0.
 - [x] Retry same request ID and confirm idempotent replay.
 - [x] Negative role test: unrelated authenticated user is denied.
