@@ -55,7 +55,14 @@ declare
   v_missing_attendance uuid;
   v_transition_allowed boolean := false;
 begin
-  if tg_op <> 'UPDATE' or new.status is not distinct from old.status then
+  if tg_op = 'INSERT' then
+    if coalesce(new.status, 'upcoming') <> 'upcoming' then
+      raise exception 'MEETING_INITIAL_STATUS_MUST_BE_UPCOMING';
+    end if;
+    return new;
+  end if;
+
+  if new.status is not distinct from old.status then
     return new;
   end if;
 
@@ -120,7 +127,7 @@ $function$;
 
 drop trigger if exists meetings_guard_lifecycle on public.meetings;
 create trigger meetings_guard_lifecycle
-before update of status on public.meetings
+before insert or update of status on public.meetings
 for each row execute function public.guard_meeting_lifecycle();
 
 create or replace function public.audit_meeting_lifecycle()
