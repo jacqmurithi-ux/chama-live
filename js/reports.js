@@ -1696,28 +1696,39 @@ function isPastDatedUpcomingMeeting(row) {
 }
 
 function meetingStatusLabel(row) {
-  const status = normalizeText(row?.status) || "—";
+  const status = lower(row?.status);
+  const labels = {
+    upcoming: "Upcoming",
+    scheduled: "Upcoming",
+    planned: "Upcoming",
+    held_pending_minutes: "Held — minutes pending",
+    completed: "Completed",
+    cancelled: "Cancelled",
+    postponed: "Postponed"
+  };
+  const label = labels[status] || "Unknown status — review";
   return isPastDatedUpcomingMeeting(row)
-    ? status + " — past date; verify status"
-    : status;
+    ? label + " — past date; verify status"
+    : label;
 }
 
 function renderMeetings(rows) {
   const total = rows.length;
-
-  // Past-dated records that still carry an upcoming status go into
-  // Other / Review, not Upcoming. No database status is changed.
   const upcoming = rows.filter(row =>
     isUpcomingMeetingStatus(row) && !isPastDatedUpcomingMeeting(row)
   ).length;
+  const held = rows.filter(row => lower(row.status) === "held_pending_minutes").length;
   const completed = rows.filter(row => lower(row.status) === "completed").length;
   const cancelled = rows.filter(row => lower(row.status) === "cancelled").length;
-  const other = total - upcoming - completed - cancelled;
+  const postponed = rows.filter(row => lower(row.status) === "postponed").length;
+  const other = total - upcoming - held - completed - cancelled - postponed;
 
   setText("totalMeetings", formatNumber(total));
   setText("upcomingMeetings", formatNumber(upcoming));
+  setText("heldPendingMeetings", formatNumber(held));
   setText("completedMeetings", formatNumber(completed));
   setText("cancelledMeetings", formatNumber(cancelled));
+  setText("postponedMeetings", formatNumber(postponed));
   setText("otherMeetings", formatNumber(other));
 
   const target = $("meetingRows");
@@ -1727,16 +1738,15 @@ function renderMeetings(rows) {
     return;
   }
   target.innerHTML = rows.map(row => {
-    const statusLabel = isPastDatedUpcoming(row)
-      ? String(row.status) + " — past date; verify status"
-      : row.status || "—";
+    const statusLabel = meetingStatusLabel(row);
+    const agenda = Array.isArray(row.agenda) ? row.agenda.join("; ") : row.agenda;
     return "<tr>" +
       "<td>" + escapeHTML(formatDate(row.date)) + "</td>" +
       "<td>" + escapeHTML(row.title || "Meeting") + "</td>" +
       "<td>" + escapeHTML(row.venue || "—") + "</td>" +
       "<td>" + escapeHTML(statusLabel) + "</td>" +
-      "<td>" + escapeHTML(row.agenda || "—") + "</td>" +
-      "<td>" + escapeHTML(row.resolution || "—") + "</td>" +
+      "<td>" + escapeHTML(agenda || "—") + "</td>" +
+      "<td>" + escapeHTML(row.resolution || (row.resolution_not_required ? "No resolution made" : "—")) + "</td>" +
       "</tr>";
   }).join("");
 }
