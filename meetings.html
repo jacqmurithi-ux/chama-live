@@ -65,7 +65,7 @@
 
     .meeting-metrics {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
       gap: 16px;
       margin-bottom: 24px;
     }
@@ -741,6 +741,11 @@
         </article>
 
         <article class="meeting-metric">
+          <span class="meeting-metric-label">Held — minutes pending</span>
+          <strong id="heldPendingCount" class="meeting-metric-value">0</strong>
+        </article>
+
+        <article class="meeting-metric">
           <span class="meeting-metric-label">
             Completed
           </span>
@@ -751,6 +756,16 @@
           >
             0
           </strong>
+        </article>
+
+        <article class="meeting-metric">
+          <span class="meeting-metric-label">Postponed</span>
+          <strong id="postponedCount" class="meeting-metric-value">0</strong>
+        </article>
+
+        <article class="meeting-metric">
+          <span class="meeting-metric-label">Action required</span>
+          <strong id="actionRequiredCount" class="meeting-metric-value">0</strong>
         </article>
 
         <article class="meeting-metric">
@@ -935,6 +950,7 @@
               <option value="completed">Completed</option>
               <option value="cancelled">Cancelled</option>
               <option value="postponed">Postponed</option>
+              <option value="review">Unknown status — review</option>
 
             </select>
 
