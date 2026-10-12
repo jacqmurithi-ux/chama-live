@@ -409,31 +409,42 @@ async function loadContributions() {
     throw new Error("GROUP_CONTEXT_REQUIRED");
   }
 
-  const { data, error } = await supabase
-    .from("contributions")
-    .select(`
-      id,
-      group_id,
-      member_id,
-      amount,
-      contribution_type,
-      payment_method,
-      created_at,
-      contribution_date
-    `)
-    .eq("group_id", groupId)
-    .order("contribution_date", { ascending: true })
-    .order("created_at", { ascending: true });
+  const pageSize = 1000;
+  let offset = 0;
+  const allRows = [];
 
-  if (error) {
-    throw error;
+  // Page the complete ledger: the total-paid sum and report exports must
+  // not silently stop at the REST API's default row limit.
+  while (true) {
+    const { data, error } = await supabase
+      .from("contributions")
+      .select(`
+        id,
+        group_id,
+        member_id,
+        amount,
+        contribution_type,
+        payment_method,
+        created_at,
+        contribution_date
+      `)
+      .eq("group_id", groupId)
+      .order("contribution_date", { ascending: true })
+      .order("created_at", { ascending: true })
+      .order("id", { ascending: true })
+      .range(offset, offset + pageSize - 1);
+
+    if (error) throw error;
+
+    const batch = safeArray(data);
+    allRows.push(...batch);
+    if (batch.length < pageSize) break;
+    offset += pageSize;
   }
 
-  contributions = safeArray(data);
-
+  contributions = allRows;
   return contributions;
 }
-
 
 /* =========================================================
    EXPENSES
