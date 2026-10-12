@@ -521,15 +521,16 @@ async function loadMeetings() {
       .in("meeting_id", meetingIds),
     supabase
       .from("members")
-      .select("id")
+      .select("id,status")
       .eq("group_id", groupId)
-      .eq("status", "active")
   ]);
 
   if (attendanceResult.error) throw attendanceResult.error;
   if (activeMembersResult.error) throw activeMembersResult.error;
 
-  const expectedAttendance = safeArray(activeMembersResult.data).length;
+  const expectedAttendance = safeArray(activeMembersResult.data)
+    .filter(member => lower(member.status || "active") === "active")
+    .length;
   const attendanceByMeeting = new Map();
   for (const row of safeArray(attendanceResult.data)) {
     const key = String(row.meeting_id);
@@ -1788,7 +1789,7 @@ function renderMeetings(rows) {
       "<td>" + escapeHTML(row.status_reason || "—") + "</td>" +
       "<td>" + escapeHTML(agenda || "—") + "</td>" +
       "<td>" + escapeHTML(row.minutes ? "Recorded" : "Pending") + "</td>" +
-      "<td>" + escapeHTML(row.attendance_expected_count
+      "<td>" + escapeHTML(row.attendance_expected_count != null
         ? `${row.attendance_recorded_count || 0}/${row.attendance_expected_count} recorded; ${row.attendance_present_count || 0} present`
         : `${row.attendance_recorded_count || 0} attendance rows; active member count unavailable`) + "</td>" +
       "<td>" + escapeHTML(row.resolution || (row.resolution_not_required ? "No resolution made" : "—")) + "</td>" +
@@ -5557,7 +5558,7 @@ function exportCSV() {
           row.status_reason || "",
           Array.isArray(row.agenda) ? row.agenda.join("; ") : row.agenda,
           row.minutes ? "Recorded" : "Pending",
-          row.attendance_expected_count
+          row.attendance_expected_count != null
             ? `${row.attendance_recorded_count || 0}/${row.attendance_expected_count} recorded; ${row.attendance_present_count || 0} present`
             : `${row.attendance_recorded_count || 0} attendance rows; active member count unavailable`,
           row.resolution || (row.resolution_not_required ? "No resolution made" : "")
@@ -5965,7 +5966,7 @@ function exportExcel() {
                   <td>${excelEscape(row.status_reason || "")}</td>
                   <td>${excelEscape(Array.isArray(row.agenda) ? row.agenda.join("; ") : row.agenda)}</td>
                   <td>${excelEscape(row.minutes ? "Recorded" : "Pending")}</td>
-                  <td>${excelEscape(row.attendance_expected_count
+                  <td>${excelEscape(row.attendance_expected_count != null
                     ? `${row.attendance_recorded_count || 0}/${row.attendance_expected_count} recorded; ${row.attendance_present_count || 0} present`
                     : `${row.attendance_recorded_count || 0} attendance rows; active member count unavailable`)}</td>
                   <td>${excelEscape(row.resolution || (row.resolution_not_required ? "No resolution made" : ""))}</td>
