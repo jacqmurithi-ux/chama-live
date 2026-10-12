@@ -903,7 +903,7 @@ async function loadCanonical(month) {
    CUMULATIVE ACCOUNTING
    ========================================================= */
 
-async async function loadCumulativePositions() {
+async function loadCumulativePositions() {
   if (!currentGroup?.id) {
     throw new Error("GROUP_CONTEXT_REQUIRED");
   }
