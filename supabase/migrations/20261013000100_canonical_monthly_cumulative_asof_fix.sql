@@ -130,11 +130,15 @@ BEGIN
     coalesce(pt.total_paid, 0)::numeric,
     coalesce(ot.total_due, 0)::numeric,
     CASE
-      WHEN greatest(coalesce(ot.monthly_due, 0) - coalesce(at.current_allocated, 0), 0) = 0
-       AND greatest(coalesce(pt.total_paid, 0) - coalesce(at.total_allocated, 0), 0) > 0 THEN 'credit'
-      WHEN greatest(coalesce(ot.monthly_due, 0) - coalesce(at.current_allocated, 0), 0) = 0 THEN 'paid'
-      WHEN coalesce(at.current_allocated, 0) > 0 THEN 'partial'
-      ELSE 'outstanding'
+      -- Status must reconcile to cumulative position through the selected month,
+      -- not just the current month's obligation. Otherwise a member with older
+      -- arrears can be labelled "paid" while cumulative accounting says ARREARS.
+      WHEN greatest(coalesce(ot.prior_due, 0) - coalesce(at.prior_allocated, 0), 0)
+         + greatest(coalesce(ot.monthly_due, 0) - coalesce(at.current_allocated, 0), 0) > 0
+        THEN 'outstanding'
+      WHEN greatest(coalesce(pt.total_paid, 0) - coalesce(at.total_allocated, 0), 0) > 0
+        THEN 'credit'
+      ELSE 'paid'
     END::text
   FROM member_set ms
   LEFT JOIN obligation_totals ot ON ot.member_id = ms.id
