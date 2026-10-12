@@ -761,6 +761,7 @@ function renderDetails() {
     detailsCard.classList.remove("is-visible");
     const lifecycleEditor = document.getElementById("meetingLifecycleEditor");
     if (lifecycleEditor) lifecycleEditor.hidden = true;
+    if (historyHost) historyHost.hidden = true;
     if (meetingAttendance) meetingAttendance.hidden = true;
     if (meetingRsvpSummary) meetingRsvpSummary.hidden = true;
     return;
@@ -768,7 +769,7 @@ function renderDetails() {
 
   const status = normalizeStatus(selectedMeeting.status);
   const lifecycleEditor = document.getElementById("meetingLifecycleEditor");
-  const statusHistory = document.getElementById("meetingStatusHistory");
+  const historyHost = document.getElementById("meetingStatusHistory");
 
   const agenda = agendaToArray(selectedMeeting.agenda);
 
@@ -848,8 +849,7 @@ function renderDetails() {
   detailsCard.hidden = false;
   detailsCard.classList.add("is-visible");
   if (lifecycleEditor) lifecycleEditor.hidden = false;
-  const historyHost = document.getElementById("meetingStatusHistory");
-  if (historyHost) historyHost.hidden = true;
+  if (historyHost) historyHost.hidden = false;
   const setVisible = (id, visible) => { const el = document.getElementById(id); if (el) el.hidden = !visible; };
   setVisible("markMeetingHeld", status === "upcoming" || status === "review");
   setVisible("markMeetingCompleted", status === "held_pending_minutes");
