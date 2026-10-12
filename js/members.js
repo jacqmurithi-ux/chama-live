@@ -1010,36 +1010,37 @@ async function loadMemberAccounting(member) {
    * Total Contributed is the sum of contribution rows.
    * It is not synthesized from allocated + credit.
    */
-  const contributionResult =
-    await supabase
+  const pageSize = 1000;
+  let offset = 0;
+  let totalContributed = 0;
+
+  while (true) {
+    const contributionResult = await supabase
       .from("contributions")
-      .select(
-        "amount"
-      )
-      .eq(
-        "group_id",
-        groupId
-      )
-      .eq(
-        "member_id",
-        member.id
-      );
+      .select("id, amount")
+      .eq("group_id", groupId)
+      .eq("member_id", member.id)
+      .order("id", { ascending: true })
+      .range(offset, offset + pageSize - 1);
 
-  if (contributionResult.error) {
-    console.error(
-      "CHAMA LIVE: member contribution total failed:",
-      contributionResult.error
+    if (contributionResult.error) {
+      console.error(
+        "CHAMA LIVE: member contribution total failed:",
+        contributionResult.error
+      );
+      throw contributionResult.error;
+    }
+
+    const batch = Array.isArray(contributionResult.data)
+      ? contributionResult.data
+      : [];
+    totalContributed += batch.reduce(
+      (sum, row) => sum + Number(row.amount || 0),
+      0
     );
-    throw contributionResult.error;
+    if (batch.length < pageSize) break;
+    offset += pageSize;
   }
-
-  const totalContributed =
-    (contributionResult.data || [])
-      .reduce(
-        (sum, row) =>
-          sum + Number(row.amount || 0),
-        0
-      );
 
   return {
     position,
