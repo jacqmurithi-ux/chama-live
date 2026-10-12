@@ -13,6 +13,7 @@ DECLARE
   v_original text;
   v_monthly_cte_anchor text := '  WITH monthly_payments AS (';
   v_obligation_anchor text := '      AND o.obligation_month <= v_effective_through_month';
+  v_rule_filter text := E'      AND o.obligation_month <= v_effective_through_month\n      AND o.rule_id IS NOT NULL';
   v_delete_block text := $sql$  -- Rebuild only rule-backed monthly allocations.
   -- Preserve custom/non-monthly allocations and subtract them from payment
   -- capacity when monthly allocations are recalculated below.
@@ -54,15 +55,11 @@ BEGIN
     v_def := replace(v_def, v_monthly_cte_anchor, v_delete_block || v_monthly_cte_anchor);
   END IF;
 
-  IF position('AND o.rule_id IS NOT NULL' IN v_def) = 0 THEN
+  IF position(v_rule_filter IN v_def) = 0 THEN
     IF position(v_obligation_anchor IN v_def) = 0 THEN
       RAISE EXCEPTION 'FIFO migration aborted: monthly obligation anchor not found';
     END IF;
-    v_def := replace(
-      v_def,
-      v_obligation_anchor,
-      v_obligation_anchor || E'\n      AND o.rule_id IS NOT NULL'
-    );
+    v_def := replace(v_def, v_obligation_anchor, v_rule_filter);
   END IF;
 
   IF position(v_old_insert IN v_def) > 0 THEN
@@ -71,8 +68,10 @@ BEGIN
     RAISE EXCEPTION 'FIFO migration aborted: allocation INSERT shape was not recognized';
   END IF;
 
+  -- Safe re-run: if all three fixes are already present, leave the function
+  -- unchanged rather than failing or rewriting an already-correct definition.
   IF v_def = v_original THEN
-    RAISE EXCEPTION 'FIFO migration made no changes; inspect function definition before retrying';
+    RETURN;
   END IF;
 
   EXECUTE v_def;
