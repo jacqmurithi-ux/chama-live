@@ -1932,35 +1932,7 @@ function setupButtons() {
   );
 
 
-  saveMinutes?.addEventListener(
-    "click",
-    async () => {
 
-      try {
-
-        clearError();
-
-        await saveMeetingMinutes();
-
-      }
-      catch (error) {
-
-        showError(error);
-
-        if (saveMinutes) {
-
-          saveMinutes.disabled =
-            false;
-
-          saveMinutes.textContent =
-            "Save Minutes & Resolutions";
-
-        }
-
-      }
-
-    }
-  );
 
 }
 
