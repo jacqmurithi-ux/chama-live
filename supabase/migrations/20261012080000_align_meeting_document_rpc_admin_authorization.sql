@@ -1,6 +1,14 @@
--- Candidate-only authorization alignment.
--- Keep the caller bound to the uploader member row and preserve the completed-meeting requirement.
--- This makes the RPC use the same role normalization as the meeting_documents RLS policies.
+-- Candidate authorization alignment for deployments that include meeting_documents.
+-- Production currently does not have this optional document table. Keep this migration
+-- safe to replay across schemas: skip only when the feature table is absent.
+DO $migration$
+BEGIN
+  IF to_regclass('public.meeting_documents') IS NULL THEN
+    RAISE NOTICE 'Skipping replace_meeting_document alignment: public.meeting_documents is not installed in this schema';
+    RETURN;
+  END IF;
+
+  EXECUTE $ddl$
 CREATE OR REPLACE FUNCTION public.replace_meeting_document(
   p_group_id uuid,
   p_meeting_id uuid,
@@ -75,3 +83,6 @@ BEGIN
   RETURN v_row;
 END;
 $function$;
+$ddl$;
+END;
+$migration$;
