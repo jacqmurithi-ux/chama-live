@@ -79,7 +79,8 @@ const STATUS_LABELS = {
   credit: "Credit",
   up_to_date: "Up to Date",
   "up-to-date": "Up to Date",
-  current: "Up to Date"
+  current: "Up to Date",
+  no_payment: "No Payment"
 };
 
 
