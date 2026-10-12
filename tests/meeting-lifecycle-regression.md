@@ -3,8 +3,8 @@
 Candidate branch: `candidate/meeting-lifecycle-reports-20261012`
 
 ## Migration / database
-- [ ] Replay the migration on a clean candidate database.
-- [x] Apply/replay the meeting lifecycle, guard-trigger patch, and Dev fund workflow migrations twice against the existing candidate test schema; each replay succeeded.
+- [ ] Replay the full migration chain on a newly provisioned clean candidate database (the current candidate DB is not a clean-room replay).
+- [x] Apply/replay the meeting lifecycle, guard-trigger patch, Dev fund workflow, allocation compatibility, and member-refresh compatibility migrations against the existing candidate schema; replay succeeded.
 - [x] Existing candidate data remained readable after replay (8 meeting rows retained).
 - [x] Existing upcoming/completed rows remain readable after migration (candidate test database; 8 meetings retained).
 - [x] Candidate database status check permits only upcoming, held_pending_minutes, completed, cancelled, postponed.
@@ -58,7 +58,9 @@ Candidate branch: `candidate/meeting-lifecycle-reports-20261012`
 - [x] Synthetic existing-payment fixture: reassign matching active rule and period-backed obligation to the payment's intended member; allocate the existing KSh 250 payment without creating a second contribution.
 - [x] Read-only production schema review: `contribution_allocations` has only the canonical `payment_id`, `obligation_id`, and `amount` fields; the candidate function now selects a compatible insert shape based on actual columns.
 - [x] Transactionally exercise the canonical three-column allocation INSERT against a temporary production-shaped table definition; trigger reached the expected payment guard, and rollback restored all three candidate-only columns, the original RLS policy, and the original 98 allocation rows.
-- [x] Full correction RPC end-to-end against a temporary production-shaped allocation table inside a candidate transaction, using the production canonical refresh function definition: existing payment preserved, exactly one KSh 250 allocation, obligation and rule reassigned to the intended candidate member, idempotent retry, and unauthorized role rejected.
+- [x] Full correction RPC end-to-end against a temporary production-shaped allocation table inside a candidate transaction: existing payment preserved, exactly one KSh 250 allocation, obligation and rule reassigned to the intended candidate member, idempotent retry, and no second allocation.
+- [x] Candidate member-refresh function patched to insert through canonical `(payment_id, obligation_id, amount)` fields; its compatibility migration was replayed successfully.
+- [x] Candidate negative expense tests: recorder self-approval denied, vice-chair duplicate chair slot denied, treasurer rejection sets status to rejected; all test transactions rolled back.
 - [x] Transaction rollback verified: candidate allocation schema restored with all 98 original allocation rows; synthetic member/payment/request absent.
 - [x] Verify allocated amount = KSh 250 and unapplied amount = KSh 0.
 - [x] Retry same request ID and confirm idempotent replay.
@@ -67,6 +69,7 @@ Candidate branch: `candidate/meeting-lifecycle-reports-20261012`
 - [ ] Production payment/rule/obligation reconciliation; intentionally not run before the authenticated workflow and release gate pass.
 
 ## Release gate
-- [x] GitHub Actions candidate static regression completed successfully for commit 759791526e34c3198bbdba3a29f001f6712fb7bf: JavaScript syntax and source-contract checks passed.
+- [x] GitHub Actions candidate static regression passed for commit 18dc1051b5a47f8d708d6137284ebafa739fc398: JavaScript syntax and source-contract checks passed.
+- [ ] Re-run GitHub Actions after removing Vercel preview routing and adding canonical refresh-schema assertions.
 - [x] Candidate Vercel preview client now routes matching candidate deployment hostnames to isolated Supabase project onzaonflquipqmhgslxi; official portal hosts continue to use production project. Preview HTML/JS return HTTP 200.
 Do not merge or deploy until authenticated browser checks, export file checks, permission negatives, and migration replay pass. No production migration or meeting-status change is performed by this candidate PR.
