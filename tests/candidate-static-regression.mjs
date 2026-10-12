@@ -76,10 +76,14 @@ assert.ok(devSql.includes("insert into public.contribution_allocations(payment_i
 assert.ok(devSql.includes("REQUEST_ID_REUSE_MISMATCH"));
 assert.ok(devSql.includes("PAYMENT_ALREADY_HAS_ALLOCATIONS"));
 assert.ok(devSql.includes("DEV_FUND_RECONCILIATION_NOT_AUTHORIZED"));
-assert.ok(supabaseJs.includes("https://onzaonflquipqmhgslxi.supabase.co")
-  && supabaseJs.includes("https://ptktftwyltxmtcodyzoa.supabase.co")
-  && supabaseJs.includes("window.location.hostname")
-  && supabaseJs.includes("chama-live-[a-z0-9]+-chamalive"),
-  "Candidate preview must use isolated Supabase project while official hosts use production");
+assert.ok(supabaseJs.includes("https://ptktftwyltxmtcodyzoa.supabase.co")
+  && !supabaseJs.includes("vercel.app")
+  && !supabaseJs.includes("window.location.hostname"),
+  "Official Supabase client must not route through Vercel preview hostnames");
+const refreshSql = read("supabase/migrations/20261012130000_fix_member_refresh_allocation_schema.sql");
+assert.ok(refreshSql.includes("cl_2b_refresh_member(uuid,date)")
+  && refreshSql.includes("INSERT INTO public.contribution_allocations (payment_id, obligation_id, amount)")
+  && !refreshSql.includes("INSERT INTO public.contribution_allocations (group_id, member_id, payment_id, obligation_id, allocated_amount, amount)"),
+  "Member refresh migration must use canonical allocation columns");
 
 console.log("CHAMA LIVE candidate static regression: PASS");
