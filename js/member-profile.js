@@ -67,6 +67,8 @@ const state = {
 
   cumulativePosition: null,
 
+  totalPaid: 0,
+
   initialized: false,
 
   statementMemberId: null
@@ -238,6 +240,11 @@ const els = {
   cumulativeDue:
     document.getElementById(
       "cumulativeDue"
+    ),
+
+  cumulativeTotalDue:
+    document.getElementById(
+      "cumulativeTotalDue"
     ),
 
   cumulativeAllocated:
@@ -530,6 +537,11 @@ function renderCumulativePosition(position) {
 
     if (els.cumulativeDue) {
       els.cumulativeDue.textContent =
+        formatMoney(state.totalPaid);
+    }
+
+    if (els.cumulativeTotalDue) {
+      els.cumulativeTotalDue.textContent =
         "—";
     }
 
@@ -561,6 +573,13 @@ function renderCumulativePosition(position) {
   if (els.cumulativeDue) {
     els.cumulativeDue.textContent =
       formatMoney(
+        state.totalPaid
+      );
+  }
+
+  if (els.cumulativeTotalDue) {
+    els.cumulativeTotalDue.textContent =
+      formatMoney(
         position.total_due
       );
   }
@@ -591,6 +610,42 @@ function renderCumulativePosition(position) {
 /* =========================================================
    RPC — CUMULATIVE MEMBER POSITION
 ========================================================= */
+
+async function loadTotalPaid() {
+  const pageSize = 1000;
+  let offset = 0;
+  let total = 0;
+
+  // Count each recorded payment once. Fine allocations refer to the same
+  // contribution payment IDs and must not be added a second time.
+  while (true) {
+    const { data, error } = await supabase
+      .from("contributions")
+      .select("id, amount")
+      .eq("group_id", state.groupId)
+      .eq("member_id", state.memberId)
+      .order("id", { ascending: true })
+      .range(offset, offset + pageSize - 1);
+
+    if (error) throw error;
+
+    const batch = Array.isArray(data) ? data : [];
+    total += batch.reduce(
+      (sum, row) => sum + Number(row.amount || 0),
+      0
+    );
+    if (batch.length < pageSize) break;
+    offset += pageSize;
+  }
+
+  state.totalPaid = total;
+
+  if (els.cumulativeDue) {
+    els.cumulativeDue.textContent = formatMoney(state.totalPaid);
+  }
+
+  return state.totalPaid;
+}
 
 async function loadCumulativePosition(
   memberId = state.memberId
@@ -2000,6 +2055,7 @@ export async function initMemberAccounting(
 
   bindEvents();
 
+  await loadTotalPaid();
   await loadAccounting();
 
 }

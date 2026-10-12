@@ -706,12 +706,15 @@ async function loadMembers() {
 ========================================================= */
 
 async function loadContributions() {
+  const pageSize = 1000;
+  let offset = 0;
+  const allRows = [];
 
-  const {
-    data,
-    error
-  } =
-    await supabase
+  // Supabase REST responses may be capped at 1,000 rows. Page through the
+  // full group ledger so cumulative Total Paid and recent-payment views do
+  // not silently omit older payments.
+  while (true) {
+    const { data, error } = await supabase
       .from("contributions")
       .select(`
         id,
@@ -723,30 +726,21 @@ async function loadContributions() {
         contribution_date,
         created_at
       `)
-      .eq(
-        "group_id",
-        currentGroupId
-      )
-      .order(
-        "contribution_date",
-        {
-          ascending: false
-        }
-      );
+      .eq("group_id", currentGroupId)
+      .order("contribution_date", { ascending: false })
+      .order("id", { ascending: true })
+      .range(offset, offset + pageSize - 1);
 
+    if (error) throw error;
 
-  if (error) {
-    throw error;
+    const batch = Array.isArray(data) ? data : [];
+    allRows.push(...batch);
+    if (batch.length < pageSize) break;
+    offset += pageSize;
   }
 
-
-  contributions =
-    Array.isArray(data)
-      ? data
-      : [];
-
+  contributions = allRows;
 }
-
 
 /* =========================================================
    LOAD EXPENSES
@@ -2292,6 +2286,13 @@ async function loadCumulativePositions() {
   const rows = Array.isArray(data) ? data : [];
   const expectedIds = new Set(expectedMembers.map(member => String(member.id)));
   const seenIds = new Set();
+  const paidByMember = new Map();
+  for (const payment of contributions) {
+    const key = String(payment.member_id || "");
+    if (!key) continue;
+    paidByMember.set(key, (paidByMember.get(key) || 0) + numberValue(payment.amount));
+  }
+
   const positions = rows.map(row => {
     if (!row?.member_id || String(row.group_id) !== String(currentGroupId)) {
       throw new Error("Cumulative accounting returned a missing member or a position outside the current group.");
@@ -2307,6 +2308,7 @@ async function loadCumulativePositions() {
     return {
       memberId: row.member_id,
       groupId: row.group_id,
+      totalPaid: paidByMember.get(String(row.member_id)) || 0,
       totalDue: numberValue(row.total_due),
       totalAllocated: numberValue(row.total_allocated),
       arrears: numberValue(row.arrears),
@@ -3339,7 +3341,7 @@ function renderCumulativePosition() {
 
     container.innerHTML = `
       <tr>
-        <td colspan="5">
+        <td colspan="7">
           <div class="empty-state">
             <strong>
               Cumulative position unavailable
@@ -3364,7 +3366,7 @@ function renderCumulativePosition() {
 
     container.innerHTML = `
       <tr>
-        <td colspan="5">
+        <td colspan="7">
           <div class="empty-state">
             <strong>
               No group members
@@ -3453,6 +3455,14 @@ function renderCumulativePosition() {
                     )
                   )}
                 </strong>
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  money(
+                    position.totalPaid
+                  )
+                )}
               </td>
 
               <td>

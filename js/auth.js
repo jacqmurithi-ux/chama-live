@@ -1095,9 +1095,11 @@ function redirectToLogin() {
     typeof window !== "undefined"
   ) {
 
-    window.location.replace(
-      `${BASE_URL}/login.html`
-    );
+    // Keep authentication failures inside the current deployment.
+    // Preview sessions are origin-scoped and must not be redirected to production.
+    const loginUrl = new URL("login.html", window.location.href);
+
+    window.location.replace(loginUrl.href);
 
   }
 
