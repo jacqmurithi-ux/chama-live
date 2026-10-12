@@ -511,6 +511,43 @@ async function loadMeetings() {
   }
 
   meetings = safeArray(data);
+  if (!meetings.length) return meetings;
+
+  const meetingIds = meetings.map(row => row.id);
+  const [attendanceResult, activeMembersResult] = await Promise.all([
+    supabase
+      .from("attendance")
+      .select("meeting_id,member_id,status")
+      .in("meeting_id", meetingIds),
+    supabase
+      .from("members")
+      .select("id")
+      .eq("group_id", groupId)
+      .eq("status", "active")
+  ]);
+
+  if (attendanceResult.error) throw attendanceResult.error;
+  if (activeMembersResult.error) throw activeMembersResult.error;
+
+  const expectedAttendance = safeArray(activeMembersResult.data).length;
+  const attendanceByMeeting = new Map();
+  for (const row of safeArray(attendanceResult.data)) {
+    const key = String(row.meeting_id);
+    const summary = attendanceByMeeting.get(key) || { recorded: 0, present: 0 };
+    summary.recorded += 1;
+    if (lower(row.status) === "present") summary.present += 1;
+    attendanceByMeeting.set(key, summary);
+  }
+
+  meetings = meetings.map(row => {
+    const attendance = attendanceByMeeting.get(String(row.id)) || { recorded: 0, present: 0 };
+    return {
+      ...row,
+      attendance_recorded_count: attendance.recorded,
+      attendance_present_count: attendance.present,
+      attendance_expected_count: expectedAttendance
+    };
+  });
   return meetings;
 }
 
@@ -1737,7 +1774,7 @@ function renderMeetings(rows) {
   const target = $("meetingRows");
   if (!target) return;
   if (!rows.length) {
-    target.innerHTML = "<tr><td colspan=\"7\">No meetings for the selected period.</td></tr>";
+    target.innerHTML = "<tr><td colspan=\"9\">No meetings for the selected period.</td></tr>";
     return;
   }
   target.innerHTML = rows.map(row => {
@@ -1750,6 +1787,10 @@ function renderMeetings(rows) {
       "<td>" + escapeHTML(statusLabel) + "</td>" +
       "<td>" + escapeHTML(row.status_reason || "—") + "</td>" +
       "<td>" + escapeHTML(agenda || "—") + "</td>" +
+      "<td>" + escapeHTML(row.minutes ? "Recorded" : "Pending") + "</td>" +
+      "<td>" + escapeHTML(row.attendance_expected_count
+        ? `${row.attendance_recorded_count || 0}/${row.attendance_expected_count} recorded; ${row.attendance_present_count || 0} present`
+        : `${row.attendance_recorded_count || 0} attendance rows; active member count unavailable`) + "</td>" +
       "<td>" + escapeHTML(row.resolution || (row.resolution_not_required ? "No resolution made" : "—")) + "</td>" +
       "</tr>";
   }).join("");
@@ -5503,7 +5544,7 @@ function exportCSV() {
     lines.push("");
     lines.push(["MEETINGS"].map(csvEscape).join(","));
     lines.push(
-      ["Date", "Meeting", "Venue", "Status", "Agenda", "Resolution"]
+      ["Date", "Meeting", "Venue", "Status", "Reason / follow-up", "Agenda", "Minutes", "Attendance", "Resolution"]
         .map(csvEscape).join(",")
     );
     for (const row of meetingRows) {
@@ -5513,8 +5554,13 @@ function exportCSV() {
           row.title,
           row.venue,
           meetingStatusLabel(row),
+          row.status_reason || "",
           Array.isArray(row.agenda) ? row.agenda.join("; ") : row.agenda,
-          row.resolution
+          row.minutes ? "Recorded" : "Pending",
+          row.attendance_expected_count
+            ? `${row.attendance_recorded_count || 0}/${row.attendance_expected_count} recorded; ${row.attendance_present_count || 0} present`
+            : `${row.attendance_recorded_count || 0} attendance rows; active member count unavailable`,
+          row.resolution || (row.resolution_not_required ? "No resolution made" : "")
         ].map(csvEscape).join(",")
       );
     }
@@ -5892,7 +5938,10 @@ function exportExcel() {
                 <th>Meeting</th>
                 <th>Venue</th>
                 <th>Status</th>
+                <th>Reason / follow-up</th>
                 <th>Agenda</th>
+                <th>Minutes</th>
+                <th>Attendance</th>
                 <th>Resolution</th>
               </tr>
             </thead>
@@ -5912,17 +5961,14 @@ function exportExcel() {
                     row.venue
                   )}</td>
 
-                  <td>${excelEscape(
-                    meetingStatusLabel(row)
-                  )}</td>
-
-                  <td>${excelEscape(
-                    Array.isArray(row.agenda) ? row.agenda.join("; ") : row.agenda
-                  )}</td>
-
-                  <td>${excelEscape(
-                    row.resolution
-                  )}</td>
+                  <td>${excelEscape(meetingStatusLabel(row))}</td>
+                  <td>${excelEscape(row.status_reason || "")}</td>
+                  <td>${excelEscape(Array.isArray(row.agenda) ? row.agenda.join("; ") : row.agenda)}</td>
+                  <td>${excelEscape(row.minutes ? "Recorded" : "Pending")}</td>
+                  <td>${excelEscape(row.attendance_expected_count
+                    ? `${row.attendance_recorded_count || 0}/${row.attendance_expected_count} recorded; ${row.attendance_present_count || 0} present`
+                    : `${row.attendance_recorded_count || 0} attendance rows; active member count unavailable`)}</td>
+                  <td>${excelEscape(row.resolution || (row.resolution_not_required ? "No resolution made" : ""))}</td>
                 </tr>
               `).join("")}
             </tbody>
