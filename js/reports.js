@@ -903,7 +903,7 @@ async function loadCanonical(month) {
    CUMULATIVE ACCOUNTING
    ========================================================= */
 
-async function loadCumulativePositions() {
+async async function loadCumulativePositions() {
   if (!currentGroup?.id) {
     throw new Error("GROUP_CONTEXT_REQUIRED");
   }
@@ -1727,7 +1727,7 @@ function renderMeetings(rows) {
     return;
   }
   target.innerHTML = rows.map(row => {
-    const statusLabel = isPastDatedUpcoming(row)
+    const statusLabel = isPastDatedUpcomingMeeting(row)
       ? String(row.status) + " — past date; verify status"
       : row.status || "—";
     return "<tr>" +
@@ -2184,6 +2184,7 @@ function renderMonthlyArrearsReport(rows) {
                     )}</td>
 
                     <td>${formatCurrency(
+                      previousOutstandingFromCumulative(row) ??
                       row.previous_outstanding ??
                       row.previous_arrears ??
                       row.outstanding_before ??
@@ -4114,7 +4115,7 @@ function drawCumulativePositionChart(
     colors.primary
   ];
 
-  const max =
+  let max =
     niceMax(
       Math.max(...values)
     );
@@ -4646,6 +4647,7 @@ function renderFilteredMemberAccounting(rows, title) {
               <td>${escapeHTML(getMemberName(row.member_id))}</td>
               <td>${escapeHTML(getMemberNumber(row.member_id) || "—")}</td>
               <td>${formatCurrency(
+                previousOutstandingFromCumulative(row) ??
                 row.previous_outstanding ??
                 row.previous_arrears ??
                 row.outstanding_before ??
@@ -5336,11 +5338,12 @@ function exportCSV() {
       [
         "Member",
         "Member Number",
-        "Due",
+        "Monthly Due",
+        "Previous Outstanding",
         "Applied",
-        "Outstanding",
-        "Credit",
-        "Status"
+        "Current Outstanding",
+        "Carry-forward Credit",
+        "Monthly Status"
       ]
         .map(csvEscape)
         .join(",")
@@ -5352,6 +5355,7 @@ function exportCSV() {
           getMemberName(row.member_id),
           getMemberNumber(row.member_id),
           canonicalDue(row),
+          previousOutstandingFromCumulative(row) ?? "",
           canonicalApplied(row),
           canonicalOutstanding(row),
           canonicalCredit(row),
@@ -5673,11 +5677,12 @@ function exportExcel() {
               <tr>
                 <th>Member</th>
                 <th>Member Number</th>
-                <th>Due</th>
+                <th>Monthly Due</th>
+                <th>Previous Outstanding</th>
                 <th>Applied</th>
-                <th>Outstanding</th>
-                <th>Credit</th>
-                <th>Status</th>
+                <th>Current Outstanding</th>
+                <th>Carry-forward Credit</th>
+                <th>Monthly Status</th>
               </tr>
             </thead>
 
@@ -5694,6 +5699,10 @@ function exportExcel() {
 
                   <td>${excelEscape(
                     canonicalDue(row)
+                  )}</td>
+
+                  <td>${excelEscape(
+                    previousOutstandingFromCumulative(row) ?? ""
                   )}</td>
 
                   <td>${excelEscape(
