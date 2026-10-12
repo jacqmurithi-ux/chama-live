@@ -2333,10 +2333,20 @@ function canManageFinancialClosing() {
     return role;
   };
 
-  const role = normalizeRole(
-    currentMember?.actual_position ||
-    currentMember?.role
+  /*
+    Mirror cl_user_has_role(): actual_position overrides the
+    stored role only when it explicitly identifies a vice role.
+  */
+  const actualPosition = normalizeRole(
+    currentMember?.actual_position
   );
+
+  const role = [
+    "vice secretary",
+    "vice chairperson"
+  ].includes(actualPosition)
+    ? normalizeRole(actualPosition)
+    : normalizeRole(currentMember?.role);
 
   return ["admin", "treasurer", "secretary"].includes(role);
 
