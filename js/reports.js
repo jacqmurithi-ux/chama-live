@@ -409,31 +409,42 @@ async function loadContributions() {
     throw new Error("GROUP_CONTEXT_REQUIRED");
   }
 
-  const { data, error } = await supabase
-    .from("contributions")
-    .select(`
-      id,
-      group_id,
-      member_id,
-      amount,
-      contribution_type,
-      payment_method,
-      created_at,
-      contribution_date
-    `)
-    .eq("group_id", groupId)
-    .order("contribution_date", { ascending: true })
-    .order("created_at", { ascending: true });
+  const pageSize = 1000;
+  let offset = 0;
+  const allRows = [];
 
-  if (error) {
-    throw error;
+  // Page the complete ledger: the total-paid sum and report exports must
+  // not silently stop at the REST API's default row limit.
+  while (true) {
+    const { data, error } = await supabase
+      .from("contributions")
+      .select(`
+        id,
+        group_id,
+        member_id,
+        amount,
+        contribution_type,
+        payment_method,
+        created_at,
+        contribution_date
+      `)
+      .eq("group_id", groupId)
+      .order("contribution_date", { ascending: true })
+      .order("created_at", { ascending: true })
+      .order("id", { ascending: true })
+      .range(offset, offset + pageSize - 1);
+
+    if (error) throw error;
+
+    const batch = safeArray(data);
+    allRows.push(...batch);
+    if (batch.length < pageSize) break;
+    offset += pageSize;
   }
 
-  contributions = safeArray(data);
-
+  contributions = allRows;
   return contributions;
 }
-
 
 /* =========================================================
    EXPENSES
@@ -926,6 +937,13 @@ async function loadCumulativePositions() {
   );
   const seenIds = new Set();
 
+  const paidByMember = new Map();
+  for (const payment of contributions) {
+    const key = String(payment.member_id || "");
+    if (!key) continue;
+    paidByMember.set(key, (paidByMember.get(key) || 0) + numberValue(payment.amount));
+  }
+
   const results = rows.map(row => {
     if (
       !row?.member_id ||
@@ -955,6 +973,7 @@ async function loadCumulativePositions() {
     return {
       member_id: row.member_id,
       group_id: row.group_id,
+      total_paid: paidByMember.get(String(row.member_id)) || 0,
       total_due: numberValue(row.total_due),
       total_allocated: numberValue(row.total_allocated),
       arrears: numberValue(row.arrears),
@@ -1786,6 +1805,7 @@ function renderCumulativePosition(rows) {
           <tr>
             <th>Member</th>
             <th>Member No.</th>
+            <th>Total Paid</th>
             <th>Total Due</th>
             <th>Total Allocated</th>
             <th>Arrears</th>
@@ -1803,6 +1823,10 @@ function renderCumulativePosition(rows) {
 
               <td>${escapeHTML(
                 getMemberNumber(row.member_id) || "—"
+              )}</td>
+
+              <td>${formatCurrency(
+                row.total_paid
               )}</td>
 
               <td>${formatCurrency(
@@ -2668,6 +2692,7 @@ function buildCumulativeTable(rows) {
         <thead>
           <tr>
             <th>Member</th>
+            <th>Total Paid</th>
             <th>Total Due</th>
             <th>Total Allocated</th>
             <th>Arrears</th>
@@ -2682,6 +2707,10 @@ function buildCumulativeTable(rows) {
                   <tr>
                     <td>${escapeHTML(
                       getMemberName(row.member_id)
+                    )}</td>
+
+                    <td>${formatCurrency(
+                      row.total_paid
                     )}</td>
 
                     <td>${formatCurrency(
@@ -2705,7 +2734,7 @@ function buildCumulativeTable(rows) {
                     )}</td>
                   </tr>
                 `).join("")
-              : `<tr><td colspan="6">No cumulative data.</td></tr>`
+              : `<tr><td colspan="7">No cumulative data.</td></tr>`
           }
         </tbody>
       </table>
@@ -5469,6 +5498,7 @@ function exportCSV() {
       [
         "Member",
         "Member Number",
+        "Total Paid",
         "Total Due",
         "Total Allocated",
         "Arrears",
@@ -5484,6 +5514,7 @@ function exportCSV() {
         [
           getMemberName(row.member_id),
           getMemberNumber(row.member_id),
+          row.total_paid,
           row.total_due,
           row.total_allocated,
           row.arrears,
@@ -5836,6 +5867,7 @@ function exportExcel() {
               <tr>
                 <th>Member</th>
                 <th>Member Number</th>
+                <th>Total Paid</th>
                 <th>Total Due</th>
                 <th>Total Allocated</th>
                 <th>Arrears</th>
@@ -5853,6 +5885,10 @@ function exportExcel() {
 
                   <td>${excelEscape(
                     getMemberNumber(row.member_id)
+                  )}</td>
+
+                  <td>${excelEscape(
+                    row.total_paid
                   )}</td>
 
                   <td>${excelEscape(
