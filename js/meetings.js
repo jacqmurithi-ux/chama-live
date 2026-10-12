@@ -928,7 +928,7 @@ async function loadMeetingStatusHistory() {
   host.innerHTML = '<h3>Status history</h3><p class="meeting-form-help">Loading history…</p>';
   const { data, error } = await supabase
     .from("meeting_status_history")
-    .select("from_status,to_status,reason,changed_at,actor_member_id")
+    .select("from_status,to_status,reason,changed_at,actor_member_id,actor_name")
     .eq("meeting_id", selectedMeeting.id)
     .eq("group_id", groupId)
     .order("changed_at", { ascending: false });
@@ -941,7 +941,7 @@ async function loadMeetingStatusHistory() {
     '<li><strong>' + escapeHtml(statusLabel(item.to_status)) + '</strong><span>' +
     escapeHtml(new Date(item.changed_at).toLocaleString("en-KE")) + '</span><small>' +
     escapeHtml(item.from_status ? statusLabel(item.from_status) + " → " : "") +
-    escapeHtml(item.actor_member_id || "Officer") + '</small>' +
+    escapeHtml(item.actor_name || "Officer") + '</small>' +
     (item.reason ? '<p>' + escapeHtml(item.reason) + '</p>' : '') + '</li>'
   ).join("") + '</ol>';
 }
