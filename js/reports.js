@@ -1425,11 +1425,13 @@ function updateSummary(
     numberValue(
       summary.carry_forward_credit ??
       summary.total_carry_forward_credit ??
+      summary.carry_forward ??
       summary.credit
     );
 
   const totalDue =
     numberValue(
+      summary.monthly_due ??
       summary.expected_monthly_contributions ??
       summary.total_due ??
       summary.total_obligations ??
@@ -1554,54 +1556,41 @@ function renderContributionBreakdown(rows) {
 
 function buildExpenseBreakdown(rows) {
   const map = new Map();
-
   for (const row of rows) {
-    const category =
-      normalizeText(row.category) ||
-      "Uncategorised";
-
-    const existing =
-      map.get(category) || {
-        category,
-        count: 0,
-        amount: 0
-      };
-
+    const category = normalizeText(row.category) || "Uncategorised";
+    const status = lower(row.approval_status) || "unknown";
+    const key = status + "::" + category;
+    const existing = map.get(key) || { category, status, count: 0, amount: 0 };
     existing.count += 1;
     existing.amount += numberValue(row.amount);
-
-    map.set(category, existing);
+    map.set(key, existing);
   }
-
-  return Array.from(map.values())
-    .sort((a, b) => b.amount - a.amount);
+  return Array.from(map.values()).sort((a, b) =>
+    a.status.localeCompare(b.status) ||
+    b.amount - a.amount ||
+    a.category.localeCompare(b.category)
+  );
 }
 
 function renderExpenseBreakdown(rows) {
-  const target =
-    $("expenseBreakdownRows");
-
+  const target = $("expenseBreakdownRows");
   if (!target) return;
-
-  const breakdown =
-    buildExpenseBreakdown(rows);
-
+  const breakdown = buildExpenseBreakdown(rows);
+  const total = breakdown.reduce((sum, row) => sum + numberValue(row.amount), 0);
   if (!breakdown.length) {
-    target.innerHTML =
-      `<tr><td colspan="3">No expense data for the selected period.</td></tr>`;
+    target.innerHTML = "<tr><td colspan=\"5\">No expense data for the selected period.</td></tr>";
     return;
   }
-
-  target.innerHTML =
-    breakdown.map(row => `
-      <tr>
-        <td>${escapeHTML(row.category)}</td>
-        <td>${formatNumber(row.count)}</td>
-        <td>${formatCurrency(row.amount)}</td>
-      </tr>
-    `).join("");
+  target.innerHTML = breakdown.map(row =>
+    "<tr>" +
+      "<td>" + escapeHTML(row.category) + "</td>" +
+      "<td>" + escapeHTML(row.status === "unknown" ? "Unknown" : row.status) + "</td>" +
+      "<td>" + formatNumber(row.count) + "</td>" +
+      "<td>" + formatCurrency(row.amount) + "</td>" +
+      "<td>" + formatPercentage(total > 0 ? row.amount / total * 100 : 0) + "</td>" +
+    "</tr>"
+  ).join("");
 }
-
 
 /* =========================================================
    CONTRIBUTION ENTRIES
@@ -1714,73 +1703,62 @@ function renderExpenseEntries(rows) {
    MEETING SUMMARY
    ========================================================= */
 
+function isUpcomingMeetingStatus(row) {
+  return ["upcoming", "scheduled", "planned"].includes(lower(row?.status));
+}
+
+function isPastDatedUpcomingMeeting(row) {
+  const date = String(row?.date || "").slice(0, 10);
+  return isUpcomingMeetingStatus(row) &&
+    Boolean(date) &&
+    date < toISODate(new Date());
+}
+
+function meetingStatusLabel(row) {
+  const status = normalizeText(row?.status) || "—";
+  return isPastDatedUpcomingMeeting(row)
+    ? status + " — past date; verify status"
+    : status;
+}
+
 function renderMeetings(rows) {
-  const total =
-    rows.length;
+  const total = rows.length;
 
-  const upcoming =
-    rows.filter(row =>
-      safeDate(row.date) &&
-      safeDate(row.date) > new Date() &&
-      lower(row.status) !== "cancelled"
-    ).length;
-
-  const completed =
-    rows.filter(row =>
-      lower(row.status) === "completed"
-    ).length;
-
-  const cancelled =
-    rows.filter(row =>
-      lower(row.status) === "cancelled"
-    ).length;
+  // Past-dated records that still carry an upcoming status go into
+  // Other / Review, not Upcoming. No database status is changed.
+  const upcoming = rows.filter(row =>
+    isUpcomingMeetingStatus(row) && !isPastDatedUpcomingMeeting(row)
+  ).length;
+  const completed = rows.filter(row => lower(row.status) === "completed").length;
+  const cancelled = rows.filter(row => lower(row.status) === "cancelled").length;
+  const other = total - upcoming - completed - cancelled;
 
   setText("totalMeetings", formatNumber(total));
   setText("upcomingMeetings", formatNumber(upcoming));
   setText("completedMeetings", formatNumber(completed));
   setText("cancelledMeetings", formatNumber(cancelled));
+  setText("otherMeetings", formatNumber(other));
 
-  const target =
-    $("meetingRows");
-
+  const target = $("meetingRows");
   if (!target) return;
-
   if (!rows.length) {
-    target.innerHTML =
-      `<tr><td colspan="6">No meetings for the selected period.</td></tr>`;
+    target.innerHTML = "<tr><td colspan=\"6\">No meetings for the selected period.</td></tr>";
     return;
   }
-
-  target.innerHTML =
-    rows.map(row => `
-      <tr>
-        <td>${escapeHTML(
-          formatDate(row.date)
-        )}</td>
-
-        <td>${escapeHTML(
-          row.title || "Meeting"
-        )}</td>
-
-        <td>${escapeHTML(
-          row.venue || "—"
-        )}</td>
-
-        <td>${escapeHTML(
-          row.status || "—"
-        )}</td>
-
-        <td>${escapeHTML(
-          row.agenda || "—"
-        )}</td>
-
-        <td>${escapeHTML(
-          row.resolution || "—"
-        )}</td>
-      </tr>
-    `).join("");
+  target.innerHTML = rows.map(row => {
+    const statusLabel = isPastDatedUpcoming(row)
+      ? String(row.status) + " — past date; verify status"
+      : row.status || "—";
+    return "<tr>" +
+      "<td>" + escapeHTML(formatDate(row.date)) + "</td>" +
+      "<td>" + escapeHTML(row.title || "Meeting") + "</td>" +
+      "<td>" + escapeHTML(row.venue || "—") + "</td>" +
+      "<td>" + escapeHTML(statusLabel) + "</td>" +
+      "<td>" + escapeHTML(row.agenda || "—") + "</td>" +
+      "<td>" + escapeHTML(row.resolution || "—") + "</td>" +
+      "</tr>";
+  }).join("");
 }
-
 
 /* =========================================================
    CUMULATIVE POSITION TABLE
@@ -1882,7 +1860,11 @@ function canonicalRowStatus(row) {
 
 function canonicalApplied(row) {
   return numberValue(
+    row.applied_this_month ??
+    row.amount_applied ??
+    row.applied_amount ??
     row.applied ??
+    row.allocated_amount ??
     row.allocated ??
     row.total_allocated ??
     row.current_allocated ??
@@ -1892,6 +1874,8 @@ function canonicalApplied(row) {
 
 function canonicalOutstanding(row) {
   return numberValue(
+    row.outstanding_amount ??
+    row.total_outstanding ??
     row.outstanding ??
     row.current_outstanding ??
     row.arrears ??
@@ -1903,6 +1887,8 @@ function canonicalOutstanding(row) {
 function canonicalCredit(row) {
   return numberValue(
     row.carry_forward_credit ??
+    row.total_carry_forward_credit ??
+    row.carry_forward ??
     row.previous_credit ??
     row.credit ??
     row.current_credit ??
@@ -1912,8 +1898,12 @@ function canonicalCredit(row) {
 
 function canonicalDue(row) {
   return numberValue(
+    row.monthly_due ??
+    row.expected_monthly_contributions ??
+    row.due_amount ??
     row.due ??
     row.amount_due ??
+    row.obligation_amount ??
     row.obligation ??
     row.total_due ??
     canonicalApplied(row) +
@@ -2106,64 +2096,69 @@ function renderMemberContributions(rows) {
   `;
 }
 
-function renderMonthlyStatusReport(rows) {
-  const target =
-    $("reportOutput");
+function cumulativePositionForMember(memberId) {
+  const key = String(memberId ?? "");
+  return cumulativePositions.find(
+    position => String(position.member_id ?? "") === key
+  ) || null;
+}
 
+function previousOutstandingFromCumulative(monthlyRow) {
+  const position = cumulativePositionForMember(monthlyRow?.member_id);
+  if (!position) return null;
+
+  // Cumulative arrears are canonical lifetime arrears. Remove any
+  // outstanding amount already attributed to the selected month so the
+  // previous-period figure does not double-count this month's shortfall.
+  return Math.max(
+    numberValue(position.arrears) - canonicalOutstanding(monthlyRow),
+    0
+  );
+}
+
+function renderMonthlyStatusReport(rows) {
+  const target = $("reportOutput");
   if (!target) return;
 
   target.innerHTML = `
     <div class="report-table-wrap">
+      <p style="color:#6b7280; margin:0 0 12px; font-size:13px; line-height:1.5;">
+        Monthly due, applied amount and current outstanding come from canonical
+        monthly accounting. Previous outstanding is informed by the member's
+        canonical cumulative position; it is shown separately from this month's status.
+      </p>
       <table class="report-table">
         <thead>
           <tr>
             <th>Member</th>
             <th>Member No.</th>
-            <th>Due</th>
+            <th>Monthly Due</th>
+            <th>Previous Outstanding</th>
             <th>Applied</th>
-            <th>Outstanding</th>
-            <th>Credit</th>
-            <th>Status</th>
+            <th>Carry-forward Credit</th>
+            <th>Current Outstanding</th>
+            <th>Monthly Status</th>
           </tr>
         </thead>
-
         <tbody>
           ${
             rows.length
-              ? rows.map(row => `
-                  <tr>
-                    <td>${escapeHTML(
-                      getMemberName(row.member_id)
-                    )}</td>
-
-                    <td>${escapeHTML(
-                      getMemberNumber(row.member_id) || "—"
-                    )}</td>
-
-                    <td>${formatCurrency(
-                      canonicalDue(row)
-                    )}</td>
-
-                    <td>${formatCurrency(
-                      canonicalApplied(row)
-                    )}</td>
-
-                    <td>${formatCurrency(
-                      canonicalOutstanding(row)
-                    )}</td>
-
-                    <td>${formatCurrency(
-                      canonicalCredit(row)
-                    )}</td>
-
-                    <td>${escapeHTML(
-                      getStatusLabel(
-                        canonicalRowStatus(row)
-                      )
-                    )}</td>
-                  </tr>
-                `).join("")
-              : `<tr><td colspan="7">No monthly accounting records.</td></tr>`
+              ? rows.map(row => {
+                  const previousOutstanding = previousOutstandingFromCumulative(row);
+                  return `
+                    <tr>
+                      <td>${escapeHTML(getMemberName(row.member_id))}</td>
+                      <td>${escapeHTML(getMemberNumber(row.member_id) || "—")}</td>
+                      <td>${formatCurrency(canonicalDue(row))}</td>
+                      <td>${previousOutstanding === null ? "—" : formatCurrency(previousOutstanding)}</td>
+                      <td>${formatCurrency(canonicalApplied(row))}</td>
+                      <td>${formatCurrency(canonicalCredit(row))}</td>
+                      <td>${formatCurrency(canonicalOutstanding(row))}</td>
+                      <td>${escapeHTML(getStatusLabel(canonicalRowStatus(row)))}</td>
+                    </tr>
+                  `;
+                }).join("")
+              : `<tr><td colspan="8">No monthly accounting records.</td></tr>`
           }
         </tbody>
       </table>
@@ -2569,7 +2564,7 @@ function renderMeetingsReport(rows) {
                     )}</td>
 
                     <td>${escapeHTML(
-                      row.status || "—"
+                      meetingStatusLabel(row)
                     )}</td>
 
                     <td>${escapeHTML(
@@ -2875,7 +2870,7 @@ function buildMeetingTable(rows) {
                     )}</td>
 
                     <td>${escapeHTML(
-                      row.status || "—"
+                      meetingStatusLabel(row)
                     )}</td>
                   </tr>
                 `).join("")
@@ -4530,7 +4525,7 @@ function renderVisualInsights(
       ${visualCard(
         "reportExpenseCategoryChart",
         "Expense Categories",
-        "Approved and other selected expenses grouped by category."
+        "Approved expenses grouped by category; pending and rejected amounts remain separate in the breakdown table."
       )}
 
     </div>
@@ -4563,7 +4558,7 @@ function renderVisualInsights(
   const expenseResult =
     drawExpenseCategoryChart(
       $("reportExpenseCategoryChart"),
-      expenseRows
+      expenseRows.filter(row => lower(row.approval_status) === "approved")
   );
 
   if (cashResult) {
@@ -5539,8 +5534,8 @@ function exportCSV() {
           formatDate(row.date),
           row.title,
           row.venue,
-          row.status,
-          row.agenda,
+          meetingStatusLabel(row),
+          Array.isArray(row.agenda) ? row.agenda.join("; ") : row.agenda,
           row.resolution
         ].map(csvEscape).join(",")
       );
@@ -5945,11 +5940,11 @@ function exportExcel() {
                   )}</td>
 
                   <td>${excelEscape(
-                    row.status
+                    meetingStatusLabel(row)
                   )}</td>
 
                   <td>${excelEscape(
-                    row.agenda
+                    Array.isArray(row.agenda) ? row.agenda.join("; ") : row.agenda
                   )}</td>
 
                   <td>${excelEscape(
