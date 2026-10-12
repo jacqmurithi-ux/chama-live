@@ -1200,12 +1200,7 @@ function filteredCanonicalStatus() {
     !selectedStatus.startsWith("cumulative-")
   ) {
     rows = rows.filter(row => {
-      const status =
-        lower(
-          row.status ||
-          row.accounting_status ||
-          row.payment_status
-        );
+      const status = lower(canonicalMonthlyStatus(row));
 
       if (selectedStatus === "outstanding") {
         return canonicalOutstanding(row) > 0;
