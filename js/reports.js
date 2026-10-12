@@ -2723,7 +2723,7 @@ function buildCumulativeTable(rows) {
                     )}</td>
                   </tr>
                 `).join("")
-              : `<tr><td colspan="6">No cumulative data.</td></tr>`
+              : `<tr><td colspan="7">No cumulative data.</td></tr>`
           }
         </tbody>
       </table>
