@@ -83,7 +83,8 @@ assert.ok(supabaseJs.includes("https://ptktftwyltxmtcodyzoa.supabase.co")
 const refreshSql = read("supabase/migrations/20261012130000_fix_member_refresh_allocation_schema.sql");
 assert.ok(refreshSql.includes("cl_2b_refresh_member(uuid,date)")
   && refreshSql.includes("INSERT INTO public.contribution_allocations (payment_id, obligation_id, amount)")
-  && !refreshSql.includes("INSERT INTO public.contribution_allocations (group_id, member_id, payment_id, obligation_id, allocated_amount, amount)"),
-  "Member refresh migration must use canonical allocation columns");
+  && refreshSql.includes("replace(v_definition, v_extended_insert, v_canonical_insert)")
+  && refreshSql.includes("raise exception 'cl_2b_refresh_member remains incompatible with canonical allocation schema'"),
+  "Member refresh migration must safely replace and verify the canonical allocation insert");
 
 console.log("CHAMA LIVE candidate static regression: PASS");
