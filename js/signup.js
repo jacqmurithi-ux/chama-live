@@ -88,7 +88,7 @@ import {
  */
 
 const CONFIRM_PAGE =
-  "https://chamalive.co.ke/confirm.html";
+  new URL("confirm.html", window.location.href).href;
 
 
 /* =========================================================
