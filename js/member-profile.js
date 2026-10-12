@@ -67,6 +67,8 @@ const state = {
 
   cumulativePosition: null,
 
+  totalPaid: 0,
+
   initialized: false,
 
   statementMemberId: null
@@ -561,7 +563,7 @@ function renderCumulativePosition(position) {
   if (els.cumulativeDue) {
     els.cumulativeDue.textContent =
       formatMoney(
-        position.total_due
+        state.totalPaid
       );
   }
 
@@ -591,6 +593,28 @@ function renderCumulativePosition(position) {
 /* =========================================================
    RPC — CUMULATIVE MEMBER POSITION
 ========================================================= */
+
+async function loadTotalPaid() {
+  const { data, error } = await supabase
+    .from("contributions")
+    .select("amount")
+    .eq("group_id", state.groupId)
+    .eq("member_id", state.memberId);
+
+  if (error) throw error;
+
+  // Each contribution row is a recorded payment. Fine-payment
+  // allocations reference these same payment IDs and are not
+  // added again to this total.
+  state.totalPaid = (Array.isArray(data) ? data : [])
+    .reduce((sum, row) => sum + Number(row.amount || 0), 0);
+
+  if (els.cumulativeDue) {
+    els.cumulativeDue.textContent = formatMoney(state.totalPaid);
+  }
+
+  return state.totalPaid;
+}
 
 async function loadCumulativePosition(
   memberId = state.memberId
@@ -2000,6 +2024,7 @@ export async function initMemberAccounting(
 
   bindEvents();
 
+  await loadTotalPaid();
   await loadAccounting();
 
 }
