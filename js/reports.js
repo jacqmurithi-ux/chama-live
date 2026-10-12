@@ -1684,18 +1684,32 @@ function renderExpenseEntries(rows) {
    MEETING SUMMARY
    ========================================================= */
 
+function isUpcomingMeetingStatus(row) {
+  return ["upcoming", "scheduled", "planned"].includes(lower(row?.status));
+}
+
+function isPastDatedUpcomingMeeting(row) {
+  const date = String(row?.date || "").slice(0, 10);
+  return isUpcomingMeetingStatus(row) &&
+    Boolean(date) &&
+    date < toISODate(new Date());
+}
+
+function meetingStatusLabel(row) {
+  const status = normalizeText(row?.status) || "—";
+  return isPastDatedUpcomingMeeting(row)
+    ? status + " — past date; verify status"
+    : status;
+}
+
 function renderMeetings(rows) {
   const total = rows.length;
-  const today = toISODate(new Date());
-  const isUpcomingStatus = row =>
-    ["upcoming", "scheduled", "planned"].includes(lower(row.status));
-  const isPastDatedUpcoming = row =>
-    isUpcomingStatus(row) && String(row.date || "").slice(0, 10) < today;
 
-  // Use stored workflow status for category totals so every meeting is
-  // accounted for. Past-dated upcoming meetings are flagged for review,
-  // not silently changed in the database.
-  const upcoming = rows.filter(isUpcomingStatus).length;
+  // Past-dated records that still carry an upcoming status go into
+  // Other / Review, not Upcoming. No database status is changed.
+  const upcoming = rows.filter(row =>
+    isUpcomingMeetingStatus(row) && !isPastDatedUpcomingMeeting(row)
+  ).length;
   const completed = rows.filter(row => lower(row.status) === "completed").length;
   const cancelled = rows.filter(row => lower(row.status) === "cancelled").length;
   const other = total - upcoming - completed - cancelled;
@@ -2521,7 +2535,7 @@ function renderMeetingsReport(rows) {
                     )}</td>
 
                     <td>${escapeHTML(
-                      row.status || "—"
+                      meetingStatusLabel(row)
                     )}</td>
 
                     <td>${escapeHTML(
@@ -2822,7 +2836,7 @@ function buildMeetingTable(rows) {
                     )}</td>
 
                     <td>${escapeHTML(
-                      row.status || "—"
+                      meetingStatusLabel(row)
                     )}</td>
                   </tr>
                 `).join("")
@@ -5484,8 +5498,8 @@ function exportCSV() {
           formatDate(row.date),
           row.title,
           row.venue,
-          row.status,
-          row.agenda,
+          meetingStatusLabel(row),
+          Array.isArray(row.agenda) ? row.agenda.join("; ") : row.agenda,
           row.resolution
         ].map(csvEscape).join(",")
       );
@@ -5885,11 +5899,11 @@ function exportExcel() {
                   )}</td>
 
                   <td>${excelEscape(
-                    row.status
+                    meetingStatusLabel(row)
                   )}</td>
 
                   <td>${excelEscape(
-                    row.agenda
+                    Array.isArray(row.agenda) ? row.agenda.join("; ") : row.agenda
                   )}</td>
 
                   <td>${excelEscape(
