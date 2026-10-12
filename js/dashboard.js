@@ -706,12 +706,15 @@ async function loadMembers() {
 ========================================================= */
 
 async function loadContributions() {
+  const pageSize = 1000;
+  let offset = 0;
+  const allRows = [];
 
-  const {
-    data,
-    error
-  } =
-    await supabase
+  // Supabase REST responses may be capped at 1,000 rows. Page through the
+  // full group ledger so cumulative Total Paid and recent-payment views do
+  // not silently omit older payments.
+  while (true) {
+    const { data, error } = await supabase
       .from("contributions")
       .select(`
         id,
@@ -723,30 +726,21 @@ async function loadContributions() {
         contribution_date,
         created_at
       `)
-      .eq(
-        "group_id",
-        currentGroupId
-      )
-      .order(
-        "contribution_date",
-        {
-          ascending: false
-        }
-      );
+      .eq("group_id", currentGroupId)
+      .order("contribution_date", { ascending: false })
+      .order("id", { ascending: true })
+      .range(offset, offset + pageSize - 1);
 
+    if (error) throw error;
 
-  if (error) {
-    throw error;
+    const batch = Array.isArray(data) ? data : [];
+    allRows.push(...batch);
+    if (batch.length < pageSize) break;
+    offset += pageSize;
   }
 
-
-  contributions =
-    Array.isArray(data)
-      ? data
-      : [];
-
+  contributions = allRows;
 }
-
 
 /* =========================================================
    LOAD EXPENSES
