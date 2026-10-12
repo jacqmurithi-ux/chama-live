@@ -2974,6 +2974,33 @@ function renderSummary() {
 
 
 /* =========================================================
+   MONTHLY STATUS DISPLAY LABEL
+   Presentation only: canonical RPC values remain authoritative.
+========================================================= */
+
+function monthlyStatusDisplay(row) {
+  const due = Number(row.monthlyDue) || 0;
+  const applied = Number(row.appliedThisMonth) || 0;
+  const credit = Number(row.carryForward) || 0;
+  const outstanding = Number(row.currentOutstanding) || 0;
+
+  if (due <= 0 && outstanding <= 0 && applied > 0) {
+    return "Payment recorded — no monthly obligation";
+  }
+
+  if (due > 0 && outstanding <= 0 && applied >= due && credit > 0) {
+    return "Paid + credit available";
+  }
+
+  if (outstanding <= 0 && credit > 0) {
+    return "Credit available";
+  }
+
+  return String(row.status || "Outstanding");
+}
+
+
+/* =========================================================
    MEMBER STATUS TABLE
 ========================================================= */
 
@@ -3027,6 +3054,9 @@ function renderMemberStatus() {
               .trim()
               .toLowerCase();
 
+
+          const statusLabel =
+            monthlyStatusDisplay(row);
 
           const statusClassName =
             statusClass(
@@ -3094,8 +3124,7 @@ function renderMemberStatus() {
                   )}"
                 >
                   ${escapeHtml(
-                    row.status ||
-                    "Outstanding"
+                    statusLabel
                   )}
                 </span>
               </td>
