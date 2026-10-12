@@ -5424,12 +5424,13 @@ function exportCSV() {
     lines.push(
       [
         "Date",
-        "Member",
         "Member Number",
+        "Member",
         "Contribution Type",
         "Payment Method",
         "Amount",
-        "ID"
+        "Recorded At",
+        "Reference ID"
       ]
         .map(csvEscape)
         .join(",")
@@ -5442,11 +5443,12 @@ function exportCSV() {
             row.contribution_date ||
             row.created_at
           ),
-          getMemberName(row.member_id),
           getMemberNumber(row.member_id),
+          getMemberName(row.member_id),
           row.contribution_type,
           row.payment_method,
           row.amount,
+          formatDateTime(row.created_at),
           row.id
         ]
           .map(csvEscape)
@@ -5455,7 +5457,15 @@ function exportCSV() {
     }
 
     lines.push("");
+    lines.push(["CONTRIBUTION BREAKDOWN"].map(csvEscape).join(","));
+    lines.push(["Contribution Type", "Entries", "Amount", "Share"].map(csvEscape).join(","));
+    const contributionBreakdown = buildContributionBreakdown(contributionRows);
+    const contributionBreakdownTotal = contributionBreakdown.reduce((sum, row) => sum + row.amount, 0);
+    for (const row of contributionBreakdown) {
+      lines.push([row.type, row.count, row.amount, contributionBreakdownTotal > 0 ? ((row.amount / contributionBreakdownTotal) * 100).toFixed(1) + "%" : "—"].map(csvEscape).join(","));
+    }
 
+    lines.push("");
     lines.push(
       [
         "EXPENSES"
@@ -5498,7 +5508,15 @@ function exportCSV() {
     }
 
     lines.push("");
+    lines.push(["APPROVED EXPENSE BREAKDOWN"].map(csvEscape).join(","));
+    lines.push(["Category", "Entries", "Amount", "Share"].map(csvEscape).join(","));
+    const expenseBreakdown = buildExpenseBreakdown(expenseRows);
+    const expenseBreakdownTotal = expenseBreakdown.reduce((sum, row) => sum + row.amount, 0);
+    for (const row of expenseBreakdown) {
+      lines.push([row.category, row.count, row.amount, expenseBreakdownTotal > 0 ? ((row.amount / expenseBreakdownTotal) * 100).toFixed(1) + "%" : "—"].map(csvEscape).join(","));
+    }
 
+    lines.push("");
     lines.push(
       [
         "CUMULATIVE MEMBER POSITION"
@@ -5773,12 +5791,13 @@ function exportExcel() {
             <thead>
               <tr>
                 <th>Date</th>
-                <th>Member</th>
                 <th>Member Number</th>
+                <th>Member</th>
                 <th>Contribution Type</th>
                 <th>Payment Method</th>
                 <th>Amount</th>
-                <th>ID</th>
+                <th>Recorded At</th>
+                <th>Reference ID</th>
               </tr>
             </thead>
 
@@ -5793,11 +5812,11 @@ function exportExcel() {
                   )}</td>
 
                   <td>${excelEscape(
-                    getMemberName(row.member_id)
+                    getMemberNumber(row.member_id)
                   )}</td>
 
                   <td>${excelEscape(
-                    getMemberNumber(row.member_id)
+                    getMemberName(row.member_id)
                   )}</td>
 
                   <td>${excelEscape(
@@ -5813,10 +5832,22 @@ function exportExcel() {
                   )}</td>
 
                   <td>${excelEscape(
+                    formatDateTime(row.created_at)
+                  )}</td>
+
+                  <td>${excelEscape(
                     row.id
                   )}</td>
                 </tr>
               `).join("")}
+            </tbody>
+          </table>
+
+          <h2>Contribution Breakdown</h2>
+          <table>
+            <thead><tr><th>Contribution Type</th><th>Entries</th><th>Amount</th><th>Share</th></tr></thead>
+            <tbody>
+              ${(() => { const rows = buildContributionBreakdown(contributionRows); const total = rows.reduce((sum, row) => sum + row.amount, 0); return rows.map(row => `<tr><td>${excelEscape(row.type)}</td><td>${row.count}</td><td>${excelEscape(row.amount)}</td><td>${total > 0 ? ((row.amount / total) * 100).toFixed(1) + "%" : "—"}</td></tr>`).join(""); })()}
             </tbody>
           </table>
 
@@ -5870,6 +5901,14 @@ function exportExcel() {
                   )}</td>
                 </tr>
               `).join("")}
+            </tbody>
+          </table>
+
+          <h2>Approved Expense Breakdown</h2>
+          <table>
+            <thead><tr><th>Category</th><th>Entries</th><th>Amount</th><th>Share</th></tr></thead>
+            <tbody>
+              ${(() => { const rows = buildExpenseBreakdown(expenseRows); const total = rows.reduce((sum, row) => sum + row.amount, 0); return rows.map(row => `<tr><td>${excelEscape(row.category)}</td><td>${row.count}</td><td>${excelEscape(row.amount)}</td><td>${total > 0 ? ((row.amount / total) * 100).toFixed(1) + "%" : "—"}</td></tr>`).join(""); })()}
             </tbody>
           </table>
 
