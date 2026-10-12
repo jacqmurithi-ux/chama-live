@@ -48,7 +48,7 @@ Candidate branch: `candidate/meeting-lifecycle-reports-20261012`
 - [ ] October 11 Invest appears as Held — minutes pending after the authorised transition, until its record is completed.
 - [ ] Agenda, status, reason, and resolution are rendered accurately.
 - [x] Candidate source/preview checks: Meetings and Reports HTML/JS respond HTTP 200; the Meetings page has one status-history host/content ID; filters include all five lifecycle states plus Review.
-- [x] Candidate source check: Reports table, CSV, Excel, and sorted-view export include lifecycle status labels, reason/follow-up, minutes state, attendance summary, and resolution/no-resolution label.
+- [x] Candidate source check: Reports summary table, selected Meetings report, full/executive meeting table, CSV, Excel, and sorted-view export expose matching nine-column lifecycle fields: status, reason/follow-up, agenda, actual minutes (or Pending), attendance summary, and resolution/no-resolution label.
 - [ ] Browser-authenticated CSV, Excel, Download Sorted Report, and Print downloads verified byte-for-byte against visible meeting rows.
 - [ ] Reports and Meetings reconcile for identical date/group filters in authenticated browser sessions, including attendance and minutes.
 - [ ] All existing canonical accounting, expenses, membership, and custom contribution report checks still pass.
