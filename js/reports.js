@@ -1923,6 +1923,19 @@ function canonicalMonthlyStatus(row) {
 }
 
 function canonicalApplied(row) {
+  // This field means allocation to the selected month's obligation, not
+  // allocations to any contribution type. A zero monthly obligation must not
+  // inherit a custom-contribution allocation from the RPC's broader join.
+  const dueValue =
+    row.monthly_due ??
+    row.due ??
+    row.amount_due ??
+    row.obligation ??
+    row.total_due;
+  if (dueValue !== undefined && dueValue !== null && numberValue(dueValue) <= 0) {
+    return 0;
+  }
+
   return numberValue(
     row.applied_this_month ??
     row.applied ??
