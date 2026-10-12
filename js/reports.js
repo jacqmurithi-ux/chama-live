@@ -1423,6 +1423,7 @@ function updateSummary(
 
   const carryForward =
     numberValue(
+      summary.carry_forward ??
       summary.carry_forward_credit ??
       summary.total_carry_forward_credit ??
       summary.credit
@@ -1555,7 +1556,12 @@ function renderContributionBreakdown(rows) {
 function buildExpenseBreakdown(rows) {
   const map = new Map();
 
-  for (const row of rows) {
+  // This table is specifically the approved-expense breakdown. Pending and
+  // rejected expenses remain visible in their separate status totals/tables.
+  const approvedRows = (Array.isArray(rows) ? rows : [])
+    .filter(row => lower(row.approval_status) === "approved");
+
+  for (const row of approvedRows) {
     const category =
       normalizeText(row.category) ||
       "Uncategorised";
@@ -1588,7 +1594,7 @@ function renderExpenseBreakdown(rows) {
 
   if (!breakdown.length) {
     target.innerHTML =
-      `<tr><td colspan="3">No expense data for the selected period.</td></tr>`;
+      `<tr><td colspan="3">No approved expense data for the selected period.</td></tr>`;
     return;
   }
 
@@ -1882,6 +1888,7 @@ function canonicalRowStatus(row) {
 
 function canonicalApplied(row) {
   return numberValue(
+    row.applied_this_month ??
     row.applied ??
     row.allocated ??
     row.total_allocated ??
@@ -1902,6 +1909,7 @@ function canonicalOutstanding(row) {
 
 function canonicalCredit(row) {
   return numberValue(
+    row.carry_forward ??
     row.carry_forward_credit ??
     row.previous_credit ??
     row.credit ??
@@ -1912,6 +1920,7 @@ function canonicalCredit(row) {
 
 function canonicalDue(row) {
   return numberValue(
+    row.monthly_due ??
     row.due ??
     row.amount_due ??
     row.obligation ??

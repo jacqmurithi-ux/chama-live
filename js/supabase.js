@@ -8,11 +8,11 @@ import {
 ========================================================= */
 
 const SUPABASE_URL =
-  "https://ptktftwyltxmtcodyzoa.supabase.co";
+  "https://onzaonflquipqmhgslxi.supabase.co";
 
 
 const SUPABASE_PUBLISHABLE_KEY =
-  "sb_publishable_Nfuc0Xj1LuSU-qJmSXpH5A_GSTMvmSS";
+  "sb_publishable_0jhKFtRCnOx0WDcO3PwcMg_GGsnN3kc";
 
 
 /* =========================================================
