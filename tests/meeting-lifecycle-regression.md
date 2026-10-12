@@ -16,11 +16,10 @@ Candidate branch: `candidate/meeting-lifecycle-reports-20261012`
 - [x] SQL negative test: cancellation without a reason is rejected.
 - [x] SQL negative test: postponement without a later proposed date is rejected.
 - [x] SQL positive test: postponement with a reason and later date, then reschedule to the proposed date, succeeds.
-- [x] SQL negative test: postponement without a later proposed date is rejected by the lifecycle guard.
 - [x] SQL negative test: direct INSERT with a non-Upcoming initial status is rejected.
 - [x] SQL negative tests: direct Upcoming → Completed, completion without minutes, without resolution/no-resolution choice, and without attendance are rejected.
 - [x] SQL positive test: Held → Completed succeeds after minutes, explicit no-resolution, and attendance are recorded.
-- [x] SQL transaction test asserted audit actor user/member, timestamp, from/to status, and reason; transaction rollback preserved the original meeting. RLS visibility still needs real authenticated-session assertions.
+- [x] SQL transaction test asserted audit actor user/member/name, timestamp, from/to status, and reason; transaction rollback preserved the original meeting. RLS visibility still needs real authenticated-session assertions.
 
 ## Meetings UI (authenticated)
 - [ ] Schedule/edit/view a meeting in browser; group isolation and existing permission rules remain intact.
