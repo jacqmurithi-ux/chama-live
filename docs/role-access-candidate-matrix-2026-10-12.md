@@ -1,0 +1,75 @@
+# CHAMA LIVE role access audit — candidate only (2026-10-12)
+
+## Scope and status
+
+This matrix was assembled from the isolated test project's current `pg_policies`, selected RPC definitions, and the current `main` frontend permission matrix. It is an audit/review artifact, not proof of authenticated end-to-end behavior. Candidate migrations were applied to the isolated Supabase test project on 2026-10-12 for verification. On 2026-10-12, both approved migrations were also recorded in production after preflight: the meeting-document alignment safely skipped because `public.meeting_documents` and `public.replace_meeting_document(...)` are absent there; the contribution-type policies were updated to Admin + Treasurer. No group financial records were changed by these migrations.
+
+Role labels: **Admin** = group Admin; **Chair/Vice-Chair**, **Secretary/Vice-Secretary**, and **Treasurer** are distinct group offices. Platform-admin access is not group-admin access.
+
+## Table-by-table current-policy matrix
+
+| Table / surface | Admin | Chair / Vice-Chair | Secretary / Vice-Secretary | Treasurer | Integrity boundary / audit note |
+|---|---|---|---|---|---|
+| `members` | Read/create/update via group-management helper and constraints. No DELETE policy found. | Read/create/update subject to `can_manage_members` and role constraints. | Read; no create/update grant through `can_manage_members`. | Read/create/update via `can_manage_members`. | Hard-delete remains blocked pending a retention/cascade review; do not delete rows anchoring financial history. |
+| `groups` | Update/delete via `cl_user_has_role(..., ['admin'])`. | No group-row update/delete grant. | No group-row update/delete grant. | No group-row update/delete grant. | Cross-group access must fail for IDs outside the caller's membership. |
+| `contribution_types` | Existing UPDATE/DELETE helper allows Admin. INSERT policy was broader and used direct role checks plus a group-owner alternative. | INSERT was allowed by direct role array; UPDATE/DELETE not granted. | INSERT was allowed by direct role array; UPDATE/DELETE not granted. | INSERT/UPDATE/DELETE inconsistent with the candidate UI, which assigns settings to Treasurer. | Candidate migration aligns INSERT/UPDATE/DELETE with Admin + Treasurer. |
+| `contributions` | Read via group policy; no direct ledger writes in inspected RLS. | Read in group. | Read in group. | Read in group; recording is via authorized RPC. | Canonical accounting/RPCs own financial writes. Do not add direct ledger writes or bypass period locks/idempotency. |
+| `contribution_allocations`, `contribution_obligations`, `member_contribution_rules` | Read as group management; no direct write grant in inspected policies. | Read where group-officer policy permits. | Read where group-officer policy permits. | Read where group-officer policy permits. | Canonical accounting, allocation and obligation changes remain RPC-owned. |
+| `expenses` | Read/create pending expenses; no override of approval safeguards. | Read/create pending expenses; eligible Chair slot only if holding that office. | Read/create pending expenses; eligible Secretary slot only if holding that office. | Read/create pending expenses; eligible Treasurer slot only if holding that office. | Approval RPC enforces a different person from recorder, one person per slot, and three approved slots. Admin cannot impersonate an office slot or shortcut the rule. |
+| `expense_approvals` | No Admin override for the three approval slots. | One Chair/Vice-Chair slot. | One Secretary/Vice-Secretary slot. | One Treasurer slot. | Distinct-person, distinct-slot, no-self-approval controls are mandatory. |
+| `financial_periods`, `monthly_closings` | Read/update/insert under Admin policies. | Read; no direct close/update grant in inspected policies. | Read; no direct close/update grant in inspected policies. | Read/insert/update under Treasurer policies. | Closed-period restrictions and closing validation remain in force. |
+| `meetings` | Read/create/update/delete through group role helper. | Same group-level CRUD policy. | Same group-level CRUD policy. | Same group-level CRUD policy. | Verify same-group references and authenticated writes. |
+| `meeting_documents` | RLS helper allows group management; replacement RPC's former check was narrower/inconsistent with role normalization. | RLS allows officials; RPC permits Chair. | RLS allows officials; RPC permits Secretary. | RLS allows officials; former RPC check excluded Treasurer. | Candidate migration aligns RPC with shared helper while requiring active caller/uploader and completed meeting. |
+| `attendance` | Read/write where Admin appears in attendance policy. | Insert/read as policy permits. | Insert/update/read as policy permits. | Insert/read as policy permits. | Check attendance constraints and same-group meeting/member references. |
+| `group_plans`, `group_activities`, `group_assets`, `group_milestones` | CRUD through shared group-management role helper. | CRUD through helper. | CRUD through helper. | CRUD through helper. | UI/backend alignment still needs authenticated tests; no cross-group reassignment. |
+| `announcements`, `documents`, `contribution_goals` | Full group CRUD policy exists. | Other role access depends on separate policies and UI action matrix. | Same. | Same. | Verify all mutations use intended role and group scope. |
+| `fines`, `fine_rules`, `fine_waivers`, `fine_adjustments`, `fine_payment_allocations` | Read policies found; writes are RPC-owned/not granted directly by inspected policies. | Read under group-officer policy. | Candidate UI allows fine creation; backend RPC authorization needs verification. | Candidate UI allows create/adjust/waive/allocate subject to canonical RPC checks. | Do not add direct ledger writes; test balances, audit trail and idempotency. |
+| `group_invites` | Read/create/update under invite policy. | Candidate UI permits invites; verify backend policy and alias normalization. | No candidate UI invite write grant. | Candidate UI permits invites; verify backend policy. | Must remain same-group scoped. |
+| `member_payment_evidence` | Read/verify only where verifier RPC permits; submission remains member-owned. | Verify only if RPC permits; must not self-verify. | Same. | Verify only if RPC permits; must not self-verify. | Evidence remains pending until RPC verification; no direct contribution creation from client. |
+| `data_import_batches`, `data_import_mappings`, `data_import_rows` | Authorized read/manage according to import policies. | No import write grant in candidate UI. | No import write grant in candidate UI. | Candidate UI allows import/post subject to role matrix. | Posting must use canonical accounting and period guards. |
+| `group_support_cases` / welfare | Group-management CRUD includes Admin and officials, with separate member-created requested-case path. | Group-management CRUD via helper. | Group-management CRUD via helper. | Group-management CRUD via helper. | Preserve member self-service create-only restrictions and same-group checks. |
+
+## Candidate corrections committed (applied to isolated test project only)
+
+1. `supabase/migrations/20261012080000_align_meeting_document_rpc_admin_authorization.sql` — aligns the document replacement RPC with the RLS role helper while keeping active caller/uploader binding and completed-meeting checks.
+2. `supabase/migrations/20261012080100_align_contribution_type_write_permissions.sql` — aligns contribution-type INSERT/UPDATE/DELETE with Admin + Treasurer, matching the candidate UI, and validates supplied `created_by`.
+3. `js/role-permissions.js` — Admin gets full control over ordinary group actions and never sees a view-only badge, but cannot submit any expense approval action. The three independent office slots remain mandatory.
+
+## Required tests before release
+
+- **Authorized writes:** Admin create/edit/delete across ordinary group-management surfaces; Treasurer contribution settings and canonical contribution RPC; permitted office actions on meetings, attendance, plans, assets, welfare and fines.
+- **Unauthorized writes:** Secretary/Chair/Vice-Chair direct API attempts against Treasurer-only contribution settings; ordinary member writes to group records; Admin attempts to self-approve or fill any expense slot.
+- **Cross-group isolation:** each write/read RPC and RLS path using an ID from another group must fail without changing either group's records.
+- **Accounting invariants:** ledger/allocations/obligations remain RPC-owned; duplicate idempotency key is safe; closed financial period is protected; balances reconcile before/after; three distinct eligible approvers remain required.
+- **Authenticated browser:** test each role against relevant pages, dynamic controls, save/error messages, refresh persistence, and view-only data loading on mobile and desktop.
+## Isolated verification run (2026-10-12)
+
+The two candidate migrations were applied to the isolated test project only. Temporary write tests were run in rollback-only transactions where supported; a separate position-history fixture repair was made through the supported `set_member_actual_position()` RPC.
+
+| Check | Result | Evidence / limitation |
+|---|---|---|
+| Position-history fixture repair | PASS | Treasurer member's active position-history row and member snapshot now both say `treasurer`, effective 2026-10-12. |
+| Three distinct expense approvals | PASS (SQL/RPC simulation) | Temporary expense reached `approved` after distinct Chair, Secretary and Treasurer accounts filled `chair`, `secretary`, and `treasurer` slots. Three approval rows, three distinct approvers and three distinct slots were observed; transaction rolled back. |
+| Expense recorder cannot approve own expense | PASS (SQL/RPC simulation) | Approval RPC rejected the recorder's own approval attempt. |
+| One person cannot fill another office's slot | PASS (SQL/RPC simulation) | Second account sharing the Chair slot was rejected. |
+| Admin cannot bypass expense approval slots | PASS (SQL/RPC simulation) | Admin attempt was rejected as not eligible for an office slot. |
+| Contribution-type authorized writes | PASS (SQL/RLS simulation) | Admin and Treasurer insert attempts succeeded in rollback-only transactions. |
+| Contribution-type unauthorized writes | PASS (SQL/RLS simulation) | Secretary insert was rejected by RLS. |
+| Cross-group read/write | PASS (SQL/RLS simulation) | Admin's read of the other group's contribution types returned zero rows; attempted insert into the other group was rejected by RLS. |
+| Direct contribution-ledger write | PASS (SQL/RLS simulation) | Direct insert was rejected by RLS; canonical accounting write boundary remains intact. |
+| No test residue | PASS | Follow-up checks found no temporary expense, approval, contribution-type or ledger test records. |
+| Authenticated browser page verification | PASS (user-confirmed) | User reports that authenticated browser verification passed across the candidate preview. This was manually verified by the user; this session did not independently drive the authenticated browser. |
+
+SQL role-claim tests are useful isolated database/RPC tests. The user has now confirmed that authenticated browser verification passes on the candidate preview; the browser result is recorded as user-confirmed, not independently reproduced by this session.
+
+- **Release gate (2026-10-12 update):** isolated database/RPC checks passed and authenticated browser verification was user-confirmed. The two approved migrations have been applied in production and verified: meeting-document RPC alignment skipped safely because the optional feature table/function do not exist; contribution-type INSERT/UPDATE/DELETE policies now use `cl_user_has_role(group_id, ['admin','treasurer'])`, with supplied `created_by` constrained to the caller's active member row. The matching frontend candidate is still awaiting a verified production hosting target and release.
+
+
+## Production preflight and migration execution (2026-10-12)
+
+- Compared production project `ptktftwyltxmtcodyzoa` against isolated project `onzaonflquipqmhgslxi`.
+- Production has `public.meetings`, but not `public.meeting_documents` or `public.replace_meeting_document(uuid,uuid,text,text,text,bigint,uuid)`. The isolated project has both the table and RPC. The divergence is consistent with the isolated project carrying a separate meeting-document feature migration set that is not present in production; no evidence indicates production data was deleted.
+- Updated the candidate meeting-document migration to use a guarded DO block: if `public.meeting_documents` is absent it emits a notice and skips; if present it applies the role-normalized RPC definition and retains caller/uploader binding plus completed-meeting enforcement.
+- Executed both approved migrations on production. Migration history records them as `20261012045606` and `20261012045610`.
+- Verified after execution that production still has no meeting-document table/RPC and the contribution-type INSERT, UPDATE, DELETE policies all use `cl_user_has_role(group_id, ARRAY['admin','treasurer'])`. The SELECT policy remains group-membership scoped. RLS remains enabled.
+- No production frontend deployment or merge to `main` has been performed as part of this database step. Vercel project inspection shows only `*.vercel.app` domains/aliases and no `chamalive.co.ke` domain attached, so the production host for the public domain must be confirmed before routing a release there.

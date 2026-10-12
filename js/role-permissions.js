@@ -208,20 +208,33 @@ const roleCan = (roles, page, action, member) => {
 };
 
 export function canWrite(page, action, member, options = {}) {
-  // Platform admin is intentionally not a group-office permission.
-  // A verified platform-admin guard does not satisfy group approvals.
+  const pageKey = normalize(page);
+  const actionKey = normalize(action);
   const roles = getGroupRoles(member);
+
+  // Group Admin can perform ordinary group operations regardless of the
+  // narrower office matrix. The only exception is expense approval: Admin
+  // cannot occupy or override any of the three distinct office-holder slots.
+  if (roles.has("admin")) {
+    return !(pageKey === "expenses" &&
+      ["approve", "approve-chair", "approve-treasurer", "approve-secretary"].includes(actionKey));
+  }
+
+  // Platform admin is not a group-office permission.
   if (
     options.isVerifiedPlatformAdmin === true &&
-    normalize(page) === "expenses" &&
-    ["approve-chair", "approve-treasurer", "approve-secretary"].includes(normalize(action))
+    pageKey === "expenses" &&
+    ["approve", "approve-chair", "approve-treasurer", "approve-secretary"].includes(actionKey)
   ) return false;
-  return roleCan(roles, normalize(page), normalize(action), member);
+
+  return roleCan(roles, pageKey, actionKey, member);
 }
 
 export function pageHasReadOnlyAccess(page, member, options = {}) {
-  if (options.isVerifiedPlatformAdmin === true) return false;
   const roles = getGroupRoles(member);
+  // Group Admin never receives view-only treatment or a view-only badge.
+  if (roles.has("admin")) return false;
+  if (options.isVerifiedPlatformAdmin === true) return false;
   const rules = POLICY[normalize(page)];
   if (!rules) return true;
   const readActions = new Set(["view", "search", "filter", "export"]);
