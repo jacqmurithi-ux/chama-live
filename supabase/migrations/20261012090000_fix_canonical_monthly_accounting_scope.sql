@@ -72,8 +72,6 @@ BEGIN
          AND mt.contribution_type_id = o.contribution_type_id
         WHERE o.group_id = p_group_id
           AND o.obligation_month < v_next_month
-          AND upper(coalesce(o.lifecycle_state, 'ACTIVE')) = 'ACTIVE'
-          AND upper(coalesce(o.component_kind, 'PARENT')) = 'PARENT'
     ),
     obligation_totals AS (
         SELECT o.member_id,
