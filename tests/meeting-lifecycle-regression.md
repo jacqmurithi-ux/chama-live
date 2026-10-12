@@ -14,6 +14,7 @@ Candidate branch: `candidate/meeting-lifecycle-reports-20261012`
 - [x] Candidate SQL negative test: authenticated direct INSERT into meeting status history is denied.
 - [ ] Repeat RLS checks in real browser-authenticated sessions; SQL JWT-claim tests are not browser E2E.
 - [x] SQL negative test: cancellation without a reason is rejected.
+- [x] SQL negative test: postponement without a later proposed date is rejected.
 - [x] SQL positive test: postponement with a reason and later date, then reschedule to the proposed date, succeeds.
 - [x] SQL negative test: postponement without a later proposed date is rejected by the lifecycle guard.
 - [x] SQL negative test: direct INSERT with a non-Upcoming initial status is rejected.
