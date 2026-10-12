@@ -2098,7 +2098,7 @@ function renderMonthlyStatusReport(rows) {
 
   target.innerHTML = `
     <div class="report-table-wrap">
-      <p class="report-note">
+      <p style="color:#6b7280; margin:0 0 12px; font-size:13px; line-height:1.5;">
         Monthly due, applied amount and current outstanding come from canonical
         monthly accounting. Previous outstanding is informed by the member's
         canonical cumulative position; it is shown separately from this month's status.
@@ -2121,7 +2121,6 @@ function renderMonthlyStatusReport(rows) {
             rows.length
               ? rows.map(row => {
                   const previousOutstanding = previousOutstandingFromCumulative(row);
-                  const position = cumulativePositionForMember(row.member_id);
                   return `
                     <tr>
                       <td>${escapeHTML(getMemberName(row.member_id))}</td>
