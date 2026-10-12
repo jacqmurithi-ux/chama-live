@@ -1190,7 +1190,7 @@ async function loadCanonicalAccounting(
   } =
     await supabase
       .rpc(
-        "get_canonical_monthly_accounting_summary",
+        "get_monthly_financial_report",
         {
           p_group_id:
             groupId,
@@ -1315,23 +1315,13 @@ async function loadCanonicalAccounting(
 
 
   const approvedExpenses =
-    (
-      expenseRows || []
-    ).reduce(
-      (
-        total,
-        expense
-      ) => {
-
-        return (
-          total +
-          Number(
-            expense.amount || 0
-          )
-        );
-
-      },
-      0
+    Number(
+      summary.approved_expenses ??
+      (expenseRows || []).reduce(
+        (total, expense) =>
+          total + Number(expense.amount || 0),
+        0
+      )
     );
 
 
@@ -1340,8 +1330,9 @@ async function loadCanonicalAccounting(
   ------------------------------------------------------- */
 
   const openingBalance =
-    await getOpeningBalance(
-      month
+    Number(
+      summary.opening_balance ??
+      await getOpeningBalance(month)
     );
 
 
@@ -1428,34 +1419,23 @@ async function loadCanonicalAccounting(
   ------------------------------------------------------- */
 
   const closingBalance =
-    openingBalance +
-    totalCollected -
-    approvedExpenses;
+    Number(
+      summary.closing_balance ??
+      (openingBalance + totalCollected - approvedExpenses)
+    );
 
 
   /* -------------------------------------------------------
      APPLICATION RATE
   ------------------------------------------------------- */
 
-  let collectionRate =
-    0;
-
-
-  if (expected > 0) {
-
-    collectionRate =
-      Math.min(
-        100,
-        Math.max(
-          0,
-          (
-            applied /
-            expected
-          ) * 100
-        )
-      );
-
-  }
+  const collectionRate =
+    Number(
+      summary.collection_rate ??
+      (expected > 0
+        ? Math.min(100, Math.max(0, (applied / expected) * 100))
+        : 0)
+    );
 
 
   calculatedData = {
@@ -2393,11 +2373,26 @@ function applyFinancialReport(
 ========================================================= */
 
 function canManageFinancialClosing() {
+  const normalizeRole = value => {
+    const role = String(value || "")
+      .trim()
+      .toLowerCase()
+      .replaceAll("_", " ")
+      .replaceAll("-", " ");
 
-  return String(currentMember?.role || "")
-    .trim()
-    .toLowerCase() === "treasurer";
+    if (role === "administrator") return "admin";
+    if (role === "vice secretary") return "secretary";
+    if (role === "vice chairperson") return "chairperson";
+    return role;
+  };
 
+  const actualPosition = normalizeRole(currentMember?.actual_position);
+  const role = ["vice secretary", "vice chairperson"].includes(actualPosition)
+    ? normalizeRole(actualPosition)
+    : normalizeRole(currentMember?.role);
+
+  // UI visibility only; the database RPC remains the authorization boundary.
+  return ["admin", "treasurer", "secretary"].includes(role);
 }
 
 
@@ -2406,7 +2401,7 @@ async function closeMonth() {
   try {
 
     if (!canManageFinancialClosing()) {
-      throw new Error("Only the group treasurer may close a financial month.");
+      throw new Error("You are not authorized to close a financial month.");
     }
 
     clearError();
