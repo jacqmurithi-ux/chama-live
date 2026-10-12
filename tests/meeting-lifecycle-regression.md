@@ -10,12 +10,12 @@ Candidate branch: `candidate/meeting-lifecycle-reports-20261012`
 - [x] Candidate database status check permits only upcoming, held_pending_minutes, completed, cancelled, postponed.
 - [ ] Status history is readable by authenticated members of the same group only.
 - [x] Candidate database grants: anonymous SELECT/INSERT denied; authenticated SELECT granted; authenticated INSERT/UPDATE/DELETE denied for status history.
-- [x] Candidate SQL RLS test with authenticated JWT claims: same-group member can read meeting status history; an admin belonging only to another group cannot read it.
+- [x] Candidate SQL RLS test with authenticated JWT claims: same-group member can read meeting status history; an admin belonging only to another group cannot read it. The first test exposed the global-admin fallback in cl_user_in_group; the history policy was narrowed to direct same-group membership and the retest passed.
 - [x] Candidate SQL negative test: authenticated direct INSERT into meeting status history is denied.
 - [ ] Repeat RLS checks in real browser-authenticated sessions; SQL JWT-claim tests are not browser E2E.
 - [x] SQL negative test: cancellation without a reason is rejected.
 - [x] SQL positive test: postponement with a reason and later date, then reschedule to the proposed date, succeeds.
-- [ ] SQL negative test: postponement without a later proposed date fails.
+- [x] SQL negative test: postponement without a later proposed date is rejected by the lifecycle guard.
 - [x] SQL negative test: direct INSERT with a non-Upcoming initial status is rejected.
 - [x] SQL negative tests: direct Upcoming → Completed, completion without minutes, without resolution/no-resolution choice, and without attendance are rejected.
 - [x] SQL positive test: Held → Completed succeeds after minutes, explicit no-resolution, and attendance are recorded.
@@ -23,7 +23,7 @@ Candidate branch: `candidate/meeting-lifecycle-reports-20261012`
 
 ## Meetings UI (authenticated)
 - [ ] Schedule/edit/view a meeting in browser; group isolation and existing permission rules remain intact.
-- [x] Candidate SQL RLS test with authenticated JWT claims: admin, chairperson, secretary, and treasurer can read/update group attendance; an ordinary member sees only their own attendance and cannot update another member's row.
+- [x] Candidate SQL RLS test with authenticated JWT claims: admin, chairperson, secretary, and treasurer can read/update group attendance; an ordinary member sees only their own attendance and cannot update another member's row. Candidate policies now align with the UI's officer roles.
 - [ ] Upcoming → Held — minutes pending.
 - [ ] Held → Completed with minutes, resolution or explicit no-resolution, and full attendance.
 - [ ] Attempt completion with missing minutes, resolution choice, or attendance; clear actionable validation appears and DB remains unchanged.
@@ -37,7 +37,8 @@ Candidate branch: `candidate/meeting-lifecycle-reports-20261012`
 - [ ] Mobile layout, filters, refresh, attendance save, minutes save, and permission gates work.
 
 ## Reports and exports
-- [ ] Upcoming, Held — minutes pending, Completed, Cancelled, Postponed, and Other/Review counts sum exactly to Total.
+- [x] Candidate data arithmetic check: existing 8-meeting fixture counts sum to Total (1 Upcoming + 7 Completed = 8); status-category sum formula includes held, cancelled, postponed, and Other/Review.
+- [ ] Verify the same count reconciliation in an authenticated browser with the production-shaped meeting set.
 - [ ] October 11 Invest appears as Held — minutes pending after the authorised transition, until its record is completed.
 - [ ] Agenda, status, reason, and resolution are rendered accurately.
 - [x] Candidate source/preview checks: Meetings and Reports HTML/JS respond HTTP 200; the Meetings page has one status-history host/content ID; filters include all five lifecycle states plus Review.
