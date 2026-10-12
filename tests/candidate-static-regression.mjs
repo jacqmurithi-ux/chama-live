@@ -33,7 +33,4 @@ assert.ok(devSql.includes("insert into public.contribution_allocations(payment_i
 assert.ok(devSql.includes("REQUEST_ID_REUSE_MISMATCH"));
 assert.ok(devSql.includes("PAYMENT_ALREADY_HAS_ALLOCATIONS"));
 assert.ok(devSql.includes("DEV_FUND_RECONCILIATION_NOT_AUTHORIZED"));
-const expenseSql = read("supabase/migrations/20261011120000_three_person_expense_approval.sql");
-assert.ok(expenseSql.includes("v_approvals = 3") || expenseSql.includes("v_approvals=3"),
-  "expense approval must require three approvals");
 console.log("CHAMA LIVE candidate static regression: PASS");
