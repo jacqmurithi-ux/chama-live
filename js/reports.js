@@ -2106,8 +2106,9 @@ function renderMonthlyStatusReport(rows) {
     <div class="report-table-wrap">
       <p style="color:#6b7280; margin:0 0 12px; font-size:13px; line-height:1.5;">
         Monthly due, applied amount and current outstanding come from canonical
-        monthly accounting. Previous outstanding is informed by the member's
-        canonical cumulative position; it is shown separately from this month's status.
+        monthly accounting. Previous outstanding is shown only when the canonical
+        monthly result supplies an explicit opening balance; lifetime cumulative
+        arrears are not used to estimate it.
       </p>
       <table class="report-table">
         <thead>
