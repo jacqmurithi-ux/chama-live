@@ -851,7 +851,7 @@ function renderDetails() {
   if (lifecycleEditor) lifecycleEditor.hidden = false;
   if (historyHost) historyHost.hidden = false;
   const setVisible = (id, visible) => { const el = document.getElementById(id); if (el) el.hidden = !visible; };
-  setVisible("markMeetingHeld", status === "upcoming" || status === "review");
+  setVisible("markMeetingHeld", status === "upcoming");
   setVisible("markMeetingCompleted", status === "held_pending_minutes");
   setVisible("cancelMeetingLifecycle", !["cancelled", "completed", "review"].includes(status));
   setVisible("postponeMeetingLifecycle", !["cancelled", "completed", "review"].includes(status));
