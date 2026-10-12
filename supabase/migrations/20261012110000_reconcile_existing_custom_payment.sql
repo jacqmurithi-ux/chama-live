@@ -308,8 +308,12 @@ begin
   where id = v_obligation.id and group_id = p_group_id and member_id = v_old_member.id;
   if not found then raise exception 'OBLIGATION_REASSIGNMENT_FAILED'; end if;
 
-  insert into public.contribution_allocations(payment_id,obligation_id,amount)
-  values(p_payment_id,v_obligation.id,v_payment.amount);
+  insert into public.contribution_allocations(
+    group_id,member_id,payment_id,obligation_id,allocated_amount,amount
+  )
+  values(
+    p_group_id,v_target.id,p_payment_id,v_obligation.id,v_payment.amount,v_payment.amount
+  );
 
   v_month := date_trunc('month',v_payment.contribution_date)::date;
   perform public.cl_2b_refresh_member(v_old_member.id,v_month);
