@@ -1944,6 +1944,15 @@ function canonicalOutstanding(row) {
   );
 }
 
+function canonicalPreviousOutstanding(row) {
+  return numberValue(
+    row.previous_outstanding ??
+    row.previous_arrears ??
+    row.outstanding_before ??
+    0
+  );
+}
+
 function canonicalCredit(row) {
   return numberValue(
     row.carry_forward ??
@@ -2165,11 +2174,12 @@ function renderMonthlyStatusReport(rows) {
           <tr>
             <th>Member</th>
             <th>Member No.</th>
-            <th>Due</th>
+            <th>Monthly Due</th>
+            <th>Previous Outstanding</th>
             <th>Applied</th>
-            <th>Outstanding</th>
-            <th>Credit</th>
-            <th>Status</th>
+            <th>Current Outstanding</th>
+            <th>Carry-forward Credit</th>
+            <th>Monthly Status</th>
           </tr>
         </thead>
 
@@ -2186,17 +2196,13 @@ function renderMonthlyStatusReport(rows) {
                       getMemberNumber(row.member_id) || "—"
                     )}</td>
 
-                    <td>${formatCurrency(
-                      canonicalDue(row)
-                    )}</td>
+                    <td>${formatCurrency(canonicalDue(row))}</td>
 
-                    <td>${formatCurrency(
-                      canonicalApplied(row)
-                    )}</td>
+                    <td>${formatCurrency(canonicalPreviousOutstanding(row))}</td>
 
-                    <td>${formatCurrency(
-                      canonicalOutstanding(row)
-                    )}</td>
+                    <td>${formatCurrency(canonicalApplied(row))}</td>
+
+                    <td>${formatCurrency(canonicalOutstanding(row))}</td>
 
                     <td>${formatCurrency(
                       canonicalCredit(row)
@@ -2209,7 +2215,7 @@ function renderMonthlyStatusReport(rows) {
                     )}</td>
                   </tr>
                 `).join("")
-              : `<tr><td colspan="7">No monthly accounting records.</td></tr>`
+              : `<tr><td colspan="8">No monthly accounting records.</td></tr>`
           }
         </tbody>
       </table>
@@ -2684,11 +2690,12 @@ function buildCanonicalTable(rows) {
         <thead>
           <tr>
             <th>Member</th>
-            <th>Due</th>
+            <th>Monthly Due</th>
+            <th>Previous Outstanding</th>
             <th>Applied</th>
-            <th>Outstanding</th>
-            <th>Credit</th>
-            <th>Status</th>
+            <th>Current Outstanding</th>
+            <th>Carry-forward Credit</th>
+            <th>Monthly Status</th>
           </tr>
         </thead>
         <tbody>
@@ -2700,17 +2707,10 @@ function buildCanonicalTable(rows) {
                       getMemberName(row.member_id)
                     )}</td>
 
-                    <td>${formatCurrency(
-                      canonicalDue(row)
-                    )}</td>
-
-                    <td>${formatCurrency(
-                      canonicalApplied(row)
-                    )}</td>
-
-                    <td>${formatCurrency(
-                      canonicalOutstanding(row)
-                    )}</td>
+                    <td>${formatCurrency(canonicalDue(row))}</td>
+                    <td>${formatCurrency(canonicalPreviousOutstanding(row))}</td>
+                    <td>${formatCurrency(canonicalApplied(row))}</td>
+                    <td>${formatCurrency(canonicalOutstanding(row))}</td>
 
                     <td>${formatCurrency(
                       canonicalCredit(row)
@@ -2723,7 +2723,7 @@ function buildCanonicalTable(rows) {
                     )}</td>
                   </tr>
                 `).join("")
-              : `<tr><td colspan="6">No monthly accounting data.</td></tr>`
+              : `<tr><td colspan="7">No monthly accounting data.</td></tr>`
           }
         </tbody>
       </table>
@@ -5416,11 +5416,12 @@ function exportCSV() {
       [
         "Member",
         "Member Number",
-        "Due",
+        "Monthly Due",
+        "Previous Outstanding",
         "Applied",
-        "Outstanding",
-        "Credit",
-        "Status"
+        "Current Outstanding",
+        "Carry-forward Credit",
+        "Monthly Status"
       ]
         .map(csvEscape)
         .join(",")
@@ -5432,12 +5433,11 @@ function exportCSV() {
           getMemberName(row.member_id),
           getMemberNumber(row.member_id),
           canonicalDue(row),
+          canonicalPreviousOutstanding(row),
           canonicalApplied(row),
           canonicalOutstanding(row),
           canonicalCredit(row),
-          getStatusLabel(
-            canonicalMonthlyStatus(row)
-          )
+          getStatusLabel(canonicalMonthlyStatus(row))
         ]
           .map(csvEscape)
           .join(",")
@@ -5773,11 +5773,12 @@ function exportExcel() {
               <tr>
                 <th>Member</th>
                 <th>Member Number</th>
-                <th>Due</th>
+                <th>Monthly Due</th>
+                <th>Previous Outstanding</th>
                 <th>Applied</th>
-                <th>Outstanding</th>
-                <th>Credit</th>
-                <th>Status</th>
+                <th>Current Outstanding</th>
+                <th>Carry-forward Credit</th>
+                <th>Monthly Status</th>
               </tr>
             </thead>
 
@@ -5792,17 +5793,10 @@ function exportExcel() {
                     getMemberNumber(row.member_id)
                   )}</td>
 
-                  <td>${excelEscape(
-                    canonicalDue(row)
-                  )}</td>
-
-                  <td>${excelEscape(
-                    canonicalApplied(row)
-                  )}</td>
-
-                  <td>${excelEscape(
-                    canonicalOutstanding(row)
-                  )}</td>
+                  <td>${excelEscape(canonicalDue(row))}</td>
+                  <td>${excelEscape(canonicalPreviousOutstanding(row))}</td>
+                  <td>${excelEscape(canonicalApplied(row))}</td>
+                  <td>${excelEscape(canonicalOutstanding(row))}</td>
 
                   <td>${excelEscape(
                     canonicalCredit(row)
