@@ -4531,10 +4531,15 @@ function renderVisualInsights(
       cumulativeRows
     );
 
+  // The chart describes approved spending; pending and rejected
+  // expenses remain available in the expense table and status totals.
+  const approvedExpenseRows = expenseRows.filter(row =>
+    lower(row.approval_status) === "approved"
+  );
   const expenseResult =
     drawExpenseCategoryChart(
       $("reportExpenseCategoryChart"),
-      expenseRows
+      approvedExpenseRows
   );
 
   if (cashResult) {
@@ -4594,7 +4599,7 @@ function renderVisualInsights(
     setHTML(
       "reportExpenseCategoryChartSummary",
       `
-        Largest category:
+        Largest approved expense category:
         <strong>${escapeHTML(
           top.category
         )}</strong>
@@ -5049,8 +5054,13 @@ async function generateReport() {
       contributionRows
     );
 
+    // This table is explicitly labelled as approved spending.
+    // Keep pending/rejected records visible in Expense Entries and
+    // their separate summary totals, but exclude them from this breakdown.
     renderExpenseBreakdown(
-      expenseRows
+      expenseRows.filter(row =>
+        lower(row.approval_status) === "approved"
+      )
     );
 
     renderContributionEntries(
