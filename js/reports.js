@@ -1795,7 +1795,6 @@ function renderCumulativePosition(rows) {
             <th>Member</th>
             <th>Member No.</th>
             <th>Total Paid</th>
-            <th>Total Paid</th>
             <th>Total Due</th>
             <th>Total Allocated</th>
             <th>Arrears</th>
@@ -2682,6 +2681,7 @@ function buildCumulativeTable(rows) {
         <thead>
           <tr>
             <th>Member</th>
+            <th>Total Paid</th>
             <th>Total Due</th>
             <th>Total Allocated</th>
             <th>Arrears</th>
