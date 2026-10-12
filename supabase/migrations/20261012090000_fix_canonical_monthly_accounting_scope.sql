@@ -72,6 +72,7 @@ BEGIN
          AND mt.contribution_type_id = o.contribution_type_id
         WHERE o.group_id = p_group_id
           AND o.obligation_month < v_next_month
+          AND o.rule_id IS NOT NULL
     ),
     obligation_totals AS (
         SELECT o.member_id,
@@ -118,11 +119,8 @@ BEGIN
         JOIN monthly_types mt
           ON mt.group_id = o.group_id
          AND mt.contribution_type_id = o.contribution_type_id
-        JOIN payments p
-          ON p.id = ca.payment_id
-         AND p.member_id = o.member_id
         WHERE o.group_id = p_group_id
-          AND p.contribution_date < v_next_month
+          AND o.obligation_month < v_next_month
         GROUP BY o.member_id
     )
     SELECT
