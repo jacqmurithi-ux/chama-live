@@ -7,10 +7,10 @@ Candidate branch: `candidate/meeting-lifecycle-reports-20261012`
 - [x] Apply/replay the meeting lifecycle, guard-trigger patch, and Dev fund workflow migrations twice against the existing candidate test schema; each replay succeeded.
 - [x] Existing candidate data remained readable after replay (8 meeting rows retained).
 - [x] Existing upcoming/completed rows remain readable after migration (candidate test database; 8 meetings retained).
-- [ ] Status check permits only upcoming, held_pending_minutes, completed, cancelled, postponed.
+- [x] Candidate database status check permits only upcoming, held_pending_minutes, completed, cancelled, postponed.
 - [ ] Status history is readable by authenticated members of the same group only.
-- [ ] Anonymous users cannot read or write status history.
-- [ ] Authenticated users cannot insert/update/delete history rows directly.
+- [x] Candidate database grants: anonymous SELECT/INSERT denied; authenticated SELECT granted; authenticated INSERT/UPDATE/DELETE denied for status history.
+- [ ] RLS same-group visibility and cross-group denial verified with real authenticated sessions.
 - [x] SQL negative test: cancellation without a reason is rejected.
 - [x] SQL positive test: postponement with a reason and later date, then reschedule to the proposed date, succeeds.
 - [ ] SQL negative test: postponement without a later proposed date fails.
