@@ -2554,9 +2554,7 @@ function renderCashFlowReport(
 }
 
 function renderMeetingsReport(rows) {
-  const target =
-    $("reportOutput");
-
+  const target = $("reportOutput");
   if (!target) return;
 
   target.innerHTML = `
@@ -2568,42 +2566,32 @@ function renderMeetingsReport(rows) {
             <th>Meeting</th>
             <th>Venue</th>
             <th>Status</th>
+            <th>Reason / follow-up</th>
             <th>Agenda</th>
+            <th>Minutes</th>
+            <th>Attendance</th>
             <th>Resolution</th>
           </tr>
         </thead>
-
         <tbody>
           ${
             rows.length
               ? rows.map(row => `
                   <tr>
-                    <td>${escapeHTML(
-                      formatDate(row.date)
-                    )}</td>
-
-                    <td>${escapeHTML(
-                      row.title || "Meeting"
-                    )}</td>
-
-                    <td>${escapeHTML(
-                      row.venue || "—"
-                    )}</td>
-
-                    <td>${escapeHTML(
-                      meetingStatusLabel(row)
-                    )}</td>
-
-                    <td>${escapeHTML(
-                      row.agenda || "—"
-                    )}</td>
-
-                    <td>${escapeHTML(
-                      row.resolution || "—"
-                    )}</td>
+                    <td>${escapeHTML(formatDate(row.date))}</td>
+                    <td>${escapeHTML(row.title || "Meeting")}</td>
+                    <td>${escapeHTML(row.venue || "—")}</td>
+                    <td>${escapeHTML(meetingStatusLabel(row))}</td>
+                    <td>${escapeHTML(row.status_reason || "—")}</td>
+                    <td>${escapeHTML(Array.isArray(row.agenda) ? row.agenda.join("; ") : (row.agenda || "—"))}</td>
+                    <td>${escapeHTML(String(row.minutes || "").trim() ? row.minutes : "Pending")}</td>
+                    <td>${escapeHTML(row.attendance_expected_count != null
+                      ? `${row.attendance_recorded_count || 0}/${row.attendance_expected_count} recorded; ${row.attendance_present_count || 0} present`
+                      : `${row.attendance_recorded_count || 0} attendance rows; active member count unavailable`)}</td>
+                    <td>${escapeHTML(row.resolution || (row.resolution_not_required ? "No resolution made" : "—"))}</td>
                   </tr>
                 `).join("")
-              : `<tr><td colspan="6">No meetings found.</td></tr>`
+              : `<tr><td colspan="9">No meetings found.</td></tr>`
           }
         </tbody>
       </table>
@@ -2871,39 +2859,38 @@ function buildMeetingTable(rows) {
             <th>Meeting</th>
             <th>Venue</th>
             <th>Status</th>
+            <th>Reason / follow-up</th>
+            <th>Agenda</th>
+            <th>Minutes</th>
+            <th>Attendance</th>
+            <th>Resolution</th>
           </tr>
         </thead>
-
         <tbody>
           ${
             rows.length
               ? rows.map(row => `
                   <tr>
-                    <td>${escapeHTML(
-                      formatDate(row.date)
-                    )}</td>
-
-                    <td>${escapeHTML(
-                      row.title || "Meeting"
-                    )}</td>
-
-                    <td>${escapeHTML(
-                      row.venue || "—"
-                    )}</td>
-
-                    <td>${escapeHTML(
-                      meetingStatusLabel(row)
-                    )}</td>
+                    <td>${escapeHTML(formatDate(row.date))}</td>
+                    <td>${escapeHTML(row.title || "Meeting")}</td>
+                    <td>${escapeHTML(row.venue || "—")}</td>
+                    <td>${escapeHTML(meetingStatusLabel(row))}</td>
+                    <td>${escapeHTML(row.status_reason || "—")}</td>
+                    <td>${escapeHTML(Array.isArray(row.agenda) ? row.agenda.join("; ") : (row.agenda || "—"))}</td>
+                    <td>${escapeHTML(String(row.minutes || "").trim() ? row.minutes : "Pending")}</td>
+                    <td>${escapeHTML(row.attendance_expected_count != null
+                      ? `${row.attendance_recorded_count || 0}/${row.attendance_expected_count} recorded; ${row.attendance_present_count || 0} present`
+                      : `${row.attendance_recorded_count || 0} attendance rows; active member count unavailable`)}</td>
+                    <td>${escapeHTML(row.resolution || (row.resolution_not_required ? "No resolution made" : "—"))}</td>
                   </tr>
                 `).join("")
-              : `<tr><td colspan="4">No meetings.</td></tr>`
+              : `<tr><td colspan="9">No meetings.</td></tr>`
           }
         </tbody>
       </table>
     </div>
   `;
 }
-
 
 /* =========================================================
    VISUAL INSIGHTS — DYNAMIC CSS
@@ -5557,7 +5544,7 @@ function exportCSV() {
           meetingStatusLabel(row),
           row.status_reason || "",
           Array.isArray(row.agenda) ? row.agenda.join("; ") : row.agenda,
-          row.minutes ? "Recorded" : "Pending",
+          String(row.minutes || "").trim() ? row.minutes : "Pending",
           row.attendance_expected_count != null
             ? `${row.attendance_recorded_count || 0}/${row.attendance_expected_count} recorded; ${row.attendance_present_count || 0} present`
             : `${row.attendance_recorded_count || 0} attendance rows; active member count unavailable`,
@@ -5965,7 +5952,7 @@ function exportExcel() {
                   <td>${excelEscape(meetingStatusLabel(row))}</td>
                   <td>${excelEscape(row.status_reason || "")}</td>
                   <td>${excelEscape(Array.isArray(row.agenda) ? row.agenda.join("; ") : row.agenda)}</td>
-                  <td>${excelEscape(row.minutes ? "Recorded" : "Pending")}</td>
+                  <td>${excelEscape(String(row.minutes || "").trim() ? row.minutes : "Pending")}</td>
                   <td>${excelEscape(row.attendance_expected_count != null
                     ? `${row.attendance_recorded_count || 0}/${row.attendance_expected_count} recorded; ${row.attendance_present_count || 0} present`
                     : `${row.attendance_recorded_count || 0} attendance rows; active member count unavailable`)}</td>
