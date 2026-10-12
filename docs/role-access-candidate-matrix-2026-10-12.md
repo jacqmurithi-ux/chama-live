@@ -29,7 +29,7 @@ Role labels: **Admin** = group Admin; **Chair/Vice-Chair**, **Secretary/Vice-Sec
 | `data_import_batches`, `data_import_mappings`, `data_import_rows` | Authorized read/manage according to import policies. | No import write grant in candidate UI. | No import write grant in candidate UI. | Candidate UI allows import/post subject to role matrix. | Posting must use canonical accounting and period guards. |
 | `group_support_cases` / welfare | Group-management CRUD includes Admin and officials, with separate member-created requested-case path. | Group-management CRUD via helper. | Group-management CRUD via helper. | Group-management CRUD via helper. | Preserve member self-service create-only restrictions and same-group checks. |
 
-## Candidate corrections committed (not applied)
+## Candidate corrections committed (applied to isolated test project only)
 
 1. `supabase/migrations/20261012080000_align_meeting_document_rpc_admin_authorization.sql` — aligns the document replacement RPC with the RLS role helper while keeping active caller/uploader binding and completed-meeting checks.
 2. `supabase/migrations/20261012080100_align_contribution_type_write_permissions.sql` — aligns contribution-type INSERT/UPDATE/DELETE with Admin + Treasurer, matching the candidate UI, and validates supplied `created_by`.
@@ -58,8 +58,8 @@ The two candidate migrations were applied to the isolated test project only. Tem
 | Cross-group read/write | PASS (SQL/RLS simulation) | Admin's read of the other group's contribution types returned zero rows; attempted insert into the other group was rejected by RLS. |
 | Direct contribution-ledger write | PASS (SQL/RLS simulation) | Direct insert was rejected by RLS; canonical accounting write boundary remains intact. |
 | No test residue | PASS | Follow-up checks found no temporary expense, approval, contribution-type or ledger test records. |
-| Authenticated browser page verification | BLOCKED / NOT RUN | Available tools confirmed the candidate Vercel preview deployment is READY, but no authenticated browser automation/session tool is available in this run. UI behavior, persistence and responsive checks are not claimed as passed. |
+| Authenticated browser page verification | PASS (user-confirmed) | User reports that authenticated browser verification passed across the candidate preview. This was manually verified by the user; this session did not independently drive the authenticated browser. |
 
-SQL role-claim tests are useful isolated database/RPC tests but are not a substitute for real browser-authenticated end-to-end sessions.
+SQL role-claim tests are useful isolated database/RPC tests. The user has now confirmed that authenticated browser verification passes on the candidate preview; the browser result is recorded as user-confirmed, not independently reproduced by this session.
 
-- **Release gate:** database/RPC checks above passed in the isolated project, but authenticated browser checks remain outstanding. Do not merge to `main`, deploy to production, or apply candidate migrations to production until browser verification passes.
+- **Release gate:** the listed isolated database/RPC checks passed and browser verification has been user-confirmed. This audit record alone does not authorize a production database migration or production deployment. Production changes remain unperformed pending the explicit release/deployment decision.
