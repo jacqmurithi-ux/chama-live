@@ -45,6 +45,72 @@ create policy meeting_status_history_read_group
   to authenticated
   using (public.cl_user_in_group(group_id));
 
+-- The UI permits all four group officers to manage meeting attendance.
+-- The previous SELECT policy omitted admin, and UPDATE omitted chairperson
+-- and treasurer, causing upsert/read failures for otherwise authorized officers.
+drop policy if exists attendance_select on public.attendance;
+create policy attendance_select
+  on public.attendance
+  for select
+  to authenticated
+  using (
+    exists (
+      select 1
+      from public.meetings mt
+      where mt.id = attendance.meeting_id
+        and (
+          exists (
+            select 1
+            from public.members me
+            where me.id = attendance.member_id
+              and me.group_id = mt.group_id
+              and me.id in (
+                select own.id from public.members own
+                where own.group_id = mt.group_id
+                  and (own.user_id = auth.uid() or own.auth_user_id = auth.uid())
+                  and lower(coalesce(own.status, 'active')) = 'active'
+              )
+          )
+          or public.cl_user_has_role(
+            mt.group_id,
+            array['admin','chairperson','secretary','treasurer']::text[]
+          )
+        )
+    )
+  );
+
+drop policy if exists attendance_official_update on public.attendance;
+create policy attendance_official_update
+  on public.attendance
+  for update
+  to authenticated
+  using (
+    exists (
+      select 1
+      from public.meetings mt
+      where mt.id = attendance.meeting_id
+        and public.cl_user_has_role(
+          mt.group_id,
+          array['admin','chairperson','secretary','treasurer']::text[]
+        )
+    )
+  )
+  with check (
+    exists (
+      select 1
+      from public.meetings mt
+      join public.members me
+        on me.id = attendance.member_id
+       and me.group_id = mt.group_id
+      where mt.id = attendance.meeting_id
+        and lower(coalesce(me.status, 'active')) = 'active'
+        and public.cl_user_has_role(
+          mt.group_id,
+          array['admin','chairperson','secretary','treasurer']::text[]
+        )
+    )
+  );
+
 create or replace function public.guard_meeting_lifecycle()
 returns trigger
 language plpgsql
