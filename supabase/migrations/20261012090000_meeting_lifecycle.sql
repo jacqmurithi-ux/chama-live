@@ -1,8 +1,6 @@
 -- Candidate migration: meeting lifecycle and status audit trail.
 -- Do not apply to production until authenticated UI/RLS regression and migration replay pass.
 
-begin;
-
 alter table public.meetings
   add column if not exists resolution_not_required boolean not null default false,
   add column if not exists status_reason text,
@@ -38,7 +36,7 @@ create index if not exists meeting_status_history_meeting_changed_idx
   on public.meeting_status_history (meeting_id, changed_at desc);
 
 alter table public.meeting_status_history enable row level security;
-revoke all on public.meeting_status_history from anon, authenticated;
+revoke all on public.meeting_status_history from public, anon, authenticated;
 grant select on public.meeting_status_history to authenticated;
 drop policy if exists meeting_status_history_read_group on public.meeting_status_history;
 create policy meeting_status_history_read_group
@@ -55,13 +53,20 @@ set search_path = ''
 as $function$
 declare
   v_missing_attendance uuid;
+  v_transition_allowed boolean := false;
 begin
   if tg_op <> 'UPDATE' or new.status is not distinct from old.status then
     return new;
   end if;
 
-  if new.status = 'held_pending_minutes' and old.status <> 'upcoming' then
-    raise exception 'MEETING_MUST_BE_UPCOMING_BEFORE_MARKING_HELD';
+  v_transition_allowed :=
+    (old.status = 'upcoming' and new.status in ('held_pending_minutes', 'cancelled', 'postponed'))
+    or (old.status = 'held_pending_minutes' and new.status in ('completed', 'cancelled', 'postponed'))
+    or (old.status = 'postponed' and new.status in ('upcoming', 'cancelled'))
+    or (old.status = 'cancelled' and new.status = 'upcoming');
+
+  if not v_transition_allowed then
+    raise exception 'MEETING_LIFECYCLE_TRANSITION_NOT_ALLOWED: % -> %', old.status, new.status;
   end if;
 
   if new.status in ('cancelled', 'postponed')
@@ -75,16 +80,14 @@ begin
     end if;
   end if;
 
-  if new.status = 'upcoming' and old.status = 'postponed' then
+  if old.status = 'postponed' and new.status = 'upcoming' then
     if old.postponed_to is null or new.date is distinct from old.postponed_to then
       raise exception 'RESCHEDULE_TO_PROPOSED_DATE_REQUIRED';
     end if;
+    new.postponed_to := null;
   end if;
 
   if new.status = 'completed' then
-    if old.status <> 'held_pending_minutes' then
-      raise exception 'MEETING_MUST_BE_HELD_BEFORE_COMPLETION';
-    end if;
     if nullif(btrim(coalesce(new.minutes, '')), '') is null then
       raise exception 'MEETING_MINUTES_REQUIRED_BEFORE_COMPLETION';
     end if;
@@ -114,11 +117,6 @@ begin
   return new;
 end;
 $function$;
-
-drop trigger if exists meetings_guard_lifecycle on public.meetings;
-create trigger meetings_guard_lifecycle
-before update of status on public.meetings
-for each row execute function public.guard_meeting_lifecycle();
 
 create or replace function public.audit_meeting_lifecycle()
 returns trigger
@@ -171,4 +169,6 @@ create trigger meetings_audit_lifecycle
 after insert or update of status on public.meetings
 for each row execute function public.audit_meeting_lifecycle();
 
-commit;
+revoke all on function public.guard_meeting_lifecycle() from public, anon, authenticated;
+revoke all on function public.audit_meeting_lifecycle() from public, anon, authenticated;
+
