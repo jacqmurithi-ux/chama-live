@@ -920,6 +920,38 @@
     >
 
       <!-- =================================================
+           OPTIONAL MODULES
+           ================================================= -->
+      <section class="management-card" aria-labelledby="groupModulesHeading">
+        <div class="management-card-header">
+          <h2 id="groupModulesHeading">Optional modules</h2>
+          <p>Choose which additional features are available to this group. New modules are off by default.</p>
+        </div>
+        <div class="management-card-body">
+          <form id="groupModuleSettingsForm" autocomplete="off"
+                data-permission-page="module-settings" data-permission-action="manage">
+            <div class="form-field" style="margin-bottom:16px">
+              <label for="merryGoRoundEnabled" style="display:flex;gap:10px;align-items:flex-start">
+                <input id="merryGoRoundEnabled" name="merryGoRoundEnabled" type="checkbox" style="margin-top:5px">
+                <span><strong>Merry-go-round</strong><br><small>Manage rotating contribution rounds, payout order and payouts.</small></span>
+              </label>
+            </div>
+            <div class="form-field" style="margin-bottom:16px">
+              <label for="loansEnabled" style="display:flex;gap:10px;align-items:flex-start">
+                <input id="loansEnabled" name="loansEnabled" type="checkbox" style="margin-top:5px">
+                <span><strong>Loans</strong><br><small>Manage loan requests, approvals, repayments and outstanding balances.</small></span>
+              </label>
+            </div>
+            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+              <button id="saveGroupModuleSettings" type="submit">Save module settings</button>
+              <span id="moduleSettingsViewOnly" class="status-badge info" hidden>View only</span>
+            </div>
+            <p id="groupModuleSettingsStatus" class="management-status" role="status" aria-live="polite" aria-atomic="true"></p>
+          </form>
+        </div>
+      </section>
+
+      <!-- =================================================
            GROUP INFORMATION
            ================================================= -->
 
