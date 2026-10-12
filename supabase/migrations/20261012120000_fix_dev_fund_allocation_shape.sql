@@ -212,8 +212,38 @@ begin
   where id=v_obligation.id and group_id=p_group_id and member_id=v_old_member.id;
   if not found then raise exception 'OBLIGATION_REASSIGNMENT_FAILED'; end if;
 
-  insert into public.contribution_allocations(group_id,member_id,payment_id,obligation_id,allocated_amount,amount)
-  values(p_group_id,v_target.id,p_payment_id,v_obligation.id,v_payment.amount,v_payment.amount);
+  -- Support both the current deployed canonical schema and newer candidate
+  -- schemas with denormalized allocation columns.
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema='public' and table_name='contribution_allocations'
+      and column_name='group_id'
+  ) and exists (
+    select 1 from information_schema.columns
+    where table_schema='public' and table_name='contribution_allocations'
+      and column_name='member_id'
+  ) and exists (
+    select 1 from information_schema.columns
+    where table_schema='public' and table_name='contribution_allocations'
+      and column_name='allocated_amount'
+  ) then
+    execute 'insert into public.contribution_allocations(group_id,member_id,payment_id,obligation_id,allocated_amount,amount) values ($1,$2,$3,$4,$5,$5)'
+      using p_group_id,v_target.id,p_payment_id,v_obligation.id,v_payment.amount;
+  elsif exists (
+    select 1 from information_schema.columns
+    where table_schema='public' and table_name='contribution_allocations'
+      and column_name='group_id'
+  ) and exists (
+    select 1 from information_schema.columns
+    where table_schema='public' and table_name='contribution_allocations'
+      and column_name='member_id'
+  ) then
+    execute 'insert into public.contribution_allocations(group_id,member_id,payment_id,obligation_id,amount) values ($1,$2,$3,$4,$5)'
+      using p_group_id,v_target.id,p_payment_id,v_obligation.id,v_payment.amount;
+  else
+    insert into public.contribution_allocations(payment_id,obligation_id,amount)
+    values(p_payment_id,v_obligation.id,v_payment.amount);
+  end if;
 
   v_month:=date_trunc('month',v_payment.contribution_date)::date;
   perform public.cl_2b_refresh_member(v_old_member.id,v_month);
