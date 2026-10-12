@@ -891,6 +891,45 @@ function renderDetails() {
 }
 
 
+async function loadMeetingStatusHistory(meetingId) {
+  const host = document.getElementById("meetingStatusHistory");
+  const content = document.getElementById("meetingStatusHistoryContent");
+  if (!host || !content || !meetingId || !groupId) return;
+
+  host.hidden = false;
+  host.dataset.meetingId = String(meetingId);
+  content.textContent = "Loading status history…";
+
+  const { data, error } = await supabase
+    .from("meeting_status_history")
+    .select("from_status,to_status,reason,actor_name,changed_at")
+    .eq("group_id", groupId)
+    .eq("meeting_id", meetingId)
+    .order("changed_at", { ascending: false });
+
+  if (error) throw error;
+  if (String(selectedMeeting?.id || "") !== String(meetingId)) return;
+
+  if (!data?.length) {
+    content.innerHTML = '<p class="meeting-empty-text">No status changes recorded yet.</p>';
+    return;
+  }
+
+  content.innerHTML = '<ol class="meeting-history-list">' + data.map(item => {
+    const from = item.from_status ? statusLabel(item.from_status) : "Meeting created";
+    const to = statusLabel(item.to_status);
+    const actor = item.actor_name || "Officer / system not identified";
+    const reason = item.reason || "No reason recorded";
+    const changedAt = item.changed_at ? new Date(item.changed_at).toLocaleString() : "Time not recorded";
+    return '<li class="meeting-history-item">' +
+      '<div class="meeting-history-transition"><strong>' + escapeHtml(from) + '</strong> → <strong>' + escapeHtml(to) + '</strong></div>' +
+      '<div class="meeting-history-meta">' + escapeHtml(actor) + ' · ' + escapeHtml(changedAt) + '</div>' +
+      '<p class="meeting-history-reason">' + escapeHtml(reason) + '</p>' +
+      '</li>';
+  }).join("") + '</ol>';
+}
+
+
 /* =========================================================
    RSVP / ATTENDANCE / QUORUM
 ========================================================= */
