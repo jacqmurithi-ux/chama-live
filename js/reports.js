@@ -863,7 +863,7 @@ async function loadCanonical(month) {
     ),
 
     supabase.rpc(
-      "get_canonical_monthly_accounting_summary",
+      "get_monthly_financial_report",
       {
         p_group_id: groupId,
         p_month: month
