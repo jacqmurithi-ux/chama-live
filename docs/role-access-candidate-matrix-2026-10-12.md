@@ -2,7 +2,7 @@
 
 ## Scope and status
 
-This matrix was assembled from the isolated test project's current `pg_policies`, selected RPC definitions, and the current `main` frontend permission matrix. It is an audit/review artifact, not proof of authenticated end-to-end behavior. Candidate migrations in this branch were applied to the isolated Supabase test project only on 2026-10-12 for verification. They have not been applied to production. Production remains unchanged.
+This matrix was assembled from the isolated test project's current `pg_policies`, selected RPC definitions, and the current `main` frontend permission matrix. It is an audit/review artifact, not proof of authenticated end-to-end behavior. Candidate migrations were applied to the isolated Supabase test project on 2026-10-12 for verification. On 2026-10-12, both approved migrations were also recorded in production after preflight: the meeting-document alignment safely skipped because `public.meeting_documents` and `public.replace_meeting_document(...)` are absent there; the contribution-type policies were updated to Admin + Treasurer. No group financial records were changed by these migrations.
 
 Role labels: **Admin** = group Admin; **Chair/Vice-Chair**, **Secretary/Vice-Secretary**, and **Treasurer** are distinct group offices. Platform-admin access is not group-admin access.
 
@@ -62,4 +62,14 @@ The two candidate migrations were applied to the isolated test project only. Tem
 
 SQL role-claim tests are useful isolated database/RPC tests. The user has now confirmed that authenticated browser verification passes on the candidate preview; the browser result is recorded as user-confirmed, not independently reproduced by this session.
 
-- **Release gate:** the listed isolated database/RPC checks passed and browser verification has been user-confirmed. This audit record alone does not authorize a production database migration or production deployment. Production changes remain unperformed pending the explicit release/deployment decision.
+- **Release gate (2026-10-12 update):** isolated database/RPC checks passed and authenticated browser verification was user-confirmed. The two approved migrations have been applied in production and verified: meeting-document RPC alignment skipped safely because the optional feature table/function do not exist; contribution-type INSERT/UPDATE/DELETE policies now use `cl_user_has_role(group_id, ['admin','treasurer'])`, with supplied `created_by` constrained to the caller's active member row. The matching frontend candidate is still awaiting a verified production hosting target and release.
+
+
+## Production preflight and migration execution (2026-10-12)
+
+- Compared production project `ptktftwyltxmtcodyzoa` against isolated project `onzaonflquipqmhgslxi`.
+- Production has `public.meetings`, but not `public.meeting_documents` or `public.replace_meeting_document(uuid,uuid,text,text,text,bigint,uuid)`. The isolated project has both the table and RPC. The divergence is consistent with the isolated project carrying a separate meeting-document feature migration set that is not present in production; no evidence indicates production data was deleted.
+- Updated the candidate meeting-document migration to use a guarded DO block: if `public.meeting_documents` is absent it emits a notice and skips; if present it applies the role-normalized RPC definition and retains caller/uploader binding plus completed-meeting enforcement.
+- Executed both approved migrations on production. Migration history records them as `20261012045606` and `20261012045610`.
+- Verified after execution that production still has no meeting-document table/RPC and the contribution-type INSERT, UPDATE, DELETE policies all use `cl_user_has_role(group_id, ARRAY['admin','treasurer'])`. The SELECT policy remains group-membership scoped. RLS remains enabled.
+- No production frontend deployment or merge to `main` has been performed as part of this database step. Vercel project inspection shows only `*.vercel.app` domains/aliases and no `chamalive.co.ke` domain attached, so the production host for the public domain must be confirmed before routing a release there.
