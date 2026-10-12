@@ -759,7 +759,7 @@ function renderExpenses() {
 
         const canVote = status === "pending" &&
           canApproveExpense() &&
-          expense.recorded_by !== currentUser?.id &&
+          expense.recorded_by !== currentMember?.id &&
           !alreadyVoted;
 
         const actions = canVote ? `
