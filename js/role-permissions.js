@@ -208,20 +208,22 @@ const roleCan = (roles, page, action, member) => {
 };
 
 export function canWrite(page, action, member, options = {}) {
-  // Platform admin is intentionally not a group-office permission.
-  // A verified platform-admin guard does not satisfy group approvals.
+  // Group Admin is the full-control role for the current group. This is
+  // deliberately independent of platform-admin status and of the page's
+  // ordinary role matrix. Backend authorization must implement the same
+  // group-admin override while preserving any explicit audit trail.
   const roles = getGroupRoles(member);
-  if (
-    options.isVerifiedPlatformAdmin === true &&
-    normalize(page) === "expenses" &&
-    ["approve-chair", "approve-treasurer", "approve-secretary"].includes(normalize(action))
-  ) return false;
+  if (roles.has("admin")) return true;
+
+  // A verified platform administrator is not automatically a group officer.
+  // Platform-level access does not grant group write access.
   return roleCan(roles, normalize(page), normalize(action), member);
 }
 
 export function pageHasReadOnlyAccess(page, member, options = {}) {
-  if (options.isVerifiedPlatformAdmin === true) return false;
   const roles = getGroupRoles(member);
+  // Admin must never receive page-level view-only treatment.
+  if (roles.has("admin")) return false;
   const rules = POLICY[normalize(page)];
   if (!rules) return true;
   const readActions = new Set(["view", "search", "filter", "export"]);
