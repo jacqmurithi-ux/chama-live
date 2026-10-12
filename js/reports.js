@@ -1737,7 +1737,7 @@ function renderMeetings(rows) {
   const target = $("meetingRows");
   if (!target) return;
   if (!rows.length) {
-    target.innerHTML = "<tr><td colspan=\"6\">No meetings for the selected period.</td></tr>";
+    target.innerHTML = "<tr><td colspan=\"7\">No meetings for the selected period.</td></tr>";
     return;
   }
   target.innerHTML = rows.map(row => {
