@@ -7,20 +7,11 @@ import {
    CHAMA LIVE — SUPABASE
 ========================================================= */
 
-// Candidate Vercel preview deployments must use the isolated candidate
-// Supabase project. The official portal hosts (including chamalive.co.ke)
-// continue to use production. Never point a preview at production data.
-const isCandidatePreview =
-  typeof window !== "undefined" &&
-  /^chama-live-[a-z0-9]+-chamalive\.vercel\.app$/i.test(window.location.hostname);
-
-const SUPABASE_URL = isCandidatePreview
-  ? "https://onzaonflquipqmhgslxi.supabase.co"
-  : "https://ptktftwyltxmtcodyzoa.supabase.co";
-
-const SUPABASE_PUBLISHABLE_KEY = isCandidatePreview
-  ? "sb_publishable_0jhKFtRCnOx0WDcO3PwcMg_GGsnN3kc"
-  : "sb_publishable_Nfuc0Xj1LuSU-qJmSXpH5A_GSTMvmSS";
+// Official CHAMA LIVE client configuration.
+// Candidate verification uses isolated database tests and repository CI;
+// this browser bundle does not route through Vercel preview hostnames.
+const SUPABASE_URL = "https://ptktftwyltxmtcodyzoa.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_Nfuc0Xj1LuSU-qJmSXpH5A_GSTMvmSS";
 
 
 /* =========================================================
