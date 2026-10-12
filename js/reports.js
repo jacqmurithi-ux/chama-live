@@ -77,6 +77,7 @@ const STATUS_LABELS = {
   outstanding: "Outstanding",
   arrears: "Arrears",
   credit: "Credit",
+  no_obligation: "No Monthly Obligation",
   up_to_date: "Up to Date",
   "up-to-date": "Up to Date",
   current: "Up to Date"
@@ -970,15 +971,25 @@ async function loadCumulativePositions() {
 
     seenIds.add(memberId);
 
+    const arrears = numberValue(row.arrears);
+    const credit = numberValue(row.credit);
+    // Derive the displayed cumulative status from canonical balances so a
+    // missing/default status cannot hide arrears or credit.
+    const status = arrears > 0
+      ? "arrears"
+      : credit > 0
+        ? "credit"
+        : "up_to_date";
+
     return {
       member_id: row.member_id,
       group_id: row.group_id,
       total_paid: paidByMember.get(String(row.member_id)) || 0,
       total_due: numberValue(row.total_due),
       total_allocated: numberValue(row.total_allocated),
-      arrears: numberValue(row.arrears),
-      credit: numberValue(row.credit),
-      status: row.status || "up_to_date"
+      arrears,
+      credit,
+      status
     };
   });
 
@@ -1890,6 +1901,28 @@ function canonicalRowStatus(row) {
   );
 }
 
+function canonicalMonthlyStatus(row) {
+  const due = canonicalDue(row);
+  const applied = canonicalApplied(row);
+  const outstanding = canonicalOutstanding(row);
+  const credit = canonicalCredit(row);
+  const raw = lower(canonicalRowStatus(row));
+
+  // A payment against a zero monthly obligation must not be presented as
+  // satisfying a monthly obligation; retain it as a separate payment record.
+  if (due <= 0 && outstanding <= 0) {
+    return applied > 0 ? "no_obligation" : (raw || "no_obligation");
+  }
+
+  if (outstanding > 0) {
+    return applied > 0 ? "partial" : "outstanding";
+  }
+
+  if (credit > 0) return "credit";
+  if (due > 0 && applied >= due) return "paid";
+  return raw || (applied > 0 ? "partial" : "outstanding");
+}
+
 function canonicalApplied(row) {
   return numberValue(
     row.applied_this_month ??
@@ -2171,7 +2204,7 @@ function renderMonthlyStatusReport(rows) {
 
                     <td>${escapeHTML(
                       getStatusLabel(
-                        canonicalRowStatus(row)
+                        canonicalMonthlyStatus(row)
                       )
                     )}</td>
                   </tr>
@@ -2234,7 +2267,7 @@ function renderMonthlyArrearsReport(rows) {
 
                     <td>${escapeHTML(
                       getStatusLabel(
-                        canonicalRowStatus(row)
+                        canonicalMonthlyStatus(row)
                       )
                     )}</td>
                   </tr>
@@ -2289,7 +2322,7 @@ function renderMonthlyCreditReport(rows) {
 
                     <td>${escapeHTML(
                       getStatusLabel(
-                        canonicalRowStatus(row)
+                        canonicalMonthlyStatus(row)
                       )
                     )}</td>
                   </tr>
@@ -2685,7 +2718,7 @@ function buildCanonicalTable(rows) {
 
                     <td>${escapeHTML(
                       getStatusLabel(
-                        canonicalRowStatus(row)
+                        canonicalMonthlyStatus(row)
                       )
                     )}</td>
                   </tr>
@@ -5403,7 +5436,7 @@ function exportCSV() {
           canonicalOutstanding(row),
           canonicalCredit(row),
           getStatusLabel(
-            canonicalRowStatus(row)
+            canonicalMonthlyStatus(row)
           )
         ]
           .map(csvEscape)
@@ -5777,7 +5810,7 @@ function exportExcel() {
 
                   <td>${excelEscape(
                     getStatusLabel(
-                      canonicalRowStatus(row)
+                      canonicalMonthlyStatus(row)
                     )
                   )}</td>
                 </tr>
