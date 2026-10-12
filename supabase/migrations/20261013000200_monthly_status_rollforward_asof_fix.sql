@@ -92,26 +92,14 @@ BEGIN
       AND c.contribution_date IS NOT NULL
       AND c.contribution_date < v_next_month
   ),
-  payment_residuals AS (
-    SELECT p.id, p.member_id, p.amount, p.contribution_date,
-      greatest(p.amount - coalesce(allocation_sum.allocated_amount, 0), 0)::numeric AS residual_amount
-    FROM payments p
-    LEFT JOIN LATERAL (
-      SELECT sum(ca.amount)::numeric AS allocated_amount
-      FROM public.contribution_allocations ca
-      WHERE ca.payment_id = p.id
-    ) allocation_sum ON true
-  ),
   payment_totals AS (
     SELECT p.member_id,
       coalesce(sum(p.amount) FILTER (
         WHERE p.contribution_date >= v_month AND p.contribution_date < v_next_month
       ), 0)::numeric AS current_month_payment,
       coalesce(sum(p.amount), 0)::numeric AS total_paid,
-      coalesce(sum(p.amount) FILTER (WHERE p.contribution_date < v_month), 0)::numeric AS prior_paid,
-      coalesce(sum(p.residual_amount), 0)::numeric AS carry_forward,
-      coalesce(sum(p.residual_amount) FILTER (WHERE p.contribution_date < v_month), 0)::numeric AS prior_credit
-    FROM payment_residuals p
+      coalesce(sum(p.amount) FILTER (WHERE p.contribution_date < v_month), 0)::numeric AS prior_paid
+    FROM payments p
     GROUP BY p.member_id
   ),
   allocation_totals AS (
@@ -136,17 +124,17 @@ BEGIN
     ms.name,
     coalesce(ot.monthly_due, 0)::numeric,
     greatest(coalesce(ot.prior_due, 0) - coalesce(at.prior_allocated_asof, 0), 0)::numeric,
-    coalesce(pt.prior_credit, 0)::numeric,
+    greatest(coalesce(pt.prior_paid, 0) - coalesce(at.prior_allocated_asof, 0), 0)::numeric,
     coalesce(pt.current_month_payment, 0)::numeric,
     coalesce(at.current_month_allocated_asof, 0)::numeric,
-    coalesce(pt.carry_forward, 0)::numeric,
+    greatest(coalesce(pt.total_paid, 0) - coalesce(at.total_allocated_asof, 0), 0)::numeric,
     greatest(coalesce(ot.total_due, 0) - coalesce(at.total_allocated_asof, 0), 0)::numeric,
     coalesce(pt.total_paid, 0)::numeric,
     coalesce(ot.total_due, 0)::numeric,
     CASE
       WHEN greatest(coalesce(ot.total_due, 0) - coalesce(at.total_allocated_asof, 0), 0) > 0
         THEN 'outstanding'
-      WHEN coalesce(pt.carry_forward, 0) > 0
+      WHEN greatest(coalesce(pt.total_paid, 0) - coalesce(at.total_allocated_asof, 0), 0) > 0
         THEN 'credit'
       ELSE 'paid'
     END::text
@@ -228,15 +216,10 @@ AS $function$
   ),
   payment_totals AS (
     SELECT c.member_id, c.group_id,
-      coalesce(sum(greatest(c.amount - coalesce(pa.allocated_amount, 0), 0)), 0)::numeric AS credit
+      coalesce(sum(c.amount), 0)::numeric AS total_paid
     FROM public.contributions c
     JOIN target_member tm ON tm.id = c.member_id AND tm.group_id = c.group_id
     CROSS JOIN as_of_period ap
-    LEFT JOIN LATERAL (
-      SELECT sum(a.amount)::numeric AS allocated_amount
-      FROM public.contribution_allocations a
-      WHERE a.payment_id = c.id
-    ) pa ON true
     WHERE lower(trim(coalesce(c.contribution_type, ''))) = 'monthly'
       AND c.contribution_date IS NOT NULL
       AND c.contribution_date < ap.next_month
@@ -246,10 +229,10 @@ AS $function$
     coalesce(ot.total_due, 0)::numeric(14,2) AS total_due,
     coalesce(at.total_allocated, 0)::numeric(14,2) AS total_allocated,
     greatest(coalesce(ot.total_due, 0) - coalesce(at.total_allocated, 0), 0)::numeric(14,2) AS arrears,
-    coalesce(pt.credit, 0)::numeric(14,2) AS credit,
+    greatest(coalesce(pt.total_paid, 0) - coalesce(at.total_allocated, 0), 0)::numeric(14,2) AS credit,
     CASE
       WHEN greatest(coalesce(ot.total_due, 0) - coalesce(at.total_allocated, 0), 0) > 0 THEN 'ARREARS'
-      WHEN coalesce(pt.credit, 0) > 0 THEN 'CREDIT'
+      WHEN greatest(coalesce(pt.total_paid, 0) - coalesce(at.total_allocated, 0), 0) > 0 THEN 'CREDIT'
       ELSE 'UP_TO_DATE'
     END AS status
   FROM target_member tm
