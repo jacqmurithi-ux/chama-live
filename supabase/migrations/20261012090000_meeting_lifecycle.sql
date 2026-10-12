@@ -118,6 +118,11 @@ begin
 end;
 $function$;
 
+drop trigger if exists meetings_guard_lifecycle on public.meetings;
+create trigger meetings_guard_lifecycle
+before update of status on public.meetings
+for each row execute function public.guard_meeting_lifecycle();
+
 create or replace function public.audit_meeting_lifecycle()
 returns trigger
 language plpgsql
