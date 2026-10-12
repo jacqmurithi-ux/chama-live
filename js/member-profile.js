@@ -242,6 +242,11 @@ const els = {
       "cumulativeDue"
     ),
 
+  cumulativeTotalDue:
+    document.getElementById(
+      "cumulativeTotalDue"
+    ),
+
   cumulativeAllocated:
     document.getElementById(
       "cumulativeAllocated"
@@ -532,6 +537,11 @@ function renderCumulativePosition(position) {
 
     if (els.cumulativeDue) {
       els.cumulativeDue.textContent =
+        formatMoney(state.totalPaid);
+    }
+
+    if (els.cumulativeTotalDue) {
+      els.cumulativeTotalDue.textContent =
         "—";
     }
 
@@ -564,6 +574,13 @@ function renderCumulativePosition(position) {
     els.cumulativeDue.textContent =
       formatMoney(
         state.totalPaid
+      );
+  }
+
+  if (els.cumulativeTotalDue) {
+    els.cumulativeTotalDue.textContent =
+      formatMoney(
+        position.total_due
       );
   }
 
