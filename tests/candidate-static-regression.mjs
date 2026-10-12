@@ -63,7 +63,7 @@ assert.ok(devSql.includes("DEV_FUND_RECONCILIATION_NOT_AUTHORIZED"));
 assert.ok(supabaseJs.includes("https://onzaonflquipqmhgslxi.supabase.co")
   && supabaseJs.includes("https://ptktftwyltxmtcodyzoa.supabase.co")
   && supabaseJs.includes("window.location.hostname")
-  && supabaseJs.includes("vercel.app"),
+  && supabaseJs.includes("chama-live-[a-z0-9]+-chamalive"),
   "Candidate preview must use isolated Supabase project while official hosts use production");
 
 console.log("CHAMA LIVE candidate static regression: PASS");
