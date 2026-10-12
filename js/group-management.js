@@ -5,6 +5,7 @@
 import { getMyApplicationContext } from "./auth.js";
 import { groupManagementApi } from "./api/group-management.js";
 import { supabase } from "./supabase.js";
+import { canWrite } from "./role-permissions.js";
 
 
 /* ================================================================
@@ -62,6 +63,13 @@ const elements = {
     groupCategory: null,
     groupCategoryOther: null,
     groupCountry: null,
+
+    groupModuleSettingsForm: null,
+    merryGoRoundEnabled: null,
+    loansEnabled: null,
+    saveGroupModuleSettings: null,
+    moduleSettingsViewOnly: null,
+    groupModuleSettingsStatus: null,
 
     monthlyContribution: null,
     monthlyContributionForm: null,
@@ -135,6 +143,19 @@ function refreshDomReferences() {
 
     elements.groupCountry =
         document.getElementById("groupCountry");
+
+    elements.groupModuleSettingsForm =
+        document.getElementById("groupModuleSettingsForm");
+    elements.merryGoRoundEnabled =
+        document.getElementById("merryGoRoundEnabled");
+    elements.loansEnabled =
+        document.getElementById("loansEnabled");
+    elements.saveGroupModuleSettings =
+        document.getElementById("saveGroupModuleSettings");
+    elements.moduleSettingsViewOnly =
+        document.getElementById("moduleSettingsViewOnly");
+    elements.groupModuleSettingsStatus =
+        document.getElementById("groupModuleSettingsStatus");
 
     elements.monthlyContribution =
         document.getElementById("monthlyContribution");
@@ -2621,7 +2642,117 @@ function bindEvents() {
         "custom"
     );
 
+    elements.groupModuleSettingsForm?.addEventListener(
+        "submit",
+        saveGroupModuleSettings
+    );
+
     eventsBound = true;
+}
+
+
+/* ================================================================
+   OPTIONAL MODULE SETTINGS
+================================================================ */
+
+function canManageModuleSettings() {
+    const permissionMember = {
+        ...(currentMember || {}),
+        role: currentRole || currentMember?.role || "member",
+        actual_position:
+            currentMember?.actual_position ||
+            currentMember?.actual_position_name ||
+            currentRole ||
+            ""
+    };
+    return canWrite("module-settings", "manage", permissionMember);
+}
+
+function setModuleSettingsStatus(message, isError = false) {
+    const status = elements.groupModuleSettingsStatus;
+    if (!status) return;
+    status.textContent = message || "";
+    status.className = isError
+        ? "management-status is-visible error"
+        : "management-status is-visible";
+}
+
+async function loadGroupModuleSettings() {
+    if (!currentGroup?.id) throw new Error("Group context is not available.");
+
+    const { data, error } = await supabase.rpc("get_group_module_settings", {
+        p_group_id: currentGroup.id
+    });
+    if (error) throw error;
+
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row) throw new Error("No module settings were returned.");
+
+    if (elements.merryGoRoundEnabled) {
+        elements.merryGoRoundEnabled.checked = row.merry_go_round_enabled === true;
+    }
+    if (elements.loansEnabled) {
+        elements.loansEnabled.checked = row.loans_enabled === true;
+    }
+
+    const writable = canManageModuleSettings();
+    [
+        elements.merryGoRoundEnabled,
+        elements.loansEnabled,
+        elements.saveGroupModuleSettings
+    ].forEach(control => {
+        if (control) control.disabled = !writable;
+    });
+    if (elements.moduleSettingsViewOnly) {
+        elements.moduleSettingsViewOnly.hidden = writable;
+    }
+    if (!writable) {
+        setModuleSettingsStatus("You can view these settings. A group admin can change them.");
+    } else {
+        setModuleSettingsStatus("");
+    }
+}
+
+async function saveGroupModuleSettings(event) {
+    event?.preventDefault();
+    if (!canManageModuleSettings()) {
+        setModuleSettingsStatus("Only a group admin can change optional module settings.", true);
+        return;
+    }
+    if (!currentGroup?.id) {
+        setModuleSettingsStatus("Group context is not available.", true);
+        return;
+    }
+
+    const button = elements.saveGroupModuleSettings;
+    if (button) {
+        button.disabled = true;
+        button.textContent = "Saving…";
+    }
+    if (elements.merryGoRoundEnabled) elements.merryGoRoundEnabled.disabled = true;
+    if (elements.loansEnabled) elements.loansEnabled.disabled = true;
+
+    try {
+        const { error } = await supabase.rpc("update_group_module_settings", {
+            p_group_id: currentGroup.id,
+            p_merry_go_round_enabled: elements.merryGoRoundEnabled?.checked === true,
+            p_loans_enabled: elements.loansEnabled?.checked === true
+        });
+        if (error) throw error;
+        setModuleSettingsStatus("Module settings saved.");
+        await loadGroupModuleSettings();
+    } catch (error) {
+        setModuleSettingsStatus(
+            error?.message || "Module settings could not be saved.",
+            true
+        );
+    } finally {
+        if (button) button.textContent = "Save module settings";
+        const writable = canManageModuleSettings();
+        if (button) button.disabled = !writable;
+        if (elements.merryGoRoundEnabled) elements.merryGoRoundEnabled.disabled = !writable;
+        if (elements.loansEnabled) elements.loansEnabled.disabled = !writable;
+    }
 }
 
 
@@ -2643,6 +2774,16 @@ async function initializeGroupManagement() {
             await loadApplicationContext();
 
             applyAuthorizationUI();
+
+            try {
+                await loadGroupModuleSettings();
+            } catch (error) {
+                setModuleSettingsStatus(
+                    error?.message || "Optional module settings could not be loaded.",
+                    true
+                );
+                console.error("[Group Management] Module settings failed to load:", error);
+            }
 
             if (
                 elements.groupManagementStatus
