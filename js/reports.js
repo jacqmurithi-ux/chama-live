@@ -2072,64 +2072,70 @@ function renderMemberContributions(rows) {
   `;
 }
 
-function renderMonthlyStatusReport(rows) {
-  const target =
-    $("reportOutput");
+function cumulativePositionForMember(memberId) {
+  const key = String(memberId ?? "");
+  return cumulativePositions.find(
+    position => String(position.member_id ?? "") === key
+  ) || null;
+}
 
+function previousOutstandingFromCumulative(monthlyRow) {
+  const position = cumulativePositionForMember(monthlyRow?.member_id);
+  if (!position) return null;
+
+  // Cumulative arrears are canonical lifetime arrears. Remove any
+  // outstanding amount already attributed to the selected month so the
+  // previous-period figure does not double-count this month's shortfall.
+  return Math.max(
+    numberValue(position.arrears) - canonicalOutstanding(monthlyRow),
+    0
+  );
+}
+
+function renderMonthlyStatusReport(rows) {
+  const target = $("reportOutput");
   if (!target) return;
 
   target.innerHTML = `
     <div class="report-table-wrap">
+      <p class="report-note">
+        Monthly due, applied amount and current outstanding come from canonical
+        monthly accounting. Previous outstanding is informed by the member's
+        canonical cumulative position; it is shown separately from this month's status.
+      </p>
       <table class="report-table">
         <thead>
           <tr>
             <th>Member</th>
             <th>Member No.</th>
-            <th>Due</th>
+            <th>Monthly Due</th>
+            <th>Previous Outstanding</th>
             <th>Applied</th>
-            <th>Outstanding</th>
-            <th>Credit</th>
-            <th>Status</th>
+            <th>Carry-forward Credit</th>
+            <th>Current Outstanding</th>
+            <th>Monthly Status</th>
           </tr>
         </thead>
-
         <tbody>
           ${
             rows.length
-              ? rows.map(row => `
-                  <tr>
-                    <td>${escapeHTML(
-                      getMemberName(row.member_id)
-                    )}</td>
-
-                    <td>${escapeHTML(
-                      getMemberNumber(row.member_id) || "—"
-                    )}</td>
-
-                    <td>${formatCurrency(
-                      canonicalDue(row)
-                    )}</td>
-
-                    <td>${formatCurrency(
-                      canonicalApplied(row)
-                    )}</td>
-
-                    <td>${formatCurrency(
-                      canonicalOutstanding(row)
-                    )}</td>
-
-                    <td>${formatCurrency(
-                      canonicalCredit(row)
-                    )}</td>
-
-                    <td>${escapeHTML(
-                      getStatusLabel(
-                        canonicalRowStatus(row)
-                      )
-                    )}</td>
-                  </tr>
-                `).join("")
-              : `<tr><td colspan="7">No monthly accounting records.</td></tr>`
+              ? rows.map(row => {
+                  const previousOutstanding = previousOutstandingFromCumulative(row);
+                  const position = cumulativePositionForMember(row.member_id);
+                  return `
+                    <tr>
+                      <td>${escapeHTML(getMemberName(row.member_id))}</td>
+                      <td>${escapeHTML(getMemberNumber(row.member_id) || "—")}</td>
+                      <td>${formatCurrency(canonicalDue(row))}</td>
+                      <td>${previousOutstanding === null ? "—" : formatCurrency(previousOutstanding)}</td>
+                      <td>${formatCurrency(canonicalApplied(row))}</td>
+                      <td>${formatCurrency(canonicalCredit(row))}</td>
+                      <td>${formatCurrency(canonicalOutstanding(row))}</td>
+                      <td>${escapeHTML(getStatusLabel(canonicalRowStatus(row)))}</td>
+                    </tr>
+                  `;
+                }).join("")
+              : `<tr><td colspan="8">No monthly accounting records.</td></tr>`
           }
         </tbody>
       </table>
