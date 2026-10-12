@@ -14,6 +14,7 @@ Candidate branch: `candidate/meeting-lifecycle-reports-20261012`
 - [x] SQL negative test: cancellation without a reason is rejected.
 - [x] SQL positive test: postponement with a reason and later date, then reschedule to the proposed date, succeeds.
 - [ ] SQL negative test: postponement without a later proposed date fails.
+- [x] SQL negative test: direct INSERT with a non-Upcoming initial status is rejected.
 - [x] SQL negative tests: direct Upcoming → Completed, completion without minutes, without resolution/no-resolution choice, and without attendance are rejected.
 - [x] SQL positive test: Held → Completed succeeds after minutes, explicit no-resolution, and attendance are recorded.
 - [x] SQL fixture test verified expected lifecycle history row count; exact actor/time/from/to/reason contents and RLS visibility still need independent assertions.
