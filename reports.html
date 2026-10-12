@@ -1544,7 +1544,7 @@
                 </h2>
 
                 <p>
-                  Approved expenses grouped by category.
+                  Expenses grouped by category and approval status. Only approved expenses are included in the expense-category chart.
                 </p>
               </div>
 
@@ -1557,6 +1557,7 @@
                 <thead>
                   <tr>
                     <th>Category</th>
+                    <th>Status</th>
                     <th class="amount">Entries</th>
                     <th class="amount">Amount</th>
                     <th class="amount">Share</th>
@@ -1567,7 +1568,7 @@
 
                   <tr>
                     <td
-                      colspan="4"
+                      colspan="5"
                       class="report-empty">
                       No data.
                     </td>
@@ -1734,6 +1735,14 @@
                 </strong>
               </div>
 
+              <div class="meeting-card">
+                <span>Other / Review</span>
+
+                <strong id="otherMeetings">
+                  0
+                </strong>
+              </div>
+
             </div>
 
             <div class="table-wrap">
@@ -1746,6 +1755,8 @@
                     <th>Title</th>
                     <th>Venue</th>
                     <th>Status</th>
+                    <th>Agenda</th>
+                    <th>Resolution</th>
                   </tr>
                 </thead>
 
