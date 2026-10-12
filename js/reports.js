@@ -5531,7 +5531,7 @@ function exportCSV() {
     lines.push("");
     lines.push(["MEETINGS"].map(csvEscape).join(","));
     lines.push(
-      ["Date", "Meeting", "Venue", "Status", "Agenda", "Resolution"]
+      ["Date", "Meeting", "Venue", "Status", "Agenda", "Minutes", "Resolution"]
         .map(csvEscape).join(",")
     );
     for (const row of meetingRows) {
@@ -5541,7 +5541,8 @@ function exportCSV() {
           row.title,
           row.venue,
           row.status,
-          row.agenda,
+          Array.isArray(row.agenda) ? row.agenda.join("; ") : row.agenda,
+          row.minutes,
           row.resolution
         ].map(csvEscape).join(",")
       );
@@ -5921,6 +5922,7 @@ function exportExcel() {
                 <th>Venue</th>
                 <th>Status</th>
                 <th>Agenda</th>
+                <th>Minutes</th>
                 <th>Resolution</th>
               </tr>
             </thead>
@@ -5945,7 +5947,11 @@ function exportExcel() {
                   )}</td>
 
                   <td>${excelEscape(
-                    row.agenda
+                    Array.isArray(row.agenda) ? row.agenda.join("; ") : row.agenda
+                  )}</td>
+
+                  <td>${excelEscape(
+                    row.minutes
                   )}</td>
 
                   <td>${excelEscape(
