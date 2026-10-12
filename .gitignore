@@ -4,3 +4,6 @@
 node_modules/
 .DS_Store
 *.log
+
+# Vercel local project configuration and build output
+.vercel/
