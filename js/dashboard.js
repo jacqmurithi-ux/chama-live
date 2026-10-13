@@ -58,6 +58,8 @@ import {
   getMyApplicationContext
 } from "./auth.js";
 
+import { loadGroupLoanSummary } from "./loan-summary.js";
+
 
 console.log(
   "CHAMA LIVE: dashboard.js loaded"
@@ -242,6 +244,39 @@ function escapeHtml(value) {
       "&#039;"
     );
 
+}
+
+
+/* =========================================================
+   GROUP LOAN SUMMARY
+========================================================= */
+
+async function renderGroupLoanSummary() {
+  const section = el("groupLoanSummarySection");
+  if (!section || !currentGroupId) return;
+
+  // Default hidden: disabled groups must not display loan data.
+  section.hidden = true;
+
+  try {
+    const summary = await loadGroupLoanSummary(supabase, currentGroupId);
+    if (!summary) return;
+
+    setText("loanSummaryTotalDisbursed", money(summary.totalDisbursed));
+    setText("loanSummaryInterestGained", money(summary.interestGained));
+    setText("loanSummaryMembersBenefited", summary.membersBenefited.toLocaleString("en-KE"));
+    setText("loanSummaryOutstandingAmount", money(summary.outstandingAmount));
+    setText(
+      "loanSummaryOutstandingCount",
+      summary.activeLoansCount + (summary.activeLoansCount === 1 ? " active/overdue loan" : " active/overdue loans")
+    );
+
+    section.hidden = false;
+  } catch (error) {
+    // Optional feature failures should not block the rest of the dashboard.
+    section.hidden = true;
+    console.warn("CHAMA LIVE: group loan summary unavailable.", error);
+  }
 }
 
 
@@ -4263,6 +4298,7 @@ export async function initDashboard() {
 
     renderDashboard();
     await renderOptionalModuleCards();
+    await renderGroupLoanSummary();
 
 
     clearStatus();
@@ -4351,6 +4387,7 @@ export async function refreshDashboard() {
     await loadData();
 
     renderDashboard();
+    await renderGroupLoanSummary();
 
 
     clearStatus();

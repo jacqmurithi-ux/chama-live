@@ -54,6 +54,7 @@
    ========================================================= */
 
 import { supabase } from "./supabase.js";
+import { loadGroupLoanSummary } from "./loan-summary.js";
 
 
 /* =========================================================
@@ -122,6 +123,40 @@ function formatMoney(value) {
   ).format(
     numberValue(value)
   );
+}
+
+
+/* =========================================================
+   GROUP LOAN SUMMARY
+   ---------------------------------------------------------
+   Shared backend contract; group-wide figures only.
+   ========================================================= */
+
+async function renderMemberGroupLoanSummary() {
+  const section = byId("groupLoanSummarySection");
+  if (!section || !groupId) return;
+
+  section.hidden = true;
+
+  try {
+    const summary = await loadGroupLoanSummary(supabase, groupId);
+    if (!summary) return;
+
+    setText("memberLoanSummaryTotalDisbursed", formatMoney(summary.totalDisbursed));
+    setText("memberLoanSummaryInterestGained", formatMoney(summary.interestGained));
+    setText("memberLoanSummaryMembersBenefited", summary.membersBenefited.toLocaleString("en-KE"));
+    setText("memberLoanSummaryOutstandingAmount", formatMoney(summary.outstandingAmount));
+    setText(
+      "memberLoanSummaryOutstandingCount",
+      summary.activeLoansCount + (summary.activeLoansCount === 1 ? " active/overdue loan" : " active/overdue loans")
+    );
+
+    section.hidden = false;
+  } catch (error) {
+    // Loan summary is optional and must not block personal dashboard data.
+    section.hidden = true;
+    console.warn("CHAMA LIVE: member group loan summary unavailable.", error);
+  }
 }
 
 
@@ -2476,6 +2511,7 @@ export async function initMemberDashboard(
   initialized = true;
 
   await loadDashboard();
+  await renderMemberGroupLoanSummary();
 }
 
 
