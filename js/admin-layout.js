@@ -81,6 +81,7 @@ import {
 } from "./auth.js";
 
 import { applyRolePermissions } from "./role-permissions.js";
+import { supabase } from "./supabase.js";
 
 
 /* =========================================================
@@ -164,7 +165,7 @@ const ADMIN_PAGES = new Set([
 const PAGE_SCRIPTS = {
 
   "dashboard.html": [
-    "./dashboard.js?v=c518591d-dashboard-init-export",
+    "./dashboard.js?v=b60d58d2-dashboard-init-export-2",
     "initDashboard"
   ],
 
@@ -1910,7 +1911,7 @@ async function loadCurrentPageFeature() {
 
 
     throw new Error(
-      `No initializer exported for ${page}.`
+      `No initializer exported for ${page}. Expected "${initializerName}". Module exports: ${exportedNames.join(", ") || "(none)"}.`
     );
 
   }
