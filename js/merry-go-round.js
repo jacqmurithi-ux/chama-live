@@ -133,7 +133,7 @@ $("deleteCycleBtn").addEventListener("click",async()=>{
  if(!writeAllowed("deleteCycle"))return status("Only the group Admin can delete a cycle.",true);
  const cycle=cycles.find(c=>c.id===$("cycleSelect").value);
  if(!cycle)return status("Select a cycle to delete.",true);
- if(!window.confirm('Delete cycle "'+cycle.name+'" created '+(cycle.created_at?new Date(cycle.created_at).toLocaleString():"") +'? Its rounds, preferences and notifications will also be removed. Cycles with recorded payments or payouts cannot be deleted.'))return;
+ if(!window.confirm('Delete cycle "'+cycle.name+'" created '+(cycle.created_at?new Date(cycle.created_at).toLocaleString():"") +'? Its rounds, preferences and notifications will also be removed. Cycles with a recorded payment amount or payout cannot be deleted.'))return;
  const btn=$("deleteCycleBtn");
  try{btn.disabled=true;await rpc("cl_merry_delete_cycle",{p_group_id:ctx.group.id,p_cycle_id:cycle.id});status('Cycle "'+cycle.name+'" deleted. Related rounds, preferences and notifications were removed.');await loadCycles();await loadNotifications();}
  catch(err){rpcError(err);}
