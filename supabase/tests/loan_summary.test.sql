@@ -5,6 +5,7 @@ begin;
 do $test$
 declare
   v_user uuid;
+  v_admin_user uuid;
   v_group uuid;
   v_other_group uuid;
   v_member_one uuid;
@@ -22,8 +23,9 @@ declare
   v_denied boolean;
 begin
   select id into v_user from auth.users order by created_at limit 1;
-  if v_user is null then
-    raise exception 'Loan summary tests require at least one existing auth user';
+  select id into v_admin_user from auth.users where id <> v_user order by created_at limit 1;
+  if v_user is null or v_admin_user is null then
+    raise exception 'Loan summary tests require at least two existing auth users';
   end if;
 
   insert into public.groups(name, access_code, owner_user_id, loans_enabled)
@@ -31,7 +33,7 @@ begin
   returning id into v_group;
 
   insert into public.groups(name, access_code, owner_user_id, loans_enabled)
-  values ('__loan_summary_other_group__', '__loan_summary_other_' || gen_random_uuid()::text, v_user, true)
+  values ('__loan_summary_other_group__', '__loan_summary_other_' || gen_random_uuid()::text, null, true)
   returning id into v_other_group;
 
   insert into public.members(
@@ -49,6 +51,15 @@ begin
     v_group, 'LS-TEST-2', 'LS-MEM-TEST-2', 'Loan Summary Test Member 2',
     '000000002', 'member', 'active', 'active'
   ) returning id into v_member_two;
+
+  -- Separate admin identity for the admin-portal authorization case.
+  insert into public.members(
+    group_id, user_id, member_number, membership_number, name, phone,
+    role, status, onboarding_status
+  ) values (
+    v_group, v_admin_user, 'LS-TEST-ADMIN', 'LS-MEM-TEST-ADMIN',
+    'Loan Summary Test Admin', '000000003', 'admin', 'active', 'active'
+  );
 
   perform set_config('request.jwt.claim.sub', v_user::text, true);
 
@@ -153,22 +164,22 @@ begin
   end if;
 
   -- A member cannot request another group's summary by changing group_id.
-  perform set_config('request.jwt.claim.sub', gen_random_uuid()::text, true);
+  perform set_config('request.jwt.claim.sub', v_user::text, true);
   v_denied := false;
   begin
-    perform public.cl_get_group_loan_summary(v_group);
+    perform public.cl_get_group_loan_summary(v_other_group);
   exception when insufficient_privilege then
     v_denied := true;
   end;
   if not v_denied then
-    raise exception 'FAIL: unrelated member was allowed to read another group summary';
+    raise exception 'FAIL: member was allowed to read another group summary';
   end if;
 
-  -- Group owner/manager can read the summary for the group they own.
-  perform set_config('request.jwt.claim.sub', v_user::text, true);
-  v_result := public.cl_get_group_loan_summary(v_other_group);
-  if (v_result->>'totalDisbursed')::numeric <> 0 then
-    raise exception 'FAIL: empty owner-managed group should return zero summary';
+  -- A group Admin can read the group they manage through their group role.
+  perform set_config('request.jwt.claim.sub', v_admin_user::text, true);
+  v_result := public.cl_get_group_loan_summary(v_group);
+  if (v_result->>'totalDisbursed')::numeric <> 2300 then
+    raise exception 'FAIL: group Admin was denied or received incorrect summary';
   end if;
 
   raise notice 'PASS: loan summary empty state, disabled module, multiple loans per member, partial repayments, cleared loans, distinct members, interest allocations, and authorization';
