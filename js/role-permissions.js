@@ -234,12 +234,8 @@ function loanApprovalOffice(member = {}) {
   if (declared.some(value => value === "treasurer")) return "treasurer";
   if (declared.some(value => ["secretary", "vice secretary"].includes(value))) return "secretary";
 
-  const technical = clean(member.role || "member");
-  // A technical Admin cannot claim an office from the role field alone.
-  if (["admin", "administrator"].includes(technical)) return null;
-  if (["chairperson", "vice chairperson", "chair", "vice chair"].includes(technical)) return "chairperson";
-  if (technical === "treasurer") return "treasurer";
-  if (["secretary", "vice secretary"].includes(technical)) return "secretary";
+  // Match expense approvals: only an explicitly declared office qualifies.
+  // A technical role alone, including Admin, cannot fill an approval slot.
   return null;
 }
 
