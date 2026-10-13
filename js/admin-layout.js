@@ -2208,7 +2208,9 @@ export async function boot() {
 
     injectStyles();
 
-    await loadOptionalModuleFlags();\n\n    renderDesktopNavigation();
+    await loadOptionalModuleFlags();
+
+    renderDesktopNavigation();
 
     renderMobileNavigation();
 
