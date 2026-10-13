@@ -4213,7 +4213,6 @@ export async function renderOptionalModuleCards() {
     const settings = Array.isArray(data) ? data[0] : data;
     const modules = [];
     if (settings?.merry_go_round_enabled === true) modules.push({ href: "merry-go-round.html", title: "Merry-go-round", description: "Manage contribution cycles, payout order and round progress." });
-    if (settings?.loans_enabled === true) modules.push({ href: "loans.html", title: "Loans", description: "Manage loan requests, approvals, repayment schedules and balances." });
     cards.innerHTML = modules.map(m => '<a href="'+m.href+'" style="display:block;padding:16px;border:1px solid #d1d5db;border-radius:14px;background:#fff;color:inherit;text-decoration:none"><strong style="display:block;margin-bottom:6px">'+m.title+'</strong><span style="color:#64748b;font-size:.9rem">'+m.description+'</span><span style="display:block;margin-top:10px;color:#087f5b;font-weight:700">Open module →</span></a>').join("");
     section.hidden = modules.length === 0;
   } catch (error) {
