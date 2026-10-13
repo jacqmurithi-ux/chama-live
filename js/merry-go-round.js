@@ -14,8 +14,8 @@ function status(message, error=false) {
   statusEl.style.color = error ? "#991b1b" : "#334155";
 }
 function rpcError(error) {
-  const msg = error?.message || "The request could not be completed.";
-  status(msg, true);
+  const parts = [error?.message, error?.details, error?.hint, error?.code ? "Code: " + error.code : null].filter(Boolean);
+  status(parts.join(" — ") || "The request could not be completed.", true);
 }
 function writeAllowed(action) {
   return canWrite("merry-go-round", action, ctx?.member);
@@ -123,15 +123,16 @@ $("payoutMethod").addEventListener("change",applyOrderVisibility);
 $("cycleSelect").addEventListener("change",()=>loadTracking().catch(rpcError));
 $("cycleForm").addEventListener("submit",async e=>{
  e.preventDefault();
+ const form=e.currentTarget;
  if(!writeAllowed("create")) return status("View only: you cannot create a cycle.",true);
- const f=e.currentTarget.elements;
+ const f=form.elements;
  const method=f.order_method.value;
  const order=method==="admin"?Array.from($("memberOrder").selectedOptions).map(o=>o.value):null;
  try{
   $("createCycleBtn").disabled=true;
   await rpc("cl_merry_create_cycle",{p_group_id:ctx.group.id,p_name:f.name.value.trim(),p_contribution_amount:Number(f.amount.value),p_frequency:f.frequency.value,p_start_date:f.start_date.value,p_number_of_rounds:Number(f.rounds.value),p_payout_order_method:method,p_member_order:order,p_late_fine_amount:Number(f.late_fine.value||0)});
   status("Cycle created and audited.");
-  e.currentTarget.reset();f.rounds.value=String(members.length);f.late_fine.value="0";applyOrderVisibility();await loadCycles();
+  form.reset();form.elements.rounds.value=String(members.length);form.elements.late_fine.value="0";applyOrderVisibility();await loadCycles();
  }catch(err){rpcError(err);}finally{$("createCycleBtn").disabled=false;}
 });
 $("roundRows").addEventListener("submit",async e=>{
