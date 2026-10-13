@@ -1,6 +1,6 @@
 import { supabase } from "./supabase.js";
 import { getMyApplicationContext } from "./auth.js";
-import { canWrite, applyRolePermissions } from "./role-permissions.js";
+import { canWrite, applyRolePermissions } from "./role-permissions.js?v=loan-export-policy-20261013";
 
 const $ = id => document.getElementById(id);
 const money = value => Number(value || 0).toLocaleString("en-KE",{minimumFractionDigits:2,maximumFractionDigits:2});
