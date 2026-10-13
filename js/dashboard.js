@@ -268,7 +268,7 @@ async function renderGroupLoanSummary() {
     setText("loanSummaryOutstandingAmount", money(summary.outstandingAmount));
     setText(
       "loanSummaryOutstandingCount",
-      summary.activeLoansCount + (summary.activeLoansCount === 1 ? " active loan" : " active loans")
+      summary.activeLoansCount + (summary.activeLoansCount === 1 ? " active/overdue loan" : " active/overdue loans")
     );
 
     section.hidden = false;
