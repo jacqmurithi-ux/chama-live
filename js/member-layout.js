@@ -165,15 +165,13 @@ const OFFICIAL_PERSONAL_ACCOUNT_PAGES = new Set([
 ]);
 
 function resolveMemberNavigationItem(item) {
+  // My Account is already a dedicated navigation entry. Hide legacy aliases
+  // for officials instead of rendering several duplicate My Account links.
   if (
     isAdminAccount() &&
     OFFICIAL_PERSONAL_ACCOUNT_PAGES.has(item.href.split("/").pop())
   ) {
-    return {
-      ...item,
-      label: "My Account",
-      href: "member-my-account.html"
-    };
+    return null;
   }
 
   return item;
@@ -918,6 +916,8 @@ function openMobileMenu() {
 
   MEMBER_NAVIGATION.forEach(item => {
     const resolvedItem = resolveMemberNavigationItem(item);
+    if (!resolvedItem) return;
+
     const link =
       createNavLink(
         resolvedItem.label,
@@ -1169,7 +1169,7 @@ function renderDesktopNavigation() {
 
   const groups = MEMBER_DESKTOP_NAVIGATION_GROUPS.map(([title, items]) => [
     title,
-    items.map(resolveMemberNavigationItem)
+    items.map(resolveMemberNavigationItem).filter(Boolean)
   ]);
 
   // Official users can switch portals from the Account menu.
@@ -1358,10 +1358,10 @@ function renderBottomNavigation() {
       label: "Home",
       href: "member-dashboard.html"
     },
-    resolveMemberNavigationItem({
+    {
       label: "Money",
-      href: "member-contributions.html"
-    }),
+      href: isAdminAccount() ? "member-my-account.html" : "member-contributions.html"
+    },
     {
       label: "Activities",
       href: "member-activities.html"
