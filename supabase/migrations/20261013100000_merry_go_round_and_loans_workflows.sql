@@ -101,6 +101,7 @@ create index if not exists idx_mgr_cycles_round_date on public.merry_go_round_cy
 create index if not exists idx_mgr_payments_cycle on public.merry_go_round_payments(cycle_id);
 create index if not exists idx_group_loans_group_status on public.group_loan_applications(group_id,status);
 create index if not exists idx_group_loan_repayments_loan on public.group_loan_repayments(loan_id);
+create unique index if not exists uq_group_loan_repayment_reference on public.group_loan_repayments(loan_id, reference) where reference is not null and btrim(reference) <> '';
 
 alter table public.merry_go_rounds enable row level security;
 alter table public.merry_go_round_members enable row level security;
@@ -310,7 +311,7 @@ create or replace function public.record_group_loan_repayment(
   p_payment_method text, p_reference text default null
 ) returns uuid language plpgsql security definer set search_path=''
 as $$
-declare v_group_id uuid; v_status text; v_member_id uuid; v_user_is_member boolean;
+declare v_group_id uuid; v_status text;
   v_approved numeric; v_rate numeric; v_repaid numeric; v_total_due numeric; v_repayment_id uuid;
 begin
   select group_id,member_id,status,approved_amount,flat_interest_rate
@@ -318,8 +319,7 @@ begin
   from public.group_loan_applications where id=p_loan_id for update;
   if v_group_id is null then raise exception 'Loan not found' using errcode='P0002'; end if;
   perform public.cl_assert_group_module_enabled(v_group_id,'loans');
-  select exists(select 1 from public.members m where m.id=v_member_id and (m.user_id=auth.uid() or m.auth_user_id=auth.uid())) into v_user_is_member;
-  if not v_user_is_member and not public.cl_user_has_role(v_group_id,array['admin','chairperson','secretary','treasurer']::text[]) then raise exception 'Not authorized to record this repayment' using errcode='42501'; end if;
+  if not public.cl_user_has_role(v_group_id,array['admin','chairperson','secretary','treasurer']::text[]) then raise exception 'Only an authorized group officer can confirm a repayment' using errcode='42501'; end if;
   if v_status not in ('disbursed','closed') then raise exception 'Repayments are only accepted for disbursed loans' using errcode='55000'; end if;
   v_total_due := round(v_approved * (1 + coalesce(v_rate,0)/100),2);
   select coalesce(sum(amount),0) into v_repaid from public.group_loan_repayments where loan_id=p_loan_id;
@@ -400,6 +400,6 @@ grant execute on function public.get_group_loans(uuid) to authenticated;
 
 comment on table public.merry_go_rounds is 'Rotating member payout plans; payouts are recorded manually and are not bank/mobile-money transfers.';
 comment on table public.group_loan_applications is 'Group loan lifecycle: application, officer decision, disbursement record and repayments. Repayment schedule uses a flat interest percentage.';
-comment on table public.group_loan_repayments is 'Append-only loan repayment receipts recorded by an authenticated borrower or authorized group officer.';
+comment on table public.group_loan_repayments is 'Append-only loan repayment receipts confirmed by an authorized group officer.';
 
 commit;
