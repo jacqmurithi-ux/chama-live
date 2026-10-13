@@ -80,7 +80,7 @@ import {
   signOut
 } from "./auth.js";
 
-import { applyRolePermissions } from "./role-permissions.js";
+import { applyRolePermissions } from "./role-permissions.js?v=loan-export-policy-20261013";
 import { supabase } from "./supabase.js";
 
 
