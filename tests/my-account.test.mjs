@@ -49,7 +49,7 @@ test("official personal-account routes redirect away from member-only and group-
   assert.match(memberLayout, /isAdminAccount\(\)[\s\S]*?OFFICIAL_PERSONAL_ACCOUNT_PAGES\.has\(item\.href\.split\("\/"\)\.pop\(\)\)/);
   assert.match(memberLayout, /items\.map\(resolveMemberNavigationItem\)\.filter\(Boolean\)/);
   assert.match(memberLayout, /const resolvedItem = resolveMemberNavigationItem\(item\)/);
-  assert.match(memberLayout, /return null;[\s\S]*?legacy aliases[\s\S]*?My Account is already a dedicated navigation entry/);
+  assert.match(memberLayout, /My Account is already a dedicated navigation entry[\s\S]*?return null;/);
   assert.match(memberLayout, /label: "Money",[\s\S]*?href: isAdminAccount\(\) \? "member-my-account\.html" : "member-contributions\.html"/);
   assert.match(memberLayout, /isAdminAccount\(\)[\s\S]*?OFFICIAL_PERSONAL_ACCOUNT_PAGES\.has\(currentPage\)[\s\S]*?window\.location\.replace\("member-my-account\.html"\)/);
 });
