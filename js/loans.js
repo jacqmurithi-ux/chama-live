@@ -88,7 +88,7 @@ $("loanRows").addEventListener("click",async e=>{
    const id=b.dataset.id;let note=null,amount=null;
    if(b.dataset.review==="rejected"){note=prompt("Reason for rejection:");if(!note?.trim())return;}
    else {const loan=loans.find(l=>l.id===id);const raw=prompt("Approved amount (KES)",String(loan.requested_amount));if(raw===null)return;amount=raw;}
-   await rpc("cl_loan_review",{p_group_id:ctx.group.id,p_loan_id:id,p_decision:b.dataset.review,p_decision_note:note,p_approved_amount:amount});status("Loan application "+b.dataset.review+".");await loadLoans();return;
+   await rpc("cl_loan_review_authorized",{p_group_id:ctx.group.id,p_loan_id:id,p_decision:b.dataset.review,p_decision_note:note,p_approved_amount:amount});status("Loan application "+b.dataset.review+".");await loadLoans();return;
   }
   if(b.dataset.disburse){
    if(!allowed("disburse"))throw new Error("View only: you cannot disburse loans.");
@@ -100,7 +100,7 @@ $("loanRows").addEventListener("click",async e=>{
 $("loanRepaymentForm").addEventListener("submit",async e=>{
  e.preventDefault();if(!selectedLoan||!allowed("repayment"))return status("View only: you cannot record repayments.",true);
  const f=e.currentTarget.elements;
- try{await rpc("cl_loan_record_repayment",{p_group_id:ctx.group.id,p_loan_id:selectedLoan.id,p_amount:f.amount.value,p_payment_date:f.payment_date.value,p_payment_method:f.method.value,p_reference:f.reference.value||null,p_note:f.note.value||null});status("Repayment recorded and allocated to the earliest outstanding installments.");e.currentTarget.reset();await loadLoans();if(selectedLoan)await showDetail(selectedLoan.id);}
+ try{await rpc("cl_loan_record_repayment_authorized",{p_group_id:ctx.group.id,p_loan_id:selectedLoan.id,p_amount:f.amount.value,p_payment_date:f.payment_date.value,p_payment_method:f.method.value,p_reference:f.reference.value||null,p_note:f.note.value||null});status("Repayment recorded and allocated to the earliest outstanding installments.");e.currentTarget.reset();await loadLoans();if(selectedLoan)await showDetail(selectedLoan.id);}
  catch(err){status(errorText(err),true);}
 });
 async function initializeLoans(){
@@ -111,7 +111,7 @@ async function initializeLoans(){
   $("loanContent").classList.remove("loan-hidden");
   const roles=[String(ctx.member?.role||"").toLowerCase(),String(ctx.member?.actual_position||"").toLowerCase(),String(ctx.member?.actual_position_name||"").toLowerCase()];
   official=roles.some(r=>["admin","administrator","chairperson","vice chairperson","treasurer","secretary","vice secretary"].includes(r));
-  await loadMembers();await loadSettings();await loadLoans();applyPermissions();status("Loans loaded for "+(ctx.group.name||"your group")+".");
+  await loadMembers();await loadSettings();await rpc("cl_loan_refresh_statuses",{p_group_id:ctx.group.id});await loadLoans();applyPermissions();status("Loans loaded for "+(ctx.group.name||"your group")+".");
  }catch(err){status(errorText(err),true);}
 }
 export async function initLoans(){return initializeLoans();}
