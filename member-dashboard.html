@@ -139,6 +139,7 @@
 
 
     /* GROUP LOAN SUMMARY */
+    #groupLoanSummarySection[hidden] { display: none !important; }
     .member-loan-summary-grid {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -464,7 +465,7 @@
           <div class="member-loan-summary-item">
             <span>Current Loans Outstanding</span>
             <strong id="memberLoanSummaryOutstandingAmount">KSh 0.00</strong>
-            <small id="memberLoanSummaryOutstandingCount">0 active loans</small>
+            <small id="memberLoanSummaryOutstandingCount">0 active/overdue loans</small>
           </div>
         </div>
       </article>
