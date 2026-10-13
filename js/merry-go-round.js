@@ -39,13 +39,18 @@ function applyOrderVisibility(){
  $("memberOrder").required=show;
 }
 async function loadNotifications(){
- const {data,error}=await supabase.from("merry_go_round_notifications")
-  .select("id,notification_type,message,due_date,created_at,read_at")
-  .eq("group_id",ctx.group.id).eq("member_id",ctx.member.id)
-  .order("created_at",{ascending:false}).limit(20);
- if(error)throw error;
- const items=data||[];
- $("merryNotifications").innerHTML=items.length?items.map(n=>'<div style="padding:9px 0;border-bottom:1px solid #e5e7eb"><strong>'+escapeHtml(n.notification_type.replaceAll("_"," "))+'</strong><div>'+escapeHtml(n.message)+'</div><small>'+escapeHtml(n.created_at?new Date(n.created_at).toLocaleString():"")+(n.due_date?' · Due '+escapeHtml(n.due_date):'')+'</small></div>').join(""):"No notifications yet.";
+ try {
+  const {data,error}=await supabase.from("merry_go_round_notifications")
+   .select("id,notification_type,message,due_date,created_at,read_at")
+   .eq("group_id",ctx.group.id).eq("member_id",ctx.member.id)
+   .order("created_at",{ascending:false}).limit(20);
+  if(error)throw error;
+  const items=data||[];
+  $("merryNotifications").innerHTML=items.length?items.map(n=>'<div style="padding:9px 0;border-bottom:1px solid #e5e7eb"><strong>'+escapeHtml(n.notification_type.replaceAll("_"," "))+'</strong><div>'+escapeHtml(n.message)+'</div><small>'+escapeHtml(n.created_at?new Date(n.created_at).toLocaleString():"")+(n.due_date?' · Due '+escapeHtml(n.due_date):'')+'</small></div>').join(""):"No notifications yet.";
+ } catch(error) {
+  console.warn("[Merry-go-round] Notifications could not be loaded.",error);
+  $("merryNotifications").textContent="Notifications could not be loaded. Refresh the page to retry.";
+ }
 }
 
 async function renderMemberChoicePanel(selected){
@@ -68,8 +73,8 @@ async function renderMemberChoicePanel(selected){
 }
 
 async function loadCycles(){
- cycles=await supabase.from("merry_go_round_cycles").select("id,name,status,contribution_amount,frequency,start_date,number_of_rounds,payout_order_method").eq("group_id",ctx.group.id).order("created_at",{ascending:false}).then(({data,error})=>{if(error)throw error;return data||[]});
- $("cycleSelect").innerHTML='<option value="">Select a cycle</option>'+cycles.map(c=>'<option value="'+escapeHtml(c.id)+'">'+escapeHtml(c.name)+' — '+escapeHtml(c.status)+'</option>').join("");
+ cycles=await supabase.from("merry_go_round_cycles").select("id,name,status,contribution_amount,frequency,start_date,number_of_rounds,payout_order_method,created_at").eq("group_id",ctx.group.id).order("created_at",{ascending:false}).then(({data,error})=>{if(error)throw error;return data||[]});
+ $("cycleSelect").innerHTML='<option value="">Select a cycle</option>'+cycles.map(c=>'<option value="'+escapeHtml(c.id)+'">'+escapeHtml(c.name)+' — '+escapeHtml(c.status)+' — '+escapeHtml(c.created_at?new Date(c.created_at).toLocaleString():c.id.slice(0,8))+'</option>').join("");
  if(cycles.length){$("cycleSelect").value=cycles[0].id;await loadTracking();}
 }
 async function loadTracking(){
@@ -115,6 +120,7 @@ async function initialize(){
    if(!writeAllowed("create")){const badge=document.createElement("span");badge.className="merry-pill";badge.textContent="View only";$("cycleForm").before(badge);$("cycleForm").querySelectorAll("input,select,button").forEach(el=>el.disabled=true);}
    await loadMembers();
    await loadCycles();
+   await loadNotifications();
    applyOrderVisibility();
    status("Merry-go-round ready for "+ctx.group.name+".");
  }catch(e){rpcError(e);console.error("[Merry-go-round]",e);}
