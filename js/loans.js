@@ -1,11 +1,30 @@
 import { supabase } from "./supabase.js";
 import { getMyApplicationContext } from "./auth.js";
-import { canWrite, applyRolePermissions } from "./role-permissions.js?v=loan-export-policy-20261013";
+import { canWrite, applyRolePermissions } from "./role-permissions.js?v=loan-three-office-approval-20261013";
 
 const $ = id => document.getElementById(id);
 const money = value => Number(value || 0).toLocaleString("en-KE",{minimumFractionDigits:2,maximumFractionDigits:2});
 const esc = value => String(value ?? "").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-let ctx, settings, loans=[], members=[], selectedLoan=null, official=false;
+let ctx, settings, loans=[], members=[], loanApprovals=[], selectedLoan=null, official=false;
+
+function loanApprovalSlot(member = {}) {
+ const clean = value => String(value ?? "").trim().toLowerCase().replace(/[_-]+/g," ").replace(/\\s+/g," ");
+ const declared = [member.actual_position,member.actual_position_name].map(clean);
+ if(declared.some(v=>["chairperson","vice chairperson","chair","vice chair"].includes(v)))return "chairperson";
+ if(declared.some(v=>v==="treasurer"))return "treasurer";
+ if(declared.some(v=>["secretary","vice secretary"].includes(v)))return "secretary";
+ const role=clean(member.role||"member");
+ if(["admin","administrator"].includes(role))return null;
+ if(["chairperson","vice chairperson","chair","vice chair"].includes(role))return "chairperson";
+ if(role==="treasurer")return "treasurer";
+ if(["secretary","vice secretary"].includes(role))return "secretary";
+ return null;
+}
+const APPROVAL_OFFICES = [
+ ["chairperson","Chairperson"],
+ ["treasurer","Treasurer"],
+ ["secretary","Secretary"]
+];
 
 function status(message,error=false){$("loanStatus").textContent=message;$("loanStatus").classList.toggle("error",error);}
 function errorText(error){return [error?.message,error?.details,error?.hint,error?.code?("Code: "+error.code):null].filter(Boolean).join(" — ")||"Request failed.";}
@@ -49,13 +68,24 @@ async function loadMembers(){
 async function loadLoans(){
  const {data,error}=await supabase.from("loan_applications").select("id,group_id,member_id,requested_amount,approved_amount,period_months,purpose,guarantor_member_id,status,decision_note,interest_rate_snapshot,interest_type_snapshot,approved_by,approved_at,disbursed_at,created_at").eq("group_id",ctx.group.id).order("created_at",{ascending:false});
  if(error)throw error;loans=data||[];
+ const {data:approvalData,error:approvalError}=await supabase.from("loan_approvals").select("loan_id,approval_slot,decision,approver_user_id,note,created_at").eq("group_id",ctx.group.id);
+ if(approvalError)throw approvalError;loanApprovals=approvalData||[];
  const memberById=new Map(members.map(m=>[m.id,m]));
+ const ownSlot=loanApprovalSlot(ctx.member);
  $("loanRows").innerHTML=loans.map(l=>{
   const m=memberById.get(l.member_id);const name=m?.name||(l.member_id===ctx.member.id?"You":"Member");
+  const votes=loanApprovals.filter(a=>a.loan_id===l.id);
+  const ownVote=votes.find(a=>a.approval_slot===ownSlot);
+  const canDecide=l.status==="submitted"&&allowed("review")&&Boolean(ownSlot)&&!ownVote&&l.member_id!==ctx.member.id;
+  const approvalSummary=APPROVAL_OFFICES.map(([slot,label])=>{
+   const vote=votes.find(a=>a.approval_slot===slot);
+   const text=vote?(vote.decision==="approved"?"Approved":"Rejected"):"Pending";
+   return '<span style="display:inline-block;margin:2px 6px 2px 0">'+esc(label)+': '+esc(text)+'</span>';
+  }).join("");
   let actions='<button class="loan-btn secondary" data-detail="'+esc(l.id)+'">Details</button>';
-  if(l.status==="submitted") actions+='<button class="loan-btn" data-review="approved" data-id="'+esc(l.id)+'" '+(allowed("review")?"":"disabled title=\"View only\"") +'>Approve</button><button class="loan-btn secondary" data-review="rejected" data-id="'+esc(l.id)+'" '+(allowed("review")?"":"disabled title=\"View only\"") +'>Reject</button>';
-  if(l.status==="approved") actions+='<button class="loan-btn" data-disburse="'+esc(l.id)+'" '+(allowed("disburse")?"":"disabled title=\"View only\"") +'>Disburse</button>';
-  return '<tr><td>'+esc(name)+'</td><td>KES '+money(l.requested_amount)+'</td><td>'+(l.approved_amount==null?"—":"KES "+money(l.approved_amount))+'</td><td>'+l.period_months+' months</td><td><span class="loan-pill">'+esc(l.status)+'</span></td><td>'+esc(l.created_at?new Date(l.created_at).toLocaleDateString():"—")+'</td><td><div class="loan-actions">'+actions+'</div></td></tr>';
+  if(canDecide) actions+='<button class="loan-btn" data-review="approved" data-id="'+esc(l.id)+'">Approve</button><button class="loan-btn secondary" data-review="rejected" data-id="'+esc(l.id)+'">Reject</button>';
+  if(l.status==="approved") actions+='<button class="loan-btn" data-disburse="'+esc(l.id)+'" '+(allowed("disburse")?"":"disabled title=\\"View only\\"") +'>Disburse</button>';
+  return '<tr><td>'+esc(name)+'</td><td>KES '+money(l.requested_amount)+'</td><td>'+(l.approved_amount==null?"—":"KES "+money(l.approved_amount))+'</td><td>'+l.period_months+' months</td><td><span class="loan-pill">'+esc(l.status)+'</span></td><td>'+esc(l.created_at?new Date(l.created_at).toLocaleDateString():"—")+'</td><td><div class="loan-muted" aria-label="Required office approvals">'+approvalSummary+'</div><div class="loan-actions">'+actions+'</div></td></tr>';
  }).join("")||'<tr><td colspan="7">No loan applications yet.</td></tr>';
  const outstandingIds=loans.filter(l=>["active","overdue"].includes(l.status));
  let outstanding=0, overdue=0;
@@ -124,7 +154,21 @@ $("loanRows").addEventListener("click",async e=>{
   if(b.dataset.review){
    if(!allowed("review"))throw new Error("View only: you cannot review loan applications.");
    const id=b.dataset.id;let note=null,amount=null;
+   const loan=loans.find(l=>l.id===id);
+   if(!loan||loan.status!=="submitted")throw new Error("Only pending loan applications can receive an office decision.");
+   if(loan.member_id===ctx.member.id)throw new Error("You cannot approve or reject your own loan.");
+   const slot=loanApprovalSlot(ctx.member);
+   if(!slot)throw new Error("Only the designated Chairperson, Treasurer or Secretary can approve loans.");
+   if(loanApprovals.some(a=>a.loan_id===id&&a.approval_slot===slot))throw new Error("Your office has already submitted a decision for this loan.");
    if(b.dataset.review==="rejected"){note=prompt("Reason for rejection:");if(!note?.trim())return;}
+   else {const raw=prompt("Loan amount all three offices must approve (KES)",String(loan.approved_amount??loan.requested_amount));if(raw===null)return;amount=raw;}
+   await rpc("cl_loan_review_authorized",{p_group_id:ctx.group.id,p_loan_id:id,p_decision:b.dataset.review,p_decision_note:note,p_approved_amount:amount});
+   await loadNotifications();await loadLoans();
+   const updated=loans.find(l=>l.id===id);
+   if(updated?.status==="approved")status("All three office approvals are recorded. Loan approved for disbursement.");
+   else if(updated?.status==="rejected")status("Loan rejected. Disbursement is blocked.",true);
+   else status("Your office decision was recorded. The loan remains pending until all three offices approve.");
+   return;}
    else {const loan=loans.find(l=>l.id===id);const raw=prompt("Approved amount (KES)",String(loan.requested_amount));if(raw===null)return;amount=raw;}
    await rpc("cl_loan_review_authorized",{p_group_id:ctx.group.id,p_loan_id:id,p_decision:b.dataset.review,p_decision_note:note,p_approved_amount:amount});status("Loan application "+b.dataset.review+".");await loadNotifications();await loadLoans();return;
   }
