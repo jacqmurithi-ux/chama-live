@@ -14,8 +14,8 @@ async function rpc(name,args){const {data,error}=await supabase.rpc(name,args);i
 function today(){return new Date().toISOString().slice(0,10);}
 function applyPermissions(){
   applyRolePermissions({page:"loans",member:ctx.member});
-  $("loanSettingsCard").classList.toggle("loan-hidden",!allowed("settings"));
-  $("loanRepaymentPanel").classList.toggle("loan-hidden",!selectedLoan||!allowed("repayment")||!["active","overdue"].includes(selectedLoan.status));
+  $("loanSettingsCard").classList.remove("loan-hidden");
+  $("loanRepaymentPanel").classList.toggle("loan-hidden",!selectedLoan||!["active","overdue"].includes(selectedLoan.status));
 }
 async function loadSettings(){
  const {data,error}=await supabase.from("loan_settings").select("interest_rate,interest_type,max_loan_amount,max_period_months,late_penalty").eq("group_id",ctx.group.id).maybeSingle();
@@ -39,8 +39,8 @@ async function loadLoans(){
  $("loanRows").innerHTML=loans.map(l=>{
   const m=memberById.get(l.member_id);const name=m?.name||(l.member_id===ctx.member.id?"You":"Member");
   let actions='<button class="loan-btn secondary" data-detail="'+esc(l.id)+'">Details</button>';
-  if(allowed("review")&&l.status==="submitted") actions+='<button class="loan-btn" data-review="approved" data-id="'+esc(l.id)+'">Approve</button><button class="loan-btn secondary" data-review="rejected" data-id="'+esc(l.id)+'">Reject</button>';
-  if(allowed("disburse")&&l.status==="approved") actions+='<button class="loan-btn" data-disburse="'+esc(l.id)+'">Disburse</button>';
+  if(l.status==="submitted") actions+='<button class="loan-btn" data-review="approved" data-id="'+esc(l.id)+'" '+(allowed("review")?"":"disabled title=\"View only\"") +'>Approve</button><button class="loan-btn secondary" data-review="rejected" data-id="'+esc(l.id)+'" '+(allowed("review")?"":"disabled title=\"View only\"") +'>Reject</button>';
+  if(l.status==="approved") actions+='<button class="loan-btn" data-disburse="'+esc(l.id)+'" '+(allowed("disburse")?"":"disabled title=\"View only\"") +'>Disburse</button>';
   return '<tr><td>'+esc(name)+'</td><td>KES '+money(l.requested_amount)+'</td><td>'+(l.approved_amount==null?"—":"KES "+money(l.approved_amount))+'</td><td>'+l.period_months+' months</td><td><span class="loan-pill">'+esc(l.status)+'</span></td><td>'+esc(l.created_at?new Date(l.created_at).toLocaleDateString():"—")+'</td><td><div class="loan-actions">'+actions+'</div></td></tr>';
  }).join("")||'<tr><td colspan="7">No loan applications yet.</td></tr>';
  const outstandingIds=loans.filter(l=>["active","overdue"].includes(l.status));
