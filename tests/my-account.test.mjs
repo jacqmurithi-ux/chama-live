@@ -62,6 +62,12 @@ test("loan outstanding includes principal, interest and penalties net of all rep
   assert.match(migration, /l\.disbursed_at is not null/);
 });
 
+test("payment evidence RPC normalizes non-M-Pesa references and enforces text limits server-side", () => {
+  assert.match(migration, /when btrim\(coalesce\(p_payment_method, ''\)\) = 'M-Pesa'[\s\S]*?else null[\s\S]*?end;/);
+  assert.match(migration, /length\(v_details\) > 1000/);
+  assert.match(migration, /length\(v_reference\) > 64/);
+});
+
 test("candidate backend keeps payment evidence pending and blocks submitter self-verification", () => {
   assert.match(migration, /'pending'/);
   assert.match(migration, /You cannot verify or reject your own payment evidence/);
