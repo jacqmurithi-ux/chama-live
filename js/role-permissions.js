@@ -176,6 +176,13 @@ const POLICY = {
     // Posting imported data remains a Treasurer-controlled action.
     post: new Set(["treasurer"])
   },
+  "merry-go-round": {
+    view: GROUP_MANAGEMENT,
+    create: new Set(["admin", "chairperson", "treasurer", "secretary"]),
+    record: new Set(["admin", "chairperson", "treasurer", "secretary"]),
+    payout: new Set(["admin", "chairperson", "treasurer", "secretary"]),
+    swap: new Set(["admin", "chairperson", "secretary"])
+  },
   "group-management": {
     view: GROUP_MANAGEMENT,
     // Treasury settings are separately protected by backend RPCs.
