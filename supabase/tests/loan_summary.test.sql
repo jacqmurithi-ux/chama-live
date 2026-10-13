@@ -132,12 +132,14 @@ begin
     v_group, v_loan_overdue, 1, current_date - 30, 800, 100, 0, 620, 'overdue'
   ) returning id into v_schedule_overdue;
 
+  -- Repayment inserts use the group Admin identity enforced by the live trigger.
+  perform set_config('request.jwt.claim.sub', v_admin_user::text, true);
   insert into public.loan_repayments(group_id, loan_id, amount, recorded_by)
-  values (v_group, v_loan_active, 650, v_user) returning id into v_payment_active;
+  values (v_group, v_loan_active, 650, v_admin_user) returning id into v_payment_active;
   insert into public.loan_repayments(group_id, loan_id, amount, recorded_by)
-  values (v_group, v_loan_cleared, 600, v_user) returning id into v_payment_cleared;
+  values (v_group, v_loan_cleared, 600, v_admin_user) returning id into v_payment_cleared;
   insert into public.loan_repayments(group_id, loan_id, amount, recorded_by)
-  values (v_group, v_loan_overdue, 620, v_user) returning id into v_payment_overdue;
+  values (v_group, v_loan_overdue, 620, v_admin_user) returning id into v_payment_overdue;
 
   insert into public.loan_repayment_allocations(
     group_id, repayment_id, loan_id, schedule_id, principal_amount, interest_amount, penalty_amount
@@ -146,6 +148,7 @@ begin
     (v_group, v_payment_cleared, v_loan_cleared, v_schedule_cleared, 500, 100, 0),
     (v_group, v_payment_overdue, v_loan_overdue, v_schedule_overdue, 600, 20, 0);
 
+  perform set_config('request.jwt.claim.sub', v_user::text, true);
   v_result := public.cl_get_group_loan_summary(v_group);
   if (v_result->>'totalDisbursed')::numeric <> 2300 then
     raise exception 'FAIL: expected total disbursed 2300, got %', v_result->>'totalDisbursed';
