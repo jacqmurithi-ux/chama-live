@@ -228,7 +228,7 @@ const roleCan = (roles, page, action, member) => {
 };
 
 function loanApprovalOffice(member = {}) {
-  const clean = value => normalize(value).replace(/[_-]+/g, " ").replace(/\\s+/g, " ");
+  const clean = value => normalize(value).replace(/[_-]+/g, " ").replace(/\s+/g, " ");
   const declared = [member.actual_position, member.actual_position_name].map(clean);
   if (declared.some(value => ["chairperson", "vice chairperson", "chair", "vice chair"].includes(value))) return "chairperson";
   if (declared.some(value => value === "treasurer")) return "treasurer";
