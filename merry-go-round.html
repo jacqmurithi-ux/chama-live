@@ -42,6 +42,19 @@
 <div id="cycleSummary" class="merry-muted">Choose a cycle to view round tracking.</div>
 </section>
 </div>
+<section id="memberChoicePanel" class="merry-card" style="margin-top:16px;display:none">
+<h2>Member-chosen payout order</h2>
+<p class="merry-muted">Each active member may reserve one preferred round. Once every active member has selected a different round, an authorized official can apply the choices. Choices close when the first round starts.</p>
+<form id="memberChoiceForm" class="merry-form">
+<label>Preferred payout round<select id="preferredRound" name="preferred_round" required></select></label>
+<button type="submit" id="savePreferenceBtn" class="merry-btn">Save my choice</button>
+</form>
+<div id="myPreferenceStatus" class="merry-muted" style="margin-top:8px"></div>
+<div id="allPreferencesPanel" style="display:none;margin-top:12px">
+<h3>Submitted choices</h3><div id="allPreferences" class="merry-muted"></div>
+<button type="button" id="applyPreferencesBtn" class="merry-btn" style="margin-top:10px">Apply member choices</button>
+</div>
+</section>
 <section class="merry-card" style="margin-top:16px">
 <h2>Notifications</h2><div id="merryNotifications" class="merry-muted">Loading notifications…</div>
 </section>
