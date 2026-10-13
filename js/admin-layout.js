@@ -117,6 +117,7 @@ const ADMIN_PAGES = new Set([
 
   "contributions.html",
   "merry-go-round.html",
+  "loans.html",
   "expenses.html",
   "fines.html",
   "meetings.html",
@@ -187,6 +188,11 @@ const PAGE_SCRIPTS = {
   "merry-go-round.html": [
     "./merry-go-round.js?v=df3bc51-safe-cycle-delete",
     "initMerryGoRound"
+  ],
+
+  "loans.html": [
+    "./loans.js?v=20261013-loans-module",
+    "initLoans"
   ],
 
   "expenses.html": [
@@ -462,6 +468,7 @@ const NAVIGATION_GROUPS = [
     [
       ["contributions.html", "Contributions"],
       ["merry-go-round.html", "Merry-go-round"],
+      ["loans.html", "Loans"],
       ["expenses.html", "Expenses"],
       ["fines.html", "Fines"],
       ["reports.html", "Reports"],
