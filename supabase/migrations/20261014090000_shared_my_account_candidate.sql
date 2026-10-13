@@ -105,9 +105,9 @@ begin
   where s.member_id = v_member.id
   limit 1;
 
-  -- Keep lifetime allocation/arrears aligned to the canonical obligation ledger.
-  -- The monthly-status RPC defines due using rule-backed obligations; use the same
-  -- scope here instead of summing raw contribution rows as a proxy for allocation.
+  -- Keep lifetime allocation/arrears aligned to the canonical monthly-status RPC:
+  -- total_due_to_date comes from rule-backed obligations, while allocation totals
+  -- include allocations attached to all obligations through the current month.
   v_total_due_to_date := coalesce((v_monthly->>'total_due_to_date')::numeric, 0);
 
   select coalesce(sum(ca.amount), 0)
