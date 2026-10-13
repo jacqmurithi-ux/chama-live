@@ -8,7 +8,7 @@ const esc = value => String(value ?? "").replace(/[&<>"']/g,c=>({"&":"&amp;","<"
 let ctx, settings, loans=[], members=[], loanApprovals=[], selectedLoan=null, official=false;
 
 function loanApprovalSlot(member = {}) {
- const clean = value => String(value ?? "").trim().toLowerCase().replace(/[_-]+/g," ").replace(/\\s+/g," ");
+ const clean = value => String(value ?? "").trim().toLowerCase().replace(/[_-]+/g," ").replace(/\s+/g," ");
  const declared = [member.actual_position,member.actual_position_name].map(clean);
  if(declared.some(v=>["chairperson","vice chairperson","chair","vice chair"].includes(v)))return "chairperson";
  if(declared.some(v=>v==="treasurer"))return "treasurer";
