@@ -34,7 +34,7 @@ async function loadMembers() {
   $("cycleForm").elements.rounds.value=String(members.length);
 }
 function applyOrderVisibility(){
- const show=$("payoutMethod").value!=="random";
+ const show=$("payoutMethod").value==="admin";
  $("orderLabel").classList.toggle("merry-hide",!show);
  $("memberOrder").required=show;
 }
@@ -48,8 +48,26 @@ async function loadNotifications(){
  $("merryNotifications").innerHTML=items.length?items.map(n=>'<div style="padding:9px 0;border-bottom:1px solid #e5e7eb"><strong>'+escapeHtml(n.notification_type.replaceAll("_"," "))+'</strong><div>'+escapeHtml(n.message)+'</div><small>'+escapeHtml(n.created_at?new Date(n.created_at).toLocaleString():"")+(n.due_date?' · Due '+escapeHtml(n.due_date):'')+'</small></div>').join(""):"No notifications yet.";
 }
 
-async function loadCycles(){
- cycles=await supabase.from("merry_go_round_cycles").select("id,name,status,contribution_amount,frequency,start_date,number_of_rounds").eq("group_id",ctx.group.id).order("created_at",{ascending:false}).then(({data,error})=>{if(error)throw error;return data||[]});
+async function renderMemberChoicePanel(selected){
+ const panel=$("memberChoicePanel");
+ const official=writeAllowed("applyPreferences");
+ if(!selected||selected.payout_order_method!=="member_chosen"){panel.style.display="none";return;}
+ panel.style.display="block";
+ const select=$("preferredRound");
+ select.innerHTML=Array.from({length:Number(selected.number_of_rounds)},(_,i)=>'<option value="'+(i+1)+'">Round '+(i+1)+'</option>').join("");
+ const {data:mine,error}=await supabase.from("merry_go_round_preferences").select("preferred_round_number").eq("group_id",ctx.group.id).eq("cycle_id",selected.id).eq("member_id",ctx.member.id).maybeSingle();
+ if(error)throw error;
+ if(mine)select.value=String(mine.preferred_round_number);
+ $("myPreferenceStatus").textContent=mine?"Your current choice: Round "+mine.preferred_round_number+". You may change it if the new round is still available.":"You have not chosen a payout round yet.";
+ $("allPreferencesPanel").style.display=official?"block":"none";
+ if(official){
+  const rows=await rpc("cl_merry_list_preferences",{p_group_id:ctx.group.id,p_cycle_id:selected.id});
+  $("allPreferences").innerHTML=(rows||[]).map(p=>'<div>'+escapeHtml(p.member_name)+' — Round '+p.preferred_round_number+'</div>').join("")||"No member choices submitted yet.";
+  $("applyPreferencesBtn").disabled=(rows||[]).length!==Number(selected.number_of_rounds);
+ }
+}
+\nasync function loadCycles(){
+ cycles=await supabase.from("merry_go_round_cycles").select("id,name,status,contribution_amount,frequency,start_date,number_of_rounds,payout_order_method").eq("group_id",ctx.group.id).order("created_at",{ascending:false}).then(({data,error})=>{if(error)throw error;return data||[]});
  $("cycleSelect").innerHTML='<option value="">Select a cycle</option>'+cycles.map(c=>'<option value="'+escapeHtml(c.id)+'">'+escapeHtml(c.name)+' — '+escapeHtml(c.status)+'</option>').join("");
  if(cycles.length){$("cycleSelect").value=cycles[0].id;await loadTracking();}
 }
@@ -58,7 +76,7 @@ async function loadTracking(){
  if(!cycleId){$("roundRows").innerHTML='<tr><td colspan="9">Choose a cycle.</td></tr>';return;}
  const data=await rpc("cl_merry_tracking",{p_group_id:ctx.group.id,p_cycle_id:cycleId});
  const selected=cycles.find(c=>c.id===cycleId);
- $("cycleSummary").textContent=selected ? selected.name+" · "+money(selected.contribution_amount)+" per member · "+selected.frequency+" · "+selected.number_of_rounds+" rounds · "+selected.status : "";
+ $("cycleSummary").textContent=selected ? selected.name+" · "+money(selected.contribution_amount)+" per member · "+selected.frequency+" · "+selected.number_of_rounds+" rounds · "+selected.status : "";\n await renderMemberChoicePanel(selected);
  $("roundRows").innerHTML=(data||[]).map(r=>{
    const pays=Array.isArray(r.member_payments)?r.member_payments:[];
    const payHtml=pays.map(p=>{
@@ -73,6 +91,17 @@ async function loadTracking(){
    return '<tr><td>'+r.round_number+'</td><td>'+escapeHtml(r.due_date)+'</td><td>'+escapeHtml(r.recipient_name)+'</td><td>'+money(r.payout_amount)+'</td><td><span class="merry-pill">'+escapeHtml(r.round_status)+'</span></td><td>'+r.paid_count+'</td><td>'+r.pending_count+'</td><td>'+r.late_count+'</td><td>'+payHtml+actions+swap+'</td></tr>';
  }).join("")||'<tr><td colspan="9">No rounds found.</td></tr>';
 }
+$("memberChoiceForm").addEventListener("submit",async e=>{
+ e.preventDefault();
+ if(!ctx)return;
+ try{$("savePreferenceBtn").disabled=true;await rpc("cl_merry_choose_round",{p_group_id:ctx.group.id,p_cycle_id:$("cycleSelect").value,p_round_number:Number($("preferredRound").value)});status("Your payout-round choice was saved.");await renderMemberChoicePanel(cycles.find(c=>c.id===$("cycleSelect").value));}
+ catch(err){rpcError(err);}finally{$("savePreferenceBtn").disabled=false;}
+});
+$("applyPreferencesBtn").addEventListener("click",async()=>{
+ if(!writeAllowed("applyPreferences"))return status("View only: you cannot apply member choices.",true);
+ try{await rpc("cl_merry_apply_preferences",{p_group_id:ctx.group.id,p_cycle_id:$("cycleSelect").value});status("Member choices applied and audit logged.");await loadTracking();}
+ catch(err){rpcError(err);}
+});
 async function initialize(){
  try{
    ctx=await getMyApplicationContext();
@@ -95,7 +124,7 @@ $("cycleForm").addEventListener("submit",async e=>{
  if(!writeAllowed("create")) return status("View only: you cannot create a cycle.",true);
  const f=e.currentTarget.elements;
  const method=f.order_method.value;
- const order=method==="random"?null:Array.from($("memberOrder").selectedOptions).map(o=>o.value);
+ const order=method==="admin"?Array.from($("memberOrder").selectedOptions).map(o=>o.value):null;
  try{
   $("createCycleBtn").disabled=true;
   await rpc("cl_merry_create_cycle",{p_group_id:ctx.group.id,p_name:f.name.value.trim(),p_contribution_amount:Number(f.amount.value),p_frequency:f.frequency.value,p_start_date:f.start_date.value,p_number_of_rounds:Number(f.rounds.value),p_payout_order_method:method,p_member_order:order,p_late_fine_amount:Number(f.late_fine.value||0)});
