@@ -357,6 +357,21 @@
        Monthly + Custom contribution types
     ===================================================== */
 
+    /* GROUP LOAN SUMMARY */
+    .loan-summary-card { margin-top: 18px; }
+    .loan-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .loan-summary-grid .metric-card { min-width: 0; }
+    @media (max-width: 1100px) {
+      .loan-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 520px) {
+      .loan-summary-grid .metric-value { font-size: 18px; overflow-wrap: anywhere; }
+    }
+
     .active-contributions-card {
       border: 1px solid var(--dashboard-border);
       border-radius: var(--dashboard-radius);
@@ -1557,6 +1572,41 @@
 
       </section>
 
+
+      <!-- GROUP LOAN SUMMARY: loaded only when loans are enabled -->
+      <section
+        id="groupLoanSummarySection"
+        class="dashboard-section loan-summary-card"
+        aria-labelledby="groupLoanSummaryTitle"
+        hidden
+      >
+        <div class="section-heading">
+          <h2 id="groupLoanSummaryTitle">Loan Summary</h2>
+          <p>Group-wide loan activity and outstanding principal.</p>
+        </div>
+        <div class="loan-summary-grid">
+          <article class="metric-card">
+            <span class="metric-label">Total Loan Disbursed</span>
+            <strong id="loanSummaryTotalDisbursed" class="metric-value">KSh 0</strong>
+            <span class="metric-meta">Principal issued to members</span>
+          </article>
+          <article class="metric-card">
+            <span class="metric-label">Interest Gained</span>
+            <strong id="loanSummaryInterestGained" class="metric-value">KSh 0</strong>
+            <span class="metric-meta">Interest collected from repayments</span>
+          </article>
+          <article class="metric-card">
+            <span class="metric-label">Members Benefited</span>
+            <strong id="loanSummaryMembersBenefited" class="metric-value">0</strong>
+            <span class="metric-meta">Members with a disbursed loan</span>
+          </article>
+          <article class="metric-card">
+            <span class="metric-label">Current Loans Outstanding</span>
+            <strong id="loanSummaryOutstandingAmount" class="metric-value">KSh 0</strong>
+            <span id="loanSummaryOutstandingCount" class="metric-meta">0 active loans</span>
+          </article>
+        </div>
+      </section>
 
       <!-- =================================================
            ACTIVE CONTRIBUTION TYPES
