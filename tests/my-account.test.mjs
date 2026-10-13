@@ -49,6 +49,19 @@ test("account summary separates canonical lifetime allocations and arrears from 
   assert.match(ui, /Total arrears/);
 });
 
+test("lifetime allocations match the canonical monthly-status allocation scope", () => {
+  assert.match(migration, /total_allocated numeric := 0/);
+  assert.match(migration, /join public\.contribution_obligations o on o\.id = ca\.obligation_id/);
+  assert.match(migration, /and o\.obligation_month <= date_trunc\('month', current_date\)::date;/);
+  assert.doesNotMatch(migration, /and o\.rule_id is not null\s+and o\.obligation_month <= date_trunc/);
+});
+
+test("loan outstanding includes principal, interest and penalties net of all repayment allocations", () => {
+  assert.match(migration, /s\.principal_due \+ s\.interest_due \+ s\.penalty_due/);
+  assert.match(migration, /sum\(principal_amount \+ interest_amount \+ penalty_amount\) as total_paid/);
+  assert.match(migration, /l\.disbursed_at is not null/);
+});
+
 test("candidate backend keeps payment evidence pending and blocks submitter self-verification", () => {
   assert.match(migration, /'pending'/);
   assert.match(migration, /You cannot verify or reject your own payment evidence/);
