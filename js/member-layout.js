@@ -69,7 +69,8 @@ const MEMBER_PAGES = new Set([
   "member-assets.html",
   "member-milestones.html",
   "member-profile.html",
-  "member-getting-started.html"
+  "member-getting-started.html",
+  "member-my-account.html"
 ]);
 
 
@@ -107,6 +108,11 @@ const PAGE_SCRIPTS = {
   "member-profile.html": {
     path: "./member-profile.js?v=20261010-personal-status4",
     initializer: "initMemberAccounting"
+  },
+
+  "member-my-account.html": {
+    path: "./my-account.js?v=20261013-shared-account1",
+    initializer: "initMyAccount"
   }
 };
 
@@ -144,6 +150,31 @@ function isAdminAccount() {
     );
 
   return ADMIN_ROLES.has(role);
+}
+
+/*
+ * These pages are personal finance/profile entry points, but the legacy
+ * contribution/accounting page can expose group-wide selectors or reject
+ * official roles. Officials must use the shared auth-derived My Account
+ * page for their own records instead.
+ */
+const OFFICIAL_PERSONAL_ACCOUNT_PAGES = new Set([
+  "member-contributions.html",
+  "member-accounting.html",
+  "member-profile.html"
+]);
+
+function resolveMemberNavigationItem(item) {
+  // My Account is already a dedicated navigation entry. Hide legacy aliases
+  // for officials instead of rendering several duplicate My Account links.
+  if (
+    isAdminAccount() &&
+    OFFICIAL_PERSONAL_ACCOUNT_PAGES.has(item.href.split("/").pop())
+  ) {
+    return null;
+  }
+
+  return item;
 }
 
 
@@ -247,6 +278,10 @@ function ensureMemberPortalShell() {
 
 const MEMBER_NAVIGATION = [
   {
+    label: "My Account",
+    href: "member-my-account.html"
+  },
+  {
     label: "Home",
     href: "member-dashboard.html"
   },
@@ -290,6 +325,7 @@ const MEMBER_DESKTOP_NAVIGATION_GROUPS = [
     "Home",
     [
       { label: "Home", href: "member-dashboard.html" },
+      { label: "My Account", href: "member-my-account.html" },
       { label: "Getting Started", href: "member-getting-started.html" }
     ]
   ],
@@ -879,10 +915,13 @@ function openMobileMenu() {
     "chama-member-mobile-links";
 
   MEMBER_NAVIGATION.forEach(item => {
+    const resolvedItem = resolveMemberNavigationItem(item);
+    if (!resolvedItem) return;
+
     const link =
       createNavLink(
-        item.label,
-        item.href,
+        resolvedItem.label,
+        resolvedItem.href,
         currentPage
       );
 
@@ -1130,7 +1169,7 @@ function renderDesktopNavigation() {
 
   const groups = MEMBER_DESKTOP_NAVIGATION_GROUPS.map(([title, items]) => [
     title,
-    [...items]
+    items.map(resolveMemberNavigationItem).filter(Boolean)
   ]);
 
   // Official users can switch portals from the Account menu.
@@ -1321,7 +1360,7 @@ function renderBottomNavigation() {
     },
     {
       label: "Money",
-      href: "member-contributions.html"
+      href: isAdminAccount() ? "member-my-account.html" : "member-contributions.html"
     },
     {
       label: "Activities",
@@ -1500,6 +1539,16 @@ export async function boot() {
 
     const currentPage =
       getCurrentPage();
+
+    // Direct URLs and legacy bookmarks must follow the same self-only route
+    // as navigation clicks when an official opens their personal records.
+    if (
+      isAdminAccount() &&
+      OFFICIAL_PERSONAL_ACCOUNT_PAGES.has(currentPage)
+    ) {
+      window.location.replace("member-my-account.html");
+      return;
+    }
 
     if (
       !MEMBER_PAGES.has(

@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0f766e">
+  <title>My Account — CHAMA LIVE</title>
+  <link rel="stylesheet" href="./css/app.css">
+  <style>
+    .my-account-page{max-width:1200px;margin:0 auto;padding:24px 16px 100px}
+    .account-heading{margin-bottom:20px}.account-heading h1{margin:0 0 6px;font-size:clamp(1.6rem,4vw,2.2rem)}
+    .account-muted{color:#64748b;line-height:1.5}.account-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:16px 0 22px}
+    .account-stat,.account-card{border:1px solid #e2e8f0;border-radius:14px;background:#fff;padding:16px;min-width:0}
+    .account-stat span,.account-profile-field span{display:block;color:#64748b;font-size:.76rem;font-weight:700;margin-bottom:6px}
+    .account-stat strong{display:block;font-size:1.15rem;overflow-wrap:anywhere;color:#1f2937}
+    .account-card{margin-bottom:18px}.account-card h2{font-size:1.1rem;margin:0 0 12px}
+    .account-profile{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+    .account-profile-field strong{display:block;overflow-wrap:anywhere}
+    .account-toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin-bottom:14px}
+    .account-field{display:grid;gap:5px}.account-field label{font-size:.78rem;font-weight:700;color:#475569}
+    .account-field select,.account-field input,.account-field textarea{min-height:40px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:9px;background:white;color:#0f172a}
+    .account-btn{min-height:40px;padding:8px 13px;border:1px solid #cbd5e1;border-radius:9px;background:white;font-weight:700;cursor:pointer}
+    .account-btn-primary{background:#0f766e;color:white;border-color:#0f766e}.account-btn:disabled{opacity:.55;cursor:not-allowed}
+    .account-table-wrap{overflow-x:auto}.account-table{width:100%;min-width:850px;border-collapse:collapse}.account-table th,.account-table td{padding:10px;border-bottom:1px solid #e2e8f0;text-align:left;vertical-align:top;font-size:.82rem}
+    .account-table th{background:#f8fafc;color:#64748b;font-size:.72rem;text-transform:uppercase}.account-status{display:inline-block;border-radius:999px;background:#f1f5f9;padding:4px 8px;font-size:.75rem;font-weight:700}
+    .account-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.account-form-grid .wide{grid-column:1/-1}
+    .account-message{padding:12px;border-radius:9px;background:#f1f5f9;margin:12px 0}.account-error{color:#991b1b;background:#fef2f2;border:1px solid #fecaca}
+    .account-empty{text-align:center;color:#64748b;padding:24px!important}#myAccountLoansSection[hidden], [hidden]{display:none!important}
+    @media(max-width:760px){.account-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.account-profile{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:480px){.account-grid,.account-profile,.account-form-grid{grid-template-columns:1fr}.account-form-grid .wide{grid-column:auto}}
+    @media print{.topbar,.chama-member-nav,.chama-member-bottom-nav,.chama-member-desktop-logout,.account-no-print,#myAccountPaymentCard{display:none!important}.my-account-page{padding:0;max-width:none}.account-card,.account-stat{break-inside:avoid}}
+  </style>
+</head>
+<body>
+  <div id="myAccountLoading" class="my-account-page account-muted">Loading your personal account…</div>
+  <div id="myAccountError" class="my-account-page account-message account-error" hidden role="alert"></div>
+  <main id="myAccountContent" class="my-account-page" hidden>
+    <header class="account-heading">
+      <p class="account-muted">CHAMA LIVE · PERSONAL ACCOUNT</p>
+      <h1>My Account</h1>
+      <strong id="myAccountName">Member</strong>
+      <p id="myAccountMeta" class="account-muted">Your personal profile and financial records.</p>
+    </header>
+    <div id="myAccountMessage" class="account-message" hidden role="status"></div>
+    <section class="account-card" aria-labelledby="profileHeading">
+      <h2 id="profileHeading">Profile details</h2><div id="myAccountProfile" class="account-profile"></div>
+    </section>
+    <section class="account-card" aria-labelledby="summaryHeading">
+      <h2 id="summaryHeading">Personal financial summary</h2>
+      <p class="account-muted">Contribution status is taken from canonical accounting. Pending payment evidence is not counted as a recognized contribution.</p>
+      <div id="myAccountSummary" class="account-grid"></div>
+    </section>
+    <section id="myAccountLoansSection" class="account-card" hidden aria-labelledby="loanHeading">
+      <h2 id="loanHeading">My loans</h2><div id="myAccountLoanSummary" class="account-grid"></div>
+    </section>
+    <section id="myAccountPaymentCard" class="account-card" aria-labelledby="paymentHeading">
+      <h2 id="paymentHeading">Submit my payment for verification</h2>
+      <p class="account-muted">Submitting evidence does not record a contribution. An authorized verifier must review it first.</p>
+      <form id="myAccountPaymentForm">
+        <div class="account-form-grid">
+          <div class="account-field"><label for="paymentAmount">Amount (KES)</label><input id="paymentAmount" name="amount" type="number" min="0.01" step="0.01" required></div>
+          <div class="account-field"><label for="paymentDate">Payment date</label><input id="paymentDate" name="payment_date" type="date" required></div>
+          <div class="account-field"><label for="paymentMethod">Payment method</label><select id="paymentMethod" name="payment_method" required><option value="M-Pesa">M-Pesa</option><option value="Cash">Cash</option><option value="Bank transfer">Bank transfer</option></select></div>
+          <div id="paymentReferenceWrap" class="account-field"><label for="paymentReference">M-Pesa reference</label><input id="paymentReference" name="mpesa_reference" maxlength="64" required></div>
+          <div class="account-field wide"><label for="paymentDetails">Payment details</label><textarea id="paymentDetails" name="evidence_text" rows="3" maxlength="1000" required></textarea></div>
+        </div>
+        <div class="account-field wide"><label for="paymentProof">Payment proof (optional JPG, PNG, WebP, or PDF; max 5 MB)</label><input id="paymentProof" name="payment_proof" type="file" accept="image/jpeg,image/png,image/webp,application/pdf"></div>
+        <p id="myAccountPaymentMessage" class="account-message" hidden role="status"></p>
+        <button id="myAccountPaymentSubmit" class="account-btn account-btn-primary" type="submit">Submit payment for verification</button>
+      </form>
+    </section>
+    <section class="account-card" aria-labelledby="recordsHeading">
+      <h2 id="recordsHeading">My records</h2>
+      <div class="account-toolbar account-no-print">
+        <div class="account-field"><label for="accountSortField">Sort by</label><select id="accountSortField"><option value="date">Date</option><option value="amount">Amount</option><option value="type">Type</option><option value="status">Status</option></select></div>
+        <div class="account-field"><label for="accountSortDirection">Order</label><select id="accountSortDirection"><option value="desc">Descending</option><option value="asc">Ascending</option></select></div>
+        <button id="accountExportCsv" class="account-btn" type="button">Download CSV</button>
+        <button id="accountExportExcel" class="account-btn" type="button">Excel-compatible CSV</button>
+        <button id="accountExportPdf" class="account-btn" type="button">Print / Save PDF</button>
+        <button id="accountPrint" class="account-btn" type="button">Print</button>
+      </div>
+      <div class="account-table-wrap"><table class="account-table"><thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Status</th><th>Reference</th><th>Details</th></tr></thead><tbody id="myAccountRecords"><tr><td colspan="6" class="account-empty">Loading records…</td></tr></tbody></table></div>
+    </section>
+  </main>
+  <script type="module">
+    import { boot } from "./js/admin-layout.js";
+    await boot();
+  </script>
+</body>
+</html>

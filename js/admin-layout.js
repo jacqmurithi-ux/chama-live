@@ -130,7 +130,8 @@ const ADMIN_PAGES = new Set([
   "welfare.html",
   "milestones.html",
   "data-migration.html",
-  "admin-getting-started.html"
+  "admin-getting-started.html",
+  "admin-my-account.html"
 ]);
 
 
@@ -248,6 +249,11 @@ const PAGE_SCRIPTS = {
   "assets.html": [
     "./assets.js",
     "initPage"
+  ],
+
+  "admin-my-account.html": [
+    "./my-account.js?v=20261013-shared-account1",
+    "initMyAccount"
   ]
 
 };
@@ -499,7 +505,7 @@ const NAVIGATION_GROUPS = [
   [
     "Account",
     [
-      ["member-dashboard.html", "View My Account"]
+      ["admin-my-account.html", "View My Account"]
     ]
   ]
 

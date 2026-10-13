@@ -1,0 +1,29 @@
+name: My Account PR checks
+
+on:
+  pull_request:
+    branches: ["main"]
+  push:
+    branches: ["feature/shared-my-account"]
+
+permissions:
+  contents: read
+
+jobs:
+  static-contract-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Run My Account contract tests
+        run: node --test tests/my-account.test.mjs
+      - name: Check JavaScript syntax
+        run: |
+          node --check js/admin-layout.js
+          node --check js/member-layout.js
+          node --check js/my-account.js
+          node --check js/my-account-service.js
