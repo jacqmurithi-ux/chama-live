@@ -38,7 +38,16 @@ function applyOrderVisibility(){
  $("orderLabel").classList.toggle("merry-hide",!show);
  $("memberOrder").required=show;
 }
-async function loadCycles(){
+async function loadNotifications(){
+ const {data,error}=await supabase.from("merry_go_round_notifications")
+  .select("id,notification_type,message,due_date,created_at,read_at")
+  .eq("group_id",ctx.group.id).eq("member_id",ctx.member.id)
+  .order("created_at",{ascending:false}).limit(20);
+ if(error)throw error;
+ const items=data||[];
+ $("merryNotifications").innerHTML=items.length?items.map(n=>'<div style="padding:9px 0;border-bottom:1px solid #e5e7eb"><strong>'+escapeHtml(n.notification_type.replaceAll("_"," "))+'</strong><div>'+escapeHtml(n.message)+'</div><small>'+escapeHtml(n.created_at?new Date(n.created_at).toLocaleString():"")+(n.due_date?' · Due '+escapeHtml(n.due_date):'')+'</small></div>').join(""):"No notifications yet.";
+}
+\nasync function loadCycles(){
  cycles=await supabase.from("merry_go_round_cycles").select("id,name,status,contribution_amount,frequency,start_date,number_of_rounds").eq("group_id",ctx.group.id).order("created_at",{ascending:false}).then(({data,error})=>{if(error)throw error;return data||[]});
  $("cycleSelect").innerHTML='<option value="">Select a cycle</option>'+cycles.map(c=>'<option value="'+escapeHtml(c.id)+'">'+escapeHtml(c.name)+' — '+escapeHtml(c.status)+'</option>').join("");
  if(cycles.length){$("cycleSelect").value=cycles[0].id;await loadTracking();}
@@ -97,7 +106,7 @@ $("roundRows").addEventListener("submit",async e=>{
  const form=e.target.closest("form.paymentForm"); if(!form)return;
  e.preventDefault();
  if(!writeAllowed("record"))return status("View only: you cannot record payments.",true);
- try{const button=form.querySelector("button");button.disabled=true;await rpc("cl_merry_record_payment",{p_group_id:ctx.group.id,p_payment_id:form.dataset.payment,p_amount:Number(form.elements.amount.value)});status("Payment updated and audit log written.");await loadTracking();}catch(err){rpcError(err);}
+ try{const button=form.querySelector("button");button.disabled=true;await rpc("cl_merry_record_payment",{p_group_id:ctx.group.id,p_payment_id:form.dataset.payment,p_amount:Number(form.elements.amount.value)});status("Payment updated and audit log written.");await loadTracking();await loadNotifications();}catch(err){rpcError(err);}
 });
 $("swapRoundsBtn").addEventListener("click",async()=>{
  if(!writeAllowed("swap"))return status("View only: you cannot change payout order.",true);
@@ -108,6 +117,6 @@ $("swapRoundsBtn").addEventListener("click",async()=>{
 $("roundRows").addEventListener("click",async e=>{
  const btn=e.target.closest("button.payoutBtn"); if(!btn)return;
  if(!writeAllowed("payout")) return status("View only: you cannot record a payout.",true);
- try{btn.disabled=true;await rpc("cl_merry_complete_payout",{p_group_id:ctx.group.id,p_round_id:btn.dataset.round});status("Payout recorded and audit log updated.");await loadCycles();await loadTracking();}catch(err){rpcError(err);}finally{btn.disabled=false;}
+ try{btn.disabled=true;await rpc("cl_merry_complete_payout",{p_group_id:ctx.group.id,p_round_id:btn.dataset.round});status("Payout recorded and audit log updated.");await loadCycles();await loadTracking();await loadNotifications();}catch(err){rpcError(err);}finally{btn.disabled=false;}
 });
 export async function initMerryGoRound(){ await initialize(); }
