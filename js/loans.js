@@ -13,11 +13,7 @@ function loanApprovalSlot(member = {}) {
  if(declared.some(v=>["chairperson","vice chairperson","chair","vice chair"].includes(v)))return "chairperson";
  if(declared.some(v=>v==="treasurer"))return "treasurer";
  if(declared.some(v=>["secretary","vice secretary"].includes(v)))return "secretary";
- const role=clean(member.role||"member");
- if(["admin","administrator"].includes(role))return null;
- if(["chairperson","vice chairperson","chair","vice chair"].includes(role))return "chairperson";
- if(role==="treasurer")return "treasurer";
- if(["secretary","vice secretary"].includes(role))return "secretary";
+ // Match expense approvals: actual_position or actual_position_name must declare the office.
  return null;
 }
 const APPROVAL_OFFICES = [
