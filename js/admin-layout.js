@@ -115,6 +115,7 @@ const ADMIN_PAGES = new Set([
   "add-member.html",
 
   "contributions.html",
+  "merry-go-round.html",
   "expenses.html",
   "fines.html",
   "meetings.html",
@@ -180,6 +181,11 @@ const PAGE_SCRIPTS = {
   "contributions.html": [
     "./contributions.js?v=20261009-treasurer-custom-draft2",
     "initContributions"
+  ],
+
+  "merry-go-round.html": [
+    "./merry-go-round.js",
+    "initMerryGoRound"
   ],
 
   "expenses.html": [
