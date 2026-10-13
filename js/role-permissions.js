@@ -190,9 +190,11 @@ const POLICY = {
     export: GROUP_MANAGEMENT,
     apply: MEMBER_PORTAL_ROLES,
     settings: new Set(["admin"]),
-    review: new Set(["admin", "chairperson", "secretary"]),
+    // Only the three designated office-holders can approve loans.
+    // A technical Admin qualifies only when also declared in one of these offices.
+    review: new Set(["chairperson", "vice chairperson", "secretary", "vice secretary", "treasurer"]),
     disburse: new Set(["admin", "chairperson", "treasurer"]),
-    repayment: new Set(["admin", "treasurer", "secretary"])
+    repayment: new Set(["admin", "treasurer"])
   },
   "group-management": {
     view: GROUP_MANAGEMENT,
@@ -225,14 +227,36 @@ const roleCan = (roles, page, action, member) => {
   return [...roles].some(role => rule.has(role));
 };
 
+function loanApprovalOffice(member = {}) {
+  const clean = value => normalize(value).replace(/[_-]+/g, " ").replace(/\\s+/g, " ");
+  const declared = [member.actual_position, member.actual_position_name].map(clean);
+  if (declared.some(value => ["chairperson", "vice chairperson", "chair", "vice chair"].includes(value))) return "chairperson";
+  if (declared.some(value => value === "treasurer")) return "treasurer";
+  if (declared.some(value => ["secretary", "vice secretary"].includes(value))) return "secretary";
+
+  const technical = clean(member.role || "member");
+  // A technical Admin cannot claim an office from the role field alone.
+  if (["admin", "administrator"].includes(technical)) return null;
+  if (["chairperson", "vice chairperson", "chair", "vice chair"].includes(technical)) return "chairperson";
+  if (technical === "treasurer") return "treasurer";
+  if (["secretary", "vice secretary"].includes(technical)) return "secretary";
+  return null;
+}
+
 export function canWrite(page, action, member, options = {}) {
   const pageKey = normalize(page);
   const actionKey = normalize(action);
   const roles = getGroupRoles(member);
 
+  // Loan approval is an office-holder action, not an Admin privilege.
+  // A technical Admin may act only through a separately declared office slot.
+  if (pageKey === "loans" && actionKey === "review" && roles.has("admin")) {
+    return loanApprovalOffice(member) !== null;
+  }
+
   // Group Admin can perform ordinary group operations regardless of the
-  // narrower office matrix. The only exception is expense approval: Admin
-  // cannot occupy or override any of the three distinct office-holder slots.
+  // narrower office matrix. The exception is expense approval: Admin cannot
+  // occupy or override any of the three distinct office-holder slots.
   if (roles.has("admin")) {
     return !(pageKey === "expenses" &&
       ["approve", "approve-chair", "approve-treasurer", "approve-secretary"].includes(actionKey));
