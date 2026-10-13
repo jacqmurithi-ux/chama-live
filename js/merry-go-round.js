@@ -75,7 +75,9 @@ async function renderMemberChoicePanel(selected){
 async function loadCycles(){
  cycles=await supabase.from("merry_go_round_cycles").select("id,name,status,contribution_amount,frequency,start_date,number_of_rounds,payout_order_method,created_at").eq("group_id",ctx.group.id).order("created_at",{ascending:false}).then(({data,error})=>{if(error)throw error;return data||[]});
  $("cycleSelect").innerHTML='<option value="">Select a cycle</option>'+cycles.map(c=>'<option value="'+escapeHtml(c.id)+'">'+escapeHtml(c.name)+' — '+escapeHtml(c.status)+' — '+escapeHtml(c.created_at?new Date(c.created_at).toLocaleString():c.id.slice(0,8))+'</option>').join("");
- if(cycles.length){$("cycleSelect").value=cycles[0].id;await loadTracking();}
+ if(cycles.length){$("cycleSelect").value=cycles[0].id;await loadTracking();}else{$("cycleSummary").textContent="No cycles yet. Create a cycle to get started."; $("roundRows").innerHTML='<tr><td colspan="9">No cycles found.</td></tr>';}
+ const deleteBtn=$("deleteCycleBtn");
+ if(deleteBtn){deleteBtn.hidden=!writeAllowed("deleteCycle");deleteBtn.disabled=!cycles.length;}
 }
 async function loadTracking(){
  const cycleId=$("cycleSelect").value;
@@ -126,7 +128,17 @@ async function initialize(){
  }catch(e){rpcError(e);console.error("[Merry-go-round]",e);}
 }
 $("payoutMethod").addEventListener("change",applyOrderVisibility);
-$("cycleSelect").addEventListener("change",()=>loadTracking().catch(rpcError));
+$("cycleSelect").addEventListener("change",()=>{const btn=$("deleteCycleBtn");if(btn)btn.disabled=!$("cycleSelect").value;loadTracking().catch(rpcError);});
+$("deleteCycleBtn").addEventListener("click",async()=>{
+ if(!writeAllowed("deleteCycle"))return status("Only the group Admin can delete a cycle.",true);
+ const cycle=cycles.find(c=>c.id===$("cycleSelect").value);
+ if(!cycle)return status("Select a cycle to delete.",true);
+ if(!window.confirm('Delete cycle "'+cycle.name+'" created '+(cycle.created_at?new Date(cycle.created_at).toLocaleString():"") +'? Its rounds, preferences and notifications will also be removed. Cycles with recorded payments or payouts cannot be deleted.'))return;
+ const btn=$("deleteCycleBtn");
+ try{btn.disabled=true;await rpc("cl_merry_delete_cycle",{p_group_id:ctx.group.id,p_cycle_id:cycle.id});status('Cycle "'+cycle.name+'" deleted. Related rounds, preferences and notifications were removed.');await loadCycles();await loadNotifications();}
+ catch(err){rpcError(err);}
+ finally{btn.disabled=!$("cycleSelect").value;}
+});
 $("cycleForm").addEventListener("submit",async e=>{
  e.preventDefault();
  const form=e.currentTarget;
