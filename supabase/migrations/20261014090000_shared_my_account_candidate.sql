@@ -65,6 +65,8 @@ declare
   v_fines jsonb := '[]'::jsonb;
   v_loans jsonb := '[]'::jsonb;
   v_fines_outstanding numeric := 0;
+  v_total_allocated numeric := 0;
+  v_total_due_to_date numeric := 0;
   v_bundle jsonb;
 begin
   if v_uid is null then
@@ -102,6 +104,20 @@ begin
   from public.get_canonical_member_monthly_status(v_member.group_id, v_month) s
   where s.member_id = v_member.id
   limit 1;
+
+  -- Keep lifetime allocation/arrears aligned to the canonical obligation ledger.
+  -- The monthly-status RPC defines due using rule-backed obligations; use the same
+  -- scope here instead of summing raw contribution rows as a proxy for allocation.
+  v_total_due_to_date := coalesce((v_monthly->>'total_due_to_date')::numeric, 0);
+
+  select coalesce(sum(ca.amount), 0)
+  into v_total_allocated
+  from public.contribution_allocations ca
+  join public.contribution_obligations o on o.id = ca.obligation_id
+  where o.group_id = v_member.group_id
+    and o.member_id = v_member.id
+    and o.rule_id is not null
+    and o.obligation_month <= date_trunc('month', current_date)::date;
 
   select coalesce(jsonb_agg(to_jsonb(c) order by c.contribution_date desc nulls last, c.created_at desc), '[]'::jsonb)
   into v_contributions
@@ -165,6 +181,9 @@ begin
     'loansEnabled', coalesce(v_group.loans_enabled, false),
     'summary', jsonb_build_object(
       'recognizedContributions', coalesce((select sum(c.amount) from public.contributions c where c.group_id = v_member.group_id and c.member_id = v_member.id), 0),
+      'totalAllocated', coalesce(v_total_allocated, 0),
+      'totalArrears', greatest(coalesce(v_total_due_to_date, 0) - coalesce(v_total_allocated, 0), 0),
+      'totalCredit', greatest(coalesce(v_total_allocated, 0) - coalesce(v_total_due_to_date, 0), 0),
       'monthlyDue', coalesce((v_monthly->>'monthly_due')::numeric, 0),
       'appliedThisMonth', coalesce((v_monthly->>'applied_this_month')::numeric, 0),
       'outstanding', coalesce((v_monthly->>'current_outstanding')::numeric, 0),
