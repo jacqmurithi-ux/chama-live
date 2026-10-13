@@ -103,7 +103,7 @@ $("loanRepaymentForm").addEventListener("submit",async e=>{
  try{await rpc("cl_loan_record_repayment",{p_group_id:ctx.group.id,p_loan_id:selectedLoan.id,p_amount:f.amount.value,p_payment_date:f.payment_date.value,p_payment_method:f.method.value,p_reference:f.reference.value||null,p_note:f.note.value||null});status("Repayment recorded and allocated to the earliest outstanding installments.");e.currentTarget.reset();await loadLoans();if(selectedLoan)await showDetail(selectedLoan.id);}
  catch(err){status(errorText(err),true);}
 });
-async function initLoans(){
+async function initializeLoans(){
  try{
   ctx=await getMyApplicationContext();if(!ctx?.group?.id)throw new Error("Unable to resolve your active group.");
   const enabled=await rpc("cl_group_module_enabled",{p_group_id:ctx.group.id,p_module:"loans"});
@@ -114,4 +114,4 @@ async function initLoans(){
   await loadMembers();await loadSettings();await loadLoans();applyPermissions();status("Loans loaded for "+(ctx.group.name||"your group")+".");
  }catch(err){status(errorText(err),true);}
 }
-export async function initLoans(){return initLoans();}
+export async function initLoans(){return initializeLoans();}
