@@ -40,7 +40,7 @@ begin
     group_id, user_id, member_number, membership_number, name, phone,
     role, status, onboarding_status
   ) values (
-    v_group, v_user, 'LS-TEST-1', 'LS-MEM-TEST-1', 'Loan Summary Test Member 1',
+    v_group, v_user, 'LS-TEST-1', '9101', 'Loan Summary Test Member 1',
     '000000001', 'member', 'active', 'active'
   ) returning id into v_member_one;
 
@@ -48,7 +48,7 @@ begin
     group_id, member_number, membership_number, name, phone,
     role, status, onboarding_status
   ) values (
-    v_group, 'LS-TEST-2', 'LS-MEM-TEST-2', 'Loan Summary Test Member 2',
+    v_group, 'LS-TEST-2', '9102', 'Loan Summary Test Member 2',
     '000000002', 'member', 'active', 'active'
   ) returning id into v_member_two;
 
@@ -57,7 +57,7 @@ begin
     group_id, user_id, member_number, membership_number, name, phone,
     role, status, onboarding_status
   ) values (
-    v_group, v_admin_user, 'LS-TEST-ADMIN', 'LS-MEM-TEST-ADMIN',
+    v_group, v_admin_user, 'LS-TEST-ADMIN', '9103',
     'Loan Summary Test Admin', '000000003', 'admin', 'active', 'active'
   );
 
