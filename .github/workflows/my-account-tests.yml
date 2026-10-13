@@ -23,5 +23,7 @@ jobs:
         run: node --test tests/my-account.test.mjs
       - name: Check JavaScript syntax
         run: |
+          node --check js/admin-layout.js
+          node --check js/member-layout.js
           node --check js/my-account.js
           node --check js/my-account-service.js
