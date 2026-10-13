@@ -185,6 +185,14 @@ const POLICY = {
     swap: new Set(["admin", "chairperson", "secretary"]),
     deleteCycle: new Set(["admin"])
   },
+  loans: {
+    view: GROUP_MANAGEMENT,
+    apply: MEMBER_PORTAL_ROLES,
+    settings: new Set(["admin"]),
+    review: new Set(["admin", "chairperson", "secretary"]),
+    disburse: new Set(["admin", "chairperson", "treasurer"]),
+    repayment: new Set(["admin", "treasurer", "secretary"])
+  },
   "group-management": {
     view: GROUP_MANAGEMENT,
     // Treasury settings are separately protected by backend RPCs.
