@@ -138,6 +138,49 @@
     }
 
 
+    /* GROUP LOAN SUMMARY */
+    .member-loan-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .member-loan-summary-item {
+      min-width: 0;
+      padding: 12px;
+      border: 1px solid #edf0f4;
+      border-radius: 10px;
+      background: #f8fafc;
+    }
+    .member-loan-summary-item span {
+      display: block;
+      color: #64748b;
+      font-size: 10px;
+      font-weight: 700;
+      line-height: 1.35;
+      text-transform: uppercase;
+    }
+    .member-loan-summary-item strong {
+      display: block;
+      margin-top: 6px;
+      color: #334155;
+      font-size: 18px;
+      line-height: 1.25;
+      overflow-wrap: anywhere;
+    }
+    .member-loan-summary-item small {
+      display: block;
+      margin-top: 4px;
+      color: #64748b;
+      font-size: 11px;
+    }
+    @media (max-width: 760px) {
+      .member-loan-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 480px) {
+      .member-loan-summary-grid { grid-template-columns: 1fr; }
+    }
+
     .member-finance-summary-grid {
       display: grid;
       grid-template-columns:
@@ -392,6 +435,40 @@
       class="member-grid"
       aria-label="Member dashboard"
     >
+      <!-- GROUP LOAN SUMMARY: hidden unless the group enables loans -->
+      <article
+        id="groupLoanSummarySection"
+        class="member-card member-card-wide"
+        aria-labelledby="memberGroupLoanSummaryTitle"
+        hidden
+      >
+        <div class="eyebrow">GROUP OVERVIEW</div>
+        <h2 id="memberGroupLoanSummaryTitle">Loan Summary</h2>
+        <p class="member-muted">Group-wide loan activity and outstanding principal.</p>
+        <div class="member-loan-summary-grid">
+          <div class="member-loan-summary-item">
+            <span>Total Loan Disbursed</span>
+            <strong id="memberLoanSummaryTotalDisbursed">KSh 0.00</strong>
+            <small>Principal issued to members</small>
+          </div>
+          <div class="member-loan-summary-item">
+            <span>Interest Gained</span>
+            <strong id="memberLoanSummaryInterestGained">KSh 0.00</strong>
+            <small>Interest collected from repayments</small>
+          </div>
+          <div class="member-loan-summary-item">
+            <span>Members Benefited</span>
+            <strong id="memberLoanSummaryMembersBenefited">0</strong>
+            <small>Members with a disbursed loan</small>
+          </div>
+          <div class="member-loan-summary-item">
+            <span>Current Loans Outstanding</span>
+            <strong id="memberLoanSummaryOutstandingAmount">KSh 0.00</strong>
+            <small id="memberLoanSummaryOutstandingCount">0 active loans</small>
+          </div>
+        </div>
+      </article>
+
 
 
       <!-- ===================================================
