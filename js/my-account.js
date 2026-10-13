@@ -87,7 +87,7 @@ function renderBundle() {
     summaryCard("Total allocated", money(s.totalAllocated)),
     summaryCard("Total arrears", money(s.totalArrears)),
     summaryCard("Monthly due", money(s.monthlyDue)),
-    summaryCard("Applied this month", money(s.appliedThisMonth)),
+    summaryCard("Allocated to obligations this month", money(s.appliedThisMonth)),
     summaryCard("Current month outstanding", money(s.outstanding)),
     summaryCard("Carry-forward credit", money(s.carryForwardCredit)),
     summaryCard("Fines outstanding", money(s.finesOutstanding))
