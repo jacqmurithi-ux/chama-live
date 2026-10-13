@@ -185,7 +185,7 @@ const PAGE_SCRIPTS = {
   ],
 
   "merry-go-round.html": [
-    "./merry-go-round.js?v=25874cbb-notifications-cycle-labels",
+    "./merry-go-round.js?v=df3bc51-safe-cycle-delete",
     "initMerryGoRound"
   ],
 
