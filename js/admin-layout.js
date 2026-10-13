@@ -191,7 +191,7 @@ const PAGE_SCRIPTS = {
   ],
 
   "loans.html": [
-    "./loans.js?v=0d48c5b7559c35e0a02a49121cb55866c5a0994d",
+    "./loans.js?v=a8e8f46cc72dac63d6b874eaf2371da8810f9b42",
     "initLoans"
   ],
 
