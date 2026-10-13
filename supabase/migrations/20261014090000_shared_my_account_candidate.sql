@@ -116,7 +116,6 @@ begin
   join public.contribution_obligations o on o.id = ca.obligation_id
   where o.group_id = v_member.group_id
     and o.member_id = v_member.id
-    and o.rule_id is not null
     and o.obligation_month <= date_trunc('month', current_date)::date;
 
   select coalesce(jsonb_agg(to_jsonb(c) order by c.contribution_date desc nulls last, c.created_at desc), '[]'::jsonb)
@@ -193,11 +192,22 @@ begin
       'loansBorrowed', case when coalesce(v_group.loans_enabled, false) then coalesce((select sum(coalesce(l.approved_amount, l.requested_amount, 0)) from public.loan_applications l where l.group_id = v_member.group_id and l.member_id = v_member.id and l.disbursed_at is not null), 0) else 0 end,
       'loansRepaid', case when coalesce(v_group.loans_enabled, false) then coalesce((select sum(a.principal_amount + a.interest_amount + a.penalty_amount) from public.loan_repayment_allocations a join public.loan_applications l on l.id = a.loan_id and l.group_id = a.group_id where l.group_id = v_member.group_id and l.member_id = v_member.id), 0) else 0 end,
       'loansOutstanding', case when coalesce(v_group.loans_enabled, false) then coalesce((
-        select sum(greatest(s.principal_due - coalesce(a.principal_paid, 0), 0))
+        select sum(greatest(
+          (s.principal_due + s.interest_due + s.penalty_due)
+          - coalesce(a.total_paid, 0),
+          0
+        ))
         from public.loan_repayment_schedule s
         join public.loan_applications l on l.id = s.loan_id and l.group_id = s.group_id
-        left join (select schedule_id, sum(principal_amount) as principal_paid from public.loan_repayment_allocations where group_id = v_member.group_id group by schedule_id) a on a.schedule_id = s.id
-        where l.group_id = v_member.group_id and l.member_id = v_member.id and l.status in ('active','overdue')
+        left join (
+          select schedule_id,
+                 sum(principal_amount + interest_amount + penalty_amount) as total_paid
+          from public.loan_repayment_allocations
+          where group_id = v_member.group_id
+          group by schedule_id
+        ) a on a.schedule_id = s.id
+        where l.group_id = v_member.group_id and l.member_id = v_member.id
+          and l.disbursed_at is not null and l.status not in ('rejected','cancelled','declined','cleared')
       ), 0) else 0 end
     ),
     'contributions', v_contributions,
