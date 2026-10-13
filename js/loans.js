@@ -152,7 +152,7 @@ $("loanRows").addEventListener("click",async e=>{
  try{
   if(b.dataset.detail){await showDetail(b.dataset.detail);return;}
   if(b.dataset.review){
-   if(!allowed("review"))throw new Error("View only: you cannot review loan applications.");
+   if(!allowed("review"))throw new Error("Only the designated Chairperson, Treasurer or Secretary can review loan applications.");
    const id=b.dataset.id;let note=null,amount=null;
    const loan=loans.find(l=>l.id===id);
    if(!loan||loan.status!=="submitted")throw new Error("Only pending loan applications can receive an office decision.");
@@ -168,14 +168,13 @@ $("loanRows").addEventListener("click",async e=>{
    if(updated?.status==="approved")status("All three office approvals are recorded. Loan approved for disbursement.");
    else if(updated?.status==="rejected")status("Loan rejected. Disbursement is blocked.",true);
    else status("Your office decision was recorded. The loan remains pending until all three offices approve.");
-   return;}
-   else {const loan=loans.find(l=>l.id===id);const raw=prompt("Approved amount (KES)",String(loan.requested_amount));if(raw===null)return;amount=raw;}
-   await rpc("cl_loan_review_authorized",{p_group_id:ctx.group.id,p_loan_id:id,p_decision:b.dataset.review,p_decision_note:note,p_approved_amount:amount});status("Loan application "+b.dataset.review+".");await loadNotifications();await loadLoans();return;
+   return;
   }
   if(b.dataset.disburse){
    if(!allowed("disburse"))throw new Error("View only: you cannot disburse loans.");
    if(!confirm("Disburse this approved loan and generate the repayment schedule?"))return;
-   await rpc("cl_loan_disburse",{p_group_id:ctx.group.id,p_loan_id:b.dataset.disburse,p_disbursed_date:today()});status("Loan disbursed and schedule generated.");await loadNotifications();await loadLoans();await showDetail(b.dataset.disburse);
+   await rpc("cl_loan_disburse",{p_group_id:ctx.group.id,p_loan_id:b.dataset.disburse,p_disbursed_date:today()});
+   status("Loan disbursed and schedule generated.");await loadNotifications();await loadLoans();await showDetail(b.dataset.disburse);
   }
  }catch(err){status(errorText(err),true);}
 });
