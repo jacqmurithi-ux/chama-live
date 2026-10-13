@@ -54,7 +54,7 @@ async function loadTracking(){
    const payHtml=pays.map(p=>{
      const canRecord=writeAllowed("record");
      const canComplete=writeAllowed("payout");
-     const action=canRecord?'<form class="paymentForm" data-payment="'+escapeHtml(p.payment_id||"")+'" data-member="'+escapeHtml(p.member_id)+'" style="display:flex;gap:5px;margin:4px 0"><span>'+escapeHtml(p.member_name)+': '+escapeHtml(p.status)+' ('+money(p.amount_paid)+'/'+money(p.amount_due)+')</span></form>':'<div>'+escapeHtml(p.member_name)+': '+escapeHtml(p.status)+' ('+money(p.amount_paid)+'/'+money(p.amount_due)+')</div>';
+     const action=canRecord?'<form class="paymentForm" data-payment="'+escapeHtml(p.payment_id)+'" style="display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin:6px 0"><span>'+escapeHtml(p.member_name)+': '+escapeHtml(p.status)+' ('+money(p.amount_paid)+'/'+money(p.amount_due)+')</span><input aria-label="Amount paid by '+escapeHtml(p.member_name)+'" name="amount" type="number" min="0" max="'+escapeHtml(p.amount_due)+'" step="0.01" value="'+escapeHtml(p.amount_paid)+'" style="width:105px;padding:5px" '+(p.status==="paid"?"disabled":"")+'><button class="merry-btn" type="submit" '+(p.status==="paid"?"disabled":"")+'>Record</button></form>':'<div>'+escapeHtml(p.member_name)+': '+escapeHtml(p.status)+' ('+money(p.amount_paid)+'/'+money(p.amount_due)+')</div>';
      return action;
    }).join("");
    const actions=writeAllowed("payout") && r.round_status!=="completed" && Number(r.pending_count)===0
@@ -92,6 +92,12 @@ $("cycleForm").addEventListener("submit",async e=>{
   status("Cycle created and audited.");
   e.currentTarget.reset();f.rounds.value=String(members.length);f.late_fine.value="0";applyOrderVisibility();await loadCycles();
  }catch(err){rpcError(err);}finally{$("createCycleBtn").disabled=false;}
+});
+$("roundRows").addEventListener("submit",async e=>{
+ const form=e.target.closest("form.paymentForm"); if(!form)return;
+ e.preventDefault();
+ if(!writeAllowed("record"))return status("View only: you cannot record payments.",true);
+ try{const button=form.querySelector("button");button.disabled=true;await rpc("cl_merry_record_payment",{p_group_id:ctx.group.id,p_payment_id:form.dataset.payment,p_amount:Number(form.elements.amount.value)});status("Payment updated and audit log written.");await loadTracking();}catch(err){rpcError(err);}
 });
 $("roundRows").addEventListener("click",async e=>{
  const btn=e.target.closest("button.payoutBtn"); if(!btn)return;
