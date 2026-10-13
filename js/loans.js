@@ -17,6 +17,20 @@ function applyPermissions(){
   $("loanSettingsCard").classList.remove("loan-hidden");
   $("loanRepaymentPanel").classList.toggle("loan-hidden",!selectedLoan||!["active","overdue"].includes(selectedLoan.status));
 }
+async function loadNotifications(){
+ const {data,error}=await supabase.from("loan_notifications").select("id,event_type,title,message,created_at,read_at").eq("group_id",ctx.group.id).order("created_at",{ascending:false}).limit(20);
+ if(error)throw error;
+ const rows=data||[];
+ $("loanNotifications").innerHTML=rows.map(n=>'<article class="loan-notification '+(n.read_at?'':'unread')+'"><div style="display:flex;justify-content:space-between;gap:12px;align-items:start;flex-wrap:wrap"><strong>'+esc(n.title)+'</strong>'+(n.read_at?'':'<button type="button" class="loan-btn secondary" data-notification-read="'+esc(n.id)+'">Mark read</button>')+'</div><p>'+esc(n.message)+'</p><small class="loan-muted">'+esc(new Date(n.created_at).toLocaleString())+'</small></article>').join("")||'<p class="loan-muted">No loan notifications yet.</p>';
+}
+$("loanNotifications").addEventListener("click",async e=>{
+ const b=e.target.closest("[data-notification-read]");if(!b)return;
+ try{
+  const {error}=await supabase.from("loan_notifications").update({read_at:new Date().toISOString()}).eq("id",b.dataset.notificationRead).is("read_at",null);
+  if(error)throw error;
+  await loadNotifications();
+ }catch(err){status(errorText(err),true);}
+});
 async function loadSettings(){
  const {data,error}=await supabase.from("loan_settings").select("interest_rate,interest_type,max_loan_amount,max_period_months,late_penalty").eq("group_id",ctx.group.id).maybeSingle();
  if(error)throw error; settings=data||null;
@@ -95,12 +109,12 @@ async function showDetail(id){
 $("loanSettingsForm").addEventListener("submit",async e=>{
  e.preventDefault();if(!allowed("settings"))return status("View only: only Admin can change loan settings.",true);
  const f=e.currentTarget.elements;
- try{await rpc("cl_loan_update_settings",{p_group_id:ctx.group.id,p_interest_rate:f.interest_rate.value,p_interest_type:f.interest_type.value,p_max_loan_amount:f.max_loan_amount.value,p_max_period_months:Number(f.max_period_months.value),p_late_penalty:f.late_penalty.value});status("Loan settings saved and audit logged.");await loadSettings();}
+ try{await rpc("cl_loan_update_settings",{p_group_id:ctx.group.id,p_interest_rate:f.interest_rate.value,p_interest_type:f.interest_type.value,p_max_loan_amount:f.max_loan_amount.value,p_max_period_months:Number(f.max_period_months.value),p_late_penalty:f.late_penalty.value});status("Loan settings saved and audit logged.");await loadSettings();await loadNotifications();}
  catch(err){status(errorText(err),true);}
 });
 $("loanApplyForm").addEventListener("submit",async e=>{
  e.preventDefault();const f=e.currentTarget.elements;
- try{await rpc("cl_loan_apply",{p_group_id:ctx.group.id,p_requested_amount:f.amount.value,p_period_months:Number(f.period.value),p_purpose:f.purpose.value,p_guarantor_member_id:f.guarantor.value||null});e.currentTarget.reset();status("Loan application submitted.");await loadLoans();}
+ try{await rpc("cl_loan_apply",{p_group_id:ctx.group.id,p_requested_amount:f.amount.value,p_period_months:Number(f.period.value),p_purpose:f.purpose.value,p_guarantor_member_id:f.guarantor.value||null});e.currentTarget.reset();status("Loan application submitted.");await loadNotifications();await loadLoans();}
  catch(err){status(errorText(err),true);}
 });
 $("loanRows").addEventListener("click",async e=>{
@@ -112,19 +126,19 @@ $("loanRows").addEventListener("click",async e=>{
    const id=b.dataset.id;let note=null,amount=null;
    if(b.dataset.review==="rejected"){note=prompt("Reason for rejection:");if(!note?.trim())return;}
    else {const loan=loans.find(l=>l.id===id);const raw=prompt("Approved amount (KES)",String(loan.requested_amount));if(raw===null)return;amount=raw;}
-   await rpc("cl_loan_review_authorized",{p_group_id:ctx.group.id,p_loan_id:id,p_decision:b.dataset.review,p_decision_note:note,p_approved_amount:amount});status("Loan application "+b.dataset.review+".");await loadLoans();return;
+   await rpc("cl_loan_review_authorized",{p_group_id:ctx.group.id,p_loan_id:id,p_decision:b.dataset.review,p_decision_note:note,p_approved_amount:amount});status("Loan application "+b.dataset.review+".");await loadNotifications();await loadLoans();return;
   }
   if(b.dataset.disburse){
    if(!allowed("disburse"))throw new Error("View only: you cannot disburse loans.");
    if(!confirm("Disburse this approved loan and generate the repayment schedule?"))return;
-   await rpc("cl_loan_disburse",{p_group_id:ctx.group.id,p_loan_id:b.dataset.disburse,p_disbursed_date:today()});status("Loan disbursed and schedule generated.");await loadLoans();await showDetail(b.dataset.disburse);
+   await rpc("cl_loan_disburse",{p_group_id:ctx.group.id,p_loan_id:b.dataset.disburse,p_disbursed_date:today()});status("Loan disbursed and schedule generated.");await loadNotifications();await loadLoans();await showDetail(b.dataset.disburse);
   }
  }catch(err){status(errorText(err),true);}
 });
 $("loanRepaymentForm").addEventListener("submit",async e=>{
  e.preventDefault();if(!selectedLoan||!allowed("repayment"))return status("View only: you cannot record repayments.",true);
  const f=e.currentTarget.elements;
- try{await rpc("cl_loan_record_repayment_authorized",{p_group_id:ctx.group.id,p_loan_id:selectedLoan.id,p_amount:f.amount.value,p_payment_date:f.payment_date.value,p_payment_method:f.method.value,p_reference:f.reference.value||null,p_note:f.note.value||null});status("Repayment recorded and allocated to the earliest outstanding installments.");e.currentTarget.reset();await loadLoans();if(selectedLoan)await showDetail(selectedLoan.id);}
+ try{await rpc("cl_loan_record_repayment_authorized",{p_group_id:ctx.group.id,p_loan_id:selectedLoan.id,p_amount:f.amount.value,p_payment_date:f.payment_date.value,p_payment_method:f.method.value,p_reference:f.reference.value||null,p_note:f.note.value||null});status("Repayment recorded and allocated to the earliest outstanding installments.");e.currentTarget.reset();await loadNotifications();await loadLoans();if(selectedLoan)await showDetail(selectedLoan.id);}
  catch(err){status(errorText(err),true);}
 });
 async function initializeLoans(){
@@ -135,7 +149,7 @@ async function initializeLoans(){
   $("loanContent").classList.remove("loan-hidden");
   const roles=[String(ctx.member?.role||"").toLowerCase(),String(ctx.member?.actual_position||"").toLowerCase(),String(ctx.member?.actual_position_name||"").toLowerCase()];
   official=roles.some(r=>["admin","administrator","chairperson","vice chairperson","treasurer","secretary","vice secretary"].includes(r));
-  await loadMembers();await loadSettings();await rpc("cl_loan_refresh_statuses",{p_group_id:ctx.group.id});await loadLoans();applyPermissions();status("Loans loaded for "+(ctx.group.name||"your group")+".");
+  await loadMembers();await loadSettings();await loadNotifications();await rpc("cl_loan_refresh_statuses",{p_group_id:ctx.group.id});await loadLoans();applyPermissions();status("Loans loaded for "+(ctx.group.name||"your group")+".");
  }catch(err){status(errorText(err),true);}
 }
 export async function initLoans(){return initializeLoans();}
