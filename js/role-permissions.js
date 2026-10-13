@@ -187,6 +187,7 @@ const POLICY = {
   },
   loans: {
     view: GROUP_MANAGEMENT,
+    export: GROUP_MANAGEMENT,
     apply: MEMBER_PORTAL_ROLES,
     settings: new Set(["admin"]),
     review: new Set(["admin", "chairperson", "secretary"]),
