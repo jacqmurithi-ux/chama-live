@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="CHAMA LIVE Merry-go-round cycle setup and round tracking">
+<title>Merry-go-round — CHAMA LIVE</title>
+<link rel="stylesheet" href="css/app.css">
+<style>
+.merry-page{max-width:1500px;margin:auto;padding:16px}.merry-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:16px}.merry-card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:18px;min-width:0}.merry-card h2{margin-top:0}.merry-form{display:grid;gap:12px}.merry-form label{display:grid;gap:5px;font-weight:600;font-size:.9rem}.merry-form input,.merry-form select,.merry-form textarea{width:100%;min-width:0;padding:10px;border:1px solid #cbd5e1;border-radius:8px;font:inherit}.merry-form button,.merry-btn{border:0;border-radius:8px;padding:10px 14px;background:#087f5b;color:white;font-weight:700;cursor:pointer}.merry-form button:disabled,.merry-btn:disabled{opacity:.5;cursor:not-allowed}.merry-status{padding:10px;border-radius:8px;background:#f1f5f9;margin:10px 0}.merry-table-wrap{overflow:auto}.merry-table{border-collapse:collapse;width:100%;font-size:.9rem}.merry-table th,.merry-table td{text-align:left;padding:10px;border-bottom:1px solid #e5e7eb;vertical-align:top}.merry-table th{background:#f8fafc;white-space:nowrap}.merry-muted{color:#64748b;font-size:.9rem}.merry-pill{display:inline-block;padding:3px 8px;border-radius:99px;background:#ecfdf5;color:#065f46;font-size:.78rem;font-weight:700}.merry-hide{display:none!important}
+</style>
+</head>
+<body>
+<main class="main merry-page">
+<header class="contributions-page-header">
+<p class="eyebrow">GROUP MANAGEMENT</p>
+<h1>Merry-go-round</h1>
+<p class="merry-muted">Set up contribution cycles, track each round and record payouts. This module is available only when enabled by your group Admin.</p>
+</header>
+<div id="merryStatus" class="merry-status" role="status">Checking access…</div>
+<section id="merryContent" class="merry-hide">
+<div class="merry-grid">
+<section class="merry-card">
+<h2>Set up a cycle</h2>
+<p class="merry-muted">The number of rounds must match the current active membership. Contributions are tracked separately from canonical group contributions.</p>
+<form id="cycleForm" class="merry-form" data-permission-page="merry-go-round" data-permission-action="create">
+<label>Cycle name<input name="name" required maxlength="100" placeholder="e.g. October savings circle"></label>
+<label>Contribution per member (KES)<input name="amount" type="number" min="1" step="0.01" required></label>
+<label>Frequency<select name="frequency" required><option value="weekly">Weekly</option><option value="monthly">Monthly</option></select></label>
+<label>First round date<input name="start_date" type="date" required></label>
+<label>Number of rounds<input name="rounds" type="number" min="2" max="500" required></label>
+<label>Payout order<select name="order_method" id="payoutMethod"><option value="admin">Admin sets order</option><option value="random">Random draw</option><option value="member_chosen">Member-chosen order</option></select></label>
+<label id="orderLabel">Payout recipient order<select name="member_order" id="memberOrder" multiple size="5"><option>Load members after access check…</option></select><span class="merry-muted">For a fixed order, select recipients in order. Use Ctrl-click (Windows) to select multiple recipients.</span></label>
+<label>Optional late fine per member (KES)<input name="late_fine" type="number" min="0" step="0.01" value="0"></label>
+<button type="submit" id="createCycleBtn">Create cycle</button>
+</form>
+</section>
+<section class="merry-card">
+<h2>Cycle tracking</h2>
+<label class="merry-form">Select cycle<select id="cycleSelect"><option value="">Loading cycles…</option></select></label>
+<p class="merry-muted">Round is ready for payout only after every member is marked paid. A payout is recorded against its recipient; it does not create or alter canonical contribution ledger entries.</p>
+<div id="cycleSummary" class="merry-muted">Choose a cycle to view round tracking.</div>
+</section>
+</div>
+<section class="merry-card" style="margin-top:16px">
+<h2>Round-by-round tracking</h2>
+<div class="merry-table-wrap"><table class="merry-table"><thead><tr><th>Round</th><th>Due date</th><th>Recipient</th><th>Payout (KES)</th><th>Status</th><th>Paid</th><th>Pending</th><th>Late</th><th>Member payments / actions</th></tr></thead><tbody id="roundRows"><tr><td colspan="9">Choose a cycle.</td></tr></tbody></table></div>
+</section>
+</section>
+</main>
+<script type="module">
+import { boot } from "./js/admin-layout.js";
+boot();
+</script>
+<script type="module" src="./js/merry-go-round.js"></script>
+</body>
+</html>
