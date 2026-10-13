@@ -77,7 +77,8 @@ async function loadTracking(){
  if(!cycleId){$("roundRows").innerHTML='<tr><td colspan="9">Choose a cycle.</td></tr>';return;}
  const data=await rpc("cl_merry_tracking",{p_group_id:ctx.group.id,p_cycle_id:cycleId});
  const selected=cycles.find(c=>c.id===cycleId);
- $("cycleSummary").textContent=selected ? selected.name+" · "+money(selected.contribution_amount)+" per member · "+selected.frequency+" · "+selected.number_of_rounds+" rounds · "+selected.status : "";\n await renderMemberChoicePanel(selected);
+ $("cycleSummary").textContent=selected ? selected.name+" · "+money(selected.contribution_amount)+" per member · "+selected.frequency+" · "+selected.number_of_rounds+" rounds · "+selected.status : "";
+ await renderMemberChoicePanel(selected);
  $("roundRows").innerHTML=(data||[]).map(r=>{
    const pays=Array.isArray(r.member_payments)?r.member_payments:[];
    const payHtml=pays.map(p=>{
