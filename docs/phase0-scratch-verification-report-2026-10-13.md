@@ -38,15 +38,15 @@ Read-only `pg_extension` comparison:
 
 | Extension | Production | Scratch | Result |
 |---|---|---|---|
-| `btree_gist` | 1.7 | absent | DIFFERENCE |
-| `pg_cron` | 1.6.4 | absent | DIFFERENCE |
+| `btree_gist` | 1.7 | 1.7 | MATCH — enabled in scratch during this run |
+| `pg_cron` | 1.6.4 | 1.6.4 | MATCH — enabled in scratch during this run |
 | `pg_stat_statements` | 1.11 | 1.11 | match |
 | `pgcrypto` | 1.3 | 1.3 | match |
 | `plpgsql` | 1.0 | 1.0 | match |
 | `supabase_vault` | 0.3.1 | 0.3.1 | match |
 | `uuid-ossp` | 1.1 | 1.1 | match |
 
-These differences further confirm scratch is not yet a production-shaped restore. Do not attempt to patch extensions or replay the migration until the restore has been reconciled.
+The two missing extensions were enabled in scratch only with a schema-reconciliation migration. A fresh catalog check confirms all seven installed production extensions now exist at matching versions in scratch. This does not resolve the missing application schema.
 
 ## 3. Phase 0 migration inventory
 
@@ -124,3 +124,46 @@ They must be resolved before Phase 2 (Loans), independently of Phase 0.
 ## 8. Required next step
 
 Reconcile the scratch restore until `public.groups`, `public.members`, the existing role helper, and the production application tables are present. Compare the dump checksum and extension inventory; then provide or rerun exact row counts for all 74 tables. Only then run the migration in scratch, create synthetic-only identities and groups, install the scratch-only probe, and execute all eight gates. Do not apply the migration to production until the full runtime report has passed and has been reviewed by the user.
+
+
+---
+
+## Addendum — schema reconciliation attempt (latest)
+
+### Extension action completed
+
+Scratch-only migration `scratch_schema_reconcile_extensions` succeeded. A subsequent catalog query confirmed these seven extensions and versions in scratch match production exactly: `btree_gist 1.7`, `pg_cron 1.6.4`, `pg_stat_statements 1.11`, `pgcrypto 1.3`, `plpgsql 1.0`, `supabase_vault 0.3.1`, and `uuid-ossp 1.1`. No production changes were made.
+
+### Exact current catalog object-count comparison
+
+| Object category in `public` and `private` | Production | Scratch | Missing in scratch |
+|---|---:|---:|---:|
+| Base tables | 74 (62 public, 12 private) | 0 | 74 |
+| Columns on those tables | 753 | 0 | 753 |
+| Functions/procedures | 172 | 0 | 172 |
+| RLS policies | 109 | 0 | 109 |
+| Non-internal triggers | 40 | 0 | 40 |
+| Constraints | 462 | 0 | 462 |
+| Indexes | 260 | 0 | 260 |
+| Enum types | 0 | 0 | 0 |
+
+Because all production application tables are absent, every production column, table constraint, table index, policy and trigger associated with those tables is absent too. The prior section enumerates every one of the 74 missing table names. The live schema inspection also confirms `public.groups`, `public.members`, `public.cl_user_has_role(uuid,text[])` and `public.cl_assert_group_module_enabled(uuid,text)` are absent in scratch. Thus no production function signature or policy signature can be validated as matching; all 172 production functions/procedures and all 109 policies are missing, not merely different.
+
+### Why full schema-only reconstruction was not completed
+
+The connected Supabase tools expose read-only SQL inspection and migration execution, but no native schema-only export/restore or direct cross-project schema-clone operation. The repository's `supabase/migrations` directory currently contains 51 SQL files, while the production database has a longer migration history and the repository directory does not contain the initial schema migration that creates the base application tables. Applying those 51 files to an empty database is not a safe substitute: early dependencies are missing and later migrations assume the base schema already exists.
+
+A faithful reconstruction requires dependency-ordered DDL for the full current schema, including 753 columns, 462 constraints, 260 indexes, 172 function/procedure definitions, 109 policies and 40 triggers, then a second catalog comparison. I did not fabricate a minimal `groups`/`members` schema or claim signature parity. The available tool session did not provide a safe, verifiable schema-only export/restore pipeline to transfer that complete dependency graph into scratch. This is the explicit blocker.
+
+### Phase 0 status after this attempt
+
+- Scratch extensions: **PASS**.
+- Full schema-only reconstruction: **BLOCKED**.
+- `public.groups`, `public.members`, role helper and Phase 0 guard present: **FAIL — absent**.
+- Phase 0 migration applied: **NO** (blocked by missing dependencies).
+- Synthetic groups/users/members created: **NO** (no application schema; no real records used).
+- Guard probe installed/executed: **NO**.
+- Runtime gate tests: **not run**; gates requiring schema/auth/browser runtime remain blocked.
+- Production changes: **none**.
+
+The branch and draft PR remain unmerged. The eight existing RLS-disabled production tables remain untouched and are still a separate mandatory gate before Phase 2 (Loans).
