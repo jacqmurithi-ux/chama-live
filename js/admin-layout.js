@@ -1070,7 +1070,34 @@ function injectStyles() {
    DESKTOP NAVIGATION
 ========================================================= */
 
-function visibleNavigationGroups() {\n  return NAVIGATION_GROUPS.map(([title, items]) => [title, items.filter(([href]) => {\n    if (href === "merry-go-round.html") return context?.group?.merry_go_round_enabled === true;\n    return true;\n  })]).filter(([, items]) => items.length > 0);\n}\n\nfunction renderDesktopNavigation() {
+async function loadOptionalModuleFlags() {
+  try {
+    const { data, error } = await supabase.rpc("get_group_module_settings", {
+      p_group_id: context?.member?.group_id
+    });
+    if (error) throw error;
+    const row = Array.isArray(data) ? data[0] : data;
+    if (row && context) {
+      context.group = { ...(context.group || {}), merry_go_round_enabled: row.merry_go_round_enabled === true, loans_enabled: row.loans_enabled === true };
+    }
+  } catch (error) {
+    console.warn("[CHAMA LIVE] Optional module navigation is hidden because settings could not be verified.", error);
+    if (context) context.group = { ...(context.group || {}), merry_go_round_enabled: false, loans_enabled: false };
+  }
+}
+
+function visibleNavigationGroups() {
+  return NAVIGATION_GROUPS.map(([title, items]) => [
+    title,
+    items.filter(([href]) => {
+      if (href === "merry-go-round.html") return context?.group?.merry_go_round_enabled === true;
+      if (href === "loans.html") return context?.group?.loans_enabled === true;
+      return true;
+    })
+  ]).filter(([, items]) => items.length > 0);
+}
+
+function renderDesktopNavigation() {
 
   const target =
     document.querySelector(".topbar .top-nav");
@@ -2181,7 +2208,7 @@ export async function boot() {
 
     injectStyles();
 
-    renderDesktopNavigation();
+    await loadOptionalModuleFlags();\n\n    renderDesktopNavigation();
 
     renderMobileNavigation();
 
