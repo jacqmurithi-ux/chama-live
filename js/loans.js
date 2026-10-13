@@ -188,7 +188,7 @@ async function initializeLoans(){
   $("loanContent").classList.remove("loan-hidden");
   const roles=[String(ctx.member?.role||"").toLowerCase(),String(ctx.member?.actual_position||"").toLowerCase(),String(ctx.member?.actual_position_name||"").toLowerCase()];
   official=roles.some(r=>["admin","administrator","chairperson","vice chairperson","treasurer","secretary","vice secretary"].includes(r));
-  await loadMembers();await loadSettings();await loadNotifications();await rpc("cl_loan_refresh_statuses",{p_group_id:ctx.group.id});await loadLoans();applyPermissions();status("Loans loaded for "+(ctx.group.name||"your group")+".");
+  await loadMembers();await loadSettings();await loadNotifications();await rpc("cl_loan_refresh_statuses",{p_group_id:ctx.group.id});await loadLoans();applyPermissions();if(!loanApprovalSlot(ctx.member)&&official)status("Loan approvals require an explicitly recorded Chairperson, Treasurer or Secretary office. Admin-only accounts cannot approve loans.",true);else status("Loans loaded for "+(ctx.group.name||"your group")+".");
  }catch(err){status(errorText(err),true);}
 }
 export async function initLoans(){return initializeLoans();}
