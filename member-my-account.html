@@ -64,7 +64,7 @@
           <div id="paymentReferenceWrap" class="account-field"><label for="paymentReference">M-Pesa reference</label><input id="paymentReference" name="mpesa_reference" maxlength="64" required></div>
           <div class="account-field wide"><label for="paymentDetails">Payment details</label><textarea id="paymentDetails" name="evidence_text" rows="3" maxlength="1000" required></textarea></div>
         </div>
-        <p class="account-muted">Proof-file upload is not enabled until the private storage bucket and its access policies are reviewed and deployed.</p>
+        <div class="account-field wide"><label for="paymentProof">Payment proof (optional JPG, PNG, WebP, or PDF; max 5 MB)</label><input id="paymentProof" name="payment_proof" type="file" accept="image/jpeg,image/png,image/webp,application/pdf"></div>
         <p id="myAccountPaymentMessage" class="account-message" hidden role="status"></p>
         <button id="myAccountPaymentSubmit" class="account-btn account-btn-primary" type="submit">Submit payment for verification</button>
       </form>
