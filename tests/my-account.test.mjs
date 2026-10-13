@@ -40,6 +40,15 @@ test("member dashboard profile link routes to the shared personal account", asyn
   assert.match(dashboard, /View My Account/);
 });
 
+test("account summary separates canonical lifetime allocations and arrears from monthly figures", () => {
+  assert.match(migration, /'totalAllocated', coalesce\(v_total_allocated, 0\)/);
+  assert.match(migration, /'totalArrears', greatest\(coalesce\(v_total_due_to_date, 0\) - coalesce\(v_total_allocated, 0\), 0\)/);
+  assert.match(migration, /public\.contribution_allocations ca/);
+  assert.match(service, /totalAllocated: asNumber\(bundle\.summary\?\.totalAllocated\)/);
+  assert.match(ui, /Total allocated/);
+  assert.match(ui, /Total arrears/);
+});
+
 test("candidate backend keeps payment evidence pending and blocks submitter self-verification", () => {
   assert.match(migration, /'pending'/);
   assert.match(migration, /You cannot verify or reject your own payment evidence/);
