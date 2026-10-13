@@ -22,7 +22,7 @@ create policy "my account proof owner read"
 on storage.objects for select to authenticated
 using (
   bucket_id = 'my-account-payment-proofs'
-  and name ~* '^[0-9a-f-]{36}/[0-9a-f-]{36}/[^/]+$'
+  and name ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/[^/]+$'
   and exists (
     select 1 from public.members m
     where m.group_id = split_part(name, '/', 1)::uuid
@@ -64,7 +64,7 @@ declare
   v_evidence jsonb := '[]'::jsonb;
   v_fines jsonb := '[]'::jsonb;
   v_loans jsonb := '[]'::jsonb;
-  v_summary jsonb := '{}'::jsonb;
+  v_fines_outstanding numeric := 0;
   v_bundle jsonb;
 begin
   if v_uid is null then
@@ -135,7 +135,7 @@ begin
     'outstanding_amount', b.outstanding_amount
   ) order by coalesce(f.imposed_at, f.triggered_at, f.created_at) desc), '[]'::jsonb),
   coalesce(sum(b.outstanding_amount), 0)
-  into v_fines, v_summary
+  into v_fines, v_fines_outstanding
   from public.fines f
   cross join lateral public.cl_fine_balance(f.id) b
   where f.group_id = v_member.group_id and f.member_id = v_member.id;
@@ -170,7 +170,7 @@ begin
       'outstanding', coalesce((v_monthly->>'current_outstanding')::numeric, 0),
       'carryForwardCredit', coalesce((v_monthly->>'previous_credit')::numeric, 0),
       'monthlyStatus', coalesce(v_monthly->>'status', 'unavailable'),
-      'finesOutstanding', coalesce((v_summary #>> '{}')::numeric, 0),
+      'finesOutstanding', coalesce(v_fines_outstanding, 0),
       'loansBorrowed', case when coalesce(v_group.loans_enabled, false) then coalesce((select sum(coalesce(l.approved_amount, l.requested_amount, 0)) from public.loan_applications l where l.group_id = v_member.group_id and l.member_id = v_member.id and l.disbursed_at is not null), 0) else 0 end,
       'loansRepaid', case when coalesce(v_group.loans_enabled, false) then coalesce((select sum(a.principal_amount + a.interest_amount + a.penalty_amount) from public.loan_repayment_allocations a join public.loan_applications l on l.id = a.loan_id and l.group_id = a.group_id where l.group_id = v_member.group_id and l.member_id = v_member.id), 0) else 0 end,
       'loansOutstanding', case when coalesce(v_group.loans_enabled, false) then coalesce((
@@ -280,7 +280,7 @@ declare
   v_member public.members%rowtype;
 begin
   if v_uid is null then raise exception 'Authentication required' using errcode = '42501'; end if;
-  if p_action <> 'export' or p_format not in ('csv','excel','pdf','print') then
+  if p_action <> 'export' or p_format is null or p_format not in ('csv','excel','pdf','print') then
     raise exception 'Unsupported account audit event' using errcode = '22023';
   end if;
   select m.* into v_member from public.members m
