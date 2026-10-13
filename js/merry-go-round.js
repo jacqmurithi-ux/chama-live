@@ -66,7 +66,8 @@ async function renderMemberChoicePanel(selected){
   $("applyPreferencesBtn").disabled=(rows||[]).length!==Number(selected.number_of_rounds);
  }
 }
-\nasync function loadCycles(){
+
+async function loadCycles(){
  cycles=await supabase.from("merry_go_round_cycles").select("id,name,status,contribution_amount,frequency,start_date,number_of_rounds,payout_order_method").eq("group_id",ctx.group.id).order("created_at",{ascending:false}).then(({data,error})=>{if(error)throw error;return data||[]});
  $("cycleSelect").innerHTML='<option value="">Select a cycle</option>'+cycles.map(c=>'<option value="'+escapeHtml(c.id)+'">'+escapeHtml(c.name)+' — '+escapeHtml(c.status)+'</option>').join("");
  if(cycles.length){$("cycleSelect").value=cycles[0].id;await loadTracking();}
