@@ -182,7 +182,8 @@ const POLICY = {
     create: new Set(["admin", "chairperson", "treasurer", "secretary"]),
     record: new Set(["admin", "chairperson", "treasurer", "secretary"]),
     payout: new Set(["admin", "chairperson", "treasurer", "secretary"]),
-    swap: new Set(["admin", "chairperson", "secretary"])
+    swap: new Set(["admin", "chairperson", "secretary"]),
+    deleteCycle: new Set(["admin"])
   },
   "group-management": {
     view: GROUP_MANAGEMENT,
