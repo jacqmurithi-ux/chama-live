@@ -1,4 +1,4 @@
-import { loadMyAccountBundle, submitMyPaymentEvidence, logMyAccountExport, sortAccountRecords, escapeAccountHtml } from "./my-account-service.js";
+import { loadMyAccountBundle, uploadMyPaymentProof, submitMyPaymentEvidence, logMyAccountExport, sortAccountRecords, escapeAccountHtml } from "./my-account-service.js";
 
 let initialized = false;
 let bundle = null;
@@ -123,12 +123,12 @@ async function exportRecords(format) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = format === "excel" ? "my-account-records.csv" : "my-account-records.csv";
+  a.download = "my-account-records.csv";
   document.body.appendChild(a);
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
-  if (format === "excel") setMessage("myAccountMessage", "A CSV file compatible with Excel was downloaded. Native .xlsx export is not yet available.");
+  if (format === "excel") setMessage("myAccountMessage", "An Excel-compatible CSV was downloaded. Native .xlsx workbook export is not yet available.");
 }
 function bindForm() {
   el("myAccountPaymentForm")?.addEventListener("submit", async event => {
@@ -143,7 +143,8 @@ function bindForm() {
         payment_date: el("paymentDate").value,
         payment_method: el("paymentMethod").value,
         mpesa_reference: el("paymentReference").value,
-        evidence_text: el("paymentDetails").value
+        evidence_text: el("paymentDetails").value,
+        proof_storage_path: await uploadMyPaymentProof(el("paymentProof").files?.[0] || null, bundle)
       });
       el("myAccountPaymentForm").reset();
       setMessage("myAccountPaymentMessage", "Payment evidence submitted. Status: Pending verification.");
