@@ -56,6 +56,30 @@ async function loadLoans(){
  if(selectedLoan){const fresh=loans.find(l=>l.id===selectedLoan.id);selectedLoan=fresh||null;if(selectedLoan)await showDetail(selectedLoan.id);}
  applyPermissions();
 }
+async function exportLoansCsv(){
+ if(!canWrite("loans","export",ctx.member)){status("View only: you cannot export group loan reports.",true);return;}
+ try{
+  const memberById=new Map(members.map(m=>[m.id,m]));
+  const rows=[["Loan ID","Member","Requested KES","Approved KES","Period months","Purpose","Status","Interest rate %","Interest type","Submitted at","Disbursed at","Principal due KES","Interest due KES","Penalty due KES","Paid KES","Outstanding KES","Overdue installments"]];
+  for(const loan of loans){
+   const {data:schedules,error}=await supabase.from("loan_repayment_schedule").select("due_date,principal_due,interest_due,penalty_due,amount_paid").eq("loan_id",loan.id);
+   if(error)throw error;
+   let principal=0,interest=0,penalty=0,paid=0,overdue=0;
+   for(const s of schedules||[]){
+    principal+=Number(s.principal_due||0);interest+=Number(s.interest_due||0);penalty+=Number(s.penalty_due||0);paid+=Number(s.amount_paid||0);
+    if(s.due_date<today()&&Number(s.amount_paid)<Number(s.principal_due)+Number(s.interest_due)+Number(s.penalty_due))overdue++;
+   }
+   const outstanding=Math.max(0,principal+interest+penalty-paid);
+   const member=memberById.get(loan.member_id);
+   rows.push([loan.id,member?.name||(loan.member_id===ctx.member.id?"You":"Member"),loan.requested_amount??"",loan.approved_amount??"",loan.period_months,loan.purpose,loan.status,loan.interest_rate_snapshot??"",loan.interest_type_snapshot??"",loan.created_at??"",loan.disbursed_at??"",principal.toFixed(2),interest.toFixed(2),penalty.toFixed(2),paid.toFixed(2),outstanding.toFixed(2),overdue]);
+  }
+  const csv=rows.map(row=>row.map(value=>{const s=String(value??"");return '"'+s.replace(/"/g,'""')+'"';}).join(",")).join("\r\n");
+  const blob=new Blob(["\\uFEFF",csv],{type:"text/csv;charset=utf-8"});
+  const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="chamalive-loan-report-"+today()+".csv";document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+  status("Loan report exported. Data shown is limited by your group's loan access permissions.");
+ }catch(err){status(errorText(err),true);}
+}
+$("loanExportCsv").addEventListener("click",exportLoansCsv);
 async function showDetail(id){
  selectedLoan=loans.find(l=>l.id===id);if(!selectedLoan)return;
  $("loanDetailCard").classList.remove("loan-hidden");$("loanDetailTitle").textContent="Loan details · "+selectedLoan.status;
