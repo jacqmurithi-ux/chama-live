@@ -152,6 +152,33 @@ function isAdminAccount() {
   return ADMIN_ROLES.has(role);
 }
 
+/*
+ * These pages are personal finance/profile entry points, but the legacy
+ * contribution/accounting page can expose group-wide selectors or reject
+ * official roles. Officials must use the shared auth-derived My Account
+ * page for their own records instead.
+ */
+const OFFICIAL_PERSONAL_ACCOUNT_PAGES = new Set([
+  "member-contributions.html",
+  "member-accounting.html",
+  "member-profile.html"
+]);
+
+function resolveMemberNavigationItem(item) {
+  if (
+    isAdminAccount() &&
+    OFFICIAL_PERSONAL_ACCOUNT_PAGES.has(item.href.split("/").pop())
+  ) {
+    return {
+      ...item,
+      label: "My Account",
+      href: "member-my-account.html"
+    };
+  }
+
+  return item;
+}
+
 
 function createNavLink(
   label,
@@ -890,10 +917,11 @@ function openMobileMenu() {
     "chama-member-mobile-links";
 
   MEMBER_NAVIGATION.forEach(item => {
+    const resolvedItem = resolveMemberNavigationItem(item);
     const link =
       createNavLink(
-        item.label,
-        item.href,
+        resolvedItem.label,
+        resolvedItem.href,
         currentPage
       );
 
@@ -1141,7 +1169,7 @@ function renderDesktopNavigation() {
 
   const groups = MEMBER_DESKTOP_NAVIGATION_GROUPS.map(([title, items]) => [
     title,
-    [...items]
+    items.map(resolveMemberNavigationItem)
   ]);
 
   // Official users can switch portals from the Account menu.
@@ -1330,10 +1358,10 @@ function renderBottomNavigation() {
       label: "Home",
       href: "member-dashboard.html"
     },
-    {
+    resolveMemberNavigationItem({
       label: "Money",
       href: "member-contributions.html"
-    },
+    }),
     {
       label: "Activities",
       href: "member-activities.html"
@@ -1511,6 +1539,16 @@ export async function boot() {
 
     const currentPage =
       getCurrentPage();
+
+    // Direct URLs and legacy bookmarks must follow the same self-only route
+    // as navigation clicks when an official opens their personal records.
+    if (
+      isAdminAccount() &&
+      OFFICIAL_PERSONAL_ACCOUNT_PAGES.has(currentPage)
+    ) {
+      window.location.replace("member-my-account.html");
+      return;
+    }
 
     if (
       !MEMBER_PAGES.has(
