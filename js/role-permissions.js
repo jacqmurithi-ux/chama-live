@@ -178,6 +178,7 @@ const POLICY = {
   },
   "merry-go-round": {
     view: GROUP_MANAGEMENT,
+    applyPreferences: new Set(["admin", "chairperson", "secretary"]),
     create: new Set(["admin", "chairperson", "treasurer", "secretary"]),
     record: new Set(["admin", "chairperson", "treasurer", "secretary"]),
     payout: new Set(["admin", "chairperson", "treasurer", "secretary"]),
