@@ -244,9 +244,9 @@ export function canWrite(page, action, member, options = {}) {
   const actionKey = normalize(action);
   const roles = getGroupRoles(member);
 
-  // Loan approval is an office-holder action, not an Admin privilege.
-  // A technical Admin may act only through a separately declared office slot.
-  if (pageKey === "loans" && actionKey === "review" && roles.has("admin")) {
+  // Loan approval follows the expense workflow: the actual office must be
+  // explicitly declared, and technical role labels alone do not fill a slot.
+  if (pageKey === "loans" && actionKey === "review") {
     return loanApprovalOffice(member) !== null;
   }
 
