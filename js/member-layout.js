@@ -69,7 +69,8 @@ const MEMBER_PAGES = new Set([
   "member-assets.html",
   "member-milestones.html",
   "member-profile.html",
-  "member-getting-started.html"
+  "member-getting-started.html",
+  "member-my-account.html"
 ]);
 
 
@@ -107,6 +108,11 @@ const PAGE_SCRIPTS = {
   "member-profile.html": {
     path: "./member-profile.js?v=20261010-personal-status4",
     initializer: "initMemberAccounting"
+  },
+
+  "member-my-account.html": {
+    path: "./my-account.js?v=20261013-shared-account1",
+    initializer: "initMyAccount"
   }
 };
 
@@ -247,6 +253,10 @@ function ensureMemberPortalShell() {
 
 const MEMBER_NAVIGATION = [
   {
+    label: "My Account",
+    href: "member-my-account.html"
+  },
+  {
     label: "Home",
     href: "member-dashboard.html"
   },
@@ -290,6 +300,7 @@ const MEMBER_DESKTOP_NAVIGATION_GROUPS = [
     "Home",
     [
       { label: "Home", href: "member-dashboard.html" },
+      { label: "My Account", href: "member-my-account.html" },
       { label: "Getting Started", href: "member-getting-started.html" }
     ]
   ],
