@@ -98,4 +98,4 @@ $("roundRows").addEventListener("click",async e=>{
  if(!writeAllowed("payout")) return status("View only: you cannot record a payout.",true);
  try{btn.disabled=true;await rpc("cl_merry_complete_payout",{p_group_id:ctx.group.id,p_round_id:btn.dataset.round});status("Payout recorded and audit log updated.");await loadCycles();await loadTracking();}catch(err){rpcError(err);}finally{btn.disabled=false;}
 });
-initialize();
+export async function initMerryGoRound(){ await initialize(); }
