@@ -81,6 +81,7 @@ import {
 } from "./auth.js";
 
 import { applyRolePermissions } from "./role-permissions.js";
+import { supabase } from "./supabase.js";
 
 
 /* =========================================================
@@ -121,6 +122,8 @@ const ADMIN_PAGES = new Set([
   "reports.html",
   "monthly-closing.html",
   "group-management.html",
+  "merry-go-round.html",
+  "loans.html",
   "billing.html",
   "assets.html",
   "plans-activities.html",
@@ -247,6 +250,17 @@ const PAGE_SCRIPTS = {
 let bootStarted = false;
 
 let context = null;
+
+let optionalModuleSettings = {
+  merry_go_round_enabled: false,
+  loans_enabled: false,
+  available: false
+};
+
+const OPTIONAL_MODULE_PAGES = Object.freeze({
+  "merry-go-round.html": "merry_go_round",
+  "loans.html": "loans"
+});
 
 
 /* =========================================================
@@ -478,6 +492,14 @@ const NAVIGATION_GROUPS = [
       ["group-management.html", "Group Management"],
       ["data-migration.html", "Data Migration"],
       ["billing.html", "Billing"]
+    ]
+  ],
+
+  [
+    "Modules",
+    [
+      ["merry-go-round.html", "Merry-go-round", "merry_go_round"],
+      ["loans.html", "Loans", "loans"]
     ]
   ],
 
@@ -1060,6 +1082,50 @@ function injectStyles() {
 
 
 /* =========================================================
+   OPTIONAL MODULE ACCESS
+========================================================= */
+
+async function loadOptionalModuleSettings() {
+  const groupId = context?.member?.group_id;
+  if (!groupId) {
+    optionalModuleSettings = { merry_go_round_enabled: false, loans_enabled: false, available: false };
+    return optionalModuleSettings;
+  }
+
+  try {
+    const { data, error } = await supabase.rpc("get_group_module_settings", { p_group_id: groupId });
+    if (error) throw error;
+    const row = Array.isArray(data) ? data[0] : data;
+    optionalModuleSettings = {
+      merry_go_round_enabled: row?.merry_go_round_enabled === true,
+      loans_enabled: row?.loans_enabled === true,
+      available: Boolean(row)
+    };
+  } catch (error) {
+    console.warn("CHAMA LIVE: Optional module settings unavailable; optional modules will fail closed.", error);
+    optionalModuleSettings = { merry_go_round_enabled: false, loans_enabled: false, available: false };
+  }
+
+  return optionalModuleSettings;
+}
+
+function isOptionalModuleEnabled(moduleKey) {
+  if (!optionalModuleSettings.available) return false;
+  if (moduleKey === "merry_go_round") return optionalModuleSettings.merry_go_round_enabled;
+  if (moduleKey === "loans") return optionalModuleSettings.loans_enabled;
+  return false;
+}
+
+function getVisibleNavigationGroups() {
+  return NAVIGATION_GROUPS
+    .map(([title, items]) => [title, items.filter(([href]) => {
+      const moduleKey = OPTIONAL_MODULE_PAGES[href];
+      return !moduleKey || isOptionalModuleEnabled(moduleKey);
+    })])
+    .filter(([, items]) => items.length > 0);
+}
+
+/* =========================================================
    DESKTOP NAVIGATION
 ========================================================= */
 
@@ -1080,7 +1146,7 @@ function renderDesktopNavigation() {
 
   const currentPage = getCurrentPage();
 
-  for (const [title, items] of NAVIGATION_GROUPS) {
+  for (const [title, items] of getVisibleNavigationGroups()) {
     const details = document.createElement("details");
     details.className = "chama-admin-group";
 
@@ -1389,7 +1455,7 @@ function renderMobileNavigation() {
       title,
       items
     ]
-    of NAVIGATION_GROUPS
+    of getVisibleNavigationGroups()
   ) {
 
     const section =
@@ -2119,11 +2185,23 @@ export async function boot() {
 
 
     /* -------------------------------------------------------
-       PAGE AUTHORIZATION
+       OPTIONAL MODULE SETTINGS + DIRECT-URL GUARD
     ------------------------------------------------------- */
 
-    const page =
-      getCurrentPage();
+    stage = "optional module settings";
+    await loadOptionalModuleSettings();
+
+    const page = getCurrentPage();
+    const requiredModule = OPTIONAL_MODULE_PAGES[page];
+    if (requiredModule && !isOptionalModuleEnabled(requiredModule)) {
+      console.warn(`CHAMA LIVE: Blocked direct access to disabled or unavailable module page: ${page}`);
+      window.location.replace("dashboard.html");
+      return;
+    }
+
+    /* -------------------------------------------------------
+       PAGE AUTHORIZATION
+    ------------------------------------------------------- */
 
 
     stage =
