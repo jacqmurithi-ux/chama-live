@@ -460,6 +460,7 @@ const NAVIGATION_GROUPS = [
     "Finance",
     [
       ["contributions.html", "Contributions"],
+      ["merry-go-round.html", "Merry-go-round"],
       ["expenses.html", "Expenses"],
       ["fines.html", "Fines"],
       ["reports.html", "Reports"],
@@ -1069,7 +1070,7 @@ function injectStyles() {
    DESKTOP NAVIGATION
 ========================================================= */
 
-function renderDesktopNavigation() {
+function visibleNavigationGroups() {\n  return NAVIGATION_GROUPS.map(([title, items]) => [title, items.filter(([href]) => {\n    if (href === "merry-go-round.html") return context?.group?.merry_go_round_enabled === true;\n    return true;\n  })]).filter(([, items]) => items.length > 0);\n}\n\nfunction renderDesktopNavigation() {
 
   const target =
     document.querySelector(".topbar .top-nav");
@@ -1086,7 +1087,7 @@ function renderDesktopNavigation() {
 
   const currentPage = getCurrentPage();
 
-  for (const [title, items] of NAVIGATION_GROUPS) {
+  for (const [title, items] of visibleNavigationGroups()) {
     const details = document.createElement("details");
     details.className = "chama-admin-group";
 
