@@ -99,6 +99,12 @@ $("roundRows").addEventListener("submit",async e=>{
  if(!writeAllowed("record"))return status("View only: you cannot record payments.",true);
  try{const button=form.querySelector("button");button.disabled=true;await rpc("cl_merry_record_payment",{p_group_id:ctx.group.id,p_payment_id:form.dataset.payment,p_amount:Number(form.elements.amount.value)});status("Payment updated and audit log written.");await loadTracking();}catch(err){rpcError(err);}
 });
+$("swapRoundsBtn").addEventListener("click",async()=>{
+ if(!writeAllowed("swap"))return status("View only: you cannot change payout order.",true);
+ const a=Number($("swapRoundA").value),b=Number($("swapRoundB").value);
+ if(!a||!b||a===b)return status("Choose two different rounds.",true);
+ try{await rpc("cl_merry_swap_recipients",{p_group_id:ctx.group.id,p_cycle_id:$("cycleSelect").value,p_round_a:a,p_round_b:b});status("Payout order swapped and audit logged.");await loadTracking();}catch(err){rpcError(err);}
+});
 $("roundRows").addEventListener("click",async e=>{
  const btn=e.target.closest("button.payoutBtn"); if(!btn)return;
  if(!writeAllowed("payout")) return status("View only: you cannot record a payout.",true);
