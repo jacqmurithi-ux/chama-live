@@ -40,6 +40,32 @@ test("member dashboard profile link routes to the shared personal account", asyn
   assert.match(dashboard, /View My Account/);
 });
 
+test("official personal-account routes redirect away from member-only and group-wide pages", () => {
+  assert.match(memberLayout, /const OFFICIAL_PERSONAL_ACCOUNT_PAGES = new Set\(\[/);
+  for (const page of ["member-contributions.html", "member-accounting.html", "member-profile.html"]) {
+    assert.ok(memberLayout.includes(`"${page}"`), `missing official route guard for ${page}`);
+  }
+  assert.match(memberLayout, /function resolveMemberNavigationItem\(item\)/);
+  assert.match(memberLayout, /isAdminAccount\(\)[\s\S]*?OFFICIAL_PERSONAL_ACCOUNT_PAGES\.has\(item\.href\.split\("\/"\)\.pop\(\)\)/);
+  assert.match(memberLayout, /items\.map\(resolveMemberNavigationItem\)/);
+  assert.match(memberLayout, /const resolvedItem = resolveMemberNavigationItem\(item\)/);
+  assert.match(memberLayout, /resolveMemberNavigationItem\(\{[\s\S]*?label: "Money",[\s\S]*?href: "member-contributions\.html"/);
+  assert.match(memberLayout, /isAdminAccount\(\)[\s\S]*?OFFICIAL_PERSONAL_ACCOUNT_PAGES\.has\(currentPage\)[\s\S]*?window\.location\.replace\("member-my-account\.html"\)/);
+});
+
+test("shared account bundle is scoped to the authenticated member and rejects ambiguous identity", () => {
+  assert.match(migration, /v_uid uuid := auth\.uid\(\)/);
+  assert.match(migration, /m\.user_id = v_uid or m\.auth_user_id = v_uid/);
+  assert.match(migration, /Multiple active member records are linked to this login/);
+  assert.match(migration, /where s\.member_id = v_member\.id/);
+  for (const table of ["contributions", "member_payment_evidence", "fines", "loan_applications"]) {
+    assert.match(migration, new RegExp(`where ${table === "contributions" ? "c" : table === "member_payment_evidence" ? "e" : table === "fines" ? "f" : "l"}\\.group_id = v_member\\.group_id and ${table === "contributions" ? "c" : table === "member_payment_evidence" ? "e" : table === "fines" ? "f" : "l"}\\.member_id = v_member\\.id`));
+  }
+  assert.match(service, /rpc\("cl_get_my_account_bundle"\)/);
+  assert.doesNotMatch(service, /member_id\s*:/);
+  assert.doesNotMatch(service, /group_id\s*:/);
+});
+
 test("account summary separates canonical lifetime allocations and arrears from monthly figures", () => {
   assert.match(migration, /'totalAllocated', coalesce\(v_total_allocated, 0\)/);
   assert.match(migration, /'totalArrears', greatest\(coalesce\(v_total_due_to_date, 0\) - coalesce\(v_total_allocated, 0\), 0\)/);
