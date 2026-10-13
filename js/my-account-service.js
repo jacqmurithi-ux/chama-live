@@ -76,6 +76,9 @@ function normalizeBundle(bundle) {
     summary: {
       ...bundle.summary,
       recognizedContributions: asNumber(bundle.summary?.recognizedContributions),
+      totalAllocated: asNumber(bundle.summary?.totalAllocated),
+      totalArrears: asNumber(bundle.summary?.totalArrears),
+      totalCredit: asNumber(bundle.summary?.totalCredit),
       monthlyDue: asNumber(bundle.summary?.monthlyDue),
       appliedThisMonth: asNumber(bundle.summary?.appliedThisMonth),
       outstanding: asNumber(bundle.summary?.outstanding),
