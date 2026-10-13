@@ -4221,7 +4221,7 @@ export async function renderOptionalModuleCards() {
   }
 }
 
-async function initDashboard() {
+export async function initDashboard() {
 
   /*
      admin-layout.js owns initialization.
