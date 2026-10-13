@@ -48,7 +48,7 @@
 </section>
 </div>
 <section class="loan-card" style="margin-top:16px">
-<h2>Loan applications and active loans</h2>
+<div style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap"><h2>Loan applications and active loans</h2><button id="loanExportCsv" class="loan-btn secondary" type="button" data-permission-page="loans" data-permission-action="export">Export loan report (CSV)</button></div>
 <div class="loan-table-wrap"><table class="loan-table"><thead><tr><th>Member</th><th>Requested</th><th>Approved</th><th>Period</th><th>Status</th><th>Submitted</th><th>Actions</th></tr></thead><tbody id="loanRows"><tr><td colspan="7">Loading loans…</td></tr></tbody></table></div>
 </section>
 <section id="loanDetailCard" class="loan-card loan-hidden" style="margin-top:16px">
