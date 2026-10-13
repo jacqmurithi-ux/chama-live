@@ -16,6 +16,18 @@ export async function loadMyAccountBundle() {
   return normalizeBundle(bundle);
 }
 
+export async function uploadMyPaymentProof(file, bundle) {
+  if (!file) return null;
+  const allowed = new Set(["image/jpeg", "image/png", "image/webp", "application/pdf"]);
+  if (!allowed.has(file.type)) throw new Error("Upload a JPG, PNG, WebP image, or PDF proof file.");
+  if (file.size > 5 * 1024 * 1024) throw new Error("Payment proof must be 5 MB or smaller.");
+  const safeName = String(file.name || "proof").replace(/[^a-zA-Z0-9._-]/g, "_").slice(-100) || "proof";
+  const path = `${bundle.group.id}/${bundle.member.id}/${crypto.randomUUID()}-${safeName}`;
+  const { error } = await supabase.storage.from("my-account-payment-proofs").upload(path, file, { contentType: file.type, upsert: false });
+  if (error) throw error;
+  return path;
+}
+
 export async function submitMyPaymentEvidence(input) {
   const amount = Number(input.amount);
   if (!Number.isFinite(amount) || amount <= 0) throw new Error("Enter an amount greater than zero.");
@@ -31,7 +43,8 @@ export async function submitMyPaymentEvidence(input) {
     p_payment_date: input.payment_date,
     p_payment_method: input.payment_method,
     p_mpesa_reference: input.payment_method === "M-Pesa" ? String(input.mpesa_reference).trim() : null,
-    p_evidence_text: String(input.evidence_text).trim()
+    p_evidence_text: String(input.evidence_text).trim(),
+    p_proof_storage_path: input.proof_storage_path || null
   });
   if (error) throw error;
   return data;
