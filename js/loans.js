@@ -74,7 +74,7 @@ async function exportLoansCsv(){
    rows.push([loan.id,member?.name||(loan.member_id===ctx.member.id?"You":"Member"),loan.requested_amount??"",loan.approved_amount??"",loan.period_months,loan.purpose,loan.status,loan.interest_rate_snapshot??"",loan.interest_type_snapshot??"",loan.created_at??"",loan.disbursed_at??"",principal.toFixed(2),interest.toFixed(2),penalty.toFixed(2),paid.toFixed(2),outstanding.toFixed(2),overdue]);
   }
   const csv=rows.map(row=>row.map(value=>{const s=String(value??"");return '"'+s.replace(/"/g,'""')+'"';}).join(",")).join("\r\n");
-  const blob=new Blob(["\\uFEFF",csv],{type:"text/csv;charset=utf-8"});
+  const blob=new Blob(["\uFEFF",csv],{type:"text/csv;charset=utf-8"});
   const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="chamalive-loan-report-"+today()+".csv";document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
   status("Loan report exported. Data shown is limited by your group's loan access permissions.");
  }catch(err){status(errorText(err),true);}
