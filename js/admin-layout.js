@@ -166,7 +166,7 @@ const ADMIN_PAGES = new Set([
 const PAGE_SCRIPTS = {
 
   "dashboard.html": [
-    "./dashboard.js?v=b60d58d2-dashboard-init-export-2",
+    "./dashboard.js?v=20261013-loan-summary-dashboard1",
     "initDashboard"
   ],
 
