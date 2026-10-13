@@ -75,6 +75,12 @@ test("account summary separates canonical lifetime allocations and arrears from 
   assert.match(ui, /Total arrears/);
 });
 
+test("monthly allocation label distinguishes obligation allocation from payment amount", () => {
+  assert.match(ui, /Allocated to obligations this month/);
+  assert.doesNotMatch(ui, /summaryCard\("Applied this month"/);
+  assert.match(migration, /'appliedThisMonth', coalesce\(\(v_monthly->>'applied_this_month'\)::numeric, 0\)/);
+});
+
 test("lifetime allocations match the canonical monthly-status allocation scope", () => {
   assert.match(migration, /total_allocated numeric := 0/);
   assert.match(migration, /join public\.contribution_obligations o on o\.id = ca\.obligation_id/);
