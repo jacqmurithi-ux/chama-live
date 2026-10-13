@@ -47,7 +47,8 @@ async function loadNotifications(){
  const items=data||[];
  $("merryNotifications").innerHTML=items.length?items.map(n=>'<div style="padding:9px 0;border-bottom:1px solid #e5e7eb"><strong>'+escapeHtml(n.notification_type.replaceAll("_"," "))+'</strong><div>'+escapeHtml(n.message)+'</div><small>'+escapeHtml(n.created_at?new Date(n.created_at).toLocaleString():"")+(n.due_date?' · Due '+escapeHtml(n.due_date):'')+'</small></div>').join(""):"No notifications yet.";
 }
-\nasync function loadCycles(){
+
+async function loadCycles(){
  cycles=await supabase.from("merry_go_round_cycles").select("id,name,status,contribution_amount,frequency,start_date,number_of_rounds").eq("group_id",ctx.group.id).order("created_at",{ascending:false}).then(({data,error})=>{if(error)throw error;return data||[]});
  $("cycleSelect").innerHTML='<option value="">Select a cycle</option>'+cycles.map(c=>'<option value="'+escapeHtml(c.id)+'">'+escapeHtml(c.name)+' — '+escapeHtml(c.status)+'</option>').join("");
  if(cycles.length){$("cycleSelect").value=cycles[0].id;await loadTracking();}
