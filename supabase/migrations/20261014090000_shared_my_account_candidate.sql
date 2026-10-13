@@ -243,7 +243,11 @@ declare
   v_id uuid;
   v_method text := btrim(coalesce(p_payment_method, ''));
   v_details text := nullif(btrim(coalesce(p_evidence_text, '')), '');
-  v_reference text := nullif(btrim(coalesce(p_mpesa_reference, '')), '');
+  v_reference text := case
+    when btrim(coalesce(p_payment_method, '')) = 'M-Pesa'
+      then nullif(btrim(coalesce(p_mpesa_reference, '')), '')
+    else null
+  end;
 begin
   if v_uid is null then raise exception 'Authentication required' using errcode = '42501'; end if;
   if p_amount is null or p_amount <= 0 then raise exception 'Amount must be greater than zero'; end if;
@@ -251,6 +255,8 @@ begin
   if v_method not in ('M-Pesa', 'Cash', 'Bank transfer') then raise exception 'Payment method is invalid'; end if;
   if v_method = 'M-Pesa' and v_reference is null then raise exception 'M-Pesa reference is required'; end if;
   if v_details is null then raise exception 'Payment details are required'; end if;
+  if length(v_details) > 1000 then raise exception 'Payment details must be 1000 characters or fewer'; end if;
+  if v_reference is not null and length(v_reference) > 64 then raise exception 'M-Pesa reference must be 64 characters or fewer'; end if;
 
   select m.* into v_member
   from public.members m
