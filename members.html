@@ -1331,7 +1331,7 @@
           <!-- Existing members are initialized only through the two-official backend workflow. -->
           <section id="existingMemberAccountingInitialization" class="form-section full" hidden>
             <h3>Initialize Monthly Accounting</h3>
-            <p>This section is restricted to members whose security role is admin and who have no Monthly contribution rule. Preview is an estimate. Missing payment records are never created; submitting requires approval by a different authorized official.</p>
+            <p>This section is restricted to members whose security role is admin and who have no Monthly contribution rule. Paid Through records historical Monthly payments using the selected payment method after a different authorized official approves. The approval is auditable and uses canonical accounting.</p>
             <div class="member-form-grid">
               <div class="field">
                 <label for="existingInitMonthlyAmount">Monthly amount (KSh)</label>
@@ -1342,9 +1342,19 @@
                 <input id="existingInitEffectiveFrom" type="date">
               </div>
               <div class="field">
-                <label for="existingInitPaidThrough">Preview recorded payments through (optional)</label>
+                <label for="existingInitPaidThrough">Paid through (optional)</label>
                 <input id="existingInitPaidThrough" type="date">
-                <small>This date only limits the preview. It never marks a month as paid or creates a payment.</small>
+                <small>After approval, each Monthly payment from the start month through this month is recorded using the selected method.</small>
+              </div>
+              <div class="field">
+                <label for="existingInitPaymentMethod">Historical payment method</label>
+                <select id="existingInitPaymentMethod">
+                  <option value="">Select method</option>
+                  <option value="Cash">Cash</option>
+                  <option value="M-Pesa">M-Pesa</option>
+                  <option value="Bank transfer">Bank transfer</option>
+                </select>
+                <small>Required when Paid Through is entered.</small>
               </div>
             </div>
             <div class="members-header-actions">
