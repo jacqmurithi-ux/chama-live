@@ -33,6 +33,11 @@ create table if not exists private.member_accounting_initialization_audit (
   created_at timestamptz not null default now()
 );
 
+-- Only one pending request may exist for a target member; request_id replay is separate.
+create unique index if not exists member_accounting_initialization_one_pending_per_member_uq
+  on private.member_accounting_initialization_requests (group_id, member_id)
+  where status = 'pending';
+
 revoke all on private.member_accounting_initialization_requests from public, anon, authenticated;
 revoke all on private.member_accounting_initialization_audit from public, anon, authenticated;
 revoke update, delete, truncate on private.member_accounting_initialization_audit from public, anon, authenticated;
@@ -63,6 +68,9 @@ begin
   if p_member_id is null or p_monthly_amount is null or p_monthly_amount <= 0
      or p_effective_from is null then
     raise exception 'Member, positive monthly amount and effective start date are required' using errcode='22023';
+  end if;
+  if p_effective_from > current_date then
+    raise exception 'Monthly start date cannot be in the future' using errcode='22023';
   end if;
   if p_paid_through is not null and p_paid_through > current_date then
     raise exception 'Paid through cannot be in the future' using errcode='22023';
@@ -220,6 +228,13 @@ begin
         then 'This request is already awaiting approval.'
         else 'This request has already been processed.' end
     );
+  end if;
+
+  if exists (
+    select 1 from private.member_accounting_initialization_requests r
+    where r.group_id=v_group_id and r.member_id=p_member_id and r.status='pending'
+  ) then
+    raise exception 'An initialization request is already pending for this member';
   end if;
 
   v_preview := public.preview_member_accounting_initialization(
