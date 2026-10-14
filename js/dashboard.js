@@ -138,6 +138,9 @@ let customContributionStatuses = [];
 let customContributionStatusComplete = false;
 let customContributionStatusError = null;
 
+let nonMonthlyContributionSummary = [];
+let nonMonthlyContributionSummaryError = null;
+
 let initialized = false;
 
 
@@ -2162,6 +2165,56 @@ async function loadCanonicalSummary(
 
 
 /* =========================================================
+   NON-MONTHLY CONTRIBUTION TYPE SUMMARY
+   Read-only RPC; amounts come from allocations to typed obligations.
+========================================================= */
+async function loadNonMonthlyContributionSummary(month = getCurrentMonth()) {
+  const { data, error } = await supabase.rpc(
+    "get_group_contribution_type_summary",
+    { p_group_id: currentGroupId, p_month: month }
+  );
+  if (error) throw error;
+  nonMonthlyContributionSummary = (Array.isArray(data) ? data : [])
+    .filter(row => row.is_monthly !== true)
+    .map(row => ({
+      name: String(row.contribution_name || "Other contribution"),
+      code: String(row.contribution_code || ""),
+      dueThisMonth: numberValue(row.due_this_month),
+      allocatedThisMonth: numberValue(row.allocated_this_month),
+      paymentAllocatedThisMonth: numberValue(row.payment_allocated_this_month),
+      outstandingDueToDate: numberValue(row.outstanding_due_to_date)
+    }));
+  nonMonthlyContributionSummaryError = null;
+  return nonMonthlyContributionSummary;
+}
+
+function renderNonMonthlyContributionSummary() {
+  const container = el("nonMonthlyContributionRows");
+  if (!container) return;
+  if (nonMonthlyContributionSummaryError) {
+    container.innerHTML = `<tr><td colspan="5"><div class="empty-state" role="alert">
+      <strong>Non-monthly contribution summary unavailable</strong>
+      <span>${escapeHtml(nonMonthlyContributionSummaryError)}</span>
+    </div></td></tr>`;
+    return;
+  }
+  if (!nonMonthlyContributionSummary.length) {
+    container.innerHTML = `<tr><td colspan="5"><div class="empty-state">
+      <strong>No non-monthly obligations for this month</strong>
+      <span>Dev Fund, Special Contribution and other types appear here when they have obligations or allocations.</span>
+    </div></td></tr>`;
+    return;
+  }
+  container.innerHTML = nonMonthlyContributionSummary.map(row => `<tr>
+    <td><strong>${escapeHtml(row.name)}</strong>${row.code ? `<div class="metric-meta">${escapeHtml(row.code)}</div>` : ""}</td>
+    <td>${escapeHtml(money(row.dueThisMonth))}</td>
+    <td>${escapeHtml(money(row.allocatedThisMonth))}</td>
+    <td>${escapeHtml(money(row.paymentAllocatedThisMonth))}</td>
+    <td>${escapeHtml(money(row.outstandingDueToDate))}</td>
+  </tr>`).join("");
+}
+
+/* =========================================================
    CANONICAL CUMULATIVE MEMBER POSITION
 ========================================================= */
 
@@ -2427,6 +2480,8 @@ async function loadData() {
   customContributionStatuses = [];
   customContributionStatusComplete = false;
   customContributionStatusError = null;
+  nonMonthlyContributionSummary = [];
+  nonMonthlyContributionSummaryError = null;
   monthlyStatus = [];
   canonicalSummary = null;
   cumulativePositions = [];
@@ -2477,6 +2532,14 @@ async function loadData() {
     cumulativePositions = [];
     cumulativePositionsComplete = false;
     console.error("CHAMA LIVE: canonical dashboard accounting unavailable.", error);
+  }
+
+  try {
+    await loadNonMonthlyContributionSummary(getCurrentMonth());
+  } catch (error) {
+    nonMonthlyContributionSummary = [];
+    nonMonthlyContributionSummaryError = error?.message || String(error);
+    console.error("CHAMA LIVE: non-monthly contribution summary unavailable.", error);
   }
 
   try {
@@ -4186,6 +4249,8 @@ function renderDashboard() {
   renderActiveContributionTypes();
 
   renderCustomContributionStatuses();
+
+  renderNonMonthlyContributionSummary();
 
   renderMemberStatus();
 
