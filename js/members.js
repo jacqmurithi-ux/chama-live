@@ -1697,6 +1697,7 @@ async function previewExistingMemberAccounting() {
       "Months: " + Number(data.estimated_months || 0) +
       " · Estimated due: " + formatMoney(data.estimated_due) +
       " · Recorded payments in range: " + formatMoney(data.recorded_monthly_payments_in_range) +
+      " · Cumulative recorded contributions: " + formatMoney(data.cumulative_recorded_contributions) +
       " · Estimated arrears: " + formatMoney(data.estimated_arrears) +
       " · Estimated credit: " + formatMoney(data.estimated_credit) +
       ". Final position is calculated by canonical accounting after approval."
