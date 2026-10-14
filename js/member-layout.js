@@ -246,6 +246,15 @@ function createNavLink(
    SHARED MEMBER PORTAL SHELL
    ========================================================= */
 
+function formatRoleLabel(role) {
+  return String(role || "Member")
+    .trim()
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .toLowerCase()
+    .replace(/\b\w/g, character => character.toUpperCase());
+}
+
 function ensureMemberPortalShell() {
   let header = document.querySelector("header.topbar, .topbar");
   if (!header) {
@@ -303,6 +312,18 @@ function ensureMemberPortalShell() {
     userLabel.textContent = context?.member?.name ||
       context?.member?.full_name || context?.user?.email || "Member";
   }
+  let roleLabel = actions.querySelector("[data-user-role]");
+  if (!roleLabel) {
+    roleLabel = document.createElement("span");
+    roleLabel.className = "muted chama-topbar-user-role";
+    roleLabel.setAttribute("data-user-role", "");
+    roleLabel.style.fontSize = "0.75rem";
+    roleLabel.style.fontWeight = "700";
+    roleLabel.style.whiteSpace = "nowrap";
+    actions.insertBefore(roleLabel, actions.querySelector("[data-topbar-group-name]") || null);
+  }
+  roleLabel.textContent = formatRoleLabel(context?.member?.role);
+
   let groupLabel = actions.querySelector("[data-topbar-group-name]");
   if (!groupLabel) {
     groupLabel = document.createElement("span");
@@ -457,6 +478,9 @@ function injectStyles() {
     .topbar .topbar-actions {
       display: flex; align-items: center; justify-content: flex-end;
       gap: 10px; flex: 0 0 auto; min-width: 0;
+    }
+    .topbar [data-user-role] {
+      color: #0f766e; font-size: 11px; font-weight: 700; white-space: nowrap;
     }
     .topbar [data-user-name] {
       max-width: 170px; overflow: hidden; text-overflow: ellipsis;
