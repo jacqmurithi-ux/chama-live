@@ -4980,7 +4980,7 @@ function canonicalStatusLabel(
       "OUTSTANDING",
 
     credit:
-      "OVERPAID"
+      "CREDIT"
 
   };
 
