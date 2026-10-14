@@ -2102,6 +2102,34 @@
          CANONICAL 2B PRIVILEGED PATH
     ==================================================== -->
 
+    <!-- Treasurer-only approval queue for initiated Monthly accounting requests -->
+    <section
+      id="memberAccountingApprovalCard"
+      class="card"
+      hidden
+      aria-labelledby="memberAccountingApprovalTitle"
+    >
+      <div class="card-header">
+        <div>
+          <h2 id="memberAccountingApprovalTitle">Monthly Accounting Approval</h2>
+          <p class="muted">
+            Requests appear here only after another group official initiates them.
+            Approval uses the canonical accounting workflow.
+          </p>
+        </div>
+      </div>
+
+      <div
+        id="memberAccountingApprovalMessage"
+        class="cl-evidence-message"
+        role="status"
+        aria-live="polite"
+        hidden
+      ></div>
+
+      <div id="memberAccountingApprovalRows" class="cl-accounting-approval-list"></div>
+    </section>
+
     <section
       id="recordContributionCard"
       class="card"

@@ -52,6 +52,7 @@ import {
 
 let initialized = false;
 let eventsBound = false;
+let initializationApprovalQueueReady = false;
 
 let currentUser = null;
 let currentMember = null;
@@ -1730,6 +1731,9 @@ function initializationInput(member) {
 async function configureExistingMemberAccountingInitialization(member) {
   const section = byId("existingMemberAccountingInitialization");
   const approvals = byId("pendingMemberAccountingApprovals");
+  const requestButton = byId("requestExistingMemberAccounting");
+  initializationApprovalQueueReady = false;
+  if (requestButton) requestButton.disabled = true;
   if (section) section.hidden = true;
   if (approvals) approvals.hidden = true;
 
@@ -1775,7 +1779,11 @@ async function configureExistingMemberAccountingInitialization(member) {
   // (for example, if its migration has not yet been applied).
   try {
     await loadPendingMemberAccountingApprovals();
+    initializationApprovalQueueReady = true;
+    if (requestButton) requestButton.disabled = false;
   } catch (error) {
+    initializationApprovalQueueReady = false;
+    if (requestButton) requestButton.disabled = true;
     console.error("CHAMA LIVE: accounting initialization approvals queue failed:", error);
     if (approvals) approvals.hidden = true;
     showError("The member's Monthly rule was checked, but the approval queue is unavailable. The accounting-initialization database migration may not yet be applied; do not submit a request until the backend is verified.");
@@ -1817,6 +1825,7 @@ async function requestExistingMemberAccounting() {
   const button = byId("requestExistingMemberAccounting");
   try {
     if (!isManager()) throw new Error("Only an authorized group official can request initialization.");
+    if (!initializationApprovalQueueReady) throw new Error("The second-official approval queue has not been verified. No request was submitted. Refresh and verify the backend before trying again.");
     const args = initializationInput(member);
     if (button) {
       button.disabled = true;
@@ -1836,16 +1845,19 @@ async function requestExistingMemberAccounting() {
     setInitializationMessage(error?.message || "Unable to submit the initialization request.", true);
   } finally {
     if (button) {
-      button.disabled = false;
+      button.disabled = !initializationApprovalQueueReady;
       button.textContent = "Submit for Second-Official Approval";
     }
   }
 }
 
 async function loadPendingMemberAccountingApprovals() {
+  initializationApprovalQueueReady = false;
+  const requestButton = byId("requestExistingMemberAccounting");
+  if (requestButton) requestButton.disabled = true;
   const section = byId("pendingMemberAccountingApprovals");
   const list = byId("pendingMemberAccountingApprovalList");
-  if (!section || !list || !isManager()) return;
+  if (!section || !list || !isManager()) throw new Error("Approval queue controls are unavailable for the current authorized session.");
 
   const { data, error } = await supabase.rpc("list_member_accounting_initialization_requests", { p_group_id: groupId });
   if (error) throw error;
@@ -1869,15 +1881,26 @@ async function loadPendingMemberAccountingApprovals() {
     const requester = document.createElement("span");
     requester.textContent = "Requested by " + (request.requested_by_name || "another official");
 
-    const approve = document.createElement("button");
-    approve.type = "button";
-    approve.className = "btn btn-primary";
-    approve.textContent = "Approve";
-    approve.dataset.accountingApprovalId = request.request_id;
-    approve.dataset.requesterMemberId = request.requested_by_member_id;
-    card.append(summary, requester, approve);
+    card.append(summary, requester);
+
+    // Approval action is Treasurer-only; other officials can see pending status.
+    if (
+      isTreasurer() &&
+      String(currentMember?.id || "") !== String(request.requested_by_member_id || "")
+    ) {
+      const approve = document.createElement("button");
+      approve.type = "button";
+      approve.className = "btn btn-primary";
+      approve.textContent = "Approve";
+      approve.dataset.accountingApprovalId = request.request_id;
+      approve.dataset.requesterMemberId = request.requested_by_member_id;
+      card.append(approve);
+    }
+
     list.append(card);
   }
+  initializationApprovalQueueReady = true;
+  if (requestButton) requestButton.disabled = false;
 }
 
 async function approveExistingMemberAccounting(requestId, requesterMemberId) {

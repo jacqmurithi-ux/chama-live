@@ -214,6 +214,19 @@ const verifierPaymentEvidenceDetail =
     "verifierPaymentEvidenceDetail"
   );
 
+/* =========================================================
+   EXISTING-MEMBER ACCOUNTING APPROVAL QUEUE
+========================================================= */
+const memberAccountingApprovalCard = document.getElementById(
+  "memberAccountingApprovalCard"
+);
+const memberAccountingApprovalRows = document.getElementById(
+  "memberAccountingApprovalRows"
+);
+const memberAccountingApprovalMessage = document.getElementById(
+  "memberAccountingApprovalMessage"
+);
+
 
 /* =========================================================
    CUSTOM CONTRIBUTION EDITOR ELEMENTS
@@ -1109,6 +1122,135 @@ function isAuthorizedVerifier() {
     getCurrentMemberRole()
   );
 
+}
+
+function isAccountingInitializationApprover() {
+  // This approval control is intentionally Treasurer-only.
+  return getCurrentMemberRole() === "treasurer";
+}
+
+function setAccountingApprovalMessage(message, isError = false) {
+  if (!memberAccountingApprovalMessage) return;
+  memberAccountingApprovalMessage.textContent = String(message || "");
+  memberAccountingApprovalMessage.hidden = !message;
+  memberAccountingApprovalMessage.setAttribute(
+    "role",
+    isError ? "alert" : "status"
+  );
+}
+
+async function loadMemberAccountingApprovalQueue() {
+  if (!memberAccountingApprovalCard || !memberAccountingApprovalRows) return;
+
+  // Hide the entire approval surface from every non-Treasurer account.
+  memberAccountingApprovalCard.hidden = true;
+  memberAccountingApprovalRows.replaceChildren();
+  if (!isAccountingInitializationApprover() || !groupId || !currentMember?.id) return;
+
+  try {
+    const { data, error } = await supabase.rpc(
+      "list_member_accounting_initialization_requests",
+      { p_group_id: groupId }
+    );
+    if (error) throw error;
+
+    const requests = (Array.isArray(data) ? data : [])
+      // Do not offer self-approval even if a request was initiated by this Treasurer.
+      .filter(request =>
+        String(request.requested_by_member_id) !== String(currentMember.id)
+      );
+
+    if (!requests.length) {
+      memberAccountingApprovalCard.hidden = true;
+      return;
+    }
+
+    for (const request of requests) {
+      const row = document.createElement("article");
+      row.className = "cl-accounting-approval-item";
+
+      const details = document.createElement("div");
+      const title = document.createElement("strong");
+      title.textContent = request.member_name || "Member";
+      const meta = document.createElement("p");
+      meta.className = "muted";
+      meta.textContent =
+        (request.member_number ? "Member " + request.member_number + " · " : "") +
+        money(request.monthly_amount) + " per month · Starts " +
+        formatDate(request.effective_from) +
+        (request.paid_through ? " · Paid through " + formatDate(request.paid_through) : "");
+      const requestedBy = document.createElement("p");
+      requestedBy.className = "muted";
+      requestedBy.textContent = "Initiated by " + (request.requested_by_name || "another official");
+
+      details.append(title, meta, requestedBy);
+
+      const approve = document.createElement("button");
+      approve.type = "button";
+      approve.className = "button button-primary";
+      approve.textContent = "Approve Monthly Accounting";
+      approve.dataset.accountingInitializationApproval = request.request_id;
+
+      row.append(details, approve);
+      memberAccountingApprovalRows.append(row);
+    }
+
+    memberAccountingApprovalCard.hidden = false;
+  } catch (error) {
+    // Fail closed: no approval button is shown when the queue cannot be verified.
+    memberAccountingApprovalCard.hidden = true;
+    console.error("CHAMA LIVE: Could not load accounting approval queue:", error);
+  }
+}
+
+async function approveMemberAccountingInitialization(requestId, button) {
+  if (!isAccountingInitializationApprover()) {
+    setAccountingApprovalMessage("Only the Treasurer can approve this request.", true);
+    return;
+  }
+  if (!requestId || !button) return;
+
+  button.disabled = true;
+  button.textContent = "Approving…";
+  setAccountingApprovalMessage("");
+
+  try {
+    const { data, error } = await supabase.rpc(
+      "approve_member_accounting_initialization",
+      { p_request_id: requestId }
+    );
+    if (error) throw error;
+    if (!data?.success) throw new Error("The request was not approved.");
+
+    setAccountingApprovalMessage("Monthly accounting request approved successfully.");
+    await loadMemberAccountingApprovalQueue();
+    await loadCanonicalMemberStatus(accountingMonth);
+    renderMemberStatus();
+    renderLedger();
+    renderSummary();
+  } catch (error) {
+    setAccountingApprovalMessage(
+      error?.message || "Unable to approve this accounting request.",
+      true
+    );
+    button.disabled = false;
+    button.textContent = "Approve Monthly Accounting";
+  }
+}
+
+if (
+  memberAccountingApprovalRows &&
+  !memberAccountingApprovalRows.dataset.accountingApprovalBound
+) {
+  memberAccountingApprovalRows.dataset.accountingApprovalBound = "true";
+  memberAccountingApprovalRows.addEventListener("click", event => {
+    const button = event.target.closest("[data-accounting-initialization-approval]");
+    if (!button) return;
+    approveMemberAccountingInitialization(
+      button.dataset.accountingInitializationApproval,
+      button
+    );
+  });
 }
 
 
@@ -8040,6 +8182,9 @@ export async function initContributions(
     configureMemberPaymentEvidence();
 
     configureVerifierPaymentEvidence();
+
+    // Only a Treasurer sees pending requests initiated by another official.
+    await loadMemberAccountingApprovalQueue();
 
 
     renderContributionTypeOptions(
