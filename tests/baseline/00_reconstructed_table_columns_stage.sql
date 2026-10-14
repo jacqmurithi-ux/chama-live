@@ -1,6 +1,6 @@
--- STAGE ONLY: column/default reconstruction from production catalog, captured 2026-10-14.
--- NOT a complete migration. Constraints, indexes, triggers, policies, views, ownership, grants, sequence ownership/state,
--- function dependencies and full object parity are not included. DO NOT APPLY as a standalone migration.
+-- STAGE ONLY: column/default/identity/generated reconstruction from production catalog, captured 2026-10-14.
+-- NOT a complete migration. Constraints, indexes, triggers, policies, views, ownership, grants and function dependencies
+-- are not included. Do not apply as a standalone migration.
 CREATE SCHEMA IF NOT EXISTS private;
 
 CREATE TABLE private.contribution_initiative_requests (
@@ -155,7 +155,7 @@ CREATE TABLE public.attendance (
 );
 
 CREATE TABLE public.audit_deleted_rows (
-  id bigint NOT NULL,
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
   table_name text NOT NULL,
   deleted_row jsonb NOT NULL,
   deleted_by uuid,
@@ -303,7 +303,7 @@ CREATE TABLE public.contribution_obligations (
   contribution_type_id uuid NOT NULL,
   rule_id uuid,
   period_id uuid,
-  economic_month date DEFAULT (date_trunc('month'::text, (obligation_month)::timestamp without time zone))::date,
+  economic_month date GENERATED ALWAYS AS ((date_trunc('month'::text, (obligation_month)::timestamp without time zone))::date) STORED,
   component_kind text NOT NULL DEFAULT 'PARENT'::text,
   lifecycle_state text NOT NULL DEFAULT 'ACTIVE'::text,
   parent_obligation_id uuid
@@ -606,7 +606,7 @@ CREATE TABLE public.group_assets (
 );
 
 CREATE TABLE public.group_audit_log (
-  id bigint NOT NULL,
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
   group_id uuid NOT NULL,
   actor_user_id uuid NOT NULL,
   actor_member_id uuid,
