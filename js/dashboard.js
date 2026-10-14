@@ -3020,18 +3020,22 @@ function monthlyStatusDisplay(row) {
   const outstanding = Number(row.currentOutstanding) || 0;
 
   if (due <= 0 && outstanding <= 0 && applied > 0) {
-    return "Payment recorded — no monthly obligation";
+    return "No Monthly Obligation";
   }
 
-  if (due > 0 && outstanding <= 0 && applied >= due && credit > 0) {
-    return "Paid + credit available";
+  if (outstanding > 0) {
+    return "Outstanding";
   }
 
-  if (outstanding <= 0 && credit > 0) {
-    return "Credit available";
+  if (credit > 0) {
+    return "Credit";
   }
 
-  return String(row.status || "Outstanding");
+  if (due > 0 && applied >= due) {
+    return "Paid";
+  }
+
+  return "Outstanding";
 }
 
 
