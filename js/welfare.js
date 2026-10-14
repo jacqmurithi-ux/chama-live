@@ -1907,7 +1907,7 @@ function enforceManagementAccess() {
     currentMember?.role,
     currentMember?.actual_position_name,
     currentMember?.actual_position
-  ].map(value => normalize(value).replace(/[_-]+/g, " ").replace(/\\s+/g, " "));
+  ].map(value => normalize(value).replace(/[_-]+/g, " ").split(" ").filter(Boolean).join(" "));
 
   const allowed =
     roleCandidates.some(role => MANAGEMENT_ROLES.has(role));
