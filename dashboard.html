@@ -1978,9 +1978,11 @@
             <strong>How to read this:</strong> Monthly Due is this month's obligation.
             Previous Outstanding is unpaid balance brought into the month. Applied to This Month
             is the amount allocated to this month's obligation. Carry-forward Credit is surplus
-            shown separately; do not subtract it again. Current Outstanding is what remains due
-            for this month. “Paid + credit available” means this month's due is covered and a
-            surplus remains. A payment with no monthly obligation is not counted as paying one.
+            shown separately and reflects surplus allocated against earlier monthly obligations;
+            it does not include unallocated Monthly payment amounts. Current Outstanding is what
+            remains due for this month. “Paid + credit available” means this month's due is covered
+            and allocated carry-forward surplus remains. A payment with no monthly obligation is
+            not counted as paying one.
           </p>
 
         </div>
@@ -2257,8 +2259,10 @@
           </h2>
 
           <p>
-            Canonical lifetime accounting position based on
-            total obligations, allocations and remaining balance.
+            Scope: Total Paid counts recorded payments of all contribution types once. Total Due,
+            Total Allocated and Arrears reflect Monthly obligations only. Credit is the unallocated
+            balance on recorded Monthly payment rows; non-monthly payments and obligations are
+            reported separately above and are not Monthly credit.
           </p>
 
         </div>
@@ -2378,23 +2382,23 @@
                   </th>
 
                   <th scope="col">
-                    Total Paid
+                    Total Paid (All Types)
                   </th>
 
                   <th scope="col">
-                    Total Due
+                    Total Due (Monthly)
                   </th>
 
                   <th scope="col">
-                    Total Allocated
+                    Total Allocated (Monthly)
                   </th>
 
                   <th scope="col">
-                    Arrears
+                    Arrears (Monthly)
                   </th>
 
                   <th scope="col">
-                    Credit
+                    Credit (Monthly)
                   </th>
 
                   <th scope="col">
