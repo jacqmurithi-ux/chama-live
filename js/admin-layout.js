@@ -237,7 +237,7 @@ const PAGE_SCRIPTS = {
   ],
 
   "welfare.html": [
-    "./welfare.js",
+    "./welfare.js?v=20261015-welfare-ui-audit1",
     "initPage"
   ],
 
