@@ -1738,11 +1738,19 @@ async function configureExistingMemberAccountingInitialization(member) {
 
   if (!isManager() || !member?.id) return;
 
+  // Determine this member's Monthly-rule state independently from the
+  // approvals queue. A missing/unapplied approvals RPC must not be reported
+  // as a failure to inspect the member's existing rules.
   try {
     const [rules, typeMap] = await Promise.all([
       loadMemberRules(member),
       loadContributionTypeMap()
     ]);
+
+    if (rules.length > 0 && typeMap.size === 0) {
+      throw new Error("Contribution types could not be read; refusing to assume this member is uninitialized.");
+    }
+
     const hasMonthlyRule = rules.some(rule =>
       normalize(typeMap.get(String(rule.contribution_type_id))) === "monthly"
     );
@@ -1759,12 +1767,21 @@ async function configureExistingMemberAccountingInitialization(member) {
         preview.textContent = "";
       }
     }
+  } catch (error) {
+    console.error("CHAMA LIVE: member Monthly-rule check failed:", error);
+    if (section) section.hidden = true;
+    showError("Unable to verify this member's Monthly accounting rule. No initialization status has been assumed. Check the browser console for the database error.");
+    return;
+  }
 
+  // The request queue is a separate feature and can fail independently
+  // (for example, if its migration has not yet been applied).
+  try {
     await loadPendingMemberAccountingApprovals();
   } catch (error) {
-    console.error("CHAMA LIVE: accounting initialization state failed:", error);
-    if (section) section.hidden = true;
-    showError("Unable to check whether this member needs accounting initialization.");
+    console.error("CHAMA LIVE: accounting initialization approvals queue failed:", error);
+    if (approvals) approvals.hidden = true;
+    showError("The member's Monthly rule was checked, but the approval queue is unavailable. The accounting-initialization database migration may not yet be applied; do not submit a request until the backend is verified.");
   }
 }
 
