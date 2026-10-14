@@ -1630,7 +1630,6 @@ function initializationInput(member) {
   if (!member?.id) throw new Error("Select a member first.");
   if (!Number.isFinite(amount) || amount <= 0) throw new Error("Monthly amount must be greater than zero.");
   if (!effectiveFrom) throw new Error("Monthly start date is required.");
-  if (effectiveFrom > new Date().toISOString().slice(0, 10)) throw new Error("Monthly start date cannot be in the future.");
   if (paidThrough && paidThrough > new Date().toISOString().slice(0, 10)) throw new Error("Paid through cannot be in the future.");
   if (paidThrough && paidThrough < effectiveFrom) throw new Error("Paid through cannot precede the Monthly start date.");
   if (paidThrough && !["M-Pesa", "Cash", "Bank transfer"].includes(paymentMethod)) {
