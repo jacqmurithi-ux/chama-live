@@ -56,6 +56,7 @@ declare
   v_existing_rule_count integer;
   v_due_estimate numeric(14,2);
   v_paid numeric(14,2);
+  v_cumulative_contributions numeric(14,2);
   v_arrears numeric(14,2);
   v_credit numeric(14,2);
 begin
@@ -115,6 +116,11 @@ begin
     and c.contribution_date <= coalesce(p_paid_through, current_date)
     and c.amount > 0;
 
+  select coalesce(sum(c.amount),0)::numeric(14,2)
+  into v_cumulative_contributions
+  from public.contributions c
+  where c.group_id=v_group_id and c.member_id=p_member_id;
+
   v_arrears := greatest(v_due_estimate - v_paid, 0);
   v_credit := greatest(v_paid - v_due_estimate, 0);
 
@@ -127,6 +133,7 @@ begin
     'estimated_months', v_months,
     'estimated_due', v_due_estimate,
     'recorded_monthly_payments_in_range', v_paid,
+    'cumulative_recorded_contributions', v_cumulative_contributions,
     'estimated_arrears', v_arrears,
     'estimated_credit', v_credit,
     'estimate_only', true,
