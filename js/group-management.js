@@ -954,27 +954,31 @@ async function loadContributionSettings() {
     renderContributionCycleSummary();
 
     /*
-     * Candidate repair hook: the backend only permits the approved creator's
-     * system-created member 0001 to be repaired. Other group managers receive
-     * a harmless no-op from this UI hook; all accounting writes stay server-side.
+     * Candidate repair hook: only attempt from the creator's own 0001 admin
+     * session. The database independently verifies creator identity and role.
      */
-    try {
-        const { error: repairError } = await groupManagementApi.rpc(
-            "ensure_creator_monthly_contribution_rule",
-            { p_group_id: currentGroup.id }
-        );
+    if (
+        String(currentMember?.member_number || "") === "0001" &&
+        String(currentMember?.role || currentRole || "").toLowerCase() === "admin"
+    ) {
+        try {
+            const { error: repairError } = await groupManagementApi.rpc(
+                "ensure_creator_monthly_contribution_rule",
+                { p_group_id: currentGroup.id }
+            );
 
-        if (repairError) {
+            if (repairError) {
+                console.warn(
+                    "Creator Monthly-rule candidate repair did not run:",
+                    repairError.message || repairError
+                );
+            }
+        } catch (repairError) {
             console.warn(
                 "Creator Monthly-rule candidate repair did not run:",
-                repairError.message || repairError
+                repairError?.message || repairError
             );
         }
-    } catch (repairError) {
-        console.warn(
-            "Creator Monthly-rule candidate repair did not run:",
-            repairError?.message || repairError
-        );
     }
 }
 
