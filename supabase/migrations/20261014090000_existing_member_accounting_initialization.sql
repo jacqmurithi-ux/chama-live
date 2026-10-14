@@ -314,11 +314,48 @@ begin
 end;
 $function$;
 
+create or replace function public.list_member_accounting_initialization_requests()
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+declare
+  v_actor uuid := auth.uid();
+  v_group_id uuid;
+  v_rows jsonb;
+begin
+  if v_actor is null then raise exception 'Authentication required' using errcode='42501'; end if;
+  select m.group_id into v_group_id
+  from public.members m
+  where (m.auth_user_id=v_actor or m.user_id=v_actor)
+    and lower(coalesce(m.status,'active'))='active'
+    and lower(coalesce(m.onboarding_status,'active'))='active'
+  order by m.id limit 1;
+  if v_group_id is null or not public.can_manage_members(v_group_id) then
+    raise exception 'Member-management authorization required' using errcode='42501';
+  end if;
+  select coalesce(jsonb_agg(jsonb_build_object(
+    'request_id',r.request_id,'member_id',r.member_id,'member_name',m.name,
+    'member_number',m.member_number,'requested_by_member_id',r.requested_by_member_id,
+    'requested_by_name',requester.name,'monthly_amount',r.monthly_amount,
+    'effective_from',r.effective_from,'paid_through',r.paid_through,
+    'payment_method',r.payment_method,'created_at',r.created_at
+  ) order by r.created_at), '[]'::jsonb)
+  into v_rows
+  from private.member_accounting_initialization_requests r
+  join public.members m on m.id=r.member_id and m.group_id=r.group_id
+  join public.members requester on requester.id=r.requested_by_member_id
+  where r.group_id=v_group_id and r.status='pending';
+  return v_rows;
+end;
+$function$;
+
 revoke all on function public.preview_member_accounting_initialization(uuid,numeric,date,date) from public, anon;
 revoke all on function public.request_member_accounting_initialization(uuid,uuid,numeric,date,date,text) from public, anon;
-revoke all on function public.approve_member_accounting_initialization(uuid) from public, anon;
+revoke all on function public.approve_member_accounting_initialization(uuid) from public, anon;\nrevoke all on function public.list_member_accounting_initialization_requests() from public, anon;
 grant execute on function public.preview_member_accounting_initialization(uuid,numeric,date,date) to authenticated;
 grant execute on function public.request_member_accounting_initialization(uuid,uuid,numeric,date,date,text) to authenticated;
-grant execute on function public.approve_member_accounting_initialization(uuid) to authenticated;
+grant execute on function public.approve_member_accounting_initialization(uuid) to authenticated;\ngrant execute on function public.list_member_accounting_initialization_requests() to authenticated;
 
 commit;
