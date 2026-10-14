@@ -1908,18 +1908,22 @@ function monthlyStatusDisplay(row) {
 
   // Presentation only: do not recalculate or mutate canonical accounting.
   if (due <= 0 && outstanding <= 0 && applied > 0) {
-    return "Payment recorded — no monthly obligation";
+    return "No Monthly Obligation";
   }
 
-  if (outstanding <= 0 && credit > 0 && due > 0 && applied >= due) {
-    return "Paid + credit available";
+  if (outstanding > 0) {
+    return "Outstanding";
   }
 
-  if (outstanding <= 0 && credit > 0) {
-    return "Credit available";
+  if (credit > 0) {
+    return "Credit";
   }
 
-  return getStatusLabel(canonicalMonthlyStatus(row));
+  if (due > 0 && applied >= due) {
+    return "Paid";
+  }
+
+  return "Outstanding";
 }
 
 function canonicalMonthlyStatus(row) {
@@ -2204,7 +2208,7 @@ function renderMonthlyStatusReport(rows) {
     <div class="report-explanation" role="note" style="margin:0 0 12px;padding:12px 14px;border-left:4px solid #16803c;background:#f3faf5;border-radius:6px;color:#23352a;line-height:1.5">
       <strong>How to read this:</strong>
       <span>Monthly Due is the obligation for the selected month. Previous Outstanding is unpaid balance brought into the month. Applied is the amount canonical accounting allocated to this month's obligation. Carry-forward Credit is an available surplus after applicable allocations; it is shown separately and must not be subtracted a second time. Current Outstanding is the amount still owed for this month's obligation.</span>
-      <div style="margin-top:6px"> <strong>Paid + credit available</strong> means this month's due is covered and a surplus remains. A credit does not by itself prove that a separate previous outstanding was cleared.</div>
+      <div style="margin-top:6px"> <strong>Credit</strong> means this month's due is covered and a surplus remains. A credit does not by itself prove that a separate previous outstanding was cleared.</div>
     </div>
     <div class="report-table-wrap">
       <table class="report-table">
@@ -2705,7 +2709,7 @@ function renderFullReport(
 
 function buildCanonicalTable(rows) {
   return `
-    <p class="report-note">Monthly Due is this month's obligation. Previous Outstanding is brought forward from earlier months. Applied is the canonical allocation to this month's obligation. Carry-forward Credit is surplus remaining after applicable allocations; do not subtract it twice. Current Outstanding is what remains due for this month. "Paid + credit available" means the monthly due is covered and surplus remains.</p>
+    <p class="report-note">Monthly Due is this month's obligation. Previous Outstanding is brought forward from earlier months. Applied is the canonical allocation to this month's obligation. Carry-forward Credit is surplus remaining after applicable allocations; do not subtract it twice. Current Outstanding is what remains due for this month. "Credit" means the monthly due is covered and surplus remains.</p>
     <div class="report-table-wrap">
       <table class="report-table">
         <thead>
