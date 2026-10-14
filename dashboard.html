@@ -2059,6 +2059,32 @@
 
 
       <!-- =================================================
+           NON-MONTHLY CONTRIBUTION TYPE SUMMARY
+      ================================================= -->
+      <section class="dashboard-section" aria-labelledby="nonMonthlyContributionTitle">
+        <div class="section-heading">
+          <h2 id="nonMonthlyContributionTitle">Non-monthly contribution summary</h2>
+          <p>Dev Fund, Special Contribution and other types are reported separately from Monthly Contribution. Amounts follow obligation allocations, not payment date alone.</p>
+        </div>
+        <article class="dashboard-card">
+          <div class="table-wrap">
+            <table class="dashboard-table">
+              <thead><tr>
+                <th scope="col">Contribution Type</th>
+                <th scope="col">Due This Month</th>
+                <th scope="col">Allocated to This Month</th>
+                <th scope="col">Payments Received This Month, Allocated to Type</th>
+                <th scope="col">Outstanding Due to Date</th>
+              </tr></thead>
+              <tbody id="nonMonthlyContributionRows">
+                <tr><td colspan="5"><div class="empty-state"><strong>Loading non-monthly contributions...</strong></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+
+      <!-- =================================================
            ACTIVE CUSTOM CONTRIBUTION MEMBER STATUS
            Each active custom contribution can have its own
            member-level Paid / Outstanding / Partial status.
