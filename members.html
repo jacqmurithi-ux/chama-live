@@ -1322,6 +1322,46 @@
             or position history.
           </div>
 
+          <!-- Existing members are initialized only through the two-official backend workflow. -->
+          <section id="existingMemberAccountingInitialization" class="form-section full" hidden>
+            <h3>Initialize Monthly Accounting</h3>
+            <p>This section appears only when the selected member has no Monthly contribution rule. Preview is an estimate; submitting requires approval by a different authorized official.</p>
+            <div class="member-form-grid">
+              <div class="field">
+                <label for="existingInitMonthlyAmount">Monthly amount (KSh)</label>
+                <input id="existingInitMonthlyAmount" type="number" min="0.01" step="0.01" inputmode="decimal">
+              </div>
+              <div class="field">
+                <label for="existingInitEffectiveFrom">Monthly start date</label>
+                <input id="existingInitEffectiveFrom" type="date">
+              </div>
+              <div class="field">
+                <label for="existingInitPaidThrough">Historical payments recorded through (optional)</label>
+                <input id="existingInitPaidThrough" type="date">
+              </div>
+              <div class="field">
+                <label for="existingInitPaymentMethod">Historical payment method</label>
+                <select id="existingInitPaymentMethod">
+                  <option value="">Not applicable</option>
+                  <option value="M-Pesa">M-Pesa</option>
+                  <option value="Cash">Cash</option>
+                  <option value="Bank transfer">Bank transfer</option>
+                </select>
+              </div>
+            </div>
+            <div class="members-header-actions">
+              <button id="previewExistingMemberAccounting" type="button" class="btn">Preview Position</button>
+              <button id="requestExistingMemberAccounting" type="button" class="btn btn-primary">Submit for Second-Official Approval</button>
+            </div>
+            <div id="existingMemberAccountingPreview" class="notice" role="status" hidden></div>
+          </section>
+
+          <section id="pendingMemberAccountingApprovals" class="form-section full" hidden>
+            <h3>Pending Monthly Accounting Initializations</h3>
+            <p>Approve only after checking the proposed start date and historical records. The requester cannot approve their own request.</p>
+            <div id="pendingMemberAccountingApprovalList" class="rule-list"></div>
+          </section>
+
 
           <!-- =================================================
                HISTORICAL CONTRIBUTION ONBOARDING
