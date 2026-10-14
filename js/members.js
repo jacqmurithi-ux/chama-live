@@ -1789,7 +1789,7 @@ async function configureExistingMemberAccountingInitialization(member) {
     if (requestButton) requestButton.disabled = true;
     console.error("CHAMA LIVE: accounting initialization approvals queue failed:", error);
     if (approvals) approvals.hidden = true;
-    showError("The member's Monthly rule was checked, but the approval queue is unavailable. The accounting-initialization database migration may not yet be applied; do not submit a request until the backend is verified.");
+    showError("The member's Monthly rule was checked, but the approval queue could not be loaded. No request was submitted. Refresh and retry; if the problem continues, check the browser console and backend permissions.");
   }
 }
 
