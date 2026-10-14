@@ -32,6 +32,7 @@ import {
 } from "./auth.js";
 
 import { applyRolePermissions } from "./role-permissions.js";
+import { supabase } from "./supabase.js";
 
 
 /* =========================================================
@@ -70,7 +71,9 @@ const MEMBER_PAGES = new Set([
   "member-milestones.html",
   "member-profile.html",
   "member-getting-started.html",
-  "member-my-account.html"
+  "member-my-account.html",
+  "merry-go-round.html",
+  "loans.html"
 ]);
 
 
@@ -113,12 +116,42 @@ const PAGE_SCRIPTS = {
   "member-my-account.html": {
     path: "./my-account.js?v=20261013-shared-account1",
     initializer: "initMyAccount"
+  },
+  "merry-go-round.html": {
+    path: "./merry-go-round.js",
+    initializer: "initMerryGoRound"
+  },
+  "loans.html": {
+    path: "./loans.js",
+    initializer: "initLoans"
   }
 };
 
 
 let bootStarted = false;
 let context = null;
+
+async function loadOptionalModuleFlags() {
+  try {
+    const { data, error } = await supabase.rpc("get_group_module_settings", {
+      p_group_id: context?.member?.group_id
+    });
+    if (error) throw error;
+    const row = Array.isArray(data) ? data[0] : data;
+    context.group = {
+      ...(context.group || {}),
+      merry_go_round_enabled: row?.merry_go_round_enabled === true,
+      loans_enabled: row?.loans_enabled === true
+    };
+  } catch (error) {
+    console.warn("[CHAMA LIVE] Optional module navigation is hidden because settings could not be verified.", error);
+    context.group = {
+      ...(context.group || {}),
+      merry_go_round_enabled: false,
+      loans_enabled: false
+    };
+  }
+}
 
 
 /* =========================================================
@@ -165,11 +198,15 @@ const OFFICIAL_PERSONAL_ACCOUNT_PAGES = new Set([
 ]);
 
 function resolveMemberNavigationItem(item) {
+  const targetPage = item.href.split("/").pop().split("?")[0];
+  if (targetPage === "merry-go-round.html" && context?.group?.merry_go_round_enabled !== true) return null;
+  if (targetPage === "loans.html" && context?.group?.loans_enabled !== true) return null;
+
   // My Account is already a dedicated navigation entry. Hide legacy aliases
   // for officials instead of rendering several duplicate My Account links.
   if (
     isAdminAccount() &&
-    OFFICIAL_PERSONAL_ACCOUNT_PAGES.has(item.href.split("/").pop())
+    OFFICIAL_PERSONAL_ACCOUNT_PAGES.has(targetPage)
   ) {
     return null;
   }
@@ -190,7 +227,7 @@ function createNavLink(
   link.textContent = label;
 
   const targetPage =
-    href.split("/").pop();
+    href.split("/").pop().split("?")[0];
 
   if (targetPage === currentPage) {
     link.classList.add("active");
@@ -266,6 +303,19 @@ function ensureMemberPortalShell() {
     userLabel.textContent = context?.member?.name ||
       context?.member?.full_name || context?.user?.email || "Member";
   }
+  let groupLabel = actions.querySelector("[data-topbar-group-name]");
+  if (!groupLabel) {
+    groupLabel = document.createElement("span");
+    groupLabel.className = "muted chama-topbar-group-name";
+    groupLabel.setAttribute("data-topbar-group-name", "");
+    groupLabel.style.fontSize = "0.85rem";
+    groupLabel.style.fontWeight = "600";
+    groupLabel.style.whiteSpace = "nowrap";
+    actions.appendChild(groupLabel);
+  }
+  groupLabel.textContent = "· " + (
+    context?.group?.name || context?.member?.group_name || "CHAMA"
+  );
   inner.querySelectorAll(".topbar-left, .topbar-right").forEach(wrapper => {
     if (!wrapper.querySelector("*") && !wrapper.textContent.trim()) wrapper.remove();
   });
@@ -292,6 +342,14 @@ const MEMBER_NAVIGATION = [
   {
     label: "My Accounting",
     href: "member-accounting.html"
+  },
+  {
+    label: "Merry-go-round",
+    href: "merry-go-round.html?portal=member"
+  },
+  {
+    label: "Loans",
+    href: "loans.html?portal=member"
   },
   {
     label: "Activities",
@@ -333,7 +391,9 @@ const MEMBER_DESKTOP_NAVIGATION_GROUPS = [
     "Finance",
     [
       { label: "My Contributions", href: "member-contributions.html" },
-      { label: "My Accounting", href: "member-accounting.html" }
+      { label: "My Accounting", href: "member-accounting.html" },
+      { label: "Merry-go-round", href: "merry-go-round.html?portal=member" },
+      { label: "Loans", href: "loans.html?portal=member" }
     ]
   ],
   [
@@ -1517,6 +1577,8 @@ export async function boot() {
       );
     }
 
+    await loadOptionalModuleFlags();
+
     const role =
       normalizeRole(
         context.member.role
@@ -1558,6 +1620,14 @@ export async function boot() {
       window.location.href =
         "member-dashboard.html";
 
+      return;
+    }
+
+    if (
+      (currentPage === "merry-go-round.html" && context.group?.merry_go_round_enabled !== true) ||
+      (currentPage === "loans.html" && context.group?.loans_enabled !== true)
+    ) {
+      window.location.replace("member-dashboard.html");
       return;
     }
 
