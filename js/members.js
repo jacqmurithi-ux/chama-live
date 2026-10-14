@@ -1688,8 +1688,11 @@ async function previewExistingMemberAccounting() {
   const button = byId("previewExistingMemberAccounting");
   try {
     const args = initializationInput(member);
+    const { p_member_id, p_monthly_amount, p_effective_from, p_paid_through } = args;
     if (button) button.disabled = true;
-    const { data, error } = await supabase.rpc("preview_member_accounting_initialization", args);
+    const { data, error } = await supabase.rpc("preview_member_accounting_initialization", {
+      p_member_id, p_monthly_amount, p_effective_from, p_paid_through
+    });
     if (error) throw error;
     if (!data) throw new Error("No preview was returned.");
     setInitializationMessage(
