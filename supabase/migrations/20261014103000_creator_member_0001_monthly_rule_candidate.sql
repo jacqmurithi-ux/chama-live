@@ -99,13 +99,15 @@ BEGIN
     )
   );
 
+  -- Any existing rule for this member and canonical Monthly type blocks
+  -- automatic insertion, regardless of frequency. Review unusual existing
+  -- rules manually instead of creating an overlapping duplicate.
   SELECT count(*)::integer
     INTO v_existing_count
   FROM public.member_contribution_rules r
   WHERE r.group_id = p_group_id
     AND r.member_id = v_member.id
-    AND r.contribution_type_id = v_type_id
-    AND r.frequency = 'monthly';
+    AND r.contribution_type_id = v_type_id;
 
   IF v_existing_count > 0 THEN
     RETURN QUERY SELECT true, 'existing_rule_requires_no_automatic_change'::text,
