@@ -308,7 +308,8 @@ begin
   ) values (
     p_request_id,v_request.group_id,v_request.member_id,v_approver_member_id,'approved',
     jsonb_build_object('effective_from',v_request.effective_from,'monthly_amount',v_request.monthly_amount,
-      'paid_through',v_request.paid_through,'position',coalesce(v_result,'{}'::jsonb))
+      'paid_through',v_request.paid_through,'position',coalesce(v_result,'{}'::jsonb),
+      'reconciliation',to_jsonb(v_reconcile))
   );
 
   return jsonb_build_object('success',true,'request_id',p_request_id,'status','approved','position',v_result,'reconciliation',to_jsonb(v_reconcile));
