@@ -177,7 +177,9 @@ function currentRole() {
 }
 
 function canRecordExpense() {
-  return [
+  // Group Admin has full group-operation control; backend RLS remains
+  // authoritative for the actual insert.
+  return currentRole() === "admin" || [
     "chairperson", "vice chairperson",
     "secretary", "vice secretary", "treasurer"
   ].includes(currentRole());
