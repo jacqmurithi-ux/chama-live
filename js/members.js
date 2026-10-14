@@ -1881,13 +1881,22 @@ async function loadPendingMemberAccountingApprovals() {
     const requester = document.createElement("span");
     requester.textContent = "Requested by " + (request.requested_by_name || "another official");
 
-    const approve = document.createElement("button");
-    approve.type = "button";
-    approve.className = "btn btn-primary";
-    approve.textContent = "Approve";
-    approve.dataset.accountingApprovalId = request.request_id;
-    approve.dataset.requesterMemberId = request.requested_by_member_id;
-    card.append(summary, requester, approve);
+    card.append(summary, requester);
+
+    // Approval action is Treasurer-only; other officials can see pending status.
+    if (
+      isTreasurer() &&
+      String(currentMember?.id || "") !== String(request.requested_by_member_id || "")
+    ) {
+      const approve = document.createElement("button");
+      approve.type = "button";
+      approve.className = "btn btn-primary";
+      approve.textContent = "Approve";
+      approve.dataset.accountingApprovalId = request.request_id;
+      approve.dataset.requesterMemberId = request.requested_by_member_id;
+      card.append(approve);
+    }
+
     list.append(card);
   }
   initializationApprovalQueueReady = true;
