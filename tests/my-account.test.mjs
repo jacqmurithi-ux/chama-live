@@ -106,7 +106,7 @@ test("expense approval UI uses member identity and respects the three backend of
 
 test("manual report date edits activate the custom date range", () => {
   assert.match(reports, /for \(const id of \["fromDate", "toDate"\]\)[\s\S]*?preset\.value = "custom"[\s\S]*?generateReport\(\)/);
-  assert.doesNotMatch(reports, /const regularFilters = \[[\s\S]*?"fromDate"[\s\S]*?"toDate"/);
+  assert.doesNotMatch(reports, /const regularFilters = \[[^\]]*"(?:fromDate|toDate)"/);
 });
 
 test("loan outstanding includes principal, interest and penalties net of all repayment allocations", () => {
