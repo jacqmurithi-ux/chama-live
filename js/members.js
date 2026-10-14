@@ -1610,6 +1610,198 @@ function closeMemberProfile() {
 
 
 /* =========================================================
+   EXISTING-MEMBER ACCOUNTING INITIALIZATION
+========================================================= */
+
+function setInitializationMessage(message, isError = false) {
+  const target = byId("existingMemberAccountingPreview");
+  if (!target) return;
+  target.hidden = false;
+  target.textContent = message;
+  target.setAttribute("aria-live", isError ? "assertive" : "polite");
+}
+
+function initializationInput(member) {
+  const amount = Number(byId("existingInitMonthlyAmount")?.value);
+  const effectiveFrom = text(byId("existingInitEffectiveFrom")?.value);
+  const paidThrough = text(byId("existingInitPaidThrough")?.value) || null;
+  const paymentMethod = text(byId("existingInitPaymentMethod")?.value) || null;
+
+  if (!member?.id) throw new Error("Select a member first.");
+  if (!Number.isFinite(amount) || amount <= 0) throw new Error("Monthly amount must be greater than zero.");
+  if (!effectiveFrom) throw new Error("Monthly start date is required.");
+  if (effectiveFrom > new Date().toISOString().slice(0, 10)) throw new Error("Monthly start date cannot be in the future.");
+  if (paidThrough && paidThrough > new Date().toISOString().slice(0, 10)) throw new Error("Paid through cannot be in the future.");
+  if (paidThrough && paidThrough < effectiveFrom) throw new Error("Paid through cannot precede the Monthly start date.");
+  if (paidThrough && !["M-Pesa", "Cash", "Bank transfer"].includes(paymentMethod)) {
+    throw new Error("Select the payment method for historical payment reconciliation.");
+  }
+
+  return {
+    p_member_id: member.id,
+    p_monthly_amount: amount,
+    p_effective_from: effectiveFrom,
+    p_paid_through: paidThrough,
+    p_payment_method: paymentMethod
+  };
+}
+
+async function configureExistingMemberAccountingInitialization(member) {
+  const section = byId("existingMemberAccountingInitialization");
+  const approvals = byId("pendingMemberAccountingApprovals");
+  if (section) section.hidden = true;
+  if (approvals) approvals.hidden = true;
+
+  if (!isManager() || !member?.id) return;
+
+  try {
+    const [rules, typeMap] = await Promise.all([
+      loadMemberRules(member),
+      loadContributionTypeMap()
+    ]);
+    const hasMonthlyRule = rules.some(rule =>
+      normalize(typeMap.get(String(rule.contribution_type_id))) === "monthly"
+    );
+
+    if (section) section.hidden = hasMonthlyRule;
+    if (!hasMonthlyRule) {
+      setFormValue("existingInitMonthlyAmount", "");
+      setFormValue("existingInitEffectiveFrom", member.join_date ? String(member.join_date).slice(0, 10) : "");
+      setFormValue("existingInitPaidThrough", "");
+      setFormValue("existingInitPaymentMethod", "");
+      const preview = byId("existingMemberAccountingPreview");
+      if (preview) {
+        preview.hidden = true;
+        preview.textContent = "";
+      }
+    }
+
+    await loadPendingMemberAccountingApprovals();
+  } catch (error) {
+    console.error("CHAMA LIVE: accounting initialization state failed:", error);
+    if (section) section.hidden = true;
+    showError("Unable to check whether this member needs accounting initialization.");
+  }
+}
+
+async function previewExistingMemberAccounting() {
+  const member = memberById(editingMemberId);
+  const button = byId("previewExistingMemberAccounting");
+  try {
+    const args = initializationInput(member);
+    if (button) button.disabled = true;
+    const { data, error } = await supabase.rpc("preview_member_accounting_initialization", args);
+    if (error) throw error;
+    if (!data) throw new Error("No preview was returned.");
+    setInitializationMessage(
+      "ESTIMATE ONLY — " +
+      "Months: " + Number(data.estimated_months || 0) +
+      " · Estimated due: " + formatMoney(data.estimated_due) +
+      " · Recorded payments in range: " + formatMoney(data.recorded_monthly_payments_in_range) +
+      " · Estimated arrears: " + formatMoney(data.estimated_arrears) +
+      " · Estimated credit: " + formatMoney(data.estimated_credit) +
+      ". Final position is calculated by canonical accounting after approval."
+    );
+  } catch (error) {
+    setInitializationMessage(error?.message || "Unable to preview accounting.", true);
+  } finally {
+    if (button) button.disabled = false;
+  }
+}
+
+async function requestExistingMemberAccounting() {
+  const member = memberById(editingMemberId);
+  const button = byId("requestExistingMemberAccounting");
+  try {
+    if (!isManager()) throw new Error("Only an authorized group official can request initialization.");
+    const args = initializationInput(member);
+    if (button) {
+      button.disabled = true;
+      button.textContent = "Submitting…";
+    }
+    const { data, error } = await supabase.rpc("request_member_accounting_initialization", {
+      p_request_id: crypto.randomUUID(),
+      ...args
+    });
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.message || "The request was not submitted.");
+    setInitializationMessage("Request submitted. A different authorized official must approve it before accounting is initialized.");
+    await loadPendingMemberAccountingApprovals();
+    showSuccess("Accounting initialization submitted for second-official approval.");
+  } catch (error) {
+    setInitializationMessage(error?.message || "Unable to submit the initialization request.", true);
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = "Submit for Second-Official Approval";
+    }
+  }
+}
+
+async function loadPendingMemberAccountingApprovals() {
+  const section = byId("pendingMemberAccountingApprovals");
+  const list = byId("pendingMemberAccountingApprovalList");
+  if (!section || !list || !isManager()) return;
+
+  const { data, error } = await supabase.rpc("list_member_accounting_initialization_requests");
+  if (error) throw error;
+  const requests = Array.isArray(data) ? data : [];
+  section.hidden = requests.length === 0;
+  list.replaceChildren();
+
+  for (const request of requests) {
+    const card = document.createElement("div");
+    card.className = "rule-card";
+    const summary = document.createElement("div");
+    const title = document.createElement("strong");
+    title.textContent = request.member_name || "Member";
+    const detail = document.createElement("span");
+    detail.textContent = (request.member_number || "") +
+      " · " + formatMoney(request.monthly_amount) + "/month" +
+      " · Starts " + formatDate(request.effective_from) +
+      (request.paid_through ? " · Reconcile through " + formatDate(request.paid_through) : "");
+    summary.append(title, detail);
+
+    const requester = document.createElement("span");
+    requester.textContent = "Requested by " + (request.requested_by_name || "another official");
+
+    const approve = document.createElement("button");
+    approve.type = "button";
+    approve.className = "btn btn-primary";
+    approve.textContent = "Approve";
+    approve.dataset.accountingApprovalId = request.request_id;
+    approve.dataset.requesterMemberId = request.requested_by_member_id;
+    card.append(summary, requester, approve);
+    list.append(card);
+  }
+}
+
+async function approveExistingMemberAccounting(requestId, requesterMemberId) {
+  const approverId = String(currentMember?.id || "");
+  if (!isManager()) {
+    showError("Only an authorized group official can approve this request.");
+    return;
+  }
+  if (approverId && approverId === String(requesterMemberId)) {
+    showError("A different group official must approve this request.");
+    return;
+  }
+  try {
+    const { data, error } = await supabase.rpc("approve_member_accounting_initialization", {
+      p_request_id: requestId
+    });
+    if (error) throw error;
+    if (!data?.success) throw new Error("The request was not approved.");
+    await loadPendingMemberAccountingApprovals();
+    await loadMembers();
+    filterMembers();
+    showSuccess("Monthly accounting initialized through the canonical backend workflow.");
+  } catch (error) {
+    showError(error?.message || "Unable to approve accounting initialization.");
+  }
+}
+
+/* =========================================================
    EDIT MEMBER
 ========================================================= */
 
@@ -1627,7 +1819,7 @@ function setFormValue(id, value) {
   }
 }
 
-function openEditMember(memberId) {
+async function openEditMember(memberId) {
   const member =
     memberById(memberId);
 
@@ -1797,6 +1989,8 @@ function openEditMember(memberId) {
   }
 
   byId("memberName")?.focus();
+
+  await configureExistingMemberAccountingInitialization(member);
 }
 
 
@@ -2638,6 +2832,22 @@ function bindEvents() {
       "click",
       reconcileHistoricalPayments
     );
+
+  byId("previewExistingMemberAccounting")
+    ?.addEventListener("click", previewExistingMemberAccounting);
+
+  byId("requestExistingMemberAccounting")
+    ?.addEventListener("click", requestExistingMemberAccounting);
+
+  byId("pendingMemberAccountingApprovalList")
+    ?.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-accounting-approval-id]");
+      if (!button) return;
+      approveExistingMemberAccounting(
+        button.dataset.accountingApprovalId,
+        button.dataset.requesterMemberId
+      );
+    });
 
   byId("positionChangeValue")
     ?.addEventListener(
