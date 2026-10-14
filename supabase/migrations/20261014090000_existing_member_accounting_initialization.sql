@@ -64,9 +64,6 @@ begin
      or p_effective_from is null then
     raise exception 'Member, positive monthly amount and effective start date are required' using errcode='22023';
   end if;
-  if p_effective_from > current_date then
-    raise exception 'Monthly start date cannot be in the future' using errcode='22023';
-  end if;
   if p_paid_through is not null and p_paid_through > current_date then
     raise exception 'Paid through cannot be in the future' using errcode='22023';
   end if;
