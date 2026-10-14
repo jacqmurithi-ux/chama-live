@@ -205,7 +205,5 @@ BEGIN
 END;
 $function$;
 
-REVOKE ALL ON FUNCTION public.get_canonical_member_monthly_status(uuid, text) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.get_canonical_member_monthly_status(uuid, text) TO authenticated;
 REVOKE ALL ON FUNCTION public.get_group_contribution_type_summary(uuid, text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.get_group_contribution_type_summary(uuid, text) TO authenticated;
