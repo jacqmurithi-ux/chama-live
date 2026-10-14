@@ -272,6 +272,15 @@ let context = null;
    SHARED ADMIN PORTAL SHELL
    ========================================================= */
 
+function formatRoleLabel(role) {
+  return String(role || "Member")
+    .trim()
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .toLowerCase()
+    .replace(/\b\w/g, character => character.toUpperCase());
+}
+
 function ensureAdminPortalShell() {
   let header = document.querySelector("header.topbar, .topbar");
   if (!header) {
@@ -336,6 +345,18 @@ function ensureAdminPortalShell() {
     userLabel.textContent = context?.member?.name ||
       context?.member?.full_name || context?.user?.email || "Account";
   }
+  let roleLabel = actions.querySelector("[data-user-role]");
+  if (!roleLabel) {
+    roleLabel = document.createElement("span");
+    roleLabel.className = "muted chama-topbar-user-role";
+    roleLabel.setAttribute("data-user-role", "");
+    roleLabel.style.fontSize = "0.75rem";
+    roleLabel.style.fontWeight = "700";
+    roleLabel.style.whiteSpace = "nowrap";
+    actions.insertBefore(roleLabel, actions.querySelector("[data-topbar-group-name]") || logout);
+  }
+  roleLabel.textContent = formatRoleLabel(context?.role || context?.member?.role);
+
   let groupLabel = actions.querySelector("[data-topbar-group-name]");
   if (!groupLabel) {
     groupLabel = document.createElement("span");
@@ -592,6 +613,13 @@ function injectStyles() {
       gap: 10px;
       flex: 0 0 auto;
       min-width: 0;
+    }
+
+    .topbar [data-user-role] {
+      color: #0f766e;
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
     }
 
     .topbar [data-user-name] {
