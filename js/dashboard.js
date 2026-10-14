@@ -3099,7 +3099,7 @@ function renderMemberStatus() {
 
           const statusClassName =
             statusClass(
-              status
+              statusLabel
             );
 
 
