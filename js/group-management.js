@@ -952,6 +952,23 @@ async function loadContributionSettings() {
 
     syncContributionRuleUI("monthly");
     renderContributionCycleSummary();
+
+    /*
+     * Candidate repair hook: the backend only permits the approved creator's
+     * system-created member 0001 to be repaired. Other group managers receive
+     * a harmless no-op from this UI hook; all accounting writes stay server-side.
+     */
+    try {
+        await groupManagementApi.rpc(
+            "ensure_creator_monthly_contribution_rule",
+            { p_group_id: currentGroup.id }
+        );
+    } catch (repairError) {
+        console.warn(
+            "Creator Monthly-rule candidate repair did not run:",
+            repairError?.message || repairError
+        );
+    }
 }
 
 async function saveMonthlyContribution(event) {
