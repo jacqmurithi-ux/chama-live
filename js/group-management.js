@@ -953,33 +953,7 @@ async function loadContributionSettings() {
     syncContributionRuleUI("monthly");
     renderContributionCycleSummary();
 
-    /*
-     * Candidate repair hook: only attempt from the creator's own 0001 admin
-     * session. The database independently verifies creator identity and role.
-     */
-    if (
-        String(currentMember?.member_number || "") === "0001" &&
-        String(currentMember?.role || currentRole || "").toLowerCase() === "admin"
-    ) {
-        try {
-            const { error: repairError } = await groupManagementApi.rpc(
-                "ensure_creator_monthly_contribution_rule",
-                { p_group_id: currentGroup.id }
-            );
 
-            if (repairError) {
-                console.warn(
-                    "Creator Monthly-rule candidate repair did not run:",
-                    repairError.message || repairError
-                );
-            }
-        } catch (repairError) {
-            console.warn(
-                "Creator Monthly-rule candidate repair did not run:",
-                repairError?.message || repairError
-            );
-        }
-    }
 }
 
 async function saveMonthlyContribution(event) {
