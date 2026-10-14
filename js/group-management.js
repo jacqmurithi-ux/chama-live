@@ -959,10 +959,17 @@ async function loadContributionSettings() {
      * a harmless no-op from this UI hook; all accounting writes stay server-side.
      */
     try {
-        await groupManagementApi.rpc(
+        const { error: repairError } = await groupManagementApi.rpc(
             "ensure_creator_monthly_contribution_rule",
             { p_group_id: currentGroup.id }
         );
+
+        if (repairError) {
+            console.warn(
+                "Creator Monthly-rule candidate repair did not run:",
+                repairError.message || repairError
+            );
+        }
     } catch (repairError) {
         console.warn(
             "Creator Monthly-rule candidate repair did not run:",
