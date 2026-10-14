@@ -1733,7 +1733,7 @@ async function configureExistingMemberAccountingInitialization(member) {
   if (section) section.hidden = true;
   if (approvals) approvals.hidden = true;
 
-  if (!isManager() || !member?.id || normalize(member.role) !== "admin") return;
+  if (!isManager() || !member?.id) return;
 
   // Determine this member's Monthly-rule state independently from the
   // approvals queue. A missing/unapplied approvals RPC must not be reported
@@ -1752,12 +1752,12 @@ async function configureExistingMemberAccountingInitialization(member) {
       normalize(typeMap.get(String(rule.contribution_type_id))) === "monthly"
     );
 
-    if (section) section.hidden = hasMonthlyRule;
-    if (!hasMonthlyRule) {
+    const isAdminTarget = normalize(member.role) === "admin";
+    if (section) section.hidden = !isAdminTarget || hasMonthlyRule;
+    if (isAdminTarget && !hasMonthlyRule) {
       setFormValue("existingInitMonthlyAmount", "");
       setFormValue("existingInitEffectiveFrom", member.join_date ? String(member.join_date).slice(0, 10) : "");
       setFormValue("existingInitPaidThrough", "");
-      setFormValue("existingInitPaymentMethod", "");
       const preview = byId("existingMemberAccountingPreview");
       if (preview) {
         preview.hidden = true;
