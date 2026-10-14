@@ -1816,6 +1816,7 @@ async function requestExistingMemberAccounting() {
     if (!data?.success) throw new Error(data?.message || "The request was not submitted.");
     setInitializationMessage("Request submitted. A different authorized official must approve it before accounting is initialized.");
     await loadPendingMemberAccountingApprovals();
+    await renderUninitializedMemberAccountingDryRun();
     showSuccess("Accounting initialization submitted for second-official approval.");
   } catch (error) {
     setInitializationMessage(error?.message || "Unable to submit the initialization request.", true);
@@ -1884,6 +1885,7 @@ async function approveExistingMemberAccounting(requestId, requesterMemberId) {
     await loadPendingMemberAccountingApprovals();
     await loadMembers();
     filterMembers();
+    await renderUninitializedMemberAccountingDryRun();
     showSuccess("Monthly accounting initialized through the canonical backend workflow.");
   } catch (error) {
     showError(error?.message || "Unable to approve accounting initialization.");
