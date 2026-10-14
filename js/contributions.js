@@ -8183,6 +8183,9 @@ export async function initContributions(
 
     configureVerifierPaymentEvidence();
 
+    // Only a Treasurer sees pending requests initiated by another official.
+    await loadMemberAccountingApprovalQueue();
+
 
     renderContributionTypeOptions(
       preferredCustomContributionValue ||
