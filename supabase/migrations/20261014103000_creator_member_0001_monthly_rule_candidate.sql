@@ -1,19 +1,23 @@
 /*
-  CHAMA LIVE — Creator member Monthly-rule repair
+  CHAMA LIVE — Creator financial onboarding (candidate only)
   STATUS: CANDIDATE ONLY — DO NOT APPLY TO PRODUCTION.
 
   Narrow scope:
-    - only the approved creator membership linked to group_applications
+    - explicit confirmation by the approved creator membership linked to group_applications
     - member number 0001, admin role, active membership
-    - only when group Monthly amount is positive and the rule is absent
-    - no historical obligations: activate from today using next_full_period
+    - caller confirms the displayed amount and effective date; server rechecks policy
+    - rejects backdating; first obligation is the next full month after effective-date month
+    - any existing rule for the canonical Monthly type prevents silent duplication
     - all accounting writes remain inside cl_2b_refresh_member
 */
 
 BEGIN;
 
 CREATE OR REPLACE FUNCTION public.ensure_creator_monthly_contribution_rule(
-  p_group_id uuid
+  p_group_id uuid,
+  p_effective_date date,
+  p_confirmed_monthly_amount numeric,
+  p_confirm boolean
 )
 RETURNS TABLE (
   ok boolean,
@@ -41,6 +45,18 @@ BEGIN
 
   IF p_group_id IS NULL OR NOT public.can_manage_members(p_group_id) THEN
     RAISE EXCEPTION 'MEMBER_MANAGEMENT_NOT_AUTHORIZED' USING ERRCODE = '42501';
+  END IF;
+
+  IF p_confirm IS DISTINCT FROM true THEN
+    RAISE EXCEPTION 'EXPLICIT_FINANCIAL_ONBOARDING_CONFIRMATION_REQUIRED' USING ERRCODE = '22023';
+  END IF;
+
+  IF p_effective_date IS NULL OR p_effective_date < CURRENT_DATE THEN
+    RAISE EXCEPTION 'EFFECTIVE_DATE_MUST_NOT_BE_BACKDATED' USING ERRCODE = '22023';
+  END IF;
+
+  IF p_confirmed_monthly_amount IS NULL OR p_confirmed_monthly_amount <= 0 THEN
+    RAISE EXCEPTION 'CONFIRMED_MONTHLY_AMOUNT_REQUIRED' USING ERRCODE = '22023';
   END IF;
 
   SELECT m.*
@@ -80,6 +96,10 @@ BEGIN
     RETURN;
   END IF;
 
+  IF round(p_confirmed_monthly_amount, 2) <> round(v_amount, 2) THEN
+    RAISE EXCEPTION 'MONTHLY_POLICY_CHANGED_REVIEW_AGAIN' USING ERRCODE = '40001';
+  END IF;
+
   SELECT ct.id
     INTO v_type_id
   FROM public.contribution_types ct
@@ -116,12 +136,12 @@ BEGIN
   END IF;
 
   /*
-    Safe date policy: do not backdate the missing rule to the member's join
-    date. Start today, and make the first obligation the next full month.
-    Refresh through that next month so the canonical engine can materialize
-    exactly the intended first full-period obligation.
+    The caller must present an explicit confirmation of the policy and date.
+    The date is revalidated above, and the Monthly amount is compared with the
+    current server-side group value. Never backdate. The first obligation is
+    the next full calendar month after the confirmed effective-date month.
   */
-  v_through := (date_trunc('month', CURRENT_DATE) + interval '1 month')::date;
+  v_through := (date_trunc('month', p_effective_date) + interval '1 month')::date;
 
   INSERT INTO public.member_contribution_rules (
     group_id,
@@ -141,7 +161,7 @@ BEGIN
     v_type_id,
     v_amount,
     'monthly',
-    CURRENT_DATE,
+    p_effective_date,
     NULL,
     'next_full_period',
     'active',
@@ -152,11 +172,11 @@ BEGIN
   PERFORM public.cl_2b_refresh_member(v_member.id, v_through);
 
   RETURN QUERY SELECT true, 'created_and_refreshed'::text,
-    v_member.id, v_rule_id, CURRENT_DATE, v_through;
+    v_member.id, v_rule_id, p_effective_date, v_through;
 END;
 $function$;
 
-REVOKE ALL ON FUNCTION public.ensure_creator_monthly_contribution_rule(uuid) FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION public.ensure_creator_monthly_contribution_rule(uuid) TO authenticated;
+REVOKE ALL ON FUNCTION public.ensure_creator_monthly_contribution_rule(uuid, date, numeric, boolean) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.ensure_creator_monthly_contribution_rule(uuid, date, numeric, boolean) TO authenticated;
 
 COMMIT;
