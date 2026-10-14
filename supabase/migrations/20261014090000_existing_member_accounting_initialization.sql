@@ -134,8 +134,9 @@ begin
       from public.contributions c
       where c.group_id=v_group_id and c.member_id=p_member_id
         and lower(trim(coalesce(c.contribution_type,'')))='monthly'
-        and c.contribution_date >= v_historical_month
+        and c.contribution_date >= greatest(v_historical_month,p_effective_from)
         and c.contribution_date < (v_historical_month + interval '1 month')::date
+        and c.contribution_date <= p_paid_through
         and c.amount > 0;
       if v_month_total > 0 and v_month_total <> p_monthly_amount then
         raise exception 'Historical payment conflict for month %: existing Monthly payments do not equal the proposed amount.',
@@ -360,8 +361,9 @@ begin
       from public.contributions c
       where c.group_id=v_request.group_id and c.member_id=v_request.member_id
         and lower(trim(coalesce(c.contribution_type,'')))='monthly'
-        and c.contribution_date >= v_current_month
+        and c.contribution_date >= greatest(v_current_month,v_request.effective_from)
         and c.contribution_date < (v_current_month + interval '1 month')::date
+        and c.contribution_date <= v_request.paid_through
         and c.amount > 0;
 
       if v_existing_month_total > 0 and v_existing_month_total <> v_request.monthly_amount then
