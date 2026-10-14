@@ -148,14 +148,18 @@ const POLICY = {
     view: GROUP_MANAGEMENT,
     // Admin may submit expenses but cannot fill any required approval slot.
     create: new Set(["admin", "chairperson", "vice chairperson", "treasurer", "secretary", "vice secretary"]),
-    // The current schema has only one approval_status field. Until a
-    // distinct-person three-slot backend workflow exists, all approval,
-    // edit and delete actions fail closed in the UI.
+    // The existing backend RPC enforces three distinct office slots:
+    // chair/vice chair, treasurer, and secretary/vice secretary.
+    // These are UI eligibility hints only; the RPC remains authoritative.
     edit: new Set(),
     delete: new Set(),
-    "approve-chair": new Set(),
-    "approve-treasurer": new Set(),
-    "approve-secretary": new Set()
+    approve: new Set([
+      "chairperson", "vice chairperson", "treasurer",
+      "secretary", "vice secretary"
+    ]),
+    "approve-chair": CHAIR_SLOT,
+    "approve-treasurer": new Set(["treasurer"]),
+    "approve-secretary": SECRETARY_SLOT
   },
   fines: {
     view: GROUP_MANAGEMENT,
