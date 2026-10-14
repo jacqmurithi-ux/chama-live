@@ -13,7 +13,6 @@ create table if not exists private.member_accounting_initialization_requests (
   monthly_amount numeric(14,2) not null check (monthly_amount > 0),
   effective_from date not null,
   paid_through date,
-  payment_method text,
   payload_hash text not null,
   status text not null default 'pending'
     check (status in ('pending','approved','rejected')),
@@ -57,10 +56,6 @@ declare
   v_due_estimate numeric(14,2);
   v_paid numeric(14,2);
   v_cumulative_contributions numeric(14,2);
-  v_historical_month date;
-  v_historical_last_month date;
-  v_month_total numeric(14,2);
-  v_planned_historical numeric(14,2) := 0;
   v_arrears numeric(14,2);
   v_credit numeric(14,2);
 begin
@@ -135,9 +130,6 @@ begin
   where c.group_id=v_group_id and c.member_id=p_member_id;
 
   -- paid_through is a preview cutoff only. Never infer or synthesize payments.
-  v_planned_historical := 0;
-
-  v_paid := v_paid;
   v_arrears := greatest(v_due_estimate - v_paid, 0);
   v_credit := greatest(v_paid - v_due_estimate, 0);
 
@@ -151,7 +143,7 @@ begin
     'estimated_due', v_due_estimate,
     'recorded_monthly_payments_in_range', v_paid,
     'cumulative_recorded_contributions', v_cumulative_contributions,
-    'planned_historical_payments', v_planned_historical,
+    'synthetic_payments_to_create', 0,
     'estimated_arrears', v_arrears,
     'estimated_credit', v_credit,
     'estimate_only', true,
@@ -165,8 +157,7 @@ create or replace function public.request_member_accounting_initialization(
   p_member_id uuid,
   p_monthly_amount numeric,
   p_effective_from date,
-  p_paid_through date default null,
-  p_payment_method text default null
+  p_paid_through date default null
 ) returns jsonb
 language plpgsql
 security definer
@@ -191,8 +182,7 @@ begin
   end if;
   v_hash := pg_catalog.md5(jsonb_build_object(
     'member_id',p_member_id,'monthly_amount',p_monthly_amount,
-    'effective_from',p_effective_from,'paid_through',p_paid_through,
-    'payment_method',p_payment_method
+    'effective_from',p_effective_from,'paid_through',p_paid_through
   )::text);
 
   select m.id into v_actor_member_id
@@ -205,10 +195,10 @@ begin
 
   insert into private.member_accounting_initialization_requests(
     request_id,group_id,member_id,requested_by_member_id,monthly_amount,
-    effective_from,paid_through,payment_method,payload_hash
+    effective_from,paid_through,payload_hash
   ) values (
     p_request_id,v_group_id,p_member_id,v_actor_member_id,p_monthly_amount,
-    p_effective_from,p_paid_through,p_payment_method,v_hash
+    p_effective_from,p_paid_through,v_hash
   ) on conflict (request_id) do nothing;
 
   select * into strict v_existing
@@ -253,10 +243,6 @@ declare
   v_first_historical_month date;
   v_historical_last_month date;
   v_current_month date;
-  v_payment_date date;
-  v_payment_id uuid;
-  v_existing_month_total numeric(14,2);
-  v_historical_created integer := 0;
   v_closed_month text;
   v_result jsonb;
   v_reconcile record;
@@ -370,7 +356,7 @@ begin
       'reconciliation',to_jsonb(v_reconcile))
   );
 
-  return jsonb_build_object('success',true,'request_id',p_request_id,'status','approved','position',v_result,'reconciliation',to_jsonb(v_reconcile),'historical_payments_created',v_historical_created);
+  return jsonb_build_object('success',true,'request_id',p_request_id,'status','approved','position',v_result,'reconciliation',to_jsonb(v_reconcile),'synthetic_payments_created',0);
 end;
 $function$;
 
@@ -414,7 +400,7 @@ end;
 $function$;
 
 revoke all on function public.preview_member_accounting_initialization(uuid,numeric,date,date) from public, anon;
-revoke all on function public.request_member_accounting_initialization(uuid,uuid,numeric,date,date,text) from public, anon;
+revoke all on function public.request_member_accounting_initialization(uuid,uuid,numeric,date,date) from public, anon;
 revoke all on function public.approve_member_accounting_initialization(uuid) from public, anon;
 revoke all on function public.list_member_accounting_initialization_requests(uuid) from public, anon;
 grant execute on function public.preview_member_accounting_initialization(uuid,numeric,date,date) to authenticated;
