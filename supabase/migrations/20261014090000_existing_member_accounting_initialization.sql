@@ -292,10 +292,8 @@ begin
 
   perform public.cl_2b_refresh_member(v_request.member_id,date_trunc('month',current_date)::date);
 
-  if v_request.paid_through is not null then
-    select * into v_reconcile
-    from public.reconcile_member_historical_payments(v_request.member_id,v_request.paid_through);
-  end if;
+  select * into v_reconcile
+  from public.reconcile_member_historical_payments(v_request.member_id,current_date);
 
   select row_to_json(p)::jsonb into v_result
   from public.get_member_contribution_position(v_request.member_id) p;
@@ -313,7 +311,7 @@ begin
       'paid_through',v_request.paid_through,'position',coalesce(v_result,'{}'::jsonb))
   );
 
-  return jsonb_build_object('success',true,'request_id',p_request_id,'status','approved','position',v_result);
+  return jsonb_build_object('success',true,'request_id',p_request_id,'status','approved','position',v_result,'reconciliation',to_jsonb(v_reconcile));
 end;
 $function$;
 
