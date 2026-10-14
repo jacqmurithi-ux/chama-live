@@ -1743,7 +1743,7 @@ async function loadPendingMemberAccountingApprovals() {
   const list = byId("pendingMemberAccountingApprovalList");
   if (!section || !list || !isManager()) return;
 
-  const { data, error } = await supabase.rpc("list_member_accounting_initialization_requests");
+  const { data, error } = await supabase.rpc("list_member_accounting_initialization_requests", { p_group_id: groupId });
   if (error) throw error;
   const requests = Array.isArray(data) ? data : [];
   section.hidden = requests.length === 0;
