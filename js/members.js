@@ -1651,7 +1651,9 @@ async function renderUninitializedMemberAccountingDryRun() {
       (Array.isArray(pendingData) ? pendingData : [])
         .map(request => [String(request.member_id), request])
     );
-    const uninitialized = members.filter(member => !initializedIds.has(String(member.id)));
+    const uninitialized = members.filter(member =>
+      normalize(member.role) === "admin" && !initializedIds.has(String(member.id))
+    );
 
     list.replaceChildren();
     section.hidden = uninitialized.length === 0;
@@ -1710,23 +1712,18 @@ function initializationInput(member) {
   const amount = Number(byId("existingInitMonthlyAmount")?.value);
   const effectiveFrom = text(byId("existingInitEffectiveFrom")?.value);
   const paidThrough = text(byId("existingInitPaidThrough")?.value) || null;
-  const paymentMethod = text(byId("existingInitPaymentMethod")?.value) || null;
 
   if (!member?.id) throw new Error("Select a member first.");
   if (!Number.isFinite(amount) || amount <= 0) throw new Error("Monthly amount must be greater than zero.");
   if (!effectiveFrom) throw new Error("Monthly start date is required.");
   if (paidThrough && paidThrough > new Date().toISOString().slice(0, 10)) throw new Error("Paid through cannot be in the future.");
   if (paidThrough && paidThrough < effectiveFrom) throw new Error("Paid through cannot precede the Monthly start date.");
-  if (paidThrough && !["M-Pesa", "Cash", "Bank transfer"].includes(paymentMethod)) {
-    throw new Error("Select the payment method for historical payment reconciliation.");
-  }
 
   return {
     p_member_id: member.id,
     p_monthly_amount: amount,
     p_effective_from: effectiveFrom,
-    p_paid_through: paidThrough,
-    p_payment_method: paymentMethod
+    p_paid_through: paidThrough
   };
 }
 
@@ -1736,7 +1733,7 @@ async function configureExistingMemberAccountingInitialization(member) {
   if (section) section.hidden = true;
   if (approvals) approvals.hidden = true;
 
-  if (!isManager() || !member?.id) return;
+  if (!isManager() || !member?.id || normalize(member.role) !== "admin") return;
 
   // Determine this member's Monthly-rule state independently from the
   // approvals queue. A missing/unapplied approvals RPC must not be reported
@@ -1803,7 +1800,7 @@ async function previewExistingMemberAccounting() {
       " · Estimated due: " + formatMoney(data.estimated_due) +
       " · Recorded payments in range: " + formatMoney(data.recorded_monthly_payments_in_range) +
       " · Cumulative recorded contributions: " + formatMoney(data.cumulative_recorded_contributions) +
-      " · Planned historical payments: " + formatMoney(data.planned_historical_payments) +
+      " · Synthetic payments to create: KSh 0 (none) " +
       " · Estimated arrears: " + formatMoney(data.estimated_arrears) +
       " · Estimated credit: " + formatMoney(data.estimated_credit) +
       ". Final position is calculated by canonical accounting after approval."
