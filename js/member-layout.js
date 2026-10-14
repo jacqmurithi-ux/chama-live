@@ -322,7 +322,7 @@ function ensureMemberPortalShell() {
     roleLabel.style.whiteSpace = "nowrap";
     actions.insertBefore(roleLabel, actions.querySelector("[data-topbar-group-name]") || null);
   }
-  roleLabel.textContent = formatRoleLabel(context?.member?.role);
+  roleLabel.textContent = formatRoleLabel(context?.role || context?.member?.role);
 
   let groupLabel = actions.querySelector("[data-topbar-group-name]");
   if (!groupLabel) {
