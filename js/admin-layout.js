@@ -344,7 +344,7 @@ function ensureAdminPortalShell() {
     groupLabel.style.fontSize = "0.85rem";
     groupLabel.style.fontWeight = "600";
     groupLabel.style.whiteSpace = "nowrap";
-    actions.appendChild(groupLabel);
+    actions.insertBefore(groupLabel, logout);
   }
   groupLabel.textContent = "· " + (
     context?.group?.name || context?.member?.group_name || "CHAMA"
