@@ -34,6 +34,20 @@ GRANT USAGE ON SCHEMA public TO postgres, anon, authenticated, service_role;
 REVOKE ALL ON SCHEMA private FROM PUBLIC, anon, authenticated, service_role;
 GRANT USAGE, CREATE ON SCHEMA private TO postgres;
 
+-- Reproduce production schema-specific default ACLs for future app objects.
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
+  GRANT ALL ON TABLES TO postgres, anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
+  GRANT ALL ON SEQUENCES TO postgres, anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
+  GRANT EXECUTE ON FUNCTIONS TO postgres, anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public
+  GRANT ALL ON TABLES TO postgres, anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public
+  GRANT ALL ON SEQUENCES TO postgres, anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public
+  GRANT EXECUTE ON FUNCTIONS TO postgres, anon, authenticated, service_role;
+
 -- Defer function-body validation until all functions have been restored.
 SET LOCAL check_function_bodies = off;
 
@@ -17883,8 +17897,7 @@ GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON
 GRANT SELECT ON TABLE public.subscription_credit_balances TO authenticated;
 GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE public.subscription_credit_balances TO service_role;
 
--- Production also has schema-specific default ACLs for objects created by postgres and supabase_admin
--- in public. They are intentionally not altered in this candidate until the default-ACL parity
--- inventory is reviewed independently; the object-level ACLs above are explicitly replayed.
+-- Schema-specific default ACLs for public objects created by postgres and supabase_admin
+-- were recreated near the beginning of this transaction.
 
 COMMIT;
