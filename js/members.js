@@ -1609,6 +1609,91 @@ function closeMemberProfile() {
 }
 
 
+async function renderUninitializedMemberAccountingDryRun() {
+  const section = byId("uninitializedMemberAccountingDryRun");
+  const list = byId("uninitializedMemberAccountingList");
+  if (!section || !list) return;
+  if (!isManager()) {
+    section.hidden = true;
+    return;
+  }
+
+  section.hidden = false;
+  list.replaceChildren();
+  const loading = document.createElement("div");
+  loading.className = "rule-card";
+  loading.textContent = "Checking Monthly rules (read-only)…";
+  list.append(loading);
+
+  try {
+    const [{ data: ruleRows, error: rulesError }, typeMap, { data: pendingData, error: pendingError }] =
+      await Promise.all([
+        supabase.from("member_contribution_rules")
+          .select("member_id, contribution_type_id")
+          .eq("group_id", groupId),
+        loadContributionTypeMap(),
+        supabase.rpc("list_member_accounting_initialization_requests", { p_group_id: groupId })
+      ]);
+    if (rulesError) throw rulesError;
+    if (pendingError) throw pendingError;
+
+    const monthlyTypeIds = new Set(
+      [...typeMap.entries()]
+        .filter(([, name]) => normalize(name) === "monthly")
+        .map(([id]) => String(id))
+    );
+    const initializedIds = new Set(
+      (ruleRows || [])
+        .filter(row => monthlyTypeIds.has(String(row.contribution_type_id)))
+        .map(row => String(row.member_id))
+    );
+    const pendingByMember = new Map(
+      (Array.isArray(pendingData) ? pendingData : [])
+        .map(request => [String(request.member_id), request])
+    );
+    const uninitialized = members.filter(member => !initializedIds.has(String(member.id)));
+
+    list.replaceChildren();
+    section.hidden = uninitialized.length === 0;
+    for (const member of uninitialized) {
+      const card = document.createElement("div");
+      card.className = "rule-card";
+      const identity = document.createElement("div");
+      const name = document.createElement("strong");
+      name.textContent = member.name || "Unnamed member";
+      const number = document.createElement("span");
+      number.textContent = member.member_number || member.membership_number || "No member number";
+      identity.append(name, number);
+      card.append(identity);
+
+      const pending = pendingByMember.get(String(member.id));
+      const status = document.createElement("span");
+      status.textContent = pending
+        ? "Pending second-official approval"
+        : "Monthly rule missing";
+      card.append(status);
+
+      if (!pending) {
+        const action = document.createElement("button");
+        action.type = "button";
+        action.className = "btn btn-primary";
+        action.textContent = "Initialize";
+        action.dataset.initMemberId = String(member.id);
+        card.append(action);
+      }
+      list.append(card);
+    }
+  } catch (error) {
+    list.replaceChildren();
+    const message = document.createElement("div");
+    message.className = "rule-card";
+    message.textContent = "Dry-run could not complete: " + (error?.message || "Unknown error");
+    list.append(message);
+    section.hidden = false;
+    console.error("CHAMA LIVE: accounting initialization dry-run failed:", error);
+  }
+}
+
 /* =========================================================
    EXISTING-MEMBER ACCOUNTING INITIALIZATION
 ========================================================= */
@@ -2813,6 +2898,13 @@ function bindEvents() {
       handleMemberAction
     );
 
+  byId("uninitializedMemberAccountingList")
+    ?.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-init-member-id]");
+      if (!button) return;
+      openEditMember(button.dataset.initMemberId);
+    });
+
   byId("closeMemberModal")
     ?.addEventListener(
       "click",
@@ -2921,6 +3013,7 @@ async function refreshMembers() {
   try {
     await loadMembers();
     filterMembers();
+    await renderUninitializedMemberAccountingDryRun();
 
     showStatus(
       `${members.length} member${members.length === 1 ? "" : "s"} loaded.`
