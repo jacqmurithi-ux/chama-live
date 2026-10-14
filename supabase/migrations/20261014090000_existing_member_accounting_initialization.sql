@@ -57,6 +57,10 @@ declare
   v_due_estimate numeric(14,2);
   v_paid numeric(14,2);
   v_cumulative_contributions numeric(14,2);
+  v_historical_month date;
+  v_historical_last_month date;
+  v_month_total numeric(14,2);
+  v_planned_historical numeric(14,2) := 0;
   v_arrears numeric(14,2);
   v_credit numeric(14,2);
 begin
@@ -121,6 +125,29 @@ begin
   from public.contributions c
   where c.group_id=v_group_id and c.member_id=p_member_id;
 
+  if p_paid_through is not null then
+    v_historical_month := date_trunc('month',p_effective_from)::date;
+    v_historical_last_month := date_trunc('month',p_paid_through)::date;
+    while v_historical_month <= v_historical_last_month loop
+      select coalesce(sum(c.amount),0)::numeric(14,2)
+      into v_month_total
+      from public.contributions c
+      where c.group_id=v_group_id and c.member_id=p_member_id
+        and lower(trim(coalesce(c.contribution_type,'')))='monthly'
+        and c.contribution_date >= v_historical_month
+        and c.contribution_date < (v_historical_month + interval '1 month')::date
+        and c.amount > 0;
+      if v_month_total > 0 and v_month_total <> p_monthly_amount then
+        raise exception 'Historical payment conflict for month %: existing Monthly payments do not equal the proposed amount.',
+          to_char(v_historical_month,'YYYY-MM');
+      elsif v_month_total = 0 then
+        v_planned_historical := v_planned_historical + p_monthly_amount;
+      end if;
+      v_historical_month := (v_historical_month + interval '1 month')::date;
+    end loop;
+  end if;
+
+  v_paid := v_paid + v_planned_historical;
   v_arrears := greatest(v_due_estimate - v_paid, 0);
   v_credit := greatest(v_paid - v_due_estimate, 0);
 
@@ -134,6 +161,7 @@ begin
     'estimated_due', v_due_estimate,
     'recorded_monthly_payments_in_range', v_paid,
     'cumulative_recorded_contributions', v_cumulative_contributions,
+    'planned_historical_payments', v_planned_historical,
     'estimated_arrears', v_arrears,
     'estimated_credit', v_credit,
     'estimate_only', true,
