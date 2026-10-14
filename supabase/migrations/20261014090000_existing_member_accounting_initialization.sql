@@ -20,7 +20,7 @@ create table if not exists private.member_accounting_initialization_requests (
   approved_by_member_id uuid references public.members(id),
   approved_at timestamptz,
   result jsonb,
-  created_at timestamptz not null default now(),
+  created_at timestamptz not null default now()
 );
 
 create table if not exists private.member_accounting_initialization_audit (
@@ -79,6 +79,15 @@ begin
   select m.group_id into strict v_group_id
   from public.members m where m.id = p_member_id;
 
+  -- Scope this repair to group admin members only.
+  if not exists (
+    select 1 from public.members target
+    where target.id=p_member_id and target.group_id=v_group_id
+      and lower(trim(coalesce(target.role,'')))='admin'
+  ) then
+    raise exception 'Accounting initialization is limited to members with the admin security role';
+  end if;
+
   if not public.can_manage_members(v_group_id) then
     raise exception 'Member-management authorization required' using errcode='42501';
   end if;
@@ -125,30 +134,10 @@ begin
   from public.contributions c
   where c.group_id=v_group_id and c.member_id=p_member_id;
 
-  if p_paid_through is not null then
-    v_historical_month := date_trunc('month',p_effective_from)::date;
-    v_historical_last_month := date_trunc('month',p_paid_through)::date;
-    while v_historical_month <= v_historical_last_month loop
-      select coalesce(sum(c.amount),0)::numeric(14,2)
-      into v_month_total
-      from public.contributions c
-      where c.group_id=v_group_id and c.member_id=p_member_id
-        and lower(trim(coalesce(c.contribution_type,'')))='monthly'
-        and c.contribution_date >= greatest(v_historical_month,p_effective_from)
-        and c.contribution_date < (v_historical_month + interval '1 month')::date
-        and c.contribution_date <= p_paid_through
-        and c.amount > 0;
-      if v_month_total > 0 and v_month_total <> p_monthly_amount then
-        raise exception 'Historical payment conflict for month %: existing Monthly payments do not equal the proposed amount.',
-          to_char(v_historical_month,'YYYY-MM');
-      elsif v_month_total = 0 then
-        v_planned_historical := v_planned_historical + p_monthly_amount;
-      end if;
-      v_historical_month := (v_historical_month + interval '1 month')::date;
-    end loop;
-  end if;
+  -- paid_through is a preview cutoff only. Never infer or synthesize payments.
+  v_planned_historical := 0;
 
-  v_paid := v_paid + v_planned_historical;
+  v_paid := v_paid;
   v_arrears := greatest(v_due_estimate - v_paid, 0);
   v_credit := greatest(v_paid - v_due_estimate, 0);
 
@@ -320,6 +309,29 @@ begin
     raise exception 'Monthly start date cannot precede the member join date';
   end if;
 
+  if not exists (
+    select 1 from public.members target
+    where target.id=v_request.member_id and target.group_id=v_request.group_id
+      and lower(trim(coalesce(target.role,'')))='admin'
+  ) then
+    raise exception 'Accounting initialization is limited to members with the admin security role';
+  end if;
+
+  -- Do not mutate obligations in a closed period.
+  v_first_historical_month := date_trunc('month',v_request.effective_from)::date;
+  v_historical_last_month := date_trunc('month',current_date)::date;
+  perform public.cl_2b_accounting_lock_range(v_request.group_id,v_first_historical_month,v_historical_last_month);
+  select fp.month into v_closed_month
+  from public.financial_periods fp
+  where fp.group_id=v_request.group_id
+    and fp.month >= to_char(v_first_historical_month,'YYYY-MM')
+    and fp.month <= to_char(v_historical_last_month,'YYYY-MM')
+    and lower(coalesce(fp.status,'open'))='closed'
+  order by fp.month limit 1;
+  if v_closed_month is not null then
+    raise exception 'Financial month % is closed. Reopen it through the approved finance process before initialization.',v_closed_month;
+  end if;
+
   select ct.id into strict v_monthly_type_id
   from public.contribution_types ct
   where ct.group_id=v_request.group_id and (ct.code='monthly' or lower(trim(ct.name))='monthly')
@@ -334,54 +346,7 @@ begin
     'monthly',v_request.effective_from,null,'full_period','active',v_approver_member_id
   );
 
-  if v_request.paid_through is not null then
-    v_first_historical_month := date_trunc('month',v_request.effective_from)::date;
-    v_historical_last_month := date_trunc('month',v_request.paid_through)::date;
-    if v_historical_last_month < v_first_historical_month then
-      raise exception 'Paid through does not reach the first Monthly obligation month';
-    end if;
-
-    perform public.cl_2b_accounting_lock_range(v_request.group_id,v_first_historical_month,v_historical_last_month);
-
-    select fp.month into v_closed_month
-    from public.financial_periods fp
-    where fp.group_id=v_request.group_id
-      and fp.month >= to_char(v_first_historical_month,'YYYY-MM')
-      and fp.month <= to_char(v_historical_last_month,'YYYY-MM')
-      and lower(coalesce(fp.status,'open'))='closed'
-    order by fp.month limit 1;
-    if v_closed_month is not null then
-      raise exception 'Financial month % is closed. Historical initialization cannot modify it.',v_closed_month;
-    end if;
-
-    v_current_month := v_first_historical_month;
-    while v_current_month <= v_historical_last_month loop
-      select coalesce(sum(c.amount),0)::numeric(14,2)
-      into v_existing_month_total
-      from public.contributions c
-      where c.group_id=v_request.group_id and c.member_id=v_request.member_id
-        and lower(trim(coalesce(c.contribution_type,'')))='monthly'
-        and c.contribution_date >= greatest(v_current_month,v_request.effective_from)
-        and c.contribution_date < (v_current_month + interval '1 month')::date
-        and c.contribution_date <= v_request.paid_through
-        and c.amount > 0;
-
-      if v_existing_month_total > 0 and v_existing_month_total <> v_request.monthly_amount then
-        raise exception 'Historical payment conflict for month %: existing Monthly payments do not equal the proposed amount. Reconcile that month manually before initialization.',
-          to_char(v_current_month,'YYYY-MM');
-      elsif v_existing_month_total = 0 then
-        v_payment_date := greatest(v_current_month,v_request.effective_from);
-        v_payment_id := (pg_catalog.md5('chama-live:existing-member-init:'||p_request_id::text||':'||to_char(v_current_month,'YYYY-MM')))::uuid;
-        perform public.cl_2b_record_contribution(
-          v_payment_id,v_request.group_id,v_request.member_id,v_request.monthly_amount,
-          v_payment_date,'monthly',v_request.payment_method,NULL,NULL,NULL,
-          'Existing-member historical initialization '||to_char(v_current_month,'YYYY-MM')
-        );
-        v_historical_created := v_historical_created + 1;
-      end if;
-      v_current_month := (v_current_month + interval '1 month')::date;
-    end loop;
-  end if;
+  -- Never synthesize historical payments. Refresh creates obligations and allocates only recorded payments.
 
   perform public.cl_2b_refresh_member(v_request.member_id,date_trunc('month',current_date)::date);
 
@@ -442,16 +407,19 @@ begin
   from private.member_accounting_initialization_requests r
   join public.members m on m.id=r.member_id and m.group_id=r.group_id
   join public.members requester on requester.id=r.requested_by_member_id
-  where r.group_id=v_group_id and r.status='pending';
+  where r.group_id=v_group_id and r.status='pending'
+    and lower(trim(coalesce(m.role,'')))='admin';
   return v_rows;
 end;
 $function$;
 
 revoke all on function public.preview_member_accounting_initialization(uuid,numeric,date,date) from public, anon;
 revoke all on function public.request_member_accounting_initialization(uuid,uuid,numeric,date,date,text) from public, anon;
-revoke all on function public.approve_member_accounting_initialization(uuid) from public, anon;\nrevoke all on function public.list_member_accounting_initialization_requests(uuid) from public, anon;
+revoke all on function public.approve_member_accounting_initialization(uuid) from public, anon;
+revoke all on function public.list_member_accounting_initialization_requests(uuid) from public, anon;
 grant execute on function public.preview_member_accounting_initialization(uuid,numeric,date,date) to authenticated;
 grant execute on function public.request_member_accounting_initialization(uuid,uuid,numeric,date,date,text) to authenticated;
-grant execute on function public.approve_member_accounting_initialization(uuid) to authenticated;\ngrant execute on function public.list_member_accounting_initialization_requests(uuid) to authenticated;
+grant execute on function public.approve_member_accounting_initialization(uuid) to authenticated;
+grant execute on function public.list_member_accounting_initialization_requests(uuid) to authenticated;
 
 commit;
