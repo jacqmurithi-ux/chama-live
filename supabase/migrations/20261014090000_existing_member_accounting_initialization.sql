@@ -170,17 +170,18 @@ declare
   v_actor_member_id uuid;
   v_hash text;
   v_existing private.member_accounting_initialization_requests%rowtype;
+  v_inserted integer := 0;
 begin
+  if v_actor is null then raise exception 'Authentication required' using errcode='42501'; end if;
   if p_request_id is null then raise exception 'Request id is required' using errcode='22023'; end if;
-  v_preview := public.preview_member_accounting_initialization(
-    p_member_id, p_monthly_amount, p_effective_from, p_paid_through
-  );
-  v_group_id := (v_preview->>'group_id')::uuid;
+  if p_member_id is null then raise exception 'Member id is required' using errcode='22023'; end if;
 
-  v_hash := pg_catalog.md5(jsonb_build_object(
-    'member_id',p_member_id,'monthly_amount',p_monthly_amount,
-    'effective_from',p_effective_from,'paid_through',p_paid_through
-  )::text);
+  select m.group_id into strict v_group_id
+  from public.members m where m.id = p_member_id;
+
+  if not public.can_manage_members(v_group_id) then
+    raise exception 'Member-management authorization required' using errcode='42501';
+  end if;
 
   select m.id into v_actor_member_id
   from public.members m
@@ -189,6 +190,41 @@ begin
     and lower(coalesce(m.status,'active')) = 'active'
     and lower(coalesce(m.onboarding_status,'active')) = 'active'
   order by m.id limit 1;
+  if v_actor_member_id is null then
+    raise exception 'Active official membership required' using errcode='42501';
+  end if;
+
+  v_hash := pg_catalog.md5(jsonb_build_object(
+    'member_id',p_member_id,'monthly_amount',p_monthly_amount,
+    'effective_from',p_effective_from,'paid_through',p_paid_through
+  )::text);
+
+  -- Replay is checked before preview because a successful approval creates the rule
+  -- that would otherwise make preview reject the same request on a retry.
+  select * into v_existing
+  from private.member_accounting_initialization_requests
+  where request_id = p_request_id
+  for update;
+
+  if found then
+    if v_existing.payload_hash <> v_hash then
+      raise exception 'IDEMPOTENCY_CONFLICT: request id reused with different inputs';
+    end if;
+    if v_existing.requested_by_member_id <> v_actor_member_id then
+      raise exception 'Request id belongs to a different requester' using errcode='42501';
+    end if;
+    return jsonb_build_object(
+      'success',true,'idempotent_replay',true,'request_id',p_request_id,
+      'status',v_existing.status,'result',v_existing.result,
+      'message',case when v_existing.status='pending'
+        then 'This request is already awaiting approval.'
+        else 'This request has already been processed.' end
+    );
+  end if;
+
+  v_preview := public.preview_member_accounting_initialization(
+    p_member_id, p_monthly_amount, p_effective_from, p_paid_through
+  );
 
   insert into private.member_accounting_initialization_requests(
     request_id,group_id,member_id,requested_by_member_id,monthly_amount,
@@ -197,6 +233,7 @@ begin
     p_request_id,v_group_id,p_member_id,v_actor_member_id,p_monthly_amount,
     p_effective_from,p_paid_through,v_hash
   ) on conflict (request_id) do nothing;
+  get diagnostics v_inserted = row_count;
 
   select * into strict v_existing
   from private.member_accounting_initialization_requests
@@ -205,7 +242,6 @@ begin
   if v_existing.payload_hash <> v_hash then
     raise exception 'IDEMPOTENCY_CONFLICT: request id reused with different inputs';
   end if;
-
   if v_existing.requested_by_member_id <> v_actor_member_id then
     raise exception 'Request id belongs to a different requester' using errcode='42501';
   end if;
@@ -214,13 +250,17 @@ begin
     return jsonb_build_object('success',true,'idempotent_replay',true,'request_id',p_request_id,'status',v_existing.status,'result',v_existing.result);
   end if;
 
-  insert into private.member_accounting_initialization_audit(
-    request_id,group_id,member_id,actor_member_id,action,details
-  ) values (p_request_id,v_group_id,p_member_id,v_actor_member_id,'requested',v_preview)
-  on conflict do nothing;
+  if v_inserted > 0 then
+    insert into private.member_accounting_initialization_audit(
+      request_id,group_id,member_id,actor_member_id,action,details
+    ) values (p_request_id,v_group_id,p_member_id,v_actor_member_id,'requested',v_preview);
+  end if;
 
-  return jsonb_build_object('success',true,'request_id',p_request_id,'status',v_existing.status,'preview',v_preview,
-    'message','Pending approval by a different authorized group official.');
+  return jsonb_build_object(
+    'success',true,'request_id',p_request_id,'status',v_existing.status,
+    'idempotent_replay',(v_inserted = 0),'preview',v_preview,
+    'message','Pending approval by a different authorized group official.'
+  );
 end;
 $function$;
 
@@ -249,11 +289,8 @@ begin
   from private.member_accounting_initialization_requests
   where request_id = p_request_id for update;
 
-  if v_request.status = 'approved' then
-    return jsonb_build_object('success',true,'idempotent_replay',true,'request_id',p_request_id,'result',v_request.result);
-  end if;
-  if v_request.status <> 'pending' then raise exception 'Request is not pending approval'; end if;
-
+  -- Authenticate and authorize every replay too; do not leak stored results to
+  -- callers who no longer have access to this group's member-management workflow.
   select m.id into v_approver_member_id
   from public.members m
   where m.group_id = v_request.group_id
@@ -265,6 +302,19 @@ begin
   if v_approver_member_id is null or not public.can_manage_members(v_request.group_id) then
     raise exception 'Authorized group official required' using errcode='42501';
   end if;
+
+  if not exists (
+    select 1 from public.members target
+    where target.id=v_request.member_id and target.group_id=v_request.group_id
+      and lower(trim(coalesce(target.role,'')))='admin'
+  ) then
+    raise exception 'Accounting initialization is limited to members with the admin security role';
+  end if;
+
+  if v_request.status = 'approved' then
+    return jsonb_build_object('success',true,'idempotent_replay',true,'request_id',p_request_id,'result',v_request.result);
+  end if;
+  if v_request.status <> 'pending' then raise exception 'Request is not pending approval'; end if;
   if v_approver_member_id = v_request.requested_by_member_id then
     raise exception 'A different group official must approve this request' using errcode='42501';
   end if;
@@ -383,7 +433,7 @@ begin
     'request_id',r.request_id,'member_id',r.member_id,'member_name',m.name,
     'member_number',m.member_number,'requested_by_member_id',r.requested_by_member_id,
     'requested_by_name',requester.name,'monthly_amount',r.monthly_amount,
-    'effective_from',r.effective_from,'paid_through',r.paid_through,
+    'effective_from',r.effective_from,'paid_through',r.paid_through
   ) order by r.created_at), '[]'::jsonb)
   into v_rows
   from private.member_accounting_initialization_requests r
