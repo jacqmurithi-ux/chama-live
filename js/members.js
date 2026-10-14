@@ -1713,18 +1713,21 @@ function initializationInput(member) {
   const amount = Number(byId("existingInitMonthlyAmount")?.value);
   const effectiveFrom = text(byId("existingInitEffectiveFrom")?.value);
   const paidThrough = text(byId("existingInitPaidThrough")?.value) || null;
+  const paymentMethod = text(byId("existingInitPaymentMethod")?.value) || "";
 
   if (!member?.id) throw new Error("Select a member first.");
   if (!Number.isFinite(amount) || amount <= 0) throw new Error("Monthly amount must be greater than zero.");
   if (!effectiveFrom) throw new Error("Monthly start date is required.");
   if (paidThrough && paidThrough > new Date().toISOString().slice(0, 10)) throw new Error("Paid through cannot be in the future.");
   if (paidThrough && paidThrough < effectiveFrom) throw new Error("Paid through cannot precede the Monthly start date.");
+  if (paidThrough && !["M-Pesa", "Cash", "Bank transfer"].includes(paymentMethod)) throw new Error("Select a valid payment method for historical payments.");
 
   return {
     p_member_id: member.id,
     p_monthly_amount: amount,
     p_effective_from: effectiveFrom,
-    p_paid_through: paidThrough
+    p_paid_through: paidThrough,
+    p_payment_method: paidThrough ? paymentMethod : null
   };
 }
 
@@ -1875,7 +1878,7 @@ async function loadPendingMemberAccountingApprovals() {
     detail.textContent = (request.member_number || "") +
       " · " + formatMoney(request.monthly_amount) + "/month" +
       " · Starts " + formatDate(request.effective_from) +
-      (request.paid_through ? " · Reconcile through " + formatDate(request.paid_through) : "");
+      (request.paid_through ? " · Paid through " + formatDate(request.paid_through) + " · Method " + (request.payment_method || "not set") : "");
     summary.append(title, detail);
 
     const requester = document.createElement("span");
