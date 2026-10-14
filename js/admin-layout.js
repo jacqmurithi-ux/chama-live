@@ -336,6 +336,19 @@ function ensureAdminPortalShell() {
     userLabel.textContent = context?.member?.name ||
       context?.member?.full_name || context?.user?.email || "Account";
   }
+  let groupLabel = actions.querySelector("[data-topbar-group-name]");
+  if (!groupLabel) {
+    groupLabel = document.createElement("span");
+    groupLabel.className = "muted chama-topbar-group-name";
+    groupLabel.setAttribute("data-topbar-group-name", "");
+    groupLabel.style.fontSize = "0.85rem";
+    groupLabel.style.fontWeight = "600";
+    groupLabel.style.whiteSpace = "nowrap";
+    actions.appendChild(groupLabel);
+  }
+  groupLabel.textContent = "· " + (
+    context?.group?.name || context?.member?.group_name || "CHAMA"
+  );
   inner.querySelectorAll(".topbar-left, .topbar-right").forEach(wrapper => {
     if (!wrapper.querySelector("*") && !wrapper.textContent.trim()) wrapper.remove();
   });
