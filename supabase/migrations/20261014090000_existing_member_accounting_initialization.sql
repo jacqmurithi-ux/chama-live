@@ -177,9 +177,6 @@ begin
   );
   v_group_id := (v_preview->>'group_id')::uuid;
 
-  if p_paid_through is not null and coalesce(p_payment_method,'') not in ('M-Pesa','Cash','Bank transfer') then
-    raise exception 'Select a valid payment method for historical reconciliation' using errcode='22023';
-  end if;
   v_hash := pg_catalog.md5(jsonb_build_object(
     'member_id',p_member_id,'monthly_amount',p_monthly_amount,
     'effective_from',p_effective_from,'paid_through',p_paid_through
@@ -209,12 +206,12 @@ begin
     raise exception 'IDEMPOTENCY_CONFLICT: request id reused with different inputs';
   end if;
 
-  if v_existing.status = 'approved' then
-    return jsonb_build_object('success',true,'idempotent_replay',true,'request_id',p_request_id,'status',v_existing.status,'result',v_existing.result);
-  end if;
-
   if v_existing.requested_by_member_id <> v_actor_member_id then
     raise exception 'Request id belongs to a different requester' using errcode='42501';
+  end if;
+
+  if v_existing.status = 'approved' then
+    return jsonb_build_object('success',true,'idempotent_replay',true,'request_id',p_request_id,'status',v_existing.status,'result',v_existing.result);
   end if;
 
   insert into private.member_accounting_initialization_audit(
@@ -387,7 +384,6 @@ begin
     'member_number',m.member_number,'requested_by_member_id',r.requested_by_member_id,
     'requested_by_name',requester.name,'monthly_amount',r.monthly_amount,
     'effective_from',r.effective_from,'paid_through',r.paid_through,
-    'payment_method',r.payment_method,'created_at',r.created_at
   ) order by r.created_at), '[]'::jsonb)
   into v_rows
   from private.member_accounting_initialization_requests r
@@ -404,7 +400,7 @@ revoke all on function public.request_member_accounting_initialization(uuid,uuid
 revoke all on function public.approve_member_accounting_initialization(uuid) from public, anon;
 revoke all on function public.list_member_accounting_initialization_requests(uuid) from public, anon;
 grant execute on function public.preview_member_accounting_initialization(uuid,numeric,date,date) to authenticated;
-grant execute on function public.request_member_accounting_initialization(uuid,uuid,numeric,date,date,text) to authenticated;
+grant execute on function public.request_member_accounting_initialization(uuid,uuid,numeric,date,date) to authenticated;
 grant execute on function public.approve_member_accounting_initialization(uuid) to authenticated;
 grant execute on function public.list_member_accounting_initialization_requests(uuid) to authenticated;
 
