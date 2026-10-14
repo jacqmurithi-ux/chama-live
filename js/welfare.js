@@ -35,7 +35,7 @@ import {
 
 
 console.log(
-  "CHAMA LIVE: welfare-welfare.js loaded"
+  "CHAMA LIVE: welfare.js loaded"
 );
 
 
@@ -119,6 +119,8 @@ let groupId = null;
 
 let members = [];
 
+let memberDirectory = [];
+
 let expenses = [];
 
 let welfareCases = [];
@@ -138,7 +140,13 @@ const MANAGEMENT_ROLES =
     "admin",
     "administrator",
     "chairperson",
+    "vice chairperson",
+    "vice-chairperson",
+    "vice_chairperson",
+    "vice chair",
     "secretary",
+    "vice secretary",
+    "vice_secretary",
     "treasurer"
   ]);
 
@@ -332,7 +340,7 @@ function clearError() {
 function showError(error) {
 
   console.error(
-    "CHAMA LIVE Welfare & Welfare:",
+    "CHAMA LIVE Welfare & Support:",
     error
   );
 
@@ -496,13 +504,14 @@ async function loadMembers() {
     throw error;
   }
 
+  memberDirectory = data || [];
+
   members =
-    (data || [])
-      .filter(
-        member =>
-          normalize(member.status) ===
-          "active"
-      );
+    memberDirectory.filter(
+      member =>
+        normalize(member.status) ===
+        "active"
+    );
 
   renderMemberOptions();
 
@@ -673,6 +682,8 @@ function renderSummary() {
         item.status === "completed"
     ).length;
 
+  // This is the value of every recorded case, not cash paid.
+  // The label in the UI explicitly says it includes all statuses.
   const totalAmount =
     welfareCases.reduce(
       (
@@ -723,7 +734,7 @@ function renderSummary() {
 
 function getMember(memberId) {
 
-  return members.find(
+  return memberDirectory.find(
     member =>
       member.id === memberId
   );
@@ -815,7 +826,7 @@ function renderWelfareCases() {
       `
         <tr>
           <td
-            colspan="7"
+            colspan="9"
             class="welfare-empty"
           >
             No welfare cases match the current filter.
@@ -956,6 +967,18 @@ function renderWelfareCases() {
                     `
                     : "—"
                 }
+
+              </td>
+
+              <td>
+
+                ${escapeHtml(getMember(item.created_by)?.name || "—")}
+
+              </td>
+
+              <td>
+
+                ${escapeHtml(getMember(item.approved_by)?.name || "—")}
 
               </td>
 
@@ -1177,7 +1200,7 @@ async function createWelfareCase(event) {
     if (!memberId) {
 
       throw new Error(
-        "Please select the welfareed member."
+        "Please select the member receiving support."
       );
 
     }
@@ -1880,16 +1903,14 @@ function resetForm() {
 
 function enforceManagementAccess() {
 
-  const role =
-    normalize(
-      currentMember?.role
-    );
-
+  const roleCandidates = [
+    currentMember?.role,
+    currentMember?.actual_position_name,
+    currentMember?.actual_position
+  ].map(value => normalize(value).replace(/[_-]+/g, " ").replace(/\\s+/g, " "));
 
   const allowed =
-    MANAGEMENT_ROLES.has(
-      role
-    );
+    roleCandidates.some(role => MANAGEMENT_ROLES.has(role));
 
 
   if (allowed) {
@@ -2028,7 +2049,7 @@ export async function initPage() {
     clearError();
 
     showStatus(
-      "Loading Welfare & Welfare..."
+      "Loading Welfare & Support..."
     );
 
 
@@ -2068,7 +2089,7 @@ export async function initPage() {
 
 
     console.log(
-      "CHAMA LIVE: Welfare & Welfare context",
+      "CHAMA LIVE: Welfare & Support context",
       {
         userId:
           currentUser?.id,
@@ -2112,7 +2133,7 @@ export async function initPage() {
 
 
     showStatus(
-      "Welfare & Welfare ready."
+      "Welfare & Support ready."
     );
 
     window.setTimeout(
@@ -2152,5 +2173,5 @@ export const initWelfareWelfare =
 ========================================================= */
 
 console.log(
-  "CHAMA LIVE: welfare-welfare.js ready"
+  "CHAMA LIVE: welfare.js ready"
 );
