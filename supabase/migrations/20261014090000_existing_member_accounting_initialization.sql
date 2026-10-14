@@ -21,8 +21,6 @@ create table if not exists private.member_accounting_initialization_requests (
   approved_at timestamptz,
   result jsonb,
   created_at timestamptz not null default now(),
-  constraint member_accounting_init_paid_through_not_future
-    check (paid_through is null or paid_through <= current_date)
 );
 
 create table if not exists private.member_accounting_initialization_audit (
