@@ -1,7 +1,7 @@
 -- STAGE ONLY: view definitions recovered from production catalog 2026-10-14.
--- Install referenced functions and tables first; view ownership and grants are not included.
+-- Includes security_invoker reloptions. Install referenced functions and tables first.
 
-CREATE OR REPLACE VIEW public.group_balances AS
+CREATE OR REPLACE VIEW public.group_balances WITH (security_invoker = true) AS
  SELECT id AS group_id,
     opening_balance + COALESCE(( SELECT sum(c.amount) AS sum
            FROM contributions c
@@ -10,7 +10,7 @@ CREATE OR REPLACE VIEW public.group_balances AS
           WHERE e.group_id = g.id AND e.approval_status = 'approved'::text), 0::numeric) AS current_balance
    FROM groups g;;
 
-CREATE OR REPLACE VIEW public.subscription_credit_balances AS
+CREATE OR REPLACE VIEW public.subscription_credit_balances WITH (security_invoker = true) AS
  SELECT c.id AS credit_id,
     c.source_payment_id,
     c.original_amount,
