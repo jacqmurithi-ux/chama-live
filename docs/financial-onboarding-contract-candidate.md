@@ -33,8 +33,8 @@ The user must explicitly confirm the summary. The server must re-read the group 
 
 Default date policy for this candidate:
 
-- default effective date: the current local calendar date used by the database;
-- default first obligation: the next full calendar month (`next_full_period`);
+- default effective date: the current database calendar date, shown to the user before confirmation;
+- first obligation: the next full calendar month after the confirmed effective-date month (`next_full_period`);
 - do not backdate a rule to group creation or membership join date;
 - do not create an obligation for a partial/current period under this default;
 - do not count future obligations as current arrears;
@@ -52,7 +52,7 @@ The RPC must perform these steps transactionally:
 2. Re-read the canonical Monthly amount and contribution type.
 3. Serialize concurrent requests for the same group/creator.
 4. Check for **any** existing rule for this member and canonical Monthly type, regardless of frequency or status. If one exists, do not silently create or rewrite another rule; return a safe “existing rule requires review/no change” result.
-5. Create at most one rule with the explicitly confirmed effective date and the agreed first-period policy.
+5. Require an explicit confirmation flag, a non-null effective date that is not before the database current date, and the Monthly amount shown in the confirmation summary. Re-read the server-side group amount and reject if the confirmed amount differs. Create at most one rule with the confirmed effective date and agreed first-period policy.
 6. Call `cl_2b_refresh_member(member_id, through_month)` to let the canonical accounting engine materialize eligible obligations and allocate eligible verified payments.
 7. Return a structured result identifying whether onboarding was completed, already configured/review required, or blocked by missing policy. Never claim success if the canonical refresh fails.
 
@@ -103,4 +103,4 @@ The UI should distinguish:
 
 ## 8. Implementation status
 
-The candidate migration `20261014103000_creator_member_0001_monthly_rule_candidate.sql` is an interim creator-only backend candidate. It currently chooses `CURRENT_DATE` inside the RPC rather than accepting a separately confirmed effective date, and it has no explicit UI confirmation step. Therefore it does **not yet satisfy the full contract** above. Update and test the candidate RPC contract before connecting a UI. Keep the PR draft and unmerged until the contract and tests pass.
+The candidate migration `20261014103000_creator_member_0001_monthly_rule_candidate.sql` now accepts `p_effective_date`, `p_confirmed_monthly_amount`, and `p_confirm`; it rejects a missing confirmation, a backdated date, a missing/non-positive confirmed amount, and a confirmed amount that no longer matches the server-side group policy. It still has no UI confirmation step, and these database changes have not been applied or exercised against an isolated candidate database. The due-period defect in `get_member_contribution_position(uuid)` also remains unresolved: the exact deployed function definition must be captured in the isolated candidate environment before preparing a safe replacement. Keep the PR draft and unmerged until the RPC, position calculation, and candidate tests pass.
