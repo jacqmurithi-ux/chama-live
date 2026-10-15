@@ -126,8 +126,10 @@ function renderDocuments() {
   $("docsCount").textContent = documents.length + (documents.length === 1 ? " document" : " documents");
   $("docsResultsCount").textContent = mainDocs.length + " shown";
   $("docsFormsCount").textContent = forms.length + " shown";
-  $("docsFormsSection").hidden = !forms.length;
-  $("docsFormsList").innerHTML = forms.map(doc => cardMarkup(doc, true)).join("");
+  $("docsFormsSection").hidden = selectedCategory !== "All" && selectedCategory !== "Forms";
+  $("docsFormsList").innerHTML = forms.length
+    ? forms.map(doc => cardMarkup(doc, true)).join("")
+    : '<div class="docs-empty"><strong>No blank forms yet</strong><span>Blank loan and membership forms will appear here when an authorised official uploads them.</span></div>';
   $("docsList").innerHTML = mainDocs.map(doc => cardMarkup(doc)).join("");
   $("docsList").hidden = mainDocs.length === 0;
   $("docsEmpty").hidden = filtered.length > 0;
@@ -209,7 +211,14 @@ async function downloadVersion(id, button) {
   button.disabled = true;
   try {
     const url = await signedUrl(version.storage_path);
-    window.open(url, "_blank", "noopener");
+    const link = document.createElement("a");
+    link.href = url;
+    link.target = "_blank";
+    link.rel = "noopener";
+    link.download = version.title || "document-version";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
   } catch (error) { showStatus(error.message || "Unable to download this version.", "error"); }
   finally { button.disabled = false; }
 }
@@ -230,8 +239,8 @@ function openSheet(doc = null) {
   document.body.style.overflow = "hidden";
   $("docsTitleInput").focus();
 }
-function closeSheet() {
-  if (busy) return;
+function closeSheet(force = false) {
+  if (busy && !force) return;
   $("docsSheet").hidden = true;
   document.body.style.overflow = "";
   $("docsForm").reset();
@@ -302,7 +311,7 @@ async function submitDocument(event) {
       await supabase.storage.from("group-documents").remove([path]);
       throw result.error;
     }
-    closeSheet();
+    closeSheet(true);
     showStatus(replacing ? "Document replaced. The previous file is available in Version history." : "Document uploaded. Group members have been notified.", "success");
     await loadData();
   } catch (error) {
