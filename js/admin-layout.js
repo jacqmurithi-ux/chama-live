@@ -125,6 +125,7 @@ const ADMIN_PAGES = new Set([
   "reports.html",
   "monthly-closing.html",
   "group-management.html",
+  "group-settings.html",
   "billing.html",
   "assets.html",
   "plans-activities.html",
@@ -230,6 +231,11 @@ const PAGE_SCRIPTS = {
   "group-management.html": [
     "./group-management.js",
     "initGroupManagement"
+  ],
+
+  "group-settings.html": [
+    "./group-settings.js?v=20261015-admin-module-settings1",
+    "initGroupSettings"
   ],
 
   "billing.html": [
@@ -538,6 +544,7 @@ const NAVIGATION_GROUPS = [
     "Management",
     [
       ["group-management.html", "Group Management"],
+      ["group-settings.html", "Group Settings"],
       ["data-migration.html", "Data Migration"],
       ["billing.html", "Billing"]
     ]
@@ -1147,30 +1154,85 @@ function injectStyles() {
 ========================================================= */
 
 async function loadOptionalModuleFlags() {
+  const groupId = context?.member?.group_id;
+  const defaults = { plans: false, assets: false, milestones: false, migration: false };
   try {
-    const { data, error } = await supabase.rpc("get_group_module_settings", {
-      p_group_id: context?.member?.group_id
-    });
-    if (error) throw error;
-    const row = Array.isArray(data) ? data[0] : data;
-    if (row && context) {
-      context.group = { ...(context.group || {}), merry_go_round_enabled: row.merry_go_round_enabled === true, loans_enabled: row.loans_enabled === true };
-    }
+    const [{ data: existingData, error: existingError }, { data: moduleData, error: moduleError }] = await Promise.all([
+      supabase.rpc("get_group_module_settings", { p_group_id: groupId }),
+      supabase.rpc("get_group_optional_modules", { p_group_id: groupId })
+    ]);
+    if (existingError) throw existingError;
+    if (moduleError) throw moduleError;
+    const row = Array.isArray(existingData) ? existingData[0] : existingData;
+    const modules = moduleData && typeof moduleData === "object"
+      ? Object.fromEntries(Object.keys(defaults).map(key => [key, moduleData[key] === true]))
+      : defaults;
+    if (context) context.group = {
+      ...(context.group || {}),
+      merry_go_round_enabled: row?.merry_go_round_enabled === true,
+      loans_enabled: row?.loans_enabled === true,
+      modules
+    };
   } catch (error) {
     console.warn("[CHAMA LIVE] Optional module navigation is hidden because settings could not be verified.", error);
-    if (context) context.group = { ...(context.group || {}), merry_go_round_enabled: false, loans_enabled: false };
+    if (context) context.group = {
+      ...(context.group || {}), merry_go_round_enabled: false, loans_enabled: false, modules: defaults
+    };
   }
 }
 
+function normalizedPosition(position) {
+  return String(position || "").trim().toLowerCase().replace(/[_-]+/g, " ").replace(/\\s+/g, " ");
+}
+
+export function canViewSettings(position = context?.role || context?.member?.role) {
+  return ["admin", "administrator"].includes(normalizedPosition(position));
+}
+
+export function isModuleOn(key) {
+  return context?.group?.modules?.[key] === true;
+}
+
+function showLayoutNotice(message) {
+  if (!message || !document.body) return;
+  const notice = document.createElement("div");
+  notice.setAttribute("role", "status");
+  notice.setAttribute("aria-live", "polite");
+  notice.textContent = message;
+  notice.style.cssText = "position:fixed;z-index:20000;top:82px;left:50%;transform:translateX(-50%);max-width:min(92vw,620px);padding:12px 16px;background:#fff7ed;color:#9a3412;border:1px solid #fed7aa;border-radius:12px;box-shadow:0 8px 28px #0002;font-weight:700";
+  document.body.appendChild(notice);
+  window.setTimeout(() => notice.remove(), 6500);
+}
+
+function redirectWithNotice(message, target = "dashboard.html") {
+  try { sessionStorage.setItem("chama-layout-notice", message); } catch (_) {}
+  window.location.replace(target);
+}
+
+export function guardPage({ module, roles } = {}) {
+  if (module && !isModuleOn(module)) {
+    redirectWithNotice("This module isn't activated for your group.");
+    return false;
+  }
+  if (Array.isArray(roles) && !roles.some(role => normalizedPosition(role) === normalizedPosition(context?.role || context?.member?.role))) {
+    redirectWithNotice("No access");
+    return false;
+  }
+  return true;
+}
+
 function visibleNavigationGroups() {
-  return NAVIGATION_GROUPS.map(([title, items]) => [
-    title,
-    items.filter(([href]) => {
-      if (href === "merry-go-round.html") return context?.group?.merry_go_round_enabled === true;
-      if (href === "loans.html") return context?.group?.loans_enabled === true;
-      return true;
-    })
-  ]).filter(([, items]) => items.length > 0);
+  return NAVIGATION_GROUPS.map(([title, items]) => [title, items.filter(([href]) => {
+    const page = href.split("?")[0];
+    if (page === "merry-go-round.html") return context?.group?.merry_go_round_enabled === true;
+    if (page === "loans.html") return context?.group?.loans_enabled === true;
+    if (page === "group-settings.html") return canViewSettings();
+    if (page === "plans-activities.html") return isModuleOn("plans");
+    if (page === "assets.html") return isModuleOn("assets");
+    if (page === "milestones.html") return isModuleOn("milestones");
+    if (page === "data-migration.html") return isModuleOn("migration") && canViewSettings();
+    return true;
+  })]).filter(([, items]) => items.length > 0);
 }
 
 function renderDesktopNavigation() {
@@ -1499,7 +1561,7 @@ function renderMobileNavigation() {
       title,
       items
     ]
-    of NAVIGATION_GROUPS
+    of visibleNavigationGroups()
   ) {
 
     const section =
@@ -2249,15 +2311,32 @@ export async function boot() {
 
 
     if (!ADMIN_PAGES.has(page)) {
-
-      window.location.replace(
-        "dashboard.html"
-      );
-
+      redirectWithNotice("No access");
       return;
-
     }
 
+    await loadOptionalModuleFlags();
+
+    if (page === "group-settings.html" && !canViewSettings()) {
+      redirectWithNotice("No access");
+      return;
+    }
+
+    const requiredModule = {
+      "plans-activities.html": "plans",
+      "assets.html": "assets",
+      "milestones.html": "milestones",
+      "data-migration.html": "migration"
+    }[page];
+    if (requiredModule && !isModuleOn(requiredModule)) {
+      redirectWithNotice("This module isn't activated for your group.");
+      return;
+    }
+
+    if (page === "data-migration.html" && !canViewSettings()) {
+      redirectWithNotice("No access");
+      return;
+    }
 
     /* -------------------------------------------------------
        LAYOUT LOADING FLAG
@@ -2292,13 +2371,16 @@ export async function boot() {
 
     injectStyles();
 
-    await loadOptionalModuleFlags();
-
     renderDesktopNavigation();
 
     renderMobileNavigation();
 
     renderMobileBottomNavigation();
+
+    try {
+      const notice = sessionStorage.getItem("chama-layout-notice");
+      if (notice) { sessionStorage.removeItem("chama-layout-notice"); showLayoutNotice(notice); }
+    } catch (_) {}
 
     bindAdminLogout();
 
