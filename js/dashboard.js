@@ -1300,6 +1300,44 @@ async function loadActiveContributionTypes() {
 
   }
 
+  // Read the configured current monthly period so its closing date
+  // can be displayed alongside the monthly contribution. This is read-only;
+  // the canonical monthly amount remains sourced from the group setting.
+  let monthlyClosingDate = null;
+  try {
+    const { data: contributionTypeRows, error: contributionTypeLookupError } = await supabase
+      .from("contribution_types")
+      .select("id,name,code")
+      .eq("group_id", currentGroupId);
+
+    if (contributionTypeLookupError) throw contributionTypeLookupError;
+
+    const monthlyTypeIds = (Array.isArray(contributionTypeRows) ? contributionTypeRows : [])
+      .filter(type => {
+        const code = String(type.code || "").trim().toLowerCase().replace(/[\\s_-]+/g, "");
+        const name = String(type.name || "").trim().toLowerCase().replace(/[\\s_-]+/g, "");
+        return code === "monthly" || code === "monthlycontribution" ||
+          name === "monthly" || name === "monthlycontribution";
+      })
+      .map(type => type.id);
+
+    if (monthlyTypeIds.length) {
+      const { data: monthlyPeriods, error: monthlyPeriodError } = await supabase
+        .from("contribution_periods")
+        .select("closing_date,opening_date,due_date,status")
+        .eq("group_id", currentGroupId)
+        .in("contribution_type_id", monthlyTypeIds)
+        .in("status", ["open", "due", "grace"])
+        .order("opening_date", { ascending: false })
+        .limit(1);
+
+      if (monthlyPeriodError) throw monthlyPeriodError;
+      monthlyClosingDate = Array.isArray(monthlyPeriods) ? monthlyPeriods[0]?.closing_date || null : null;
+    }
+  } catch (error) {
+    console.warn("CHAMA LIVE: Monthly closing date could not be loaded; showing it as unavailable.", error);
+  }
+
   activeContributionTypes.push({
 
     key: "monthly",
@@ -1318,7 +1356,7 @@ async function loadActiveContributionTypes() {
       null,
 
     closing_date:
-      null,
+      monthlyClosingDate,
 
     fine_rule:
       "Canonical monthly rule",
