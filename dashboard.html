@@ -649,6 +649,21 @@
       overflow: hidden;
     }
 
+    .cumulative-status-summary {
+      padding: 16px 16px 0;
+    }
+
+    .cumulative-amount-summary {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      padding: 16px;
+    }
+
+    .cumulative-amount-summary .cumulative-position-stat {
+      min-height: 76px;
+    }
+
     .cumulative-position-grid {
       display: grid;
       grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -1444,6 +1459,9 @@
     .monthly-status-dialog-header p { margin: 5px 0 0; color: var(--dashboard-muted); font-size: 13px; }
     .monthly-status-dialog .table-wrap { max-height: 62vh; overflow: auto; }
     @media (max-width: 640px) {
+      .cumulative-status-summary { padding: 12px 12px 0; }
+      .cumulative-amount-summary { padding: 12px; gap: 8px; }
+      .cumulative-amount-summary .cumulative-position-stat { padding: 11px; }
       .monthly-status-summary { grid-template-columns: 1fr; gap: 10px; }
       .monthly-status-tile { min-height: 96px; padding: 14px 16px; }
       .monthly-status-dialog { padding: 14px; }
@@ -2247,22 +2265,24 @@
           class="cumulative-position-card"
         >
 
-          <div class="cumulative-position-grid">
-            <button type="button" class="cumulative-position-stat cumulative-filter-button" data-cumulative-filter="UP_TO_DATE" aria-label="Review members up to date">
-              <span>Members Up to Date</span>
+          <div class="cumulative-status-summary monthly-status-summary">
+            <button type="button" class="monthly-status-tile monthly-status-up-to-date" data-cumulative-filter="UP_TO_DATE" aria-label="Review members up to date">
+              <span class="monthly-status-label">Members Up to Date</span>
               <strong id="cumulativeUpToDateCount">0</strong>
-              <small>Click to review names</small>
+              <span class="monthly-status-hint">Click to review names</span>
             </button>
-            <button type="button" class="cumulative-position-stat cumulative-filter-button" data-cumulative-filter="ARREARS" aria-label="Review members in arrears">
-              <span>Members in Arrears</span>
+            <button type="button" class="monthly-status-tile monthly-status-outstanding" data-cumulative-filter="ARREARS" aria-label="Review members in arrears">
+              <span class="monthly-status-label">Members in Arrears</span>
               <strong id="cumulativeArrearsCount">0</strong>
-              <small>Click to review names</small>
+              <span class="monthly-status-hint">Click to review names</span>
             </button>
-            <button type="button" class="cumulative-position-stat cumulative-filter-button" data-cumulative-filter="CREDIT" aria-label="Review members with credit">
-              <span>Members with Credit</span>
+            <button type="button" class="monthly-status-tile monthly-status-credit" data-cumulative-filter="CREDIT" aria-label="Review members with credit">
+              <span class="monthly-status-label">Members with Credit</span>
               <strong id="cumulativeCreditCount">0</strong>
-              <small>Click to review names</small>
+              <span class="monthly-status-hint">Click to review names</span>
             </button>
+          </div>
+          <div class="cumulative-amount-summary">
             <div class="cumulative-position-stat" aria-label="Cumulative arrears">
               <span>Cumulative Arrears</span>
               <strong id="cumulativeArrearsAmount" class="amount-negative">KSh 0</strong>
