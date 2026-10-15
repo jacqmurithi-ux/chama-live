@@ -665,6 +665,53 @@
       background: var(--dashboard-soft);
     }
 
+    .cumulative-filter-button {
+      width: 100%;
+      color: inherit;
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+      transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+    }
+
+    .cumulative-filter-button:hover,
+    .cumulative-filter-button:focus-visible {
+      border-color: #98a2b3;
+      box-shadow: 0 0 0 3px rgba(15, 118, 110, .10);
+      outline: none;
+    }
+
+    .cumulative-filter-button:active { transform: translateY(1px); }
+    .cumulative-filter-button[aria-pressed="true"] {
+      border-color: var(--dashboard-accent);
+      box-shadow: inset 0 0 0 1px var(--dashboard-accent);
+      background: #f0fdfa;
+    }
+
+    .cumulative-filter-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 0 16px 12px;
+      color: var(--dashboard-muted);
+      font-size: 12px;
+    }
+
+    .cumulative-filter-toolbar .btn {
+      border: 1px solid var(--dashboard-border);
+      border-radius: 9px;
+      padding: 7px 10px;
+      background: #fff;
+      color: #344054;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .cumulative-filter-toolbar .btn[hidden] { display: none !important; }
+
+
     .cumulative-position-stat::before {
       content: "";
       display: block;
@@ -2193,100 +2240,32 @@
         >
 
           <div class="cumulative-position-grid">
-
-            <div
-              class="cumulative-position-stat"
-              aria-label="Members up to date"
-            >
-
-              <span>
-                Members Up to Date
-              </span>
-
-              <strong
-                id="cumulativeUpToDateCount"
-              >
-                0
-              </strong>
-
+            <button type="button" class="cumulative-position-stat cumulative-filter-button" data-cumulative-filter="UP_TO_DATE" aria-label="Show members up to date">
+              <span>Members Up to Date</span>
+              <strong id="cumulativeUpToDateCount">0</strong>
+            </button>
+            <button type="button" class="cumulative-position-stat cumulative-filter-button" data-cumulative-filter="ARREARS" aria-label="Show members in arrears">
+              <span>Members in Arrears</span>
+              <strong id="cumulativeArrearsCount">0</strong>
+            </button>
+            <button type="button" class="cumulative-position-stat cumulative-filter-button" data-cumulative-filter="CREDIT" aria-label="Show members with credit">
+              <span>Members with Credit</span>
+              <strong id="cumulativeCreditCount">0</strong>
+            </button>
+            <div class="cumulative-position-stat" aria-label="Cumulative arrears">
+              <span>Cumulative Arrears</span>
+              <strong id="cumulativeArrearsAmount" class="amount-negative">KSh 0</strong>
             </div>
-
-
-            <div
-              class="cumulative-position-stat"
-              aria-label="Members in arrears"
-            >
-
-              <span>
-                Members in Arrears
-              </span>
-
-              <strong
-                id="cumulativeArrearsCount"
-              >
-                0
-              </strong>
-
+            <div class="cumulative-position-stat" aria-label="Cumulative credit">
+              <span>Cumulative Credit</span>
+              <strong id="cumulativeCreditAmount" class="amount-positive">KSh 0</strong>
             </div>
-
-
-            <div
-              class="cumulative-position-stat"
-              aria-label="Members with credit"
-            >
-
-              <span>
-                Members with Credit
-              </span>
-
-              <strong
-                id="cumulativeCreditCount"
-              >
-                0
-              </strong>
-
-            </div>
-
-
-            <div
-              class="cumulative-position-stat"
-              aria-label="Cumulative arrears"
-            >
-
-              <span>
-                Cumulative Arrears
-              </span>
-
-              <strong
-                id="cumulativeArrearsAmount"
-                class="amount-negative"
-              >
-                KSh 0
-              </strong>
-
-            </div>
-
-
-            <div
-              class="cumulative-position-stat"
-              aria-label="Cumulative credit"
-            >
-
-              <span>
-                Cumulative Credit
-              </span>
-
-              <strong
-                id="cumulativeCreditAmount"
-                class="amount-positive"
-              >
-                KSh 0
-              </strong>
-
-            </div>
-
           </div>
 
+          <div class="cumulative-filter-toolbar">
+            <span id="cumulativeFilterLabel" aria-live="polite">Showing all member positions</span>
+            <button type="button" id="cumulativeShowAll" class="btn" hidden>Show all members</button>
+          </div>
 
           <div class="table-wrap">
 
