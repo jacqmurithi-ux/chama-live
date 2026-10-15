@@ -1681,7 +1681,7 @@ export async function boot() {
       (requiredModule && context.group?.modules?.[requiredModule] !== true)
     ) {
       try {
-        sessionStorage.setItem("chama-layout-notice", requiredModule || currentPage === "loans.html" ? "This module isn't activated for your group." : "This module isn't activated for your group.");
+        sessionStorage.setItem("chama-layout-notice", "This module isn't activated for your group.");
       } catch (_) {}
       window.location.replace("member-dashboard.html");
       return;
