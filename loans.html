@@ -23,7 +23,7 @@
 <section id="loanNotificationsCard" class="loan-card" style="margin-bottom:16px"><h2>Loan notifications</h2><p class="loan-muted">Application decisions, disbursements and repayment updates for your account.</p><div id="loanNotifications" aria-live="polite"><p class="loan-muted">Loading notifications…</p></div></section>
 <section id="loanSettingsCard" class="loan-card loan-hidden" style="margin-bottom:16px">
 <h2>Loan settings</h2><p class="loan-muted">Admin controls interest, limits and late penalties. Changes apply only to new applications.</p><p id="loanSettingsUpdated" class="loan-muted">Settings update history loads here.</p>
-<label style="display:flex;gap:8px;align-items:center;font-weight:700"><input id="loanEnabled" type="checkbox" style="width:auto"> Enable loans for this group</label>
+<label style="display:flex;gap:8px;align-items:center;font-weight:700"><input id="loanEnabled" type="checkbox" disabled style="width:auto"> Loans module enabled (manage this in Group Management)</label>
 <form id="loanSettingsForm" class="loan-form" data-permission-page="loans" data-permission-action="settings">
 <div class="loan-grid">
 <label>Annual interest rate (%)<input name="interest_rate" type="number" min="0" max="100" step="0.0001" required></label>
