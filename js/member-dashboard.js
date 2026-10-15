@@ -1772,6 +1772,26 @@ async function loadMeetings() {
   };
 }
 
+function subscribeToMemberAnnouncementUpdates() {
+  if (!groupId || typeof supabase.channel !== "function") return;
+
+  supabase
+    .channel(`member-group-announcements-${groupId}`)
+    .on("postgres_changes", {
+      event: "INSERT",
+      schema: "public",
+      table: "announcements",
+      filter: `group_id=eq.${groupId}`
+    }, async () => {
+      try {
+        await loadRecentAnnouncements();
+      } catch (error) {
+        console.warn("CHAMA LIVE: Live group announcements could not refresh.", error);
+      }
+    })
+    .subscribe();
+}
+
 async function loadRecentAnnouncements() {
   const container = byId("memberRecentAnnouncements");
   if (!container) return;
@@ -2550,6 +2570,7 @@ export async function initMemberDashboard(
   initialized = true;
 
   await loadDashboard();
+  subscribeToMemberAnnouncementUpdates();
   await renderMemberGroupLoanSummary();
 }
 
