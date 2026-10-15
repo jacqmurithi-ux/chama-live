@@ -35,7 +35,7 @@
 </form>
 </section>
 <div id="loanApplyOverviewGrid" class="loan-grid">
-<section class="loan-card">
+<section id="loanApplyCard" class="loan-card">
 <h2>Apply for a loan</h2><p id="loanLimits" class="loan-muted">Loan limits load after settings are configured.</p>
 <form id="loanApplyForm" class="loan-form" data-permission-page="loans" data-permission-action="apply">
 <label>Requested amount (KES)<input name="amount" type="number" min="1" step="0.01" required></label>
@@ -78,8 +78,8 @@
 </section>
 </main>
 <script type="module">
-import { boot as bootAdmin } from "./js/admin-layout.js?v=20261015-multiple-guarantors1";
-import { boot as bootMember } from "./js/member-layout.js?v=20261015-multiple-guarantors1";
+import { boot as bootAdmin } from "./js/admin-layout.js?v=20261015-admin-hide-loan-apply1";
+import { boot as bootMember } from "./js/member-layout.js?v=20261015-admin-hide-loan-apply1";
 if (new URLSearchParams(window.location.search).get("portal") === "member") {
   bootMember();
 } else {
