@@ -1,4 +1,5 @@
 import { supabase } from "./supabase.js";
+import { getMyApplicationContext } from "./auth.js";
 
 const CATEGORIES = ["Constitution", "Forms", "Minutes", "Policies", "Other"];
 const OFFICIAL_ROLES = new Set(["admin", "administrator", "chairperson", "vice chairperson", "treasurer", "secretary", "vice secretary"]);
@@ -178,7 +179,7 @@ async function loadData() {
   renderDocuments();
 }
 async function signedUrl(path) {
-  const {data,error} = await supabase.storage.from("group-documents").createSignedUrl(path, 90);
+  const {data,error} = await supabase.storage.from("group-documents").createSignedUrl(path, 90, { download: true });
   if (error) throw error;
   if (!data?.signedUrl) throw new Error("The download link could not be created.");
   return data.signedUrl;
@@ -264,6 +265,7 @@ async function submitDocument(event) {
   if (category === "Minutes" && meetingId && !meetings.some(meeting => meeting.id === meetingId)) {
     return showFormStatus("Choose a meeting from your group.", "error");
   }
+  const replacing = Boolean(editingDocument);
   busy = true;
   $("docsSubmit").disabled = true;
   $("docsSubmit").textContent = "Uploading…";
@@ -301,7 +303,7 @@ async function submitDocument(event) {
       throw result.error;
     }
     closeSheet();
-    showStatus(editingDocument ? "Document replaced. The previous file is available in Version history." : "Document uploaded. Group members have been notified.", "success");
+    showStatus(replacing ? "Document replaced. The previous file is available in Version history." : "Document uploaded. Group members have been notified.", "success");
     await loadData();
   } catch (error) {
     console.error("[CHAMA LIVE] Document upload failed", error);
@@ -356,7 +358,7 @@ function bindEvents() {
   document.addEventListener("keydown", event => { if (event.key === "Escape" && !$("docsSheet").hidden) closeSheet(); });
 }
 export async function initDocuments(pageContext = null) {
-  context = pageContext;
+  context = pageContext || await getMyApplicationContext();
   if (!context?.member?.group_id || !context?.member?.id) {
     throw new Error("Your group membership could not be verified. Please sign in again.");
   }
