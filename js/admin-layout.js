@@ -198,7 +198,7 @@ const PAGE_SCRIPTS = {
   ],
 
   "loans.html": [
-    "./loans.js?v=20261015-loan-apply-rpc-fix1",
+    "./loans.js?v=20261015-loan-form-reset-fix1",
     "initLoans"
   ],
 
