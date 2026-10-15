@@ -1235,6 +1235,14 @@ function visibleNavigationGroups() {
   })]).filter(([, items]) => items.length > 0);
 }
 
+function refreshModuleNavigation() {
+  renderDesktopNavigation();
+  document.getElementById("chamaAdminMenu")?.remove();
+  document.getElementById("chamaAdminBack")?.remove();
+  renderMobileNavigation();
+}
+
+
 function renderDesktopNavigation() {
 
   const target =
@@ -2376,6 +2384,8 @@ export async function boot() {
     renderMobileNavigation();
 
     renderMobileBottomNavigation();
+
+    window.addEventListener("chama:module-settings-updated", refreshModuleNavigation);
 
     try {
       const notice = sessionStorage.getItem("chama-layout-notice");
