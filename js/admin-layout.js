@@ -218,7 +218,7 @@ const PAGE_SCRIPTS = {
   ],
 
   "reports.html": [
-    "./reports.js?v=aacf17f3",
+    "./reports.js?v=20261015-custom-member-obligations",
     "initPage"
   ],
 
