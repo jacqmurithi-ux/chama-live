@@ -1394,6 +1394,20 @@
       .monthly-status-dialog { padding: 14px; }
     }
 
+
+    .custom-contribution-status-list { display: grid; gap: 14px; }
+    .custom-contribution-status-card { border: 1px solid var(--dashboard-border); border-radius: 14px; padding: 16px; background: #fff; }
+    .custom-contribution-status-card h3 { margin: 0; font-size: 16px; }
+    .custom-contribution-status-meta { color: var(--dashboard-muted); font-size: 12px; margin-top: 4px; }
+    .custom-contribution-status-counts { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; margin-top: 14px; }
+    .custom-contribution-status-button { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-width: 0; padding: 12px; border: 1px solid var(--dashboard-border); border-radius: 10px; background: #fff; text-align: left; cursor: pointer; }
+    .custom-contribution-status-button:focus-visible { outline: 3px solid #84caff; outline-offset: 2px; }
+    .custom-contribution-status-button strong { font-size: 22px; font-variant-numeric: tabular-nums; }
+    .custom-contribution-status-button span { font-size: 12px; font-weight: 800; }
+    .custom-contribution-status-button.paid { border-left: 4px solid #12b76a; color: #087443; }
+    .custom-contribution-status-button.outstanding { border-left: 4px solid #f04438; color: #b42318; }
+    .custom-contribution-status-button.partial { border-left: 4px solid #f79009; color: #b54708; }
+    @media (max-width: 640px) { .custom-contribution-status-counts { grid-template-columns: 1fr; gap: 8px; } .custom-contribution-status-button { padding: 10px 12px; } }
 </style>
 </head>
 
@@ -2098,157 +2112,51 @@
       </section>
 
       <!-- =================================================
-           ACTIVE CUSTOM CONTRIBUTION MEMBER STATUS
-           Each active custom contribution can have its own
-           member-level Paid / Outstanding / Partial status.
+           ACTIVE CUSTOM CONTRIBUTION STATUS SUMMARY
+           Counts per active custom contribution; member lists on demand
       ================================================= -->
-
-      <section
-        class="dashboard-section"
-        aria-labelledby="customContributionMemberStatusTitle"
-      >
-
+      <section class="dashboard-section" aria-labelledby="customContributionMemberStatusTitle">
         <div class="section-heading">
-
-          <h2 id="customContributionMemberStatusTitle">
-            Custom contribution payment status
-          </h2>
-
-          <p>
-            See member-level payment status for each active custom
-            contribution. Paid, Partial and Outstanding reflect canonical
-            allocation against the obligation.
-          </p>
-
+          <h2 id="customContributionMemberStatusTitle">Custom contribution payment status</h2>
+          <p>Each active custom contribution shows its Paid, Outstanding and Partial member counts. Select a status to view the members and amounts.</p>
         </div>
 
-
         <article class="member-contribution-status-card">
-
           <div class="member-contribution-summary">
-
             <div class="member-contribution-summary-item">
-
-              <span>
-                Active Custom Contributions
-              </span>
-
-              <strong id="customContributionActiveCount">
-                0
-              </strong>
-
+              <span>Active Custom Contributions</span>
+              <strong id="customContributionActiveCount">0</strong>
             </div>
-
-
-            <div class="member-contribution-summary-item">
-
-              <span>
-                Paid
-              </span>
-
-              <strong id="customContributionPaidCount">
-                0
-              </strong>
-
-            </div>
-
-
-            <div class="member-contribution-summary-item">
-
-              <span>
-                Outstanding
-              </span>
-
-              <strong id="customContributionOutstandingCount">
-                0
-              </strong>
-
-            </div>
-
-
-            <div class="member-contribution-summary-item">
-
-              <span>
-                Partial
-              </span>
-
-              <strong id="customContributionPartialCount">
-                0
-              </strong>
-
-            </div>
-
           </div>
-
-
-          <div class="table-wrap">
-
-            <table class="dashboard-table">
-
-              <thead>
-
-                <tr>
-
-                  <th scope="col">
-                    Member
-                  </th>
-
-                  <th scope="col">
-                    Contribution
-                  </th>
-
-                  <th scope="col">
-                    Amount Due
-                  </th>
-
-                  <th scope="col">
-                    Applied
-                  </th>
-
-                  <th scope="col">
-                    Outstanding
-                  </th>
-
-                  <th scope="col">
-                    Status
-                  </th>
-
-                </tr>
-
-              </thead>
-
-
-              <tbody id="customContributionMemberStatusRows">
-
-                <tr>
-
-                  <td colspan="6">
-
-                    <div class="empty-state">
-
-                      <strong>
-                        Loading custom contribution status...
-                      </strong>
-
-                      <span>
-                        Active custom contribution obligations
-                        and member payment status will appear here.
-                      </span>
-
-                    </div>
-
-                  </td>
-
-                </tr>
-
-              </tbody>
-
-            </table>
-
+          <div id="customContributionStatusCards" class="custom-contribution-status-list" aria-live="polite">
+            <div class="empty-state"><strong>Loading custom contribution status...</strong><span>Active contributions and member payment status will appear here.</span></div>
           </div>
-
         </article>
 
+        <dialog id="customContributionStatusDialog" class="monthly-status-dialog" aria-labelledby="customContributionStatusDialogTitle">
+          <div class="monthly-status-dialog-header">
+            <div>
+              <h3 id="customContributionStatusDialogTitle">Custom contribution members</h3>
+              <p id="customContributionStatusDialogDescription">Members in the selected payment status.</p>
+            </div>
+            <button type="button" id="customContributionStatusDialogClose" class="btn" aria-label="Close member list">Close</button>
+          </div>
+          <div class="table-wrap">
+            <table class="dashboard-table">
+              <thead><tr>
+                <th scope="col">Member</th>
+                <th scope="col">Contribution</th>
+                <th scope="col">Amount Due</th>
+                <th scope="col">Applied</th>
+                <th scope="col">Outstanding</th>
+                <th scope="col">Status</th>
+              </tr></thead>
+              <tbody id="customContributionMemberStatusRows">
+                <tr><td colspan="6"><div class="empty-state"><strong>Select a status to view members</strong></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </dialog>
       </section>
 
 
