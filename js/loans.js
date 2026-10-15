@@ -58,6 +58,10 @@ function applyPermissions(){
   $("loanOverdueCard").classList.toggle("loan-hidden",!official);
   $("loanGroupSummaryCard").classList.toggle("loan-hidden",!official);
   $("loanRepaymentPanel").classList.toggle("loan-hidden",!selectedLoan||selectedLoan.member_id!==ctx.member.id||!["active","overdue"].includes(selectedLoan.status));
+  document.querySelectorAll("#loanRows [data-review]").forEach(b=>{const l=loans.find(x=>x.id===b.dataset.id);b.disabled=!allowed("review",l);});
+  document.querySelectorAll("#loanReviewRows [data-review]").forEach(b=>{const l=loans.find(x=>x.id===b.dataset.id);b.disabled=!allowed("review",l);});
+  document.querySelectorAll("#loanRows [data-disburse]").forEach(b=>{b.disabled=!allowed("disburse");});
+  $("loanExportCsv").disabled=!allowed("export");
 }
 async function loadNotifications(){
  let query=supabase.from("loan_notifications").select("id,event_type,title,message,created_at,read_at").eq("group_id",ctx.group.id).eq("recipient_member_id",ctx.member.id);
