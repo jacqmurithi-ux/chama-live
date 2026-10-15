@@ -773,6 +773,14 @@
       color: var(--status-credit);
     }
 
+    .cumulative-summary-note {
+      margin: 0;
+      padding: 0 16px 16px;
+      color: var(--dashboard-muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
     .cumulative-position-table {
       width: 100%;
       border-collapse: collapse;
@@ -2243,15 +2251,15 @@
             <div class="cumulative-position-stat" aria-label="Members up to date">
               <span>Members Up to Date</span>
               <strong id="cumulativeUpToDateCount">0</strong>
-            </button>
+            </div>
             <div class="cumulative-position-stat" aria-label="Members in arrears">
               <span>Members in Arrears</span>
               <strong id="cumulativeArrearsCount">0</strong>
-            </button>
+            </div>
             <div class="cumulative-position-stat" aria-label="Members with credit">
               <span>Members with Credit</span>
               <strong id="cumulativeCreditCount">0</strong>
-            </button>
+            </div>
             <div class="cumulative-position-stat" aria-label="Cumulative arrears">
               <span>Cumulative Arrears</span>
               <strong id="cumulativeArrearsAmount" class="amount-negative">KSh 0</strong>
