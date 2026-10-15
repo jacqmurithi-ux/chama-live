@@ -13,8 +13,10 @@ export async function initGroupSettings() {
   const context = window.__CHAMA_LIVE_ADMIN_CONTEXT__;
   const groupId = context?.member?.group_id || context?.group?.id;
   if (!groupId) throw new Error("Your group could not be identified.");
-  const role = String(context?.role || context?.member?.role || "").trim().toLowerCase();
-  if (!["admin", "administrator"].includes(role)) {
+  const role = String(context?.role || context?.member?.role || "").trim().toLowerCase().replace(/[_-]+/g, " ");
+  const canView = ["admin", "administrator", "chairperson", "treasurer", "secretary"].includes(role);
+  const canEdit = ["admin", "administrator"].includes(role);
+  if (!canView) {
     window.location.replace("dashboard.html");
     return;
   }
@@ -42,7 +44,9 @@ export async function initGroupSettings() {
   setChecked("loansEnabled", existing?.loans_enabled);
   moduleKeys.forEach(key => setChecked("module-" + key, moduleData?.[key] === true));
 
-  const setBusy = busy => document.querySelectorAll("#existingModulesForm button, #existingModulesForm input, #optionalModulesForm button, #optionalModulesForm input").forEach(node => { node.disabled = busy; });
+  const setBusy = busy => document.querySelectorAll("#existingModulesForm button, #existingModulesForm input, #optionalModulesForm button, #optionalModulesForm input").forEach(node => { node.disabled = busy || !canEdit; });
+  setBusy(false);
+  if (!canEdit) showStatus("View-only access. Only the group Admin can change settings.", true);
 
   byId("existingModulesForm")?.addEventListener("submit", async event => {
     event.preventDefault();
