@@ -2545,6 +2545,25 @@ export async function initMemberDashboard(
     currentGroup?.id ||
     null;
 
+  // Optional-module dashboard cards follow the same flags loaded by member-layout.js.
+  const enabledModules = currentGroup?.modules || {};
+  const hideModuleCard = (href, enabled) => {
+    if (enabled === true) return;
+    document.querySelectorAll('a[href*="' + href + '"]').forEach(link => {
+      const card = link.closest("article");
+      if (card) card.hidden = true;
+    });
+  };
+  hideModuleCard("member-activities.html", enabledModules.plans === true);
+  hideModuleCard("member-assets.html", enabledModules.assets === true);
+  hideModuleCard("member-milestones.html", enabledModules.milestones === true);
+  const plansList = byId("memberPlans");
+  if (plansList?.closest("article") && enabledModules.plans !== true) plansList.closest("article").hidden = true;
+  const assetsList = byId("memberAssets");
+  if (assetsList?.closest("article") && enabledModules.assets !== true) assetsList.closest("article").hidden = true;
+  const activitiesList = byId("memberActivities");
+  if (activitiesList?.closest("article") && enabledModules.plans !== true) activitiesList.closest("article").hidden = true;
+
   memberId =
     currentMember?.id ||
     null;
