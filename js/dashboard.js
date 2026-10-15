@@ -61,11 +61,6 @@ import {
 import { loadGroupLoanSummary } from "./loan-summary.js?v=20261015-role-based-loans1";
 
 
-console.log(
-  "CHAMA LIVE: dashboard.js loaded"
-);
-
-
 /* =========================================================
    STATE
 ========================================================= */
