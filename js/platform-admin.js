@@ -2761,7 +2761,7 @@ async function loadPlatformPageUsage() {
     const sortedPages = [...pageTotals.entries()].sort((a,b) => b[1].visits - a[1].visits || a[0].localeCompare(b[0]));
     const usedPages = sortedPages.filter(([, stats]) => stats.visits > 0);
     const groupRows = [...groupTotals.values()].sort((a,b) => b.visits - a.visits || a.name.localeCompare(b.name));
-    status.textContent = "Showing " + usageDays + "-day usage. A visit is counted when an authorized group page successfully passes its access checks and loads.";
+    status.textContent = "Showing " + usageDays + "-day usage. A visit is counted when a signed-in group page passes its portal access checks.";
 
     const pageHeading = document.createElement("h3");
     pageHeading.textContent = "Most-used pages";
