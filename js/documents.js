@@ -321,7 +321,7 @@ async function submitDocument(event) {
       throw result.error;
     }
     closeSheet(true);
-    showStatus(replacing ? "Document replaced. The previous file is available in Version history." : "Document uploaded. Group members have been notified.", "success");
+    showStatus(replacing ? "Document replaced. Group members have been notified; the previous file is available in Version history." : "Document uploaded. Group members have been notified.", "success");
     await loadData();
   } catch (error) {
     console.error("[CHAMA LIVE] Document upload failed", error);
