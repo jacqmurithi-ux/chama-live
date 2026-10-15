@@ -136,6 +136,7 @@ let cumulativePositions = [];
 let cumulativePositionsComplete = false;
 
 let customContributionStatuses = [];
+let customContributionPeriods = [];
 let customContributionStatusComplete = false;
 let customContributionStatusError = null;
 
@@ -1555,7 +1556,9 @@ async function loadCustomContributionStatuses() {
 
   if (typeError) throw new Error(`Custom contribution types could not be loaded: ${typeError.message}`);
 
-  const customTypeIds = (Array.isArray(customTypes) ? customTypes : []).map(type => type.id);
+  const customTypeRows = Array.isArray(customTypes) ? customTypes : [];
+  const customTypeIds = customTypeRows.map(type => type.id);
+  customContributionPeriods = [];
   if (customTypeIds.length) {
     const { data: activePeriods, error: periodError } = await supabase
       .from("contribution_periods")
@@ -1565,6 +1568,16 @@ async function loadCustomContributionStatuses() {
       .in("status", ["open", "due", "grace"]);
 
     if (periodError) throw new Error(`Active custom contribution periods could not be loaded: ${periodError.message}`);
+
+    const typeById = new Map(customTypeRows.map(type => [String(type.id), type]));
+    customContributionPeriods = (Array.isArray(activePeriods) ? activePeriods : []).map(period => ({
+      periodId: period.id,
+      contributionTypeId: period.contribution_type_id,
+      contributionName: typeById.get(String(period.contribution_type_id))?.name || "Custom Contribution",
+      amount: numberValue(period.amount),
+      dueDate: period.due_date || null,
+      status: period.status
+    }));
 
     for (const period of (Array.isArray(activePeriods) ? activePeriods : [])) {
       const requestId = globalThis.crypto?.randomUUID?.();
@@ -1632,51 +1645,112 @@ async function loadCustomContributionStatuses() {
 }
 
 function renderCustomContributionStatuses() {
-  const container = el("customContributionMemberStatusRows");
-  if (!container) return;
+  const container = el("customContributionStatusCards");
+  const memberRows = el("customContributionMemberStatusRows");
+  if (!container || !memberRows) return;
 
   if (!customContributionStatusComplete) {
     setText("customContributionActiveCount", "—");
-    setText("customContributionPaidCount", "—");
-    setText("customContributionOutstandingCount", "—");
-    setText("customContributionPartialCount", "—");
-    container.innerHTML = `
-      <tr><td colspan="6"><div class="empty-state">
-        <strong>Custom contribution status unavailable</strong>
-        <span>${escapeHtml(customContributionStatusError || "Canonical custom contribution status could not be loaded.")}</span>
-      </div></td></tr>`;
+    container.innerHTML = `<div class="empty-state" role="alert">
+      <strong>Custom contribution status unavailable</strong>
+      <span>${escapeHtml(customContributionStatusError || "Canonical custom contribution status could not be loaded.")}</span>
+    </div>`;
+    memberRows.innerHTML = `<tr><td colspan="6"><div class="empty-state"><strong>Member status unavailable</strong></div></td></tr>`;
     return;
   }
 
-  const rows = customContributionStatuses;
-  const activeCustomPeriods = new Set(
-    activeContributionTypes
-      .filter(row => row?.type === "Custom" && row?.active === true)
-      .map(row => String(row.id || row.key))
-  );
-  setText("customContributionActiveCount", activeCustomPeriods.size);
-  setText("customContributionPaidCount", rows.filter(row => row.status === "paid").length);
-  setText("customContributionOutstandingCount", rows.filter(row => row.status === "outstanding").length);
-  setText("customContributionPartialCount", rows.filter(row => row.status === "partial").length);
+  const periods = Array.isArray(customContributionPeriods) ? customContributionPeriods : [];
+  const rows = Array.isArray(customContributionStatuses) ? customContributionStatuses : [];
+  setText("customContributionActiveCount", periods.length);
 
-  if (!rows.length) {
-    container.innerHTML = `
-      <tr><td colspan="6"><div class="empty-state">
-        <strong>No active custom contribution obligations</strong>
-        <span>No obligations were found for open, due, or grace-period custom contributions.</span>
-      </div></td></tr>`;
+  const countsFor = periodId => {
+    const periodRows = rows.filter(row => String(row.periodId) === String(periodId));
+    return {
+      paid: periodRows.filter(row => row.status === "paid").length,
+      outstanding: periodRows.filter(row => row.status === "outstanding").length,
+      partial: periodRows.filter(row => row.status === "partial").length
+    };
+  };
+
+  const statusLabels = { paid: "Paid", outstanding: "Outstanding", partial: "Partial" };
+  const dialog = el("customContributionStatusDialog");
+  const dialogTitle = el("customContributionStatusDialogTitle");
+  const dialogDescription = el("customContributionStatusDialogDescription");
+
+  document.querySelectorAll("[data-custom-period-status]").forEach(button => {
+    button.onclick = () => {
+      const periodId = button.getAttribute("data-period-id");
+      const status = button.getAttribute("data-custom-period-status");
+      const period = periods.find(item => String(item.periodId) === String(periodId));
+      if (!period || !Object.prototype.hasOwnProperty.call(statusLabels, status)) return;
+
+      const filtered = rows.filter(row =>
+        String(row.periodId) === String(periodId) && row.status === status
+      );
+      if (dialogTitle) dialogTitle.textContent = `${period.contributionName} · ${statusLabels[status]}`;
+      if (dialogDescription) {
+        dialogDescription.textContent = `${filtered.length} member(s) · Due ${period.dueDate ? formatDate(period.dueDate) : "date not set"}`;
+      }
+
+      if (!filtered.length) {
+        memberRows.innerHTML = `<tr><td colspan="6"><div class="empty-state">
+          <strong>No members in this status</strong><span>No member obligations currently match this category.</span>
+        </div></td></tr>`;
+      } else {
+        memberRows.innerHTML = filtered.map(row => `<tr>
+          <td><strong>${escapeHtml(row.memberName)}</strong></td>
+          <td>${escapeHtml(row.contributionName)}${row.dueDate ? `<small class="table-subtext">Due ${escapeHtml(formatDate(row.dueDate))}</small>` : ""}</td>
+          <td>${escapeHtml(money(row.due))}</td>
+          <td>${escapeHtml(money(row.applied))}</td>
+          <td>${escapeHtml(money(row.outstanding))}</td>
+          <td><span class="status-badge status-${escapeHtml(statusClass(row.status))}">${escapeHtml(statusLabels[row.status])}</span></td>
+        </tr>`).join("");
+      }
+
+      if (dialog && typeof dialog.showModal === "function" && !dialog.open) dialog.showModal();
+      else if (dialog) dialog.setAttribute("open", "");
+    };
+  });
+
+  const closeButton = el("customContributionStatusDialogClose");
+  if (closeButton) {
+    closeButton.onclick = () => {
+      if (dialog && typeof dialog.close === "function" && dialog.open) dialog.close();
+      else if (dialog) dialog.removeAttribute("open");
+    };
+  }
+
+  if (!periods.length) {
+    container.innerHTML = `<div class="empty-state">
+      <strong>No active custom contributions</strong>
+      <span>Custom contributions appear here when their period is open, due or in a grace period.</span>
+    </div>`;
+    memberRows.innerHTML = `<tr><td colspan="6"><div class="empty-state"><strong>No active custom contributions</strong></div></td></tr>`;
     return;
   }
 
-  container.innerHTML = rows.map(row => `
-    <tr>
-      <td><strong>${escapeHtml(row.memberName)}</strong></td>
-      <td>${escapeHtml(row.contributionName)}${row.dueDate ? `<small class="table-subtext">Due ${escapeHtml(formatDate(row.dueDate))}</small>` : ""}</td>
-      <td>${escapeHtml(money(row.due))}</td>
-      <td>${escapeHtml(money(row.applied))}</td>
-      <td>${escapeHtml(money(row.outstanding))}</td>
-      <td><span class="status-badge status-${escapeHtml(statusClass(row.status))}">${escapeHtml(row.status[0].toUpperCase() + row.status.slice(1))}</span></td>
-    </tr>`).join("");
+  container.innerHTML = periods.map(period => {
+    const counts = countsFor(period.periodId);
+    const periodRows = rows.filter(row => String(row.periodId) === String(period.periodId));
+    return `<section class="custom-contribution-status-card" aria-label="${escapeHtml(period.contributionName)} payment status">
+      <div>
+        <h3>${escapeHtml(period.contributionName)}</h3>
+        <div class="custom-contribution-status-meta">${escapeHtml(money(period.amount))} per member${period.dueDate ? ` · Due ${escapeHtml(formatDate(period.dueDate))}` : ""}</div>
+      </div>
+      <div class="custom-contribution-status-counts">
+        <button type="button" class="custom-contribution-status-button paid" data-period-id="${escapeHtml(period.periodId)}" data-custom-period-status="paid" aria-haspopup="dialog" aria-controls="customContributionStatusDialog">
+          <span>Paid</span><strong>${counts.paid}</strong>
+        </button>
+        <button type="button" class="custom-contribution-status-button outstanding" data-period-id="${escapeHtml(period.periodId)}" data-custom-period-status="outstanding" aria-haspopup="dialog" aria-controls="customContributionStatusDialog">
+          <span>Outstanding</span><strong>${counts.outstanding}</strong>
+        </button>
+        <button type="button" class="custom-contribution-status-button partial" data-period-id="${escapeHtml(period.periodId)}" data-custom-period-status="partial" aria-haspopup="dialog" aria-controls="customContributionStatusDialog">
+          <span>Partial</span><strong>${counts.partial}</strong>
+        </button>
+      </div>
+      ${periodRows.length ? "" : `<div class="custom-contribution-status-meta">No member status rows returned yet.</div>`}
+    </section>`;
+  }).join("");
 }
 
 
