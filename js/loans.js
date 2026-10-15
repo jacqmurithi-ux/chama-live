@@ -129,8 +129,8 @@ async function loadLoans(){
   if(official&&l.status==="approved"&&allowed("disburse")) actions+='<button class="loan-btn" data-disburse="'+esc(l.id)+'">Disburse</button>';
   const approvalCount=votes.filter(a=>a.decision==="approved").length;
   const shownStatus=l.status==="submitted"&&!memberOnly?"Pending · Approved by "+approvalCount+" of 3":statusLabel(l);
-  const memberCell=memberOnly?"":'<td>'+esc(name)+'</td>';
-  return '<tr>'+memberCell+'<td>KES '+money(l.requested_amount)+'</td><td>'+(l.approved_amount==null?"—":"KES "+money(l.approved_amount))+'</td><td>'+l.period_months+' months</td><td><span class="loan-pill">'+esc(shownStatus)+'</span></td><td>'+esc(l.created_at?new Date(l.created_at).toLocaleDateString():"—")+'</td><td><div class="loan-muted" aria-label="Required office approvals">'+approvalSummary+'</div><div class="loan-actions">'+actions+'</div></td></tr>';
+  const memberCell=memberOnly?"":'<td data-label="Member">'+esc(name)+'</td>';
+  return '<tr>'+memberCell+'<td data-label="Requested">KES '+money(l.requested_amount)+'</td><td data-label="Approved">'+(l.approved_amount==null?"—":"KES "+money(l.approved_amount))+'</td><td data-label="Period">'+l.period_months+' months</td><td data-label="Status"><span class="loan-pill">'+esc(shownStatus)+'</span></td><td data-label="Submitted">'+esc(l.created_at?new Date(l.created_at).toLocaleDateString():"—")+'</td><td data-label="Actions"><div class="loan-muted" aria-label="Required office approvals">'+approvalSummary+'</div><div class="loan-actions">'+actions+'</div></td></tr>';
  }).join("")||'<tr><td colspan="7">No loan applications yet.</td></tr>';
  const overviewLoans=memberPortal?loans.filter(l=>l.member_id===ctx.member.id):loans;
  const outstandingIds=overviewLoans.filter(l=>["active","overdue"].includes(l.status));
@@ -150,6 +150,7 @@ async function loadLoans(){
  $("loanApplyForm").querySelector("button[type=submit]").disabled=!enabled||pending||hasOverdue;
  $("loanApplicationGate").textContent=!enabled?"Loans are not yet available for this group.":pending?"You already have a pending application. Wait for the decision before applying again.":hasOverdue?"You cannot apply while you have an overdue loan. Clear the overdue balance first.":"";
  $("loanViewMode").textContent=memberOnly?"Member view: only your own applications and repayment details.":isAdmin&&!officeSlot?"Admin-only account: you may manage settings but cannot approve or disburse loans without an explicit office.":official?"Official view: group applications and totals.":"";
+ const table=$("loanApplicationsTable");if(table)table.classList.toggle("member-only",memberOnly);
  const header=$("loanRows").closest("table").querySelector("thead th:first-child");if(header)header.style.display=memberOnly?"none":"";
  await loadOfficialSections();
  if(selectedLoan){const fresh=loans.find(l=>l.id===selectedLoan.id);selectedLoan=fresh||null;if(selectedLoan)await showDetail(selectedLoan.id);}
@@ -198,7 +199,7 @@ async function loadOfficialSections(){
   const history=loans.filter(x=>x.member_id===l.member_id&&x.id!==l.id);
   let historyBalance=0;for(const past of history.filter(x=>["active","overdue"].includes(x.status))){const {data:ss}=await supabase.from("loan_repayment_schedule").select("principal_due,interest_due,penalty_due,amount_paid").eq("loan_id",past.id);for(const s of ss||[])historyBalance+=Math.max(0,Number(s.principal_due)+Number(s.interest_due)+Number(s.penalty_due)-Number(s.amount_paid));}
   const guarantor=byId.get(l.guarantor_member_id)?.name|| (l.guarantor_member_id?"Guarantor":"None");
-  return '<tr><td>'+esc(byId.get(l.member_id)?.name||"Member")+'</td><td>KES '+money(l.requested_amount)+'</td><td>'+l.period_months+' months</td><td>'+esc(l.purpose)+'</td><td>'+esc(guarantor)+' ('+esc(l.guarantor_status||"not_required")+')</td><td>'+history.length+' previous loan(s); outstanding KES '+money(historyBalance)+'</td><td><div class="loan-actions"><button class="loan-btn" data-review="approved" data-id="'+esc(l.id)+'">Approve</button><button class="loan-btn secondary" data-review="rejected" data-id="'+esc(l.id)+'">Reject</button><button class="loan-btn secondary" data-detail="'+esc(l.id)+'">View</button></div></td></tr>';
+  return '<tr><td data-label="Applicant">'+esc(byId.get(l.member_id)?.name||"Member")+'</td><td>KES '+money(l.requested_amount)+'</td><td>'+l.period_months+' months</td><td>'+esc(l.purpose)+'</td><td>'+esc(guarantor)+' ('+esc(l.guarantor_status||"not_required")+')</td><td>'+history.length+' previous loan(s); outstanding KES '+money(historyBalance)+'</td><td><div class="loan-actions"><button class="loan-btn" data-review="approved" data-id="'+esc(l.id)+'">Approve</button><button class="loan-btn secondary" data-review="rejected" data-id="'+esc(l.id)+'">Reject</button><button class="loan-btn secondary" data-detail="'+esc(l.id)+'">View</button></div></td></tr>';
  }));
  $("loanReviewRows").innerHTML=reviewRows.join("")||'<tr><td colspan="7">No loans awaiting your office decision.</td></tr>';
 
