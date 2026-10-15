@@ -1248,6 +1248,3 @@ export function clearError(
    READY
 ========================================================= */
 
-console.log(
-  "CHAMA LIVE: auth.js ready"
-);

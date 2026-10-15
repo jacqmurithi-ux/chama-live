@@ -31,9 +31,7 @@
 
 import { supabase } from "./supabase.js";
 
-console.log(
-  "CHAMA LIVE: reset-password.js loaded"
-);
+
 
 
 /* =========================================================
@@ -251,19 +249,8 @@ function getRecoveryCode() {
       "code"
     );
 
-  console.log(
-    "CHAMA LIVE: reset URL inspected",
-    {
-      pathname:
-        url.pathname,
+  
 
-      hasCode:
-        Boolean(code),
-
-      hashPresent:
-        Boolean(window.location.hash)
-    }
-  );
 
   return code;
 }
@@ -375,9 +362,8 @@ async function establishRecoverySession() {
   }
 
 
-  console.log(
-    "CHAMA LIVE: exchanging password recovery code"
-  );
+  
+
 
 
   const {
@@ -432,9 +418,8 @@ async function establishRecoverySession() {
   cleanRecoveryUrl();
 
 
-  console.log(
-    "CHAMA LIVE: password recovery session established"
-  );
+  
+
 
 
   return exchangeData.session;
@@ -452,9 +437,8 @@ async function checkRecoverySession() {
 
     await establishRecoverySession();
 
-    console.log(
-      "CHAMA LIVE: password recovery session ready"
-    );
+    
+
 
   }
 
@@ -619,9 +603,8 @@ async function updatePassword(
     true;
 
 
-  console.log(
-    "CHAMA LIVE: password updated successfully"
-  );
+  
+
 
 }
 
@@ -910,10 +893,8 @@ const {
       session
     ) => {
 
-      console.log(
-        "CHAMA LIVE: auth state changed",
-        event
-      );
+      
+
 
 
       if (
@@ -921,9 +902,8 @@ const {
         "PASSWORD_RECOVERY"
       ) {
 
-        console.log(
-          "CHAMA LIVE: PASSWORD_RECOVERY event received"
-        );
+        
+
 
 
         if (session) {
@@ -953,6 +933,4 @@ checkRecoverySession();
    READY
 ========================================================= */
 
-console.log(
-  "CHAMA LIVE: reset password system ready"
-);
+

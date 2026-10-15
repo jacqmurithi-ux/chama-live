@@ -2588,6 +2588,4 @@ export async function initMemberDashboard(
 }
 
 
-console.log(
-  "CHAMA LIVE member-dashboard.js loaded."
-);
+

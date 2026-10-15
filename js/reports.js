@@ -6384,11 +6384,7 @@ export async function initPage() {
     await loadActiveCustomContributionStatus();
 
     await generateReport();
-
-    console.log(
-      "[Reports] Ready — canonical read-only reporting + visual insights."
-    );
-  } catch (error) {
+} catch (error) {
     console.error(
       "[Reports] Initialization failed:",
       error

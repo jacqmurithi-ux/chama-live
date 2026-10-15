@@ -41,9 +41,7 @@ import {
   getMyMember
 } from "./auth.js";
 
-console.log(
-  "CHAMA LIVE: expenses.js loaded"
-);
+
 
 /* =========================================================
 ELEMENTS
@@ -1044,10 +1042,8 @@ async function createExpense(event) {
         "pending"
     };
 
-    console.log(
-      "CHAMA LIVE: expense insert",
-      payload
-    );
+    
+
 
     const {
       data,
@@ -1074,10 +1070,8 @@ async function createExpense(event) {
       throw error;
     }
 
-    console.log(
-      "CHAMA LIVE: expense created",
-      data
-    );
+    
+
 
     /* =====================================================
        RESET
@@ -1502,19 +1496,8 @@ export async function initPage() {
       );
     }
 
-    console.log(
-      "CHAMA LIVE: expense context",
-      {
-        userId:
-          currentUser.id,
+    
 
-        memberId:
-          currentMember.id,
-
-        groupId:
-          groupId
-      }
-    );
 
     /* =====================================================
        EVENTS
@@ -1554,9 +1537,8 @@ export async function initPage() {
       2000
     );
 
-    console.log(
-      "CHAMA LIVE: expenses initialized"
-    );
+    
+
   }
   catch (error) {
     initialized =
@@ -1583,6 +1565,4 @@ NO AUTO BOOT
 layout.js is the sole page bootloader.
 ========================================================= */
 
-console.log(
-  "CHAMA LIVE: expenses.js ready"
-);
+

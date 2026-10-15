@@ -2065,6 +2065,4 @@ export async function initMemberAccounting(
    MODULE STATUS
 ========================================================= */
 
-console.log(
-  "CHAMA LIVE: member-accounting.js loaded"
-);
+

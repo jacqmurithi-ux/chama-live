@@ -104,9 +104,7 @@ import {
 } from "./auth.js";
 
 
-console.log(
-  "CHAMA LIVE: monthly-closing.js loaded"
-);
+
 
 
 /* =========================================================
@@ -3310,29 +3308,8 @@ export async function initPage() {
     );
 
 
-    console.log(
-      "CHAMA LIVE: monthly closing initialized",
-      {
-        groupId,
+    
 
-        memberId:
-          currentMember.id,
-
-        authenticatedUserId:
-          currentUser.id,
-
-        memberUserId:
-          currentMember.user_id,
-
-        memberAuthUserId:
-          currentMember.auth_user_id,
-
-        periodStatus,
-
-        canonicalMembers:
-          canonicalStatus.length
-      }
-    );
 
   }
 
@@ -3358,6 +3335,4 @@ export const initMonthlyClosing =
   initPage;
 
 
-console.log(
-  "CHAMA LIVE: monthly closing.js ready"
-);
+

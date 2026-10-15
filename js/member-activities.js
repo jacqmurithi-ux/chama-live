@@ -40,9 +40,7 @@ import {
 } from "./auth.js";
 
 
-console.log(
-  "CHAMA LIVE: member-activities.js loaded"
-);
+
 
 
 /* =========================================================
@@ -1345,22 +1343,8 @@ async function initMemberActivities() {
     showContent();
 
 
-    console.log(
-      "CHAMA LIVE: Member Activities ready.",
-      {
-        groupId:
-          state.groupId,
+    
 
-        memberId:
-          state.currentMember?.id,
-
-        activities:
-          state.activities.length,
-
-        plans:
-          state.plans.length
-      }
-    );
 
   }
   catch (error) {
@@ -1402,6 +1386,4 @@ export {
    removed to prevent duplicate context loading and races.
 ========================================================= */
 
-console.log(
-  "CHAMA LIVE: member-activities.js ready"
-);
+

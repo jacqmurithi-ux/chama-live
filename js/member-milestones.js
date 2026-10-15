@@ -945,6 +945,4 @@ export async function initMemberMilestones() {
    MODULE STATUS
 ========================================================= */
 
-console.log(
-  "CHAMA LIVE: member-milestones.js loaded"
-);
+

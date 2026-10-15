@@ -36,9 +36,6 @@ import {
   getMyApplicationContext
 } from "./auth.js";
 
-console.log("CHAMA LIVE: layout.js loaded");
-
-
 /* =========================================================
    STATE
 ========================================================= */

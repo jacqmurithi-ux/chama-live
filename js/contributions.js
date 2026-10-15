@@ -44,9 +44,7 @@ import {
 } from "./auth.js";
 
 
-console.log(
-  "CHAMA LIVE: contributions.js loaded"
-);
+
 
 
 /* =========================================================
@@ -907,14 +905,8 @@ async function refreshCanonicalAccountingThroughMonth(
 
   }
 
-  console.log(
-    "CHAMA LIVE: Canonical group accounting refreshed",
-    {
-      groupId,
-      month,
-      result: data
-    }
-  );
+  
+
 
   return data;
 
@@ -4433,13 +4425,8 @@ async function verifyPaymentEvidence(
     }
 
 
-    console.log(
-      "CHAMA LIVE: Payment evidence verification completed",
-      {
-        evidenceId,
-        result: data
-      }
-    );
+    
+
 
 
     selectedVerifierEvidenceId =
@@ -4647,13 +4634,8 @@ async function rejectPaymentEvidence(
     }
 
 
-    console.log(
-      "CHAMA LIVE: Payment evidence rejection completed",
-      {
-        evidenceId,
-        result: data
-      }
-    );
+    
+
 
 
     selectedVerifierEvidenceId =
@@ -6252,31 +6234,8 @@ async function recordContribution(event) {
     }
 
 
-    console.log(
-      "CHAMA LIVE: Atomic contribution RPC completed",
-      {
-        groupId,
+    
 
-        memberId,
-
-        amount,
-
-        contributionType:
-          isCustomContribution
-            ? customContributionTypeId
-            : "monthly",
-
-        contributionDate,
-
-        paymentMethod,
-
-        idempotencyKey,
-
-        result:
-          data
-
-      }
-    );
 
 
     /* =====================================================
@@ -8308,25 +8267,8 @@ export async function initContributions(
     }
 
 
-    console.log(
-      "CHAMA LIVE: Contributions ready.",
-      {
-        groupId,
+    
 
-        accountingMonth,
-
-        memberId:
-          currentMember?.id ||
-          null,
-
-        role:
-          getCurrentMemberRole(),
-
-        activeCustomContributions:
-          activeCustomContributions.length
-
-      }
-    );
 
   }
   catch (error) {

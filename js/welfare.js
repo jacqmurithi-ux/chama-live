@@ -34,9 +34,7 @@ import {
 } from "./auth.js";
 
 
-console.log(
-  "CHAMA LIVE: welfare.js loaded"
-);
+
 
 
 /* =========================================================
@@ -2088,22 +2086,8 @@ export async function initPage() {
       currentMember.group_id;
 
 
-    console.log(
-      "CHAMA LIVE: Welfare & Support context",
-      {
-        userId:
-          currentUser?.id,
+    
 
-        memberId:
-          currentMember?.id,
-
-        groupId:
-          groupId,
-
-        role:
-          currentMember?.role
-      }
-    );
 
 
     setupEvents();
@@ -2172,6 +2156,4 @@ export const initWelfareWelfare =
    This module exports initPage/initWelfareWelfare only.
 ========================================================= */
 
-console.log(
-  "CHAMA LIVE: welfare.js ready"
-);
+

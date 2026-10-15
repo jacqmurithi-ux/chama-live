@@ -717,6 +717,4 @@ export async function initMemberAssets() {
    MODULE STATUS
 ========================================================= */
 
-console.log(
-  "CHAMA LIVE: member-assets.js loaded"
-);
+

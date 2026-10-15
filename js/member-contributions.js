@@ -41,9 +41,7 @@ import {
 } from "./auth.js";
 
 
-console.log(
-  "CHAMA LIVE: member-contributions.js loaded"
-);
+
 
 
 /* =========================================================
@@ -2359,15 +2357,8 @@ export async function initMemberContributions() {
     showPageContent();
 
 
-    console.log(
-      "CHAMA LIVE: Member Contributions ready.",
-      {
-        groupId,
-        memberId:
-          currentMember.id,
-        accountingMonth
-      }
-    );
+    
+
 
   }
   catch (error) {
@@ -2527,6 +2518,4 @@ else {
 }
 
 
-console.log(
-  "CHAMA LIVE: member-contributions.js loaded"
-);
+
