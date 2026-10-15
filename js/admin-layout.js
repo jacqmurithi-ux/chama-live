@@ -198,7 +198,7 @@ const PAGE_SCRIPTS = {
   ],
 
   "loans.html": [
-    "./loans.js?v=3a9c9c3ce90e89b3b4daa95d035812deeafe6c0f",
+    "./loans.js?v=20261015-member-portal-isolation1",
     "initLoans"
   ],
 
