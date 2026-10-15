@@ -75,7 +75,7 @@ test("account summary separates canonical lifetime allocations and arrears from 
   assert.match(migration, /'totalArrears', greatest\(coalesce\(v_total_due_to_date, 0\) - coalesce\(v_total_allocated, 0\), 0\)/);
   assert.match(migration, /public\.contribution_allocations ca/);
   assert.match(service, /totalAllocated: asNumber\(bundle\.summary\?\.totalAllocated\)/);
-  assert.match(ui, /Total allocated/);
+  assert.match(ui, /Allocated to Monthly Obligations/);
   assert.match(ui, /Total arrears/);
 });
 
