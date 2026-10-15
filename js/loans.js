@@ -150,6 +150,71 @@ async function loadLoans(){
  if(selectedLoan){const fresh=loans.find(l=>l.id===selectedLoan.id);selectedLoan=fresh||null;if(selectedLoan)await showDetail(selectedLoan.id);}
  applyPermissions();
 }
+
+function renderPreview(){
+ const f=$("loanApplyForm").elements;
+ const amount=Number(f.amount.value||0), period=Number(f.period.value||0);
+ const rate=Number(settings?.interest_rate||0), method=settings?.interest_type||"flat";
+ if(!settings||!groupLoansEnabled){$("loanPreview").textContent="Loans are not yet available for this group.";return;}
+ if(amount<=0||period<1){$("loanPreview").textContent="Enter an amount and period to preview the estimated installment, interest and total repayable.";return;}
+ if(amount>Number(settings.max_loan_amount)||period>Number(settings.max_period_months)){
+  $("loanPreview").textContent="Requested amount or period exceeds the group maximum. Maximum KES "+money(settings.max_loan_amount)+" for "+settings.max_period_months+" months.";
+  $("loanApplyForm").querySelector('button[type="submit"]').disabled=true;return;
+ }
+ let installment=0,interest=0;
+ if(method==="flat"){interest=amount*rate/100*period/12;installment=(amount+interest)/period;}
+ else {const monthly=rate/1200;installment=monthly===0?amount/period:amount*monthly/(1-Math.pow(1+monthly,-period));interest=installment*period-amount;}
+ $("loanPreview").textContent="Estimated installment: KES "+money(installment)+" · Total interest: KES "+money(interest)+" · Total repayable: KES "+money(amount+interest)+". Estimates only; the approved terms and schedule are confirmed at disbursement.";
+ const blocked=loans.some(l=>["submitted","approved"].includes(l.status))||loans.some(l=>l.status==="overdue");
+ $("loanApplyForm").querySelector('button[type="submit"]').disabled=blocked;
+}
+for(const field of ["amount","period"]) $("loanApplyForm").elements[field].addEventListener("input",renderPreview);
+
+async function loadGuarantorRequests(){
+ const card=$("loanGuarantorCard");
+ if(!memberOnly){card.classList.add("loan-hidden");return;}
+ card.classList.remove("loan-hidden");
+ const {data,error}=await supabase.from("loan_applications")
+  .select("id,member_id,requested_amount,period_months,purpose,created_at")
+  .eq("group_id",ctx.group.id).eq("guarantor_member_id",ctx.member.id).eq("guarantor_status","pending")
+  .order("created_at",{ascending:false});
+ if(error){$("loanGuarantorRows").innerHTML='<p class="loan-muted">Guarantor requests are unavailable until member-scoped access is enabled.</p>';return;}
+ const byId=new Map(members.map(m=>[m.id,m]));
+ $("loanGuarantorRows").innerHTML=(data||[]).map(l=>'<article class="loan-notification"><strong>'+esc(byId.get(l.member_id)?.name||"Group member")+'</strong><p>KES '+money(l.requested_amount)+' · '+l.period_months+' months</p><p>'+esc(l.purpose)+'</p><div class="loan-actions"><button class="loan-btn" data-guarantor-response="true" data-loan-id="'+esc(l.id)+'">Accept</button><button class="loan-btn secondary" data-guarantor-response="false" data-loan-id="'+esc(l.id)+'">Decline</button></div></article>').join("")||'<p class="loan-muted">No guarantor requests.</p>';
+}
+
+async function loadOfficialSections(){
+ if(!official){applyPermissions();return;}
+ const byId=new Map(members.map(m=>[m.id,m]));
+ const ownApproval=loanApprovals.find(a=>a.approval_slot===officeSlot);
+ const awaiting=officeSlot?loans.filter(l=>l.status==="submitted"&&l.member_id!==ctx.member.id&&!loanApprovals.some(a=>a.loan_id===l.id&&a.approval_slot===officeSlot)): [];
+ $("loanReviewRows").innerHTML=awaiting.map(l=>{
+  const history=loans.filter(x=>x.member_id===l.member_id&&x.id!==l.id);
+  const guarantor=byId.get(l.guarantor_member_id)?.name|| (l.guarantor_member_id?"Guarantor":"None");
+  return '<tr><td>'+esc(byId.get(l.member_id)?.name||"Member")+'</td><td>KES '+money(l.requested_amount)+'</td><td>'+l.period_months+' months</td><td>'+esc(l.purpose)+'</td><td>'+esc(guarantor)+' ('+esc(l.guarantor_status||"not_required")+')</td><td>'+history.length+' previous loan(s); balance details in View</td><td><div class="loan-actions"><button class="loan-btn" data-review="approved" data-id="'+esc(l.id)+'">Approve</button><button class="loan-btn secondary" data-review="rejected" data-id="'+esc(l.id)+'">Reject</button><button class="loan-btn secondary" data-detail="'+esc(l.id)+'">View</button></div></td></tr>';
+ }).join("")||'<tr><td colspan="7">No loans awaiting your office decision.</td></tr>';
+
+ const {data:pending,error:pendingError}=await supabase.from("loan_repayments")
+  .select("id,loan_id,group_id,amount,payment_date,reference,status")
+  .eq("group_id",ctx.group.id).eq("status","pending").order("payment_date");
+ if(pendingError){$("loanPendingRepaymentRows").innerHTML='<tr><td colspan="5">Pending repayments could not be loaded.</td></tr>';}
+ else $("loanPendingRepaymentRows").innerHTML=(pending||[]).map(p=>'<tr><td>'+esc(byId.get(loans.find(l=>l.id===p.loan_id)?.member_id)?.name||"Member")+'</td><td>KES '+money(p.amount)+'</td><td>'+esc(p.payment_date)+'</td><td>'+esc(p.reference||"—")+'</td><td><button class="loan-btn" data-confirm-repayment="'+esc(p.id)+'" '+(allowed("confirm")?"":"disabled")+'>Confirm</button></td></tr>').join("")||'<tr><td colspan="5">No pending repayments.</td></tr>';
+
+ const overdue=loans.filter(l=>l.status==="overdue");
+ $("loanOverdueRows").innerHTML=overdue.map(l=>'<article class="loan-notification"><strong>'+esc(byId.get(l.member_id)?.name||"Member")+'</strong><p>KES '+money(l.approved_amount||l.requested_amount)+' · '+l.period_months+' months · '+esc(l.status)+'</p><div class="loan-actions"><button class="loan-btn secondary" data-detail="'+esc(l.id)+'">View schedule</button><button class="loan-btn" data-send-reminder="'+esc(l.id)+'">Send reminder</button></div></article>').join("")||'<p class="loan-muted">No overdue loans.</p>';
+
+ try{
+  const summary=await rpc("group_loan_summary",{p_group_id:ctx.group.id});
+  const values=[
+   ["Disbursed total",summary.totalDisbursed],["Interest gained",summary.interestGained],
+   ["Members benefited",summary.membersBenefited],["Outstanding",summary.outstandingAmount],
+   ["Active loans",summary.activeLoansCount]
+  ];
+  $("loanGroupSummary").innerHTML=values.map(([label,value])=>'<div class="loan-stat"><small>'+esc(label)+'</small><strong>'+(label==="Members benefited"||label==="Active loans"?String(value??0):"KES "+money(value))+'</strong></div>').join("");
+ }catch(err){$("loanGroupSummary").innerHTML='<p class="loan-muted">Group loan overview is not available: '+esc(err.message)+'</p>';}
+ applyPermissions();
+}
+
 async function exportLoansCsv(){
  if(!allowed("export")){status("View only: you cannot export group loan reports.",true);return;}
  try{
