@@ -2410,6 +2410,7 @@ async function loadPlatformOverview() {
      * review so an unrelated application-list failure cannot hide it.
      */
     await loadPlatformFeedback();
+    await loadPlatformPageUsage();
 
     try {
       await loadPendingApplications();
@@ -2587,6 +2588,205 @@ if (logoutButton) {
     }
   );
 
+}
+
+
+
+/* =========================================================
+   PLATFORM FEATURE / PAGE USAGE
+   ---------------------------------------------------------
+   The RPC authorizes platform-owner access server-side.
+   The browser receives only group/page aggregate counts.
+========================================================= */
+
+const USAGE_PAGE_LABELS = {
+  dashboard: "Dashboard",
+  members: "Members",
+  contributions: "Contributions",
+  expenses: "Expenses",
+  fines: "Fines",
+  reports: "Reports",
+  meetings: "Meetings",
+  documents: "Documents",
+  group_management: "Group Management",
+  group_settings: "Group Settings",
+  loans: "Loans",
+  merry_go_round: "Merry-go-round",
+  my_account: "My Account / Profile",
+  plans: "Plans",
+  activities: "Activities",
+  assets: "Assets",
+  milestones: "Milestones",
+  data_migration: "Data Migration",
+  notifications: "Notifications",
+  group_calendar: "Group Calendar",
+  other: "Other Pages"
+};
+
+let usageDays = 30;
+let usageLoading = false;
+
+function usageCell(row, value, tag = "td") {
+  const cell = document.createElement(tag);
+  cell.textContent = value == null ? "" : String(value);
+  cell.style.cssText = "padding:10px 12px;border-bottom:1px solid #edf2f1;text-align:left;vertical-align:top";
+  return cell;
+}
+
+function usageTable(headers, rows) {
+  const wrap = document.createElement("div");
+  wrap.style.cssText = "overflow-x:auto";
+  const table = document.createElement("table");
+  table.style.cssText = "width:100%;border-collapse:collapse;font-size:13px;min-width:520px";
+  const thead = document.createElement("thead");
+  const headerRow = document.createElement("tr");
+  for (const label of headers) headerRow.appendChild(usageCell(headerRow, label, "th"));
+  thead.appendChild(headerRow);
+  const tbody = document.createElement("tbody");
+  for (const values of rows) {
+    const tr = document.createElement("tr");
+    for (const value of values) tr.appendChild(usageCell(tr, value));
+    tbody.appendChild(tr);
+  }
+  table.append(thead, tbody);
+  wrap.appendChild(table);
+  return wrap;
+}
+
+function usageDate(value) {
+  if (!value) return "No recorded visits";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "Time unavailable" : date.toLocaleString("en-KE", { dateStyle: "medium", timeStyle: "short" });
+}
+
+function ensureUsageSection() {
+  let section = document.getElementById("platformUsageAnalytics");
+  if (section) return section;
+
+  section = document.createElement("section");
+  section.id = "platformUsageAnalytics";
+  section.className = "platform-card";
+  section.style.cssText = "margin-top:20px;padding:20px";
+  const top = document.createElement("div");
+  top.style.cssText = "display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap";
+  const copy = document.createElement("div");
+  const heading = document.createElement("h2");
+  heading.className = "platform-section-title";
+  heading.textContent = "Feature & Page Usage";
+  const description = document.createElement("p");
+  description.textContent = "Group-level page visits and adoption. No member identities or financial details are collected.";
+  description.style.cssText = "margin:-8px 0 14px;color:#667085;font-size:13px";
+  copy.append(heading, description);
+
+  const controls = document.createElement("div");
+  controls.style.cssText = "display:flex;align-items:center;gap:8px;margin-bottom:12px";
+  const label = document.createElement("label");
+  label.htmlFor = "platformUsagePeriod";
+  label.textContent = "Period";
+  const select = document.createElement("select");
+  select.id = "platformUsagePeriod";
+  select.className = "platform-refresh-button";
+  select.style.cssText = "min-height:40px";
+  for (const [value, textLabel] of [[7,"Last 7 days"],[30,"Last 30 days"],[90,"Last 90 days"]]) {
+    const option = document.createElement("option");
+    option.value = String(value);
+    option.textContent = textLabel;
+    if (value === usageDays) option.selected = true;
+    select.appendChild(option);
+  }
+  select.addEventListener("change", () => {
+    usageDays = Number(select.value) || 30;
+    loadPlatformPageUsage();
+  });
+  controls.append(label, select);
+  top.append(copy, controls);
+
+  const status = document.createElement("p");
+  status.id = "platformUsageStatus";
+  status.setAttribute("role", "status");
+  status.style.cssText = "color:#667085;font-size:13px";
+  const content = document.createElement("div");
+  content.id = "platformUsageContent";
+  content.style.cssText = "display:grid;gap:22px";
+  section.append(top, status, content);
+
+  const main = document.querySelector("main") || document.querySelector(".platform-main") || document.body;
+  const feedback = document.getElementById("platformFeedbackInbox");
+  if (feedback && feedback.parentNode === main) main.insertBefore(section, feedback);
+  else main.appendChild(section);
+  return section;
+}
+
+async function loadPlatformPageUsage() {
+  const section = ensureUsageSection();
+  const status = document.getElementById("platformUsageStatus");
+  const content = document.getElementById("platformUsageContent");
+  if (!status || !content || usageLoading) return;
+
+  usageLoading = true;
+  status.textContent = "Loading page usage…";
+  content.replaceChildren();
+  try {
+    const { data, error } = await supabase.rpc("get_platform_page_usage", { p_days: usageDays });
+    if (error) throw error;
+    const rows = Array.isArray(data) ? data : [];
+
+    const pageTotals = new Map();
+    const groupTotals = new Map();
+    for (const row of rows) {
+      const visits = Number(row.view_count || 0);
+      if (!pageTotals.has(row.page_key)) pageTotals.set(row.page_key, { visits: 0, groups: new Set() });
+      const page = pageTotals.get(row.page_key);
+      page.visits += visits;
+      if (visits > 0) page.groups.add(row.group_id);
+
+      if (!groupTotals.has(row.group_id)) {
+        groupTotals.set(row.group_id, { name: row.group_name || "Unnamed group", visits: 0, last: null, pages: new Map() });
+      }
+      const group = groupTotals.get(row.group_id);
+      group.visits += visits;
+      if (row.last_viewed_at && (!group.last || new Date(row.last_viewed_at) > new Date(group.last))) group.last = row.last_viewed_at;
+      if (visits > 0) group.pages.set(row.page_key, (group.pages.get(row.page_key) || 0) + visits);
+    }
+
+    const sortedPages = [...pageTotals.entries()].sort((a,b) => b[1].visits - a[1].visits || a[0].localeCompare(b[0]));
+    const usedPages = sortedPages.filter(([, stats]) => stats.visits > 0);
+    const groupRows = [...groupTotals.values()].sort((a,b) => b.visits - a.visits || a.name.localeCompare(b.name));
+    status.textContent = "Showing " + usageDays + "-day usage. A visit is counted when an authorized group page successfully passes its access checks and loads.";
+
+    const pageHeading = document.createElement("h3");
+    pageHeading.textContent = "Most-used pages";
+    pageHeading.style.cssText = "margin:0;font-size:15px";
+    content.appendChild(pageHeading);
+    if (!usedPages.length) {
+      const empty = document.createElement("p");
+      empty.textContent = "No page visits have been recorded yet. Usage will appear as groups visit pages after the tracker is live.";
+      empty.style.cssText = "color:#667085;font-size:13px";
+      content.appendChild(empty);
+    } else {
+      content.appendChild(usageTable(
+        ["Page / feature", "Visits", "Groups using it"],
+        usedPages.map(([key, stats]) => [USAGE_PAGE_LABELS[key] || key, stats.visits.toLocaleString("en-KE"), stats.groups.size.toLocaleString("en-KE")])
+      ));
+    }
+
+    const groupHeading = document.createElement("h3");
+    groupHeading.textContent = "Usage by group";
+    groupHeading.style.cssText = "margin:0;font-size:15px";
+    content.appendChild(groupHeading);
+    content.appendChild(usageTable(
+      ["Group", "Visits", "Most-used page", "Last visit"],
+      groupRows.map(group => {
+        const topPage = [...group.pages.entries()].sort((a,b) => b[1]-a[1])[0];
+        return [group.name, group.visits.toLocaleString("en-KE"), topPage ? (USAGE_PAGE_LABELS[topPage[0]] || topPage[0]) : "No visits yet", usageDate(group.last)];
+      })
+    ));
+  } catch (error) {
+    console.error("CHAMA LIVE: page usage report could not load.", error);
+    status.textContent = "Page usage report could not be loaded. Confirm the signed-in account has platform-owner access and refresh.";
+  } finally {
+    usageLoading = false;
+  }
 }
 
 
