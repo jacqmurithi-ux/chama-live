@@ -1704,16 +1704,39 @@ function showDocumentMessage(message, isError = false) {
 async function loadMeetingDocuments() {
   if (!selectedMeeting || !groupId || !meetingDocumentList) return;
 
-  const { data, error } = await supabase
-    .from("meeting_documents")
-    .select("id, storage_path, file_name, content_type, size_bytes, created_at")
-    .eq("group_id", groupId)
-    .eq("meeting_id", selectedMeeting.id)
-    .order("created_at", { ascending: false });
+  const [legacyResult, groupDocsResult] = await Promise.all([
+    supabase
+      .from("meeting_documents")
+      .select("id, storage_path, file_name, content_type, size_bytes, created_at")
+      .eq("group_id", groupId)
+      .eq("meeting_id", selectedMeeting.id)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("documents")
+      .select("id, title, storage_path, mime_type, file_size, created_at, updated_at")
+      .eq("group_id", groupId)
+      .eq("meeting_id", selectedMeeting.id)
+      .eq("category", "Minutes")
+      .order("created_at", { ascending: false })
+  ]);
 
-  if (error) throw error;
+  if (legacyResult.error) throw legacyResult.error;
+  if (groupDocsResult.error) throw groupDocsResult.error;
 
-  const files = Array.isArray(data) ? data : [];
+  const legacyFiles = (legacyResult.data || []).map(file => ({...file, source: "legacy"}));
+  const groupFiles = (groupDocsResult.data || []).map(file => ({
+    id: "groupdoc:" + file.id,
+    storage_path: file.storage_path,
+    file_name: file.title,
+    content_type: file.mime_type || "application/octet-stream",
+    size_bytes: file.file_size || 0,
+    created_at: file.updated_at || file.created_at,
+    source: "groupdoc"
+  }));
+  const files = [...groupFiles, ...legacyFiles].sort((a, b) =>
+    new Date(b.created_at || 0) - new Date(a.created_at || 0)
+  );
+
   if (meetingDocumentMeta) {
     meetingDocumentMeta.textContent = files.length
       ? `${files.length} private file${files.length === 1 ? "" : "s"} attached to this meeting.`
@@ -1730,7 +1753,7 @@ async function loadMeetingDocuments() {
           <button type="button" class="btn btn-secondary" data-document-download="${escapeHtml(file.id)}">Download</button>
         </div>
       `).join("")
-    : '<p class="muted">Optionally attach the meeting minutes as a PDF or DOCX file.</p>';
+    : '<p class="muted">Optionally attach the meeting minutes as a PDF or DOCX file, or link a document from the Documents page.</p>';
 }
 
 async function uploadMeetingFiles() {
@@ -1801,6 +1824,34 @@ async function uploadMeetingFiles() {
 async function downloadMeetingFile(documentId) {
   if (!selectedMeeting || !groupId) throw new Error("Select a meeting first.");
 
+  if (String(documentId).startsWith("groupdoc:")) {
+    const sourceId = String(documentId).slice("groupdoc:".length);
+    const { data: fileRecord, error: recordError } = await supabase
+      .from("documents")
+      .select("storage_path, title")
+      .eq("id", sourceId)
+      .eq("group_id", groupId)
+      .eq("meeting_id", selectedMeeting.id)
+      .eq("category", "Minutes")
+      .single();
+
+    if (recordError) throw recordError;
+    const { data, error } = await supabase
+      .storage.from("group-documents")
+      .download(fileRecord.storage_path);
+    if (error) throw error;
+
+    const url = URL.createObjectURL(data);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = fileRecord.title || "meeting-minutes";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
+    return;
+  }
+
   const { data: fileRecord, error: recordError } = await supabase
     .from("meeting_documents")
     .select("storage_path, file_name")
@@ -1826,7 +1877,6 @@ async function downloadMeetingFile(documentId) {
   link.remove();
   setTimeout(() => URL.revokeObjectURL(url), 30000);
 }
-
 
 /* =========================================================
    COMPLETE MEETING + PUBLISH GROUP ANNOUNCEMENT
