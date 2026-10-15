@@ -70,6 +70,9 @@ const recordContributionCard =
 const memberSelect =
   document.getElementById("member");
 
+const memberSearchInput =
+  document.getElementById("memberSearch");
+
 const amountInput =
   document.getElementById("amount");
 
@@ -2722,96 +2725,94 @@ function updateContributionAmountFromType() {
 ========================================================= */
 
 
+function getMemberNumber(member) {
+  return String(
+    member?.member_number ||
+    member?.membership_number ||
+    ""
+  ).trim();
+}
+
+
+function renderMemberOptions() {
+  if (!memberSelect) return;
+
+  const query = String(memberSearchInput?.value || "")
+    .trim()
+    .toLocaleLowerCase();
+
+  const matches = !query
+    ? members
+    : members.filter(member => {
+        const searchable = [
+          member.id,
+          member.member_number,
+          member.membership_number,
+          member.name
+        ].map(value => String(value || "").toLocaleLowerCase());
+
+        return searchable.some(value => value.includes(query));
+      });
+
+  const selectedId = String(memberSelect.value || "");
+  const selectedMember = members.find(
+    member => String(member.id) === selectedId
+  );
+  const visibleMembers = selectedMember &&
+    !matches.some(member => String(member.id) === selectedId)
+      ? [selectedMember, ...matches]
+      : matches;
+
+  memberSelect.innerHTML = "";
+
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = query && !matches.length
+    ? "No matching members — adjust your search"
+    : "Select member";
+  memberSelect.appendChild(placeholder);
+
+  visibleMembers.forEach(member => {
+    const option = document.createElement("option");
+    option.value = member.id;
+
+    const number = getMemberNumber(member);
+    option.textContent = number
+      ? `${member.name} — Member No. ${number}`
+      : member.name;
+
+    memberSelect.appendChild(option);
+  });
+
+  memberSelect.value = selectedId;
+}
+
+
 async function loadMembers() {
+  const { data, error } = await supabase
+    .from("members")
+    .select(`
+      id,
+      name,
+      member_number,
+      membership_number,
+      status
+    `)
+    .eq("group_id", groupId)
+    .order("name", { ascending: true });
 
-  const {
-    data,
-    error
-  } =
-    await supabase
-      .from("members")
-      .select(
-        `
-          id,
-          name,
-          status
-        `
-      )
-      .eq(
-        "group_id",
-        groupId
-      )
-      .order(
-        "name",
-        {
-          ascending: true
-        }
-      );
-
-
-  if (error) {
-
-    throw error;
-
-  }
-
+  if (error) throw error;
 
   /*
-   * Keep all active members available.
-   * Backend authorization remains authoritative.
+   * Keep the existing group-scoped active-member list.
+   * Search only filters the options shown in the selector;
+   * it does not change group context or accounting behavior.
    */
-  members =
-    (data || [])
-      .filter(
-        member =>
-          String(
-            member.status ||
-            "active"
-          )
-            .trim()
-            .toLowerCase() ===
-          "active"
-      );
-
-
-  if (!memberSelect) {
-    return;
-  }
-
-
-  memberSelect.innerHTML = `
-
-    <option value="">
-      Select member
-    </option>
-
-  `;
-
-
-  members.forEach(
-    member => {
-
-      const option =
-        document.createElement(
-          "option"
-        );
-
-
-      option.value =
-        member.id;
-
-
-      option.textContent =
-        member.name;
-
-
-      memberSelect.appendChild(
-        option
-      );
-
-    }
+  members = (data || []).filter(member =>
+    String(member.status || "active").trim().toLowerCase() === "active"
   );
 
+  renderMemberOptions();
 }
 
 
@@ -8389,6 +8390,29 @@ if (
     }
   );
 
+}
+
+/* =========================================================
+   MEMBER SEARCH
+========================================================= */
+
+if (
+  memberSearchInput &&
+  !memberSearchInput.dataset.clMemberSearchBound
+) {
+  memberSearchInput.dataset.clMemberSearchBound = "true";
+  memberSearchInput.addEventListener("input", renderMemberOptions);
+}
+
+if (
+  memberSelect &&
+  !memberSelect.dataset.clMemberSelectBound
+) {
+  memberSelect.dataset.clMemberSelectBound = "true";
+  memberSelect.addEventListener("change", () => {
+    // Keep the chosen member visible while the search is edited.
+    renderMemberOptions();
+  });
 }
 
 /* =========================================================
