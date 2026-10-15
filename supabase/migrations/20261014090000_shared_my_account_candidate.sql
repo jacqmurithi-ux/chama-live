@@ -136,7 +136,7 @@ begin
       limit 1
     );
 
-  select coalesce(jsonb_agg(to_jsonb(c) order by c.contribution_date desc nulls last, c.created_at desc), '[]'::jsonb)
+  select coalesce(jsonb_agg(to_jsonb(c) order by c.payment_date desc nulls last, c.created_at desc), '[]'::jsonb)
   into v_contributions
   from (
     select c.id, c.contribution_date as payment_date, c.amount, c.contribution_type,
