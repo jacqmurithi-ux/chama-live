@@ -694,7 +694,8 @@
       background: #12b76a;
     }
 
-    .cumulative-credit-amount::before { background: #f04438; }
+    .cumulative-arrears-amount::before { background: #f04438; }
+    .cumulative-credit-amount::before { background: #2e90fa; }
 
     .cumulative-amount-tile .monthly-status-label {
       font-size: 12px;
@@ -709,12 +710,12 @@
       overflow-wrap: anywhere;
     }
 
-    .cumulative-arrears-amount { border-left-color: #12b76a; }
-    .cumulative-arrears-amount .monthly-status-label { color: #087443; }
-    .cumulative-arrears-amount strong { color: #087443; }
-    .cumulative-credit-amount { border-left-color: #f04438; }
-    .cumulative-credit-amount .monthly-status-label { color: #b42318; }
-    .cumulative-credit-amount strong { color: #b42318; }
+    .cumulative-arrears-amount { border-left-color: #f04438; }
+    .cumulative-arrears-amount .monthly-status-label { color: #b42318; }
+    .cumulative-arrears-amount strong { color: #b42318; }
+    .cumulative-credit-amount { border-left-color: #2e90fa; }
+    .cumulative-credit-amount .monthly-status-label { color: #175cd3; }
+    .cumulative-credit-amount strong { color: #175cd3; }
 
     .cumulative-position-grid {
       display: grid;
@@ -1512,6 +1513,13 @@
         gap: 10px;
         padding: 12px;
       }
+      /* Mobile order: all three member counts first, then the two totals. */
+      .cumulative-status-column { display: contents; }
+      .cumulative-status-summary [data-cumulative-filter="UP_TO_DATE"] { order: 1; }
+      .cumulative-status-summary [data-cumulative-filter="ARREARS"] { order: 2; }
+      .cumulative-status-summary [data-cumulative-filter="CREDIT"] { order: 3; }
+      .cumulative-status-summary .cumulative-arrears-amount { order: 4; }
+      .cumulative-status-summary .cumulative-credit-amount { order: 5; }
       .cumulative-amount-tile { min-height: 82px; padding: 12px 14px; }
       .cumulative-status-column .monthly-status-tile { min-height: 118px; }
       .monthly-status-summary { grid-template-columns: 1fr; gap: 10px; }
