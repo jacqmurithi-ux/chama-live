@@ -93,16 +93,19 @@ function renderBundle() {
     summaryCard("Fines outstanding", money(s.finesOutstanding))
   ].join("");
   const allocation = bundle.allocationBreakdown;
-  el("myAccountAllocationTypes").innerHTML = allocation.allocationsByType.length
-    ? allocation.allocationsByType.map(row => `<div class="account-allocation-row"><span>${escapeAccountHtml(row.contributionType)}</span><strong>${escapeAccountHtml(money(row.allocatedAmount))}</strong></div>`).join("")
-    : '<p class="account-muted">No allocations to contribution obligations are recorded yet.</p>';
-  el("myAccountAllocationTotals").innerHTML = [
+  const allocationAvailable = allocation.available === true;
+  el("myAccountAllocationTypes").innerHTML = !allocationAvailable
+    ? '<p class="account-muted">The contribution-type breakdown is temporarily unavailable. Existing account figures remain unchanged.</p>'
+    : allocation.allocationsByType.length
+      ? allocation.allocationsByType.map(row => `<div class="account-allocation-row"><span>${escapeAccountHtml(row.contributionType)}</span><strong>${escapeAccountHtml(money(row.allocatedAmount))}</strong></div>`).join("")
+      : '<p class="account-muted">No allocations to contribution obligations are recorded yet.</p>';
+  el("myAccountAllocationTotals").innerHTML = allocationAvailable ? [
     summaryCard("Total allocated across all types", money(allocation.totalAllocatedAcrossTypes)),
     summaryCard("Unallocated recognized contributions", money(allocation.unallocatedAmount))
-  ].join("");
+  ].join("") : "";
   const allocationNote = el("myAccountAllocationNote");
-  allocationNote.hidden = !allocation.allocationExceedsRecognized;
-  allocationNote.textContent = allocation.allocationExceedsRecognized
+  allocationNote.hidden = !allocationAvailable || !allocation.allocationExceedsRecognized;
+  allocationNote.textContent = allocationAvailable && allocation.allocationExceedsRecognized
     ? "The recorded allocations exceed recognized contributions. Please ask an authorized group official to review the accounting records; this page has not changed them."
     : "";
 
