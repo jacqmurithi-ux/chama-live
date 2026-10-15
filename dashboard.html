@@ -650,19 +650,59 @@
     }
 
     .cumulative-status-summary {
-      padding: 16px 16px 0;
-    }
-
-    .cumulative-amount-summary {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      align-items: start;
+      gap: 14px;
       padding: 16px;
     }
 
-    .cumulative-amount-summary .cumulative-position-stat {
-      min-height: 76px;
+    .cumulative-status-column {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-width: 0;
     }
+
+    .cumulative-status-column .monthly-status-tile {
+      min-height: 132px;
+    }
+
+    .cumulative-amount-tile {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 7px;
+      min-width: 0;
+      min-height: 94px;
+      padding: 15px 18px;
+      border: 1px solid var(--dashboard-border);
+      border-left: 5px solid #12b76a;
+      border-radius: var(--dashboard-radius);
+      background: #fff;
+      box-shadow: 0 1px 2px rgba(16,24,40,.03);
+    }
+
+    .cumulative-amount-tile .monthly-status-label {
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .cumulative-amount-tile strong {
+      font-size: clamp(20px, 2.4vw, 27px);
+      line-height: 1.1;
+      font-weight: 850;
+      font-variant-numeric: tabular-nums;
+      overflow-wrap: anywhere;
+    }
+
+    .cumulative-arrears-amount { border-left-color: #12b76a; }
+    .cumulative-arrears-amount .monthly-status-label { color: #087443; }
+    .cumulative-arrears-amount strong { color: #087443; }
+    .cumulative-credit-amount { border-left-color: #f04438; }
+    .cumulative-credit-amount .monthly-status-label { color: #b42318; }
+    .cumulative-credit-amount strong { color: #b42318; }
 
     .cumulative-position-grid {
       display: grid;
@@ -750,11 +790,11 @@
     }
 
     .cumulative-position-stat:nth-child(4)::before {
-      background: var(--status-arrears);
+      background: #12b76a;
     }
 
     .cumulative-position-stat:nth-child(5)::before {
-      background: var(--status-credit);
+      background: #f04438;
     }
 
     .cumulative-position-stat span {
@@ -778,15 +818,10 @@
       color: var(--status-up-to-date);
     }
 
-    #cumulativeArrearsCount,
-    #cumulativeArrearsAmount {
-      color: var(--status-arrears);
-    }
-
-    #cumulativeCreditCount,
-    #cumulativeCreditAmount {
-      color: var(--status-credit);
-    }
+    #cumulativeArrearsCount { color: var(--status-arrears); }
+    #cumulativeCreditCount { color: var(--status-credit); }
+    #cumulativeArrearsAmount { color: #087443; }
+    #cumulativeCreditAmount { color: #b42318; }
 
     .cumulative-summary-note {
       margin: 0;
@@ -1327,6 +1362,7 @@
       .cumulative-position-stat strong {
         font-size: 18px;
       }
+      .cumulative-amount-tile strong { font-size: 21px; }
 
       .operations-grid {
         gap: 8px;
@@ -1459,9 +1495,13 @@
     .monthly-status-dialog-header p { margin: 5px 0 0; color: var(--dashboard-muted); font-size: 13px; }
     .monthly-status-dialog .table-wrap { max-height: 62vh; overflow: auto; }
     @media (max-width: 640px) {
-      .cumulative-status-summary { padding: 12px 12px 0; }
-      .cumulative-amount-summary { padding: 12px; gap: 8px; }
-      .cumulative-amount-summary .cumulative-position-stat { padding: 11px; }
+      .cumulative-status-summary {
+        grid-template-columns: 1fr;
+        gap: 10px;
+        padding: 12px;
+      }
+      .cumulative-amount-tile { min-height: 82px; padding: 12px 14px; }
+      .cumulative-status-column .monthly-status-tile { min-height: 118px; }
       .monthly-status-summary { grid-template-columns: 1fr; gap: 10px; }
       .monthly-status-tile { min-height: 96px; padding: 14px 16px; }
       .monthly-status-dialog { padding: 14px; }
@@ -2265,31 +2305,35 @@
           class="cumulative-position-card"
         >
 
-          <div class="cumulative-status-summary monthly-status-summary">
-            <button type="button" class="monthly-status-tile monthly-status-up-to-date" data-cumulative-filter="UP_TO_DATE" aria-label="Review members up to date">
-              <span class="monthly-status-label">Members Up to Date</span>
-              <strong id="cumulativeUpToDateCount">0</strong>
-              <span class="monthly-status-hint">Click to review names</span>
-            </button>
-            <button type="button" class="monthly-status-tile monthly-status-outstanding" data-cumulative-filter="ARREARS" aria-label="Review members in arrears">
-              <span class="monthly-status-label">Members in Arrears</span>
-              <strong id="cumulativeArrearsCount">0</strong>
-              <span class="monthly-status-hint">Click to review names</span>
-            </button>
-            <button type="button" class="monthly-status-tile monthly-status-credit" data-cumulative-filter="CREDIT" aria-label="Review members with credit">
-              <span class="monthly-status-label">Members with Credit</span>
-              <strong id="cumulativeCreditCount">0</strong>
-              <span class="monthly-status-hint">Click to review names</span>
-            </button>
-          </div>
-          <div class="cumulative-amount-summary">
-            <div class="cumulative-position-stat" aria-label="Cumulative arrears">
-              <span>Cumulative Arrears</span>
-              <strong id="cumulativeArrearsAmount" class="amount-negative">KSh 0</strong>
+          <div class="cumulative-status-summary">
+            <div class="cumulative-status-column">
+              <button type="button" class="monthly-status-tile monthly-status-up-to-date" data-cumulative-filter="UP_TO_DATE" aria-label="Review members up to date">
+                <span class="monthly-status-label">Members Up to Date</span>
+                <strong id="cumulativeUpToDateCount">0</strong>
+                <span class="monthly-status-hint">Click to review names</span>
+              </button>
             </div>
-            <div class="cumulative-position-stat" aria-label="Cumulative credit">
-              <span>Cumulative Credit</span>
-              <strong id="cumulativeCreditAmount" class="amount-positive">KSh 0</strong>
+            <div class="cumulative-status-column">
+              <button type="button" class="monthly-status-tile monthly-status-outstanding" data-cumulative-filter="ARREARS" aria-label="Review members in arrears">
+                <span class="monthly-status-label">Members in Arrears</span>
+                <strong id="cumulativeArrearsCount">0</strong>
+                <span class="monthly-status-hint">Click to review names</span>
+              </button>
+              <div class="cumulative-amount-tile cumulative-arrears-amount" aria-label="Cumulative arrears amount">
+                <span class="monthly-status-label">Cumulative Arrears</span>
+                <strong id="cumulativeArrearsAmount" class="amount-negative">KSh 0</strong>
+              </div>
+            </div>
+            <div class="cumulative-status-column">
+              <button type="button" class="monthly-status-tile monthly-status-credit" data-cumulative-filter="CREDIT" aria-label="Review members with credit">
+                <span class="monthly-status-label">Members with Credit</span>
+                <strong id="cumulativeCreditCount">0</strong>
+                <span class="monthly-status-hint">Click to review names</span>
+              </button>
+              <div class="cumulative-amount-tile cumulative-credit-amount" aria-label="Cumulative credit amount">
+                <span class="monthly-status-label">Cumulative Credit</span>
+                <strong id="cumulativeCreditAmount" class="amount-positive">KSh 0</strong>
+              </div>
             </div>
           </div>
 
