@@ -3694,10 +3694,10 @@ function renderCumulativePosition() {
         <td colspan="7">
           <div class="empty-state">
             <strong>
-              No members in this status
+              No group members
             </strong>
             <span>
-              No cumulative accounting positions match this filter.
+              No cumulative accounting positions were returned.
             </span>
           </div>
         </td>
@@ -3733,6 +3733,21 @@ function renderCumulativePosition() {
             )
           )
       );
+
+
+  if (!positions.length) {
+    container.innerHTML = `
+      <tr>
+        <td colspan="7">
+          <div class="empty-state">
+            <strong>No members in this status</strong>
+            <span>There are currently no members in the selected cumulative status.</span>
+          </div>
+        </td>
+      </tr>
+    `;
+    return;
+  }
 
 
   container.innerHTML =
