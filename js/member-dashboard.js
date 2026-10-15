@@ -1795,13 +1795,17 @@ async function loadRecentAnnouncements() {
     return;
   }
 
-  container.innerHTML = rows.map(item => `
-    <article class="member-dashboard-list-item" style="display:block;padding:14px 0;border-bottom:1px solid #e2e8f0">
-      <strong>${escapeHtml(item.title || "Group announcement")}</strong>
-      <small style="display:block;margin:5px 0 8px">${escapeHtml(formatDate(item.created_at))}</small>
-      <div style="white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.55">${escapeHtml(item.body || "")}</div>
-    </article>
-  `).join("");
+  container.innerHTML = rows.map(item => {
+    const isDocumentNotice = /^(new group document:|document updated:)/i.test(String(item.title || ""));
+    return `
+      <article class="member-dashboard-list-item" style="display:block;padding:14px 0;border-bottom:1px solid #e2e8f0">
+        <strong>${escapeHtml(item.title || "Group announcement")}</strong>
+        <small style="display:block;margin:5px 0 8px">${escapeHtml(formatDate(item.created_at))}</small>
+        <div style="white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.55">${escapeHtml(item.body || "")}</div>
+        ${isDocumentNotice ? '<p style="margin:10px 0 0"><a class="member-button secondary" href="documents.html?portal=member">Open Documents</a></p>' : ""}
+      </article>
+    `;
+  }).join("");
 }
 
 /* =========================================================
