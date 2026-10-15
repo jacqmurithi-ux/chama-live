@@ -257,6 +257,18 @@
       font-size: 13px;
     }
 
+    .member-search-help {
+      display: block;
+      margin-top: 6px;
+      color: #64748b;
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    #contributionForm input[type="search"] {
+      appearance: none;
+    }
+
     #contributionForm textarea,
     #customContributionForm textarea,
     #memberPaymentEvidenceForm textarea {
@@ -2175,6 +2187,27 @@
         id="contributionForm"
         novalidate
        data-permission-page="contributions" data-permission-action="record">
+
+        <div class="form-group">
+
+          <label for="memberSearch">
+            Find member by ID or member number
+          </label>
+
+          <input
+            id="memberSearch"
+            name="memberSearch"
+            type="search"
+            placeholder="Enter member ID, member number, or name"
+            autocomplete="off"
+            aria-describedby="memberSearchHelp"
+          >
+
+          <small id="memberSearchHelp" class="member-search-help">
+            Search to narrow the list, then select the member below. You can also use the full member list.
+          </small>
+
+        </div>
 
         <div class="form-group">
 
