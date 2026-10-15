@@ -78,7 +78,13 @@ function renderItems(container, statuses) {
 
 async function deriveStatuses(groupId, group) {
   const statuses = Object.create(null);
-  const profile = group || {};
+  const { data: liveGroup, error: groupError } = await supabase
+    .from("groups")
+    .select("id,name,category,country,phone,email,monthly_contribution,modules,merry_go_round_enabled,loans_enabled")
+    .eq("id", groupId)
+    .single();
+  if (groupError) throw groupError;
+  const profile = liveGroup || group || {};
   statuses.profile = Boolean(
     String(profile.name || "").trim() &&
     String(profile.category || "").trim() &&
