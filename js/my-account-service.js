@@ -14,12 +14,17 @@ export async function loadMyAccountBundle() {
     throw new Error("Your personal member account could not be resolved. Please contact your group administrator; no duplicate account has been created.");
   }
   const { data: allocationData, error: allocationError } = await supabase.rpc("cl_get_my_account_allocation_breakdown");
-  if (allocationError) throw allocationError;
   const allocationBreakdown = Array.isArray(allocationData) ? allocationData[0] : allocationData;
-  if (!allocationBreakdown || !Array.isArray(allocationBreakdown.allocationsByType)) {
-    throw new Error("Your contribution allocation breakdown is not available yet. Please try again later.");
+  if (allocationError || !allocationBreakdown || !Array.isArray(allocationBreakdown.allocationsByType)) {
+    // Keep the existing account usable before the additive read-only RPC is deployed.
+    // Never substitute zeroes for an unavailable breakdown.
+    console.warn("My Account allocation breakdown unavailable", allocationError || "Invalid response");
+    return normalizeBundle({
+      ...bundle,
+      allocationBreakdown: { available: false, allocationsByType: [] }
+    });
   }
-  return normalizeBundle({ ...bundle, allocationBreakdown });
+  return normalizeBundle({ ...bundle, allocationBreakdown: { ...allocationBreakdown, available: true } });
 }
 
 export async function uploadMyPaymentProof(file, bundle) {
@@ -81,6 +86,7 @@ function normalizeBundle(bundle) {
     member: bundle.member || {},
     allocationBreakdown: {
       ...bundle.allocationBreakdown,
+      available: bundle.allocationBreakdown?.available === true,
       recognizedContributions: asNumber(bundle.allocationBreakdown?.recognizedContributions),
       totalAllocatedAcrossTypes: asNumber(bundle.allocationBreakdown?.totalAllocatedAcrossTypes),
       unallocatedAmount: asNumber(bundle.allocationBreakdown?.unallocatedAmount),
