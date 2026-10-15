@@ -168,7 +168,7 @@ const ADMIN_PAGES = new Set([
 const PAGE_SCRIPTS = {
 
   "dashboard.html": [
-    "./dashboard.js?v=20261015-monthly-closing-date1",
+    "./dashboard.js?v=20261015-custom-contribution-name1",
     "initDashboard"
   ],
 
