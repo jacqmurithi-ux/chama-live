@@ -828,7 +828,10 @@ function renderDetails() {
     detailsCard.hidden = true;
     detailsCard.classList.remove("is-visible");
     if (meetingAttendance) meetingAttendance.hidden = true;
-    if (meetingDocumentPanel) meetingDocumentPanel.hidden = true;
+    if (meetingDocumentPanel) {
+      meetingDocumentPanel.hidden = true;
+      meetingDocumentPanel.classList.remove("is-visible");
+    }
     if (meetingRsvpSummary) meetingRsvpSummary.hidden = true;
     return;
   }
@@ -909,7 +912,10 @@ function renderDetails() {
   detailsCard.hidden = false;
   detailsCard.classList.add("is-visible");
   if (meetingAttendance) meetingAttendance.hidden = false;
-  if (meetingDocumentPanel) meetingDocumentPanel.hidden = false;
+  if (meetingDocumentPanel) {
+    meetingDocumentPanel.hidden = false;
+    meetingDocumentPanel.classList.add("is-visible");
+  }
 
   if (completeMeeting) {
     completeMeeting.hidden = status !== "upcoming";
