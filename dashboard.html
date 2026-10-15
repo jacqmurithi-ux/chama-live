@@ -2248,18 +2248,21 @@
         >
 
           <div class="cumulative-position-grid">
-            <div class="cumulative-position-stat" aria-label="Members up to date">
+            <button type="button" class="cumulative-position-stat cumulative-filter-button" data-cumulative-filter="UP_TO_DATE" aria-label="Review members up to date">
               <span>Members Up to Date</span>
               <strong id="cumulativeUpToDateCount">0</strong>
-            </div>
-            <div class="cumulative-position-stat" aria-label="Members in arrears">
+              <small>Click to review names</small>
+            </button>
+            <button type="button" class="cumulative-position-stat cumulative-filter-button" data-cumulative-filter="ARREARS" aria-label="Review members in arrears">
               <span>Members in Arrears</span>
               <strong id="cumulativeArrearsCount">0</strong>
-            </div>
-            <div class="cumulative-position-stat" aria-label="Members with credit">
+              <small>Click to review names</small>
+            </button>
+            <button type="button" class="cumulative-position-stat cumulative-filter-button" data-cumulative-filter="CREDIT" aria-label="Review members with credit">
               <span>Members with Credit</span>
               <strong id="cumulativeCreditCount">0</strong>
-            </div>
+              <small>Click to review names</small>
+            </button>
             <div class="cumulative-position-stat" aria-label="Cumulative arrears">
               <span>Cumulative Arrears</span>
               <strong id="cumulativeArrearsAmount" class="amount-negative">KSh 0</strong>
@@ -2272,9 +2275,33 @@
 
 
 
-          <p class="cumulative-summary-note">Summary only. Open the dedicated group accounting or reports page to review individual member positions.</p>
-
         </article>
+
+        <dialog id="cumulativeMemberDialog" class="monthly-status-dialog" aria-labelledby="cumulativeMemberDialogTitle">
+          <div class="monthly-status-dialog-header">
+            <div>
+              <h3 id="cumulativeMemberDialogTitle">Cumulative member positions</h3>
+              <p id="cumulativeMemberDialogDescription">Members in the selected status.</p>
+            </div>
+            <button type="button" id="cumulativeMemberDialogClose" class="btn" aria-label="Close member list">Close</button>
+          </div>
+          <div class="table-wrap">
+            <table class="dashboard-table">
+              <thead><tr>
+                <th scope="col">Member</th>
+                <th scope="col">Total Paid</th>
+                <th scope="col">Total Due</th>
+                <th scope="col">Allocated</th>
+                <th scope="col">Arrears</th>
+                <th scope="col">Credit</th>
+                <th scope="col">Status</th>
+              </tr></thead>
+              <tbody id="cumulativeMemberDialogRows">
+                <tr><td colspan="7"><div class="empty-state"><strong>Select a status to view members</strong></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </dialog>
 
       </section>
 
