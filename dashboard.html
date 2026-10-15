@@ -2240,15 +2240,15 @@
         >
 
           <div class="cumulative-position-grid">
-            <button type="button" class="cumulative-position-stat cumulative-filter-button" data-cumulative-filter="UP_TO_DATE" aria-label="Show members up to date">
+            <div class="cumulative-position-stat" aria-label="Members up to date">
               <span>Members Up to Date</span>
               <strong id="cumulativeUpToDateCount">0</strong>
             </button>
-            <button type="button" class="cumulative-position-stat cumulative-filter-button" data-cumulative-filter="ARREARS" aria-label="Show members in arrears">
+            <div class="cumulative-position-stat" aria-label="Members in arrears">
               <span>Members in Arrears</span>
               <strong id="cumulativeArrearsCount">0</strong>
             </button>
-            <button type="button" class="cumulative-position-stat cumulative-filter-button" data-cumulative-filter="CREDIT" aria-label="Show members with credit">
+            <div class="cumulative-position-stat" aria-label="Members with credit">
               <span>Members with Credit</span>
               <strong id="cumulativeCreditCount">0</strong>
             </button>
@@ -2262,81 +2262,9 @@
             </div>
           </div>
 
-          <div class="cumulative-filter-toolbar">
-            <span id="cumulativeFilterLabel" aria-live="polite">Showing all member positions</span>
-            <button type="button" id="cumulativeShowAll" class="btn" hidden>Show all members</button>
-          </div>
-
-          <div class="table-wrap">
-
-            <table class="cumulative-position-table">
-
-              <thead>
-
-                <tr>
-
-                  <th scope="col">
-                    Member
-                  </th>
-
-                  <th scope="col">
-                    Total Paid (All Types)
-                  </th>
-
-                  <th scope="col">
-                    Total Due (Monthly)
-                  </th>
-
-                  <th scope="col">
-                    Total Allocated (Monthly)
-                  </th>
-
-                  <th scope="col">
-                    Arrears (Monthly)
-                  </th>
-
-                  <th scope="col">
-                    Credit (Monthly)
-                  </th>
-
-                  <th scope="col">
-                    Cumulative Status
-                  </th>
-
-                </tr>
-
-              </thead>
 
 
-              <tbody id="cumulativePositionRows">
-
-                <tr>
-
-                  <td colspan="7">
-
-                    <div class="empty-state">
-
-                      <strong>
-                        Loading cumulative position...
-                      </strong>
-
-                      <span>
-                        Lifetime accounting position is being
-                        calculated from the canonical accounting
-                        function.
-                      </span>
-
-                    </div>
-
-                  </td>
-
-                </tr>
-
-              </tbody>
-
-            </table>
-
-          </div>
+          <p class="cumulative-summary-note">Summary only. Open the dedicated group accounting or reports page to review individual member positions.</p>
 
         </article>
 
