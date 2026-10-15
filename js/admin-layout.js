@@ -83,6 +83,7 @@ import {
 import { applyRolePermissions } from "./role-permissions.js?v=loan-export-policy-20261013";
 import { supabase } from "./supabase.js";
 import { initFeedbackButton } from "./feedback.js";
+import { initOnboardingChecklist } from "./onboarding-checklist.js";
 
 
 /* =========================================================
@@ -2408,6 +2409,10 @@ export async function boot() {
 
 
     await loadCurrentPageFeature();
+
+    if (page === "dashboard.html") {
+      await initOnboardingChecklist(context);
+    }
 
     /*
      * Apply the shared candidate permission contract after the
