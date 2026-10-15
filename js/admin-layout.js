@@ -546,7 +546,7 @@ const NAVIGATION_GROUPS = [
   [
     "Account",
     [
-      ["admin-my-account.html", "View My Account"]
+      ["member-my-account.html", "View My Account"]
     ]
   ]
 
@@ -2234,6 +2234,14 @@ export async function boot() {
 
     const page =
       getCurrentPage();
+
+
+    // The admin's personal account belongs to the self-only Member Portal.
+    // Keep the legacy URL working, but never render the admin navigation on it.
+    if (page === "admin-my-account.html") {
+      window.location.replace("member-my-account.html");
+      return;
+    }
 
 
     stage =
