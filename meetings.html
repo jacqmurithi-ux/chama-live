@@ -513,6 +513,25 @@
       background: #fff;
     }
 
+    .meeting-file-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 12px 0;
+      border-bottom: 1px solid #eaecf0;
+    }
+
+    .meeting-file-row:last-child {
+      border-bottom: 0;
+    }
+
+    #meetingLifecycleControls textarea {
+      margin-top: 10px;
+      min-height: 120px;
+      resize: vertical;
+    }
+
     .meeting-detail-actions {
       display: flex;
       gap: 8px;
@@ -994,9 +1013,30 @@
           id="meetingDetails"
           class="meeting-section-body"
         >
-
           <!-- Populated by meetings.js -->
+        </div>
 
+        <div class="meeting-section-body" id="meetingLifecycleControls">
+          <div class="meeting-detail-grid">
+            <div class="meeting-detail-card">
+              <h3 for="minutes">Meeting Brief</h3>
+              <p class="meeting-form-help">Summarize the key discussions and what happened. Required before completing and notifying members.</p>
+              <textarea id="minutes" rows="5" maxlength="3000" style="width:100%;box-sizing:border-box" placeholder="Briefly summarize the meeting (max 3,000 characters)."></textarea>
+            </div>
+            <div class="meeting-detail-card">
+              <h3 for="resolution">Resolutions & Follow-up</h3>
+              <p class="meeting-form-help">Record decisions, responsible persons, and next steps.</p>
+              <textarea id="resolution" rows="5" maxlength="3000" style="width:100%;box-sizing:border-box" placeholder="Decisions and follow-up actions (optional)."></textarea>
+            </div>
+          </div>
+          <div class="meeting-detail-actions">
+            <button type="button" id="saveMinutes" class="btn btn-secondary" data-permission-page="meetings" data-permission-action="edit">Save Minutes & Resolutions</button>
+            <button type="button" id="completeMeeting" class="btn btn-primary" data-permission-page="meetings" data-permission-action="edit">Complete Meeting & Notify Members</button>
+            <button type="button" id="cancelMeeting" class="btn btn-secondary" data-permission-page="meetings" data-permission-action="edit">Cancel Meeting</button>
+            <button type="button" id="restoreMeeting" class="btn btn-secondary" data-permission-page="meetings" data-permission-action="edit" hidden>Restore Meeting</button>
+            <button type="button" id="deleteMeeting" class="btn btn-danger" data-permission-page="meetings" data-permission-action="delete">Delete Meeting</button>
+          </div>
+          <p class="meeting-form-help">Completing a meeting publishes its brief and resolutions as a group announcement. This does not change the recorded attendance or quorum.</p>
         </div>
 
       </section>
@@ -1143,11 +1183,10 @@
 
 
       <!-- =======================================================
-           OFFICIAL MINUTES DOCUMENT
+           PRIVATE MEETING FILES
            =======================================================
-           This panel is intentionally hidden until the corresponding
-           document-storage functionality is available in the active
-           backend environment.
+           Files are stored in a private Supabase Storage bucket and
+           access is restricted to the meeting's group.
       -->
       <section
         id="meetingDocumentPanel"
@@ -1162,14 +1201,14 @@
             <div>
 
               <h3>
-                Official Minutes
+                Meeting Files
               </h3>
 
               <div
                 id="meetingDocumentMeta"
                 class="meeting-document-meta"
               >
-                No official minutes uploaded.
+                No files uploaded yet.
               </div>
 
             </div>
@@ -1183,6 +1222,7 @@
                 type="file"
                 id="meetingDocumentFile"
                 accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                multiple
                 hidden
               >
 
@@ -1191,7 +1231,7 @@
                 id="uploadMeetingDocument"
                 class="btn btn-primary"
                data-permission-page="meetings" data-permission-action="edit">
-                Upload Minutes
+                Upload Files
               </button>
 
               <button
@@ -1214,6 +1254,10 @@
             role="status"
             aria-live="polite"
           ></div>
+
+          <div id="meetingDocumentList" aria-live="polite">
+            <p class="muted">Select a meeting to view its files.</p>
+          </div>
 
 
           <div
