@@ -11,6 +11,17 @@ This runbook is for onboarding a real chama/CBO to the existing CHAMA LIVE produ
 - Confirm who will act as the initial Admin and which members hold Chairperson, Treasurer, and Secretary positions.
 - Take care not to enter test figures into a real group's records. Opening balances represent a group's existing position at an agreed cut-off date, not new payments or loan transactions.
 
+## Pilot continuation and record retention
+
+A pilot group that approves continued use of CHAMA LIVE must continue on its existing group account. Do not submit a second group application or repeat initial onboarding just because the pilot period has ended.
+
+- Keep the existing group ID and existing Supabase records, including members, officer assignments, contribution rules, payment/allocation history, expenses, meetings, documents, loans and audit history.
+- Treat pilot-to-ongoing use as a service-status/continuation decision, not as a new-group creation event.
+- Do not clear, recreate, duplicate, or overwrite group data to convert a pilot group to ongoing use. Never reset financial history to make the group appear new.
+- If a continuation/plan status needs to be recorded, use the existing authorized subscription or platform-administration workflow after verifying its behavior. Do not manually change production rows or invent a new status field as a workaround.
+- If the group chooses not to continue immediately, retain its records according to the applicable service and data-retention policy. Do not automatically delete its data solely because the pilot period ends.
+- Before confirming continuation, sign in to the existing group and verify its current members and records are still present. Only add or correct data the group identifies as genuinely missing or inaccurate.
+
 ## Create and verify the group
 
 1. Open the production site and complete the existing group application/signup process using the authorized contact's own email.
