@@ -105,6 +105,7 @@ const ADMIN_ROLES = new Set([
 
 const ADMIN_PAGES = new Set([
   "dashboard.html",
+  "documents.html",
   "members.html",
 
   /*
@@ -169,6 +170,11 @@ const PAGE_SCRIPTS = {
   "dashboard.html": [
     "./dashboard.js?v=20261013-loan-summary-dashboard1",
     "initDashboard"
+  ],
+
+  "documents.html": [
+    "./documents.js?v=20261015-documents1",
+    "initDocuments"
   ],
 
   "members.html": [
@@ -491,6 +497,7 @@ const NAVIGATION_GROUPS = [
     "Home",
     [
       ["dashboard.html", "Dashboard"],
+      ["documents.html", "Documents"],
       ["admin-getting-started.html", "Getting Started"]
     ]
   ],
