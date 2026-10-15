@@ -11,6 +11,11 @@ alter table public.loan_applications
   add column if not exists penalty_snapshot numeric(14,2),
   add column if not exists guarantor_status text not null default 'not_required';
 
+-- The existing status constraint predates member cancellation.
+alter table public.loan_applications drop constraint if exists loan_applications_status_check;
+alter table public.loan_applications add constraint loan_applications_status_check
+  check (status = any (array['submitted','approved','rejected','active','overdue','cleared','cancelled']::text[]));
+
 alter table public.loan_repayments
   add column if not exists status text not null default 'confirmed',
   add column if not exists confirmed_by uuid references auth.users(id),
@@ -563,7 +568,7 @@ begin
       values(v_loan.group_id,v_repayment.id,v_loan.id,r.id,v_principal,v_interest,v_penalty);
       update public.loan_repayment_schedule s
       set amount_paid=s.amount_paid+v_paid,
-          status=case when s.amount_paid+v_paid>=s.principal_due+s.interest_due+s.penalty_due then 'paid' else s.status end,
+          status=case when s.amount_paid+v_paid>=s.principal_due+s.interest_due+s.penalty_due then 'paid' when s.amount_paid+v_paid>0 then 'partial' else s.status end,
           paid_at=case when s.amount_paid+v_paid>=s.principal_due+s.interest_due+s.penalty_due then now() else s.paid_at end
       where s.id=r.id;
     end if;
