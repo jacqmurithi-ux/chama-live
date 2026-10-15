@@ -132,7 +132,8 @@ async function loadLoans(){
   const memberCell=memberOnly?"":'<td>'+esc(name)+'</td>';
   return '<tr>'+memberCell+'<td>KES '+money(l.requested_amount)+'</td><td>'+(l.approved_amount==null?"—":"KES "+money(l.approved_amount))+'</td><td>'+l.period_months+' months</td><td><span class="loan-pill">'+esc(shownStatus)+'</span></td><td>'+esc(l.created_at?new Date(l.created_at).toLocaleDateString():"—")+'</td><td><div class="loan-muted" aria-label="Required office approvals">'+approvalSummary+'</div><div class="loan-actions">'+actions+'</div></td></tr>';
  }).join("")||'<tr><td colspan="7">No loan applications yet.</td></tr>';
- const outstandingIds=loans.filter(l=>["active","overdue"].includes(l.status));
+ const overviewLoans=memberPortal?loans.filter(l=>l.member_id===ctx.member.id):loans;
+ const outstandingIds=overviewLoans.filter(l=>["active","overdue"].includes(l.status));
  let outstanding=0, overdue=0;
  for(const l of outstandingIds){
   const {data:schedules,error:e}=await supabase.from("loan_repayment_schedule").select("principal_due,interest_due,penalty_due,amount_paid,due_date").eq("loan_id",l.id);
@@ -140,11 +141,11 @@ async function loadLoans(){
   for(const s of schedules||[]){outstanding+=Math.max(0,Number(s.principal_due)+Number(s.interest_due)+Number(s.penalty_due)-Number(s.amount_paid));}
   if((schedules||[]).some(s=>s.due_date<today()&&Number(s.amount_paid)<Number(s.principal_due)+Number(s.interest_due)+Number(s.penalty_due)))overdue++;
  }
- $("loanCount").textContent=String(loans.length);$("loanOutstanding").textContent="KES "+money(outstanding);$("loanOverdue").textContent=String(overdue);
+ $("loanCount").textContent=String(overviewLoans.length);$("loanOutstanding").textContent="KES "+money(outstanding);$("loanOverdue").textContent=String(overdue);
  let nextDue=null;
  for(const l of outstandingIds){const {data:ss,error:se}=await supabase.from("loan_repayment_schedule").select("due_date,principal_due,interest_due,penalty_due,amount_paid").eq("loan_id",l.id).gte("due_date",today()).order("due_date").limit(1);if(!se&&ss?.length&&(!nextDue||ss[0].due_date<nextDue))nextDue=ss[0].due_date;}
  $("loanNextDue").textContent=nextDue||"—";
- const pending=loans.some(l=>["submitted","approved"].includes(l.status));const hasOverdue=loans.some(l=>l.status==="overdue");
+ const pending=overviewLoans.some(l=>["submitted","approved"].includes(l.status));const hasOverdue=overdue>0||overviewLoans.some(l=>l.status==="overdue");
  const enabled=Boolean(settings&&settings.enabled&&groupLoansEnabled);
  $("loanApplyForm").querySelector("button[type=submit]").disabled=!enabled||pending||hasOverdue;
  $("loanApplicationGate").textContent=!enabled?"Loans are not yet available for this group.":pending?"You already have a pending application. Wait for the decision before applying again.":hasOverdue?"You cannot apply while you have an overdue loan. Clear the overdue balance first.":"";
@@ -169,7 +170,8 @@ function renderPreview(){
  if(method==="flat"){interest=amount*rate/100*period/12;installment=(amount+interest)/period;}
  else {const monthly=rate/1200;installment=monthly===0?amount/period:amount*monthly/(1-Math.pow(1+monthly,-period));interest=installment*period-amount;}
  $("loanPreview").textContent="Estimated installment: KES "+money(installment)+" · Total interest: KES "+money(interest)+" · Total repayable: KES "+money(amount+interest)+". Estimates only; the approved terms and schedule are confirmed at disbursement.";
- const blocked=loans.some(l=>["submitted","approved"].includes(l.status))||loans.some(l=>l.status==="overdue");
+ const personalLoans=loans.filter(l=>l.member_id===ctx.member.id);
+ const blocked=personalLoans.some(l=>["submitted","approved"].includes(l.status))||personalLoans.some(l=>l.status==="overdue");
  $("loanApplyForm").querySelector('button[type="submit"]').disabled=blocked;
 }
 for(const field of ["amount","period"]) $("loanApplyForm").elements[field].addEventListener("input",renderPreview);
@@ -267,7 +269,7 @@ $("loanSettingsForm").addEventListener("submit",async e=>{
 });
 $("loanApplyForm").addEventListener("submit",async e=>{
  e.preventDefault();const f=e.currentTarget.elements;
- try{await rpc("apply_for_loan",{p_group_id:ctx.group.id,p_amount:f.amount.value,p_period:Number(f.period.value),p_purpose:f.purpose.value,p_guarantor_id:f.guarantor.value||null});e.currentTarget.reset();status("Loan application submitted.");await loadNotifications();await loadLoans();}
+ try{if(!settings||!settings.enabled||!groupLoansEnabled)throw new Error("Loans are not yet available for this group.");if(Number(f.amount.value)>Number(settings.max_loan_amount)||Number(f.period.value)>Number(settings.max_period_months))throw new Error("Requested amount or period exceeds the group maximum.");if(loans.some(l=>l.member_id===ctx.member.id&&["submitted","approved","overdue"].includes(l.status)))throw new Error("You already have a pending application or an overdue loan.");await rpc("apply_for_loan",{p_group_id:ctx.group.id,p_amount:f.amount.value,p_period:Number(f.period.value),p_purpose:f.purpose.value,p_guarantor_id:f.guarantor.value||null});e.currentTarget.reset();status("Loan application submitted.");await loadNotifications();await loadLoans();}
  catch(err){status(errorText(err),true);}
 });
 async function handleLoanAction(e){
