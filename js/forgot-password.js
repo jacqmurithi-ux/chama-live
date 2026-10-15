@@ -23,9 +23,7 @@
 
 import { supabase } from "./supabase.js";
 
-console.log(
-  "CHAMA LIVE: forgot-password.js loaded"
-);
+
 
 
 /* =========================================================
@@ -73,10 +71,7 @@ const BASE_URL =
 const RESET_URL =
   `${BASE_URL}/reset-password.html`;
 
-console.log(
-  "CHAMA LIVE: password reset redirect:",
-  RESET_URL
-);
+
 
 
 /* =========================================================
@@ -352,16 +347,8 @@ else {
 
       try {
 
-        console.log(
-          "CHAMA LIVE: requesting password reset",
-          {
-            email:
-              userEmail,
+        
 
-            redirectTo:
-              RESET_URL
-          }
-        );
 
 
         /* =================================================
@@ -382,13 +369,8 @@ else {
             );
 
 
-        console.log(
-          "CHAMA LIVE: reset request response",
-          {
-            data,
-            error
-          }
-        );
+        
+
 
 
         /* =================================================
@@ -411,9 +393,8 @@ else {
         );
 
 
-        console.log(
-          "CHAMA LIVE: password reset email sent successfully"
-        );
+        
+
 
       }
 
@@ -451,6 +432,4 @@ else {
    READY
 ========================================================= */
 
-console.log(
-  "CHAMA LIVE: password recovery system ready"
-);
+
