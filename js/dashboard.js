@@ -1544,6 +1544,49 @@ async function loadCustomContributionStatuses() {
   customContributionStatusComplete = false;
   customContributionStatusError = null;
 
+  // The dashboard can load before the optional contribution-definition panel.
+  // Fetch active custom periods here and reconcile missing member obligations
+  // through the secured, idempotent accounting RPC before reading statuses.
+  const { data: customTypes, error: typeError } = await supabase
+    .from("contribution_types")
+    .select("id,group_id,code")
+    .eq("group_id", currentGroupId)
+    .eq("code", "custom");
+
+  if (typeError) throw new Error(`Custom contribution types could not be loaded: ${typeError.message}`);
+
+  const customTypeIds = (Array.isArray(customTypes) ? customTypes : []).map(type => type.id);
+  if (customTypeIds.length) {
+    const { data: activePeriods, error: periodError } = await supabase
+      .from("contribution_periods")
+      .select("id,group_id,contribution_type_id,status")
+      .eq("group_id", currentGroupId)
+      .in("contribution_type_id", customTypeIds)
+      .in("status", ["open", "due", "grace"]);
+
+    if (periodError) throw new Error(`Active custom contribution periods could not be loaded: ${periodError.message}`);
+
+    for (const period of (Array.isArray(activePeriods) ? activePeriods : [])) {
+      const requestId = globalThis.crypto?.randomUUID?.();
+      if (!requestId) {
+        throw new Error("A secure request ID could not be generated. Refresh and try again.");
+      }
+
+      const { error: ensureError } = await supabase.rpc(
+        "ensure_custom_contribution_member_obligations",
+        {
+          p_group_id: currentGroupId,
+          p_period_id: period.id,
+          p_request_id: requestId
+        }
+      );
+
+      if (ensureError) {
+        throw new Error(`Custom contribution obligations could not be reconciled: ${ensureError.message}`);
+      }
+    }
+  }
+
   const { data, error } = await supabase.rpc(
     "get_group_custom_contribution_status",
     { p_group_id: currentGroupId }
