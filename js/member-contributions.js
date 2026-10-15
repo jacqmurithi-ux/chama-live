@@ -1417,8 +1417,8 @@ function renderCanonicalPosition() {
 
 function contributionMonthKey(contribution) {
   const rawDate = contribution?.contribution_date || contribution?.created_at || "";
-  const match = String(rawDate).match(/^(\\d{4})-(\\d{2})/);
-  return match ? `${match[1]}-${match[2]}` : "";
+  const yearMonth = String(rawDate).slice(0, 7);
+  return yearMonth.length === 7 && yearMonth[4] === "-" ? yearMonth : "";
 }
 
 
