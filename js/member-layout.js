@@ -909,6 +909,17 @@ function injectStyles() {
       }
     }
 
+    /* Shared desktop content frame: align member pages with the admin portal. */
+    @media (min-width: 821px) {
+      body main {
+        width: min(calc(100% - 40px), 1440px);
+        max-width: 1440px;
+        margin-left: auto !important;
+        margin-right: auto !important;
+        box-sizing: border-box;
+      }
+    }
+
     @media (prefers-reduced-motion: reduce) {
       .chama-member-mobile-menu,
       .chama-member-mobile-backdrop {
