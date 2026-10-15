@@ -128,7 +128,8 @@
   </div>
 
   <script type="module">
-    const memberPortal = new URLSearchParams(location.search).get("portal") === "member";
+    const portal = new URLSearchParams(location.search).get("portal") || "member";
+    const memberPortal = portal !== "admin";
     if (memberPortal) {
       const layout = await import("./js/member-layout.js?v=20261015-documents1");
       await layout.boot();
