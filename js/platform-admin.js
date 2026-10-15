@@ -2746,7 +2746,16 @@ async function loadPlatformPageUsage() {
       const group = groupTotals.get(row.group_id);
       group.visits += visits;
       if (row.last_viewed_at && (!group.last || new Date(row.last_viewed_at) > new Date(group.last))) group.last = row.last_viewed_at;
-      if (visits > 0) group.pages.set(row.page_key, (group.pages.get(row.page_key) || 0) + visits);
+      if (visits > 0) {
+        group.pages.set(row.page_key, (group.pages.get(row.page_key) || 0) + visits);
+        if (!group.features) group.features = [];
+        group.features.push({
+          pageKey: row.page_key,
+          visits,
+          activeDays: Number(row.active_days || 0),
+          lastViewedAt: row.last_viewed_at || null
+        });
+      }
     }
 
     const sortedPages = [...pageTotals.entries()].sort((a,b) => b[1].visits - a[1].visits || a[0].localeCompare(b[0]));
@@ -2760,15 +2769,14 @@ async function loadPlatformPageUsage() {
     content.appendChild(pageHeading);
     if (!usedPages.length) {
       const empty = document.createElement("p");
-      empty.textContent = "No page visits have been recorded yet. Usage will appear as groups visit pages after the tracker is live.";
+      empty.textContent = "No page visits have been recorded yet. Counts will grow as groups use CHAMA LIVE.";
       empty.style.cssText = "color:#667085;font-size:13px";
       content.appendChild(empty);
-    } else {
-      content.appendChild(usageTable(
-        ["Page / feature", "Visits", "Groups using it"],
-        usedPages.map(([key, stats]) => [USAGE_PAGE_LABELS[key] || key, stats.visits.toLocaleString("en-KE"), stats.groups.size.toLocaleString("en-KE")])
-      ));
     }
+    content.appendChild(usageTable(
+      ["Page / feature", "Visits", "Groups using it"],
+      sortedPages.map(([key, stats]) => [USAGE_PAGE_LABELS[key] || key, stats.visits.toLocaleString("en-KE"), stats.groups.size.toLocaleString("en-KE")])
+    ));
 
     const groupHeading = document.createElement("h3");
     groupHeading.textContent = "Usage by group";
@@ -2781,6 +2789,32 @@ async function loadPlatformPageUsage() {
         return [group.name, group.visits.toLocaleString("en-KE"), topPage ? (USAGE_PAGE_LABELS[topPage[0]] || topPage[0]) : "No visits yet", usageDate(group.last)];
       })
     ));
+
+    const detailHeading = document.createElement("h3");
+    detailHeading.textContent = "Feature usage by group";
+    detailHeading.style.cssText = "margin:0;font-size:15px";
+    content.appendChild(detailHeading);
+    const featureRows = [];
+    for (const group of groupRows) {
+      for (const feature of (group.features || [])) {
+        featureRows.push([
+          group.name,
+          USAGE_PAGE_LABELS[feature.pageKey] || feature.pageKey,
+          feature.visits.toLocaleString("en-KE"),
+          feature.activeDays.toLocaleString("en-KE"),
+          usageDate(feature.lastViewedAt)
+        ]);
+      }
+    }
+    featureRows.sort((a,b) => a[0].localeCompare(b[0]) || a[1].localeCompare(b[1]));
+    if (featureRows.length) {
+      content.appendChild(usageTable(["Group", "Feature", "Visits", "Active days", "Last visit"], featureRows));
+    } else {
+      const empty = document.createElement("p");
+      empty.textContent = "No group-feature combinations have usage yet.";
+      empty.style.cssText = "color:#667085;font-size:13px";
+      content.appendChild(empty);
+    }
   } catch (error) {
     console.error("CHAMA LIVE: page usage report could not load.", error);
     status.textContent = "Page usage report could not be loaded. Confirm the signed-in account has platform-owner access and refresh.";
