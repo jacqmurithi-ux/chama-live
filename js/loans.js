@@ -103,7 +103,7 @@ async function loadSettings(){
 async function loadMembers(){
  const {data,error}=await supabase.from("members").select("id,name,member_number,status,onboarding_status").eq("group_id",ctx.group.id).eq("status","active").eq("onboarding_status","active").order("name");
  if(error)throw error;members=data||[];
- $("loanApplyForm").elements.guarantor.innerHTML='<option value="">No guarantor selected</option>'+members.filter(m=>m.id!==ctx.member.id).map(m=>'<option value="'+esc(m.id)+'">'+esc(m.name)+(m.member_number?' · '+esc(m.member_number):"")+'</option>').join("");
+ $("loanApplyForm").elements.guarantor.innerHTML=members.filter(m=>m.id!==ctx.member.id).map(m=>'<option value="'+esc(m.id)+'">'+esc(m.name)+(m.member_number?' · '+esc(m.member_number):"")+'</option>').join("");
 }
 function applyLoanFilters(){
  const query=String($("loanSearch")?.value||"").trim().toLowerCase();
@@ -199,13 +199,9 @@ async function loadGuarantorRequests(){
  const card=$("loanGuarantorCard");
  if(!memberPortal){card.classList.add("loan-hidden");return;}
  card.classList.remove("loan-hidden");
- const {data,error}=await supabase.from("loan_applications")
-  .select("id,member_id,requested_amount,period_months,purpose,created_at")
-  .eq("group_id",ctx.group.id).eq("guarantor_member_id",ctx.member.id).eq("status","submitted")
-  .order("created_at",{ascending:false});
- if(error){$("loanGuarantorRows").innerHTML='<p class="loan-muted">Guarantor requests are unavailable until member-scoped access is enabled.</p>';return;}
- const byId=new Map(members.map(m=>[m.id,m]));
- $("loanGuarantorRows").innerHTML=(data||[]).map(l=>'<article class="loan-notification"><strong>'+esc(byId.get(l.member_id)?.name||"Group member")+'</strong><p>KES '+money(l.requested_amount)+' · '+l.period_months+' months</p><p>'+esc(l.purpose)+'</p><div class="loan-actions"><button class="loan-btn" data-guarantor-response="true" data-loan-id="'+esc(l.id)+'">Accept</button><button class="loan-btn secondary" data-guarantor-response="false" data-loan-id="'+esc(l.id)+'">Decline</button></div></article>').join("")||'<p class="loan-muted">No guarantor requests.</p>';
+ const {data,error}=await supabase.rpc("cl_my_loan_guarantor_requests",{p_group_id:ctx.group.id});
+ if(error){$("loanGuarantorRows").innerHTML='<p class="loan-muted">Guarantor requests could not be loaded.</p>';console.warn("CHAMA LIVE: guarantor requests unavailable.",error);return;}
+ $("loanGuarantorRows").innerHTML=(data||[]).map(l=>'<article class="loan-notification"><strong>'+esc(l.applicant_name||"Group member")+'</strong><p>KES '+money(l.requested_amount)+' · '+l.period_months+' months</p><p>'+esc(l.purpose)+'</p><div class="loan-actions"><button class="loan-btn" data-guarantor-response="true" data-loan-id="'+esc(l.loan_id)+'">Accept</button><button class="loan-btn secondary" data-guarantor-response="false" data-loan-id="'+esc(l.loan_id)+'">Decline</button></div></article>').join("")||'<p class="loan-muted">No guarantor requests.</p>';
 }
 
 async function loadOfficialSections(){
@@ -311,7 +307,7 @@ $("loanSettingsForm").addEventListener("submit",async e=>{
 });
 $("loanApplyForm").addEventListener("submit",async e=>{
  e.preventDefault();const form=e.currentTarget;const f=form.elements;
- try{if(!settings||!groupLoansEnabled)throw new Error("Loans are not yet available for this group.");if(Number(f.amount.value)>Number(settings.max_loan_amount)||Number(f.period.value)>Number(settings.max_period_months))throw new Error("Requested amount or period exceeds the group maximum.");if(loans.some(l=>l.member_id===ctx.member.id&&["submitted","approved","overdue"].includes(l.status)))throw new Error("You already have a pending application or an overdue loan.");await rpc("cl_loan_apply",{p_group_id:ctx.group.id,p_requested_amount:Number(f.amount.value),p_period_months:Number(f.period.value),p_purpose:f.purpose.value,p_guarantor_member_id:f.guarantor.value||null});form.reset();status("Loan application submitted.");await loadNotifications();await loadLoans();}
+ try{if(!settings||!groupLoansEnabled)throw new Error("Loans are not yet available for this group.");if(Number(f.amount.value)>Number(settings.max_loan_amount)||Number(f.period.value)>Number(settings.max_period_months))throw new Error("Requested amount or period exceeds the group maximum.");if(loans.some(l=>l.member_id===ctx.member.id&&["submitted","approved","overdue"].includes(l.status)))throw new Error("You already have a pending application or an overdue loan.");const guarantorIds=Array.from(f.guarantor.selectedOptions).map(option=>option.value).filter(Boolean);if(guarantorIds.length>5)throw new Error("Select no more than five guarantors.");await rpc("cl_loan_apply_multi",{p_group_id:ctx.group.id,p_requested_amount:Number(f.amount.value),p_period_months:Number(f.period.value),p_purpose:f.purpose.value,p_guarantor_member_ids:guarantorIds});form.reset();status("Loan application submitted"+(guarantorIds.length?" with "+guarantorIds.length+" guarantor request(s).":".") );await loadNotifications();await loadLoans();}
  catch(err){status(errorText(err),true);}
 });
 async function handleLoanAction(e){
@@ -354,7 +350,7 @@ $("loanPendingRepaymentRows").addEventListener("click",async e=>{
 });
 $("loanGuarantorRows").addEventListener("click",async e=>{
  const b=e.target.closest("[data-guarantor-response]");if(!b)return;
- try{await rpc("respond_guarantor",{p_loan_id:b.dataset.loanId,p_accept:b.dataset.guarantorResponse==="true"});status("Guarantor response recorded.");await loadGuarantorRequests();await loadNotifications();}catch(err){status(errorText(err),true);}
+ try{await rpc("cl_respond_to_loan_guarantor",{p_loan_id:b.dataset.loanId,p_accept:b.dataset.guarantorResponse==="true"});status("Guarantor response recorded.");await loadGuarantorRequests();await loadNotifications();}catch(err){status(errorText(err),true);}
 });
 $("loanOverdueRows").addEventListener("click",async e=>{
  const b=e.target.closest("[data-send-reminder]");if(!b)return;
