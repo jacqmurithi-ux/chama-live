@@ -2406,6 +2406,8 @@ async function loadPlatformOverview() {
 
     await loadPendingApplications();
 
+    await loadPlatformFeedback();
+
   } catch (error) {
 
     const normalized =
@@ -2572,6 +2574,88 @@ if (logoutButton) {
     }
   );
 
+}
+
+
+/* =========================================================
+   PLATFORM-OWNER FEEDBACK INBOX
+   ---------------------------------------------------------
+   Read access is enforced by public.feedback RLS using
+   public.is_platform_admin(). Group roles cannot read rows.
+========================================================= */
+
+let feedbackInboxLoaded = false;
+
+async function loadPlatformFeedback() {
+  let section = document.getElementById("platformFeedbackInbox");
+  if (!section) {
+    section = document.createElement("section");
+    section.id = "platformFeedbackInbox";
+    section.className = "platform-card";
+    section.style.cssText = "margin-top:20px;padding:20px";
+    const heading = document.createElement("h2");
+    heading.className = "platform-section-title";
+    heading.textContent = "Member feedback";
+    const description = document.createElement("p");
+    description.textContent = "Feedback submitted from authenticated group pages. Visible to platform owners only.";
+    description.style.cssText = "color:#667085;font-size:13px";
+    const list = document.createElement("div");
+    list.id = "platformFeedbackList";
+    list.style.cssText = "display:grid;gap:12px";
+    section.append(heading, description, list);
+    const main = document.querySelector("main") || document.querySelector(".platform-main") || document.body;
+    main.appendChild(section);
+  }
+
+  const list = document.getElementById("platformFeedbackList");
+  if (!list) return;
+  list.replaceChildren();
+  const loadingText = document.createElement("p");
+  loadingText.textContent = "Loading feedback…";
+  list.appendChild(loadingText);
+
+  try {
+    const { data, error } = await supabase
+      .from("feedback")
+      .select("id,group_id,member_id,page,message,category,created_at")
+      .order("created_at", { ascending: false })
+      .limit(100);
+    if (error) throw error;
+
+    const rows = Array.isArray(data) ? data : [];
+    list.replaceChildren();
+    if (!rows.length) {
+      const empty = document.createElement("p");
+      empty.textContent = "No feedback has been submitted yet.";
+      list.appendChild(empty);
+      feedbackInboxLoaded = true;
+      return;
+    }
+
+    for (const row of rows) {
+      const item = document.createElement("article");
+      item.style.cssText = "padding:14px;border:1px solid #e5e7eb;border-radius:12px;background:#fff";
+      const title = document.createElement("strong");
+      title.textContent = String(row.category || "feedback").replace(/[_-]+/g, " ");
+      const meta = document.createElement("p");
+      meta.style.cssText = "margin:5px 0;color:#667085;font-size:12px;overflow-wrap:anywhere";
+      const date = row.created_at ? new Date(row.created_at).toLocaleString("en-KE") : "Time unavailable";
+      meta.textContent = `${date} · Page: ${row.page || "unknown"} · Group: ${String(row.group_id || "").slice(0, 8)} · Member: ${String(row.member_id || "").slice(0, 8)}`;
+      const body = document.createElement("p");
+      body.style.cssText = "margin:8px 0 0;white-space:pre-wrap;overflow-wrap:anywhere";
+      body.textContent = row.message || "";
+      item.append(title, meta, body);
+      list.appendChild(item);
+    }
+    feedbackInboxLoaded = true;
+  } catch (error) {
+    console.error("CHAMA LIVE: platform feedback inbox could not load.", error);
+    list.replaceChildren();
+    const warning = document.createElement("p");
+    warning.setAttribute("role", "alert");
+    warning.textContent = "Feedback inbox could not be loaded. Confirm the signed-in account has platform-owner access.";
+    list.appendChild(warning);
+  }
 }
 
 
