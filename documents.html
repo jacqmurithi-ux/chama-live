@@ -53,23 +53,24 @@
     .docs-shimmer.large{height:22px;width:58%;margin-bottom:12px}.docs-shimmer.short{width:38%;margin-top:12px}
     @keyframes docs-shimmer{to{background-position:-200% 0}}
     .docs-fab{position:fixed;right:16px;bottom:calc(96px + env(safe-area-inset-bottom,0px));z-index:12000;display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:60px;border:2px solid #fff;border-radius:999px;background:#0a7d3b;color:#fff;padding:0 22px;font-weight:900;font-size:1.02rem;letter-spacing:.01em;box-shadow:0 5px 0 #075b2b,0 12px 28px rgba(16,24,40,.28);cursor:pointer;text-shadow:0 1px 1px rgba(0,0,0,.15);-webkit-tap-highlight-color:transparent}.docs-fab .docs-fab-plus{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;background:#fff;color:#075b2b;font-size:1.5rem;line-height:1;font-weight:900;text-shadow:none}.docs-fab:focus-visible{outline:3px solid #fdb022;outline-offset:4px}.docs-fab:active{transform:translateY(2px);box-shadow:0 3px 0 #075b2b,0 7px 16px rgba(16,24,40,.22)}
-    .docs-overlay{position:fixed;inset:0;z-index:15000;background:#10182880;display:flex;align-items:flex-end;justify-content:center}
+    .docs-overlay{position:fixed;inset:0;z-index:60000;background:#101828b8;display:flex;align-items:flex-end;justify-content:center;padding:8px 0 0;box-sizing:border-box}
     .docs-overlay[hidden]{display:none}
-    .docs-sheet-panel{width:min(100%,680px);max-height:92dvh;overflow:auto;border-radius:22px 22px 0 0;padding:20px 18px 28px}
-    .docs-sheet-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px}
+    .docs-sheet-panel{display:flex;flex-direction:column;width:min(100%,680px);max-height:calc(100dvh - 8px - env(safe-area-inset-top,0px));min-height:0;overflow:hidden;border-radius:22px 22px 0 0;padding:16px 18px 0;box-sizing:border-box}
+    .docs-sheet-head{display:flex;flex:0 0 auto;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #e5e7eb;background:#fff}
     .docs-sheet-head h2{margin:0;font-size:1.25rem}
-    .docs-close{width:44px;height:44px;border:1px solid #d0d5dd;border-radius:12px;background:#fff;font-size:1.3rem}
-    .docs-form{display:grid;gap:13px}
+    .docs-close{width:44px;height:44px;flex:0 0 44px;border:1px solid #d0d5dd;border-radius:12px;background:#fff;font-size:1.3rem}
+    .docs-form{display:grid;gap:13px;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding-bottom:8px}
     .docs-field label{display:block;font-weight:800;font-size:.88rem;margin-bottom:6px}
     .docs-field input,.docs-field select,.docs-field textarea{width:100%;min-height:46px;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:10px;padding:10px 12px;font:inherit;background:#fff}
     .docs-field textarea{min-height:86px;resize:vertical}
     .docs-field small{display:block;color:#667085;margin-top:5px}
-    .docs-form-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:5px}
+    .docs-form-actions{position:sticky;bottom:0;display:flex;gap:9px;flex-wrap:nowrap;margin-top:5px;padding:12px 0 calc(12px + env(safe-area-inset-bottom,0px));background:#fff;border-top:1px solid #e5e7eb;z-index:1}
+    .docs-form-actions .docs-btn{flex:1;min-width:0}
     .docs-status{margin:12px 0;padding:12px;border-radius:10px;background:#f0f9ff;color:#075985}
     .docs-status.error{background:#fef2f2;color:#991b1b}.docs-status.success{background:#ecfdf3;color:#166534}
     .docs-inline-actions{display:flex;gap:8px;flex-wrap:wrap}
     [hidden]{display:none!important}
-    @media(min-width:700px){.documents-page{padding-top:26px}.docs-overlay{align-items:center;padding:20px}.docs-sheet-panel{border-radius:22px}.docs-list{gap:14px}.docs-card{padding:20px}.docs-fab{right:32px;bottom:32px;min-height:58px}}
+    @media(min-width:700px){.documents-page{padding-top:26px}.docs-overlay{align-items:center;padding:20px}.docs-sheet-panel{max-height:calc(100dvh - 40px);border-radius:22px;padding:20px 18px 12px}.docs-form-actions{padding-bottom:8px}.docs-list{gap:14px}.docs-card{padding:20px}.docs-fab{right:32px;bottom:32px;min-height:58px}}
     @media(prefers-reduced-motion:reduce){.docs-shimmer{animation:none}}
   </style>
 </head>
