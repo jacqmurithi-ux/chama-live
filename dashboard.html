@@ -1336,7 +1336,65 @@
       }
 
     }
-  </style>
+  
+    /* Compact, clickable monthly status summary */
+    .monthly-status-summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+    .monthly-status-tile {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 7px;
+      min-width: 0;
+      min-height: 132px;
+      padding: 18px;
+      border: 1px solid var(--dashboard-border);
+      border-left: 5px solid #12b76a;
+      border-radius: var(--dashboard-radius);
+      background: #fff;
+      color: var(--dashboard-text);
+      text-align: left;
+      cursor: pointer;
+      box-shadow: 0 1px 2px rgba(16,24,40,.03);
+      transition: transform .15s ease, box-shadow .15s ease;
+    }
+    .monthly-status-tile:hover { transform: translateY(-1px); box-shadow: 0 5px 14px rgba(16,24,40,.08); }
+    .monthly-status-tile:focus-visible { outline: 3px solid #84caff; outline-offset: 2px; }
+    .monthly-status-up-to-date { border-left-color: #12b76a; }
+    .monthly-status-outstanding { border-left-color: #f04438; }
+    .monthly-status-credit { border-left-color: #2e90fa; }
+    .monthly-status-label { font-size: 13px; font-weight: 800; }
+    .monthly-status-up-to-date .monthly-status-label { color: #087443; }
+    .monthly-status-outstanding .monthly-status-label { color: #b42318; }
+    .monthly-status-credit .monthly-status-label { color: #175cd3; }
+    .monthly-status-tile strong { font-size: clamp(25px, 3vw, 32px); line-height: 1.1; font-weight: 850; font-variant-numeric: tabular-nums; }
+    .monthly-status-hint { color: var(--dashboard-muted); font-size: 11px; font-weight: 600; }
+    .monthly-status-dialog {
+      width: min(1100px, calc(100% - 24px));
+      max-width: 1100px;
+      max-height: min(85vh, 850px);
+      padding: 20px;
+      border: 1px solid var(--dashboard-border);
+      border-radius: 16px;
+      color: var(--dashboard-text);
+      background: #fff;
+      box-shadow: 0 24px 70px rgba(16,24,40,.25);
+    }
+    .monthly-status-dialog::backdrop { background: rgba(16,24,40,.55); }
+    .monthly-status-dialog-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+    .monthly-status-dialog-header h3 { margin: 0; font-size: 19px; }
+    .monthly-status-dialog-header p { margin: 5px 0 0; color: var(--dashboard-muted); font-size: 13px; }
+    .monthly-status-dialog .table-wrap { max-height: 62vh; overflow: auto; }
+    @media (max-width: 640px) {
+      .monthly-status-summary { grid-template-columns: 1fr; gap: 10px; }
+      .monthly-status-tile { min-height: 96px; padding: 14px 16px; }
+      .monthly-status-dialog { padding: 14px; }
+    }
+
+</style>
 </head>
 
 <body>
@@ -1955,109 +2013,61 @@
 
 
       <!-- =================================================
-           MEMBER CONTRIBUTION STATUS
-           Monthly member obligations
+           MONTHLY CONTRIBUTION STATUS SUMMARY
+           Click a status to view its member list
       ================================================= -->
-
-      <section
-        class="dashboard-section"
-        aria-labelledby="memberPaymentsTitle"
-      >
-
+      <section class="dashboard-section" aria-labelledby="memberPaymentsTitle">
         <div class="section-heading">
-
-          <h2 id="memberPaymentsTitle">
-            Monthly member payment status
-          </h2>
-
-          <p>
-            See what each member owes for the selected month and how much canonical accounting
-            has applied to that obligation.
-          </p>
-
-          <p class="dashboard-help-text">
-            <strong>How to read this:</strong> Monthly Due is this month's obligation.
-            Previous Outstanding is unpaid balance brought into the month. Applied to This Month
-            is the amount allocated to this month's obligation. Carry-forward Credit is surplus
-            shown separately and reflects surplus allocated against earlier monthly obligations;
-            it does not include unallocated Monthly payment amounts. Current Outstanding is what
-            remains due for this month. “Paid + credit available” means this month's due is covered
-            and allocated carry-forward surplus remains. A payment with no monthly obligation is
-            not counted as paying one.
-          </p>
-
+          <h2 id="memberPaymentsTitle">Monthly contribution status</h2>
+          <p>Quick group-wide counts for the selected month. Select a status to view the members in that category.</p>
         </div>
 
+        <div class="monthly-status-summary" id="monthlyStatusSummary" aria-live="polite">
+          <button type="button" class="monthly-status-tile monthly-status-up-to-date" data-monthly-status="up-to-date" aria-haspopup="dialog" aria-controls="monthlyStatusDialog">
+            <span class="monthly-status-label">Up to date</span>
+            <strong id="monthlyStatusUpToDateCount">—</strong>
+            <span class="monthly-status-hint">Members · View list</span>
+          </button>
+          <button type="button" class="monthly-status-tile monthly-status-outstanding" data-monthly-status="outstanding" aria-haspopup="dialog" aria-controls="monthlyStatusDialog">
+            <span class="monthly-status-label">Outstanding</span>
+            <strong id="monthlyStatusOutstandingCount">—</strong>
+            <span class="monthly-status-hint">Members · View list</span>
+          </button>
+          <button type="button" class="monthly-status-tile monthly-status-credit" data-monthly-status="credit" aria-haspopup="dialog" aria-controls="monthlyStatusDialog">
+            <span class="monthly-status-label">Paid with credit</span>
+            <strong id="monthlyStatusCreditCount">—</strong>
+            <span class="monthly-status-hint">Members · View list</span>
+          </button>
+        </div>
+        <p id="monthlyStatusSummaryNote" class="dashboard-help-text">Counts reflect active members with a monthly obligation for the selected month. Non-monthly contributions are reported separately.</p>
 
-        <article class="dashboard-card">
-
-          <div class="table-wrap">
-
-            <table class="dashboard-table">
-
-              <thead>
-
-                <tr>
-
-                  <th scope="col">
-                    Member
-                  </th>
-
-                  <th scope="col">
-                    Monthly Due
-                  </th>
-
-                  <th scope="col">
-                    Previous Outstanding
-                  </th>
-
-                  <th scope="col">
-                    Applied to This Month
-                  </th>
-
-                  <th scope="col">
-                    Carry-forward Credit
-                  </th>
-
-                  <th scope="col">
-                    Current Outstanding
-                  </th>
-
-                  <th scope="col">
-                    Monthly Status
-                  </th>
-
-                </tr>
-
-              </thead>
-
-
-              <tbody id="memberStatusRows">
-
-                <tr>
-
-                  <td colspan="7">
-
-                    <div class="empty-state">
-
-                      <strong>
-                        Loading member status...
-                      </strong>
-
-                    </div>
-
-                  </td>
-
-                </tr>
-
-              </tbody>
-
-            </table>
-
+        <dialog id="monthlyStatusDialog" class="monthly-status-dialog" aria-labelledby="monthlyStatusDialogTitle">
+          <div class="monthly-status-dialog-header">
+            <div>
+              <h3 id="monthlyStatusDialogTitle">Monthly contribution status</h3>
+              <p id="monthlyStatusDialogDescription">Members in the selected status.</p>
+            </div>
+            <button type="button" id="monthlyStatusDialogClose" class="btn" aria-label="Close member list">Close</button>
           </div>
-
-        </article>
-
+          <div class="table-wrap">
+            <table class="dashboard-table">
+              <thead>
+                <tr>
+                  <th scope="col">Member</th>
+                  <th scope="col">Monthly Due</th>
+                  <th scope="col">Previous Outstanding</th>
+                  <th scope="col">Applied to This Month</th>
+                  <th scope="col">Carry-forward Credit</th>
+                  <th scope="col">Current Outstanding</th>
+                  <th scope="col">Monthly Status</th>
+                </tr>
+              </thead>
+              <tbody id="memberStatusRows">
+                <tr><td colspan="7"><div class="empty-state"><strong>Loading member status...</strong></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </dialog>
       </section>
 
 
