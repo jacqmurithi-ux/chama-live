@@ -46,7 +46,13 @@
       box-sizing: border-box;
     }
 
-    .main,
+    .main {
+      width: min(calc(100% - 32px), 1400px);
+      max-width: 1400px;
+      min-width: 0;
+      margin: 0 auto;
+    }
+
     .page,
     .card {
       width: 100%;
