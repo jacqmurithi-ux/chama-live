@@ -22,6 +22,18 @@
     .account-btn{min-height:40px;padding:8px 13px;border:1px solid #cbd5e1;border-radius:9px;background:white;font-weight:700;cursor:pointer}
     .account-btn-primary{background:#0f766e;color:white;border-color:#0f766e}.account-btn:disabled{opacity:.55;cursor:not-allowed}
     .account-table-wrap{overflow-x:auto}.account-table{width:100%;min-width:850px;border-collapse:collapse}.account-table th,.account-table td{padding:10px;border-bottom:1px solid #e2e8f0;text-align:left;vertical-align:top;font-size:.82rem}
+    .account-records-details{border:1px solid #e2e8f0;border-radius:12px;overflow:hidden}
+    .account-records-summary{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;background:#f8fafc;cursor:pointer;list-style:none;font-weight:800}
+    .account-records-summary::-webkit-details-marker{display:none}
+    .account-records-summary small{display:block;margin-top:4px;color:#64748b;font-weight:500}
+    .account-records-summary .account-records-chevron{font-size:1.2rem}
+    .account-records-details[open] .account-records-chevron{transform:rotate(180deg)}
+    .account-records-content{padding:12px}
+    .account-records-count{color:#64748b;font-size:.82rem;align-self:center}
+    .account-records-filter{display:grid;gap:5px}
+    .account-records-filter select{min-height:40px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:9px;background:#fff;color:#0f172a}
+    .account-records-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:12px}
+
     .account-table th{background:#f8fafc;color:#64748b;font-size:.72rem;text-transform:uppercase}.account-status{display:inline-block;border-radius:999px;background:#f1f5f9;padding:4px 8px;font-size:.75rem;font-weight:700}
     .account-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.account-form-grid .wide{grid-column:1/-1}
     .account-message{padding:12px;border-radius:9px;background:#f1f5f9;margin:12px 0}.account-error{color:#991b1b;background:#fef2f2;border:1px solid #fecaca}
@@ -77,16 +89,29 @@
       </form>
     </section>
     <section class="account-card" aria-labelledby="recordsHeading">
-      <h2 id="recordsHeading">My records</h2>
-      <div class="account-toolbar account-no-print">
-        <div class="account-field"><label for="accountSortField">Sort by</label><select id="accountSortField"><option value="date">Date</option><option value="amount">Amount</option><option value="type">Type</option><option value="status">Status</option></select></div>
-        <div class="account-field"><label for="accountSortDirection">Order</label><select id="accountSortDirection"><option value="desc">Descending</option><option value="asc">Ascending</option></select></div>
-        <button id="accountExportCsv" class="account-btn" type="button">Download CSV</button>
-        <button id="accountExportExcel" class="account-btn" type="button">Excel-compatible CSV</button>
-        <button id="accountExportPdf" class="account-btn" type="button">Print / Save PDF</button>
-        <button id="accountPrint" class="account-btn" type="button">Print</button>
-      </div>
-      <div class="account-table-wrap"><table class="account-table"><thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Status</th><th>Reference</th><th>Details</th></tr></thead><tbody id="myAccountRecords"><tr><td colspan="6" class="account-empty">Loading records…</td></tr></tbody></table></div>
+      <details id="myAccountRecordsDetails" class="account-records-details" open>
+        <summary class="account-records-summary">
+          <span><span id="recordsHeading">My records</span><small id="myAccountRecordsSummary">Latest 5 records shown</small></span>
+          <span class="account-records-chevron" aria-hidden="true">⌄</span>
+        </summary>
+        <div class="account-records-content">
+          <div class="account-toolbar account-no-print">
+            <div class="account-field account-records-filter"><label for="accountMonthFilter">Month</label><select id="accountMonthFilter"><option value="all">All months</option></select></div>
+            <div class="account-field"><label for="accountSortField">Sort by</label><select id="accountSortField"><option value="date">Date</option><option value="amount">Amount</option><option value="type">Type</option><option value="status">Status</option></select></div>
+            <div class="account-field"><label for="accountSortDirection">Order</label><select id="accountSortDirection"><option value="desc">Descending</option><option value="asc">Ascending</option></select></div>
+            <button id="accountExportCsv" class="account-btn" type="button">Download CSV</button>
+            <button id="accountExportExcel" class="account-btn" type="button">Excel-compatible CSV</button>
+            <button id="accountExportPdf" class="account-btn" type="button">Print / Save PDF</button>
+            <button id="accountPrint" class="account-btn" type="button">Print</button>
+          </div>
+          <p id="myAccountRecordsCount" class="account-records-count" aria-live="polite"></p>
+          <div class="account-table-wrap"><table class="account-table"><thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Status</th><th>Reference</th><th>Details</th></tr></thead><tbody id="myAccountRecords"><tr><td colspan="6" class="account-empty">Loading records…</td></tr></tbody></table></div>
+          <div class="account-records-footer account-no-print">
+            <span class="account-muted">Exports include all records, not only the visible five.</span>
+            <button id="accountShowAllRecords" class="account-btn" type="button">Show all records</button>
+          </div>
+        </div>
+      </details>
     </section>
   </main>
   <script type="module">
