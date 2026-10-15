@@ -18,6 +18,7 @@
 <p class="eyebrow">GROUP FINANCE</p><h1>Loans</h1>
 <p class="loan-muted">Apply for and manage group loans. Chairperson, Treasurer and Secretary must each decide before a loan can be disbursed. Admin approval counts only when Admin also holds one of those offices. Loan records and repayments are separate from contribution accounting.</p>
 </header>
+<div id="error" class="loan-status error" role="alert" hidden></div>
 <div id="loanStatus" class="loan-status" role="status">Checking group access…</div>
 <section id="loanContent" class="loan-hidden">
 <section id="loanNotificationsCard" class="loan-card" style="margin-bottom:16px"><h2>Loan notifications</h2><p class="loan-muted">Application decisions, disbursements and repayment updates for your account.</p><div id="loanNotifications" aria-live="polite"><p class="loan-muted">Loading notifications…</p></div></section>
@@ -78,8 +79,8 @@
 </section>
 </main>
 <script type="module">
-import { boot as bootAdmin } from "./js/admin-layout.js?v=20261015-loan-audit-log-fix1";
-import { boot as bootMember } from "./js/member-layout.js?v=20261015-loan-audit-log-fix1";
+import { boot as bootAdmin } from "./js/admin-layout.js?v=20261015-loans-boot-diagnostic1";
+import { boot as bootMember } from "./js/member-layout.js?v=20261015-loans-boot-diagnostic1";
 if (new URLSearchParams(window.location.search).get("portal") === "member") {
   bootMember();
 } else {
