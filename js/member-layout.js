@@ -31,6 +31,8 @@ import {
   signOut
 } from "./auth.js";
 
+import { initFeedbackButton } from "./feedback.js";
+
 import { applyRolePermissions } from "./role-permissions.js";
 import { supabase } from "./supabase.js";
 
@@ -1698,6 +1700,7 @@ export async function boot() {
     renderDesktopNavigation();
     renderMobileMenuToggle();
     renderBottomNavigation();
+    await initFeedbackButton();
 
     try {
       const notice = sessionStorage.getItem("chama-layout-notice");
