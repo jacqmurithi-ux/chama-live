@@ -689,6 +689,8 @@ begin
   elsif exists(select 1 from public.loan_repayment_schedule s where s.loan_id=v_loan.id
     and s.due_date<current_date and s.amount_paid<s.principal_due+s.interest_due+s.penalty_due) then
     update public.loan_applications set status='overdue',updated_at=now() where id=v_loan.id;
+  else
+    update public.loan_applications set status='active',updated_at=now() where id=v_loan.id and status='overdue';
   end if;
   perform public.cl_loan_emit_notification(v_loan.group_id,v_loan.member_id,v_loan.id,'repayment_confirmed','Loan repayment confirmed',
     'Your repayment of KES '||to_char(v_repayment.amount,'FM999999999990.00')||' has been confirmed and allocated to the oldest unpaid installments.');
@@ -871,6 +873,111 @@ for select to authenticated using (
         lower(regexp_replace(replace(replace(btrim(coalesce(m.actual_position,'')),'_',' '),'-',' '),'[[:space:]]+',' ','g')) in ('chairperson','vice chairperson','chair','vice chair','treasurer','secretary','vice secretary')
         or lower(regexp_replace(replace(replace(btrim(coalesce(m.actual_position_name,'')),'_',' '),'-',' '),'[[:space:]]+',' ','g')) in ('chairperson','vice chairperson','chair','vice chair','treasurer','secretary','vice secretary')
       ))
+);
+
+-- Replace broad legacy role-based read policies with owner/admin/explicit-office predicates.
+drop policy if exists loan_applications_read_member_or_official on public.loan_applications;
+create policy loan_applications_read_member_or_official on public.loan_applications
+for select to authenticated using (
+  public.cl_group_module_enabled(group_id,'loans')
+  and (
+    exists(select 1 from public.members own_member where own_member.id=loan_applications.member_id
+      and own_member.group_id=loan_applications.group_id
+      and (own_member.user_id=auth.uid() or own_member.auth_user_id=auth.uid()))
+    or exists(select 1 from public.members m where m.group_id=loan_applications.group_id
+      and (m.user_id=auth.uid() or m.auth_user_id=auth.uid())
+      and lower(coalesce(m.status,'active'))='active' and lower(coalesce(m.onboarding_status,'active'))='active'
+      and lower(coalesce(m.role,'')) in ('admin','administrator'))
+    or exists(select 1 from public.members m where m.group_id=loan_applications.group_id
+      and (m.user_id=auth.uid() or m.auth_user_id=auth.uid())
+      and lower(coalesce(m.status,'active'))='active' and lower(coalesce(m.onboarding_status,'active'))='active'
+      and (
+        lower(regexp_replace(replace(replace(btrim(coalesce(m.actual_position,'')),'_',' '),'-',' '),'[[:space:]]+',' ','g')) in ('chairperson','vice chairperson','chair','vice chair','treasurer','secretary','vice secretary')
+        or lower(regexp_replace(replace(replace(btrim(coalesce(m.actual_position_name,'')),'_',' '),'-',' '),'[[:space:]]+',' ','g')) in ('chairperson','vice chairperson','chair','vice chair','treasurer','secretary','vice secretary')
+      ))
+  )
+);
+
+drop policy if exists loan_approvals_select_same_group on public.loan_approvals;
+create policy loan_approvals_select_same_group on public.loan_approvals
+for select to authenticated using (
+  public.cl_group_module_enabled(group_id,'loans')
+  and (
+    exists(select 1 from public.loan_applications l join public.members owner on owner.id=l.member_id and owner.group_id=l.group_id
+      where l.id=loan_approvals.loan_id and l.group_id=loan_approvals.group_id
+        and (owner.user_id=auth.uid() or owner.auth_user_id=auth.uid()))
+    or exists(select 1 from public.members m where m.group_id=loan_approvals.group_id
+      and (m.user_id=auth.uid() or m.auth_user_id=auth.uid())
+      and lower(coalesce(m.role,'')) in ('admin','administrator')
+      and lower(coalesce(m.status,'active'))='active' and lower(coalesce(m.onboarding_status,'active'))='active')
+    or exists(select 1 from public.members m where m.group_id=loan_approvals.group_id
+      and (m.user_id=auth.uid() or m.auth_user_id=auth.uid())
+      and lower(coalesce(m.status,'active'))='active' and lower(coalesce(m.onboarding_status,'active'))='active'
+      and (
+        lower(regexp_replace(replace(replace(btrim(coalesce(m.actual_position,'')),'_',' '),'-',' '),'[[:space:]]+',' ','g')) in ('chairperson','vice chairperson','chair','vice chair','treasurer','secretary','vice secretary')
+        or lower(regexp_replace(replace(replace(btrim(coalesce(m.actual_position_name,'')),'_',' '),'-',' '),'[[:space:]]+',' ','g')) in ('chairperson','vice chairperson','chair','vice chair','treasurer','secretary','vice secretary')
+      ))
+  )
+);
+
+drop policy if exists loan_schedule_read_member_or_official on public.loan_repayment_schedule;
+create policy loan_schedule_read_member_or_official on public.loan_repayment_schedule
+for select to authenticated using (
+  public.cl_group_module_enabled(group_id,'loans')
+  and exists(select 1 from public.loan_applications l where l.id=loan_repayment_schedule.loan_id and l.group_id=loan_repayment_schedule.group_id
+    and (
+      exists(select 1 from public.members own_member where own_member.id=l.member_id and own_member.group_id=l.group_id
+        and (own_member.user_id=auth.uid() or own_member.auth_user_id=auth.uid()))
+      or exists(select 1 from public.members m where m.group_id=l.group_id and (m.user_id=auth.uid() or m.auth_user_id=auth.uid())
+        and lower(coalesce(m.role,'')) in ('admin','administrator')
+        and lower(coalesce(m.status,'active'))='active' and lower(coalesce(m.onboarding_status,'active'))='active')
+      or exists(select 1 from public.members m where m.group_id=l.group_id and (m.user_id=auth.uid() or m.auth_user_id=auth.uid())
+        and lower(coalesce(m.status,'active'))='active' and lower(coalesce(m.onboarding_status,'active'))='active'
+        and (
+          lower(regexp_replace(replace(replace(btrim(coalesce(m.actual_position,'')),'_',' '),'-',' '),'[[:space:]]+',' ','g')) in ('chairperson','vice chairperson','chair','vice chair','treasurer','secretary','vice secretary')
+          or lower(regexp_replace(replace(replace(btrim(coalesce(m.actual_position_name,'')),'_',' '),'-',' '),'[[:space:]]+',' ','g')) in ('chairperson','vice chairperson','chair','vice chair','treasurer','secretary','vice secretary')
+        ))
+    ))
+);
+
+drop policy if exists loan_repayments_read_member_or_official on public.loan_repayments;
+create policy loan_repayments_read_member_or_official on public.loan_repayments
+for select to authenticated using (
+  public.cl_group_module_enabled(group_id,'loans')
+  and exists(select 1 from public.loan_applications l where l.id=loan_repayments.loan_id and l.group_id=loan_repayments.group_id
+    and (
+      exists(select 1 from public.members own_member where own_member.id=l.member_id and own_member.group_id=l.group_id
+        and (own_member.user_id=auth.uid() or own_member.auth_user_id=auth.uid()))
+      or exists(select 1 from public.members m where m.group_id=l.group_id and (m.user_id=auth.uid() or m.auth_user_id=auth.uid())
+        and lower(coalesce(m.role,'')) in ('admin','administrator')
+        and lower(coalesce(m.status,'active'))='active' and lower(coalesce(m.onboarding_status,'active'))='active')
+      or exists(select 1 from public.members m where m.group_id=l.group_id and (m.user_id=auth.uid() or m.auth_user_id=auth.uid())
+        and lower(coalesce(m.status,'active'))='active' and lower(coalesce(m.onboarding_status,'active'))='active'
+        and (
+          lower(regexp_replace(replace(replace(btrim(coalesce(m.actual_position,'')),'_',' '),'-',' '),'[[:space:]]+',' ','g')) in ('chairperson','vice chairperson','chair','vice chair','treasurer','secretary','vice secretary')
+          or lower(regexp_replace(replace(replace(btrim(coalesce(m.actual_position_name,'')),'_',' '),'-',' '),'[[:space:]]+',' ','g')) in ('chairperson','vice chairperson','chair','vice chair','treasurer','secretary','vice secretary')
+        ))
+    ))
+);
+
+drop policy if exists loan_allocations_read_member_or_official on public.loan_repayment_allocations;
+create policy loan_allocations_read_member_or_official on public.loan_repayment_allocations
+for select to authenticated using (
+  public.cl_group_module_enabled(group_id,'loans')
+  and exists(select 1 from public.loan_applications l where l.id=loan_repayment_allocations.loan_id and l.group_id=loan_repayment_allocations.group_id
+    and (
+      exists(select 1 from public.members own_member where own_member.id=l.member_id and own_member.group_id=l.group_id
+        and (own_member.user_id=auth.uid() or own_member.auth_user_id=auth.uid()))
+      or exists(select 1 from public.members m where m.group_id=l.group_id and (m.user_id=auth.uid() or m.auth_user_id=auth.uid())
+        and lower(coalesce(m.role,'')) in ('admin','administrator')
+        and lower(coalesce(m.status,'active'))='active' and lower(coalesce(m.onboarding_status,'active'))='active')
+      or exists(select 1 from public.members m where m.group_id=l.group_id and (m.user_id=auth.uid() or m.auth_user_id=auth.uid())
+        and lower(coalesce(m.status,'active'))='active' and lower(coalesce(m.onboarding_status,'active'))='active'
+        and (
+          lower(regexp_replace(replace(replace(btrim(coalesce(m.actual_position,'')),'_',' '),'-',' '),'[[:space:]]+',' ','g')) in ('chairperson','vice chairperson','chair','vice chair','treasurer','secretary','vice secretary')
+          or lower(regexp_replace(replace(replace(btrim(coalesce(m.actual_position_name,'')),'_',' '),'-',' '),'[[:space:]]+',' ','g')) in ('chairperson','vice chairperson','chair','vice chair','treasurer','secretary','vice secretary')
+        ))
+    ))
 );
 
 -- Loan audit is readable only by authorized group officials; no direct client writes.
