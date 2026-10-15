@@ -319,7 +319,7 @@ returns trigger
 language plpgsql security definer
 set search_path = public, pg_temp
 as $$
-declare v_name text;
+declare v_name text; v_official record; v_position text; v_position_name text;
 begin
   if tg_op='INSERT' then
     select m.name into v_name from public.members m where m.id=new.member_id;
@@ -329,6 +329,21 @@ begin
     end if;
     perform public.cl_loan_emit_notification(new.group_id,new.member_id,new.id,'application_submitted','Loan application submitted',
       'Your loan application has been submitted for the required office decisions.');
+    for v_official in
+      select m.id,m.role,m.actual_position,m.actual_position_name
+      from public.members m
+      where m.group_id=new.group_id and m.id<>new.member_id
+        and lower(coalesce(m.status,'active'))='active'
+        and lower(coalesce(m.onboarding_status,'active'))='active'
+        and (
+          lower(coalesce(m.role,'')) in ('admin','administrator')
+          or lower(regexp_replace(replace(replace(btrim(coalesce(m.actual_position,'')),'_',' '),'-',' '),'[[:space:]]+',' ','g')) in ('chairperson','vice chairperson','chair','vice chair','treasurer','secretary','vice secretary')
+          or lower(regexp_replace(replace(replace(btrim(coalesce(m.actual_position_name,'')),'_',' '),'-',' '),'[[:space:]]+',' ','g')) in ('chairperson','vice chairperson','chair','vice chair','treasurer','secretary','vice secretary')
+        )
+    loop
+      perform public.cl_loan_emit_notification(new.group_id,v_official.id,new.id,'application_review_requested','Loan application awaiting review',
+        'A member has submitted a loan application requiring the three office decisions.');
+    end loop;
     return new;
   end if;
   if old.guarantor_status is distinct from new.guarantor_status and new.guarantor_member_id is not null then
