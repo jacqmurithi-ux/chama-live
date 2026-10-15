@@ -87,9 +87,7 @@ const DEFAULT_LOGIN_URL =
    LOG
 ========================================================= */
 
-console.log(
-  "CHAMA LIVE: activate-account.js loaded"
-);
+
 
 
 /* =========================================================
@@ -129,10 +127,8 @@ function showError(message) {
 
 function showSuccess(message) {
 
-  console.log(
-    "CHAMA LIVE activation success:",
-    message
-  );
+  
+
 
   if (successBox) {
 
@@ -665,9 +661,8 @@ function validateForm() {
 
 async function activateAccount(payload) {
 
-  console.log(
-    "CHAMA LIVE: calling activate-account Edge Function"
-  );
+  
+
 
 
   /*
@@ -687,10 +682,8 @@ async function activateAccount(payload) {
     );
 
 
-  console.log(
-    "CHAMA LIVE: Edge Function result:",
-    result
-  );
+  
+
 
 
   /*
@@ -814,9 +807,8 @@ else {
           );
 
 
-        console.log(
-          "CHAMA LIVE: account activation completed"
-        );
+        
+
 
 
         /*
@@ -957,6 +949,4 @@ catch (error) {
    READY
 ========================================================= */
 
-console.log(
-  "CHAMA LIVE: activate-account.js ready"
-);
+
