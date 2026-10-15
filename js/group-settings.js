@@ -20,6 +20,9 @@ export async function initGroupSettings() {
     window.location.replace("dashboard.html");
     return;
   }
+  if (byId("settingsRoot")) byId("settingsRoot").hidden = false;
+  document.querySelectorAll("#existingModulesForm button, #existingModulesForm input, #optionalModulesForm button, #optionalModulesForm input")
+    .forEach(node => { node.disabled = !canEdit; });
 
   const group = context.group || {};
   const member = context.member || {};
