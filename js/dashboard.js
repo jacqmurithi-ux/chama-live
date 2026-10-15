@@ -3584,7 +3584,8 @@ function renderCumulativePosition() {
       const selectedStatus = button.dataset.cumulativeFilter;
       if (!dialog || !rows) return;
 
-      if (!summary.complete) {
+      const currentSummary = getCumulativeSummary();
+      if (!currentSummary.complete) {
         rows.innerHTML = '<tr><td colspan="7"><div class="empty-state"><strong>Cumulative position unavailable</strong><span>The complete cumulative accounting set could not be loaded.</span></div></td></tr>';
       } else {
         const matchingPositions = (cumulativePositions || [])
