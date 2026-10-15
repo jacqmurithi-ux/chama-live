@@ -134,6 +134,8 @@ let canonicalSummary = null;
 */
 let cumulativePositions = [];
 let cumulativePositionsComplete = false;
+let cumulativeStatusFilter = null;
+let cumulativeFilterEventsBound = false;
 
 let customContributionStatuses = [];
 let customContributionPeriods = [];
@@ -3610,6 +3612,48 @@ function renderCumulativePosition() {
       "cumulativePositionRows"
     );
 
+  const filterLabel = el("cumulativeFilterLabel");
+  const showAllButton = el("cumulativeShowAll");
+  const filterButtons = document.querySelectorAll("[data-cumulative-filter]");
+
+  if (!cumulativeFilterEventsBound) {
+    filterButtons.forEach(button => {
+      button.addEventListener("click", () => {
+        cumulativeStatusFilter = button.dataset.cumulativeFilter || null;
+        renderCumulativePosition();
+      });
+    });
+
+    showAllButton?.addEventListener("click", () => {
+      cumulativeStatusFilter = null;
+      renderCumulativePosition();
+    });
+
+    cumulativeFilterEventsBound = true;
+  }
+
+  filterButtons.forEach(button => {
+    button.setAttribute(
+      "aria-pressed",
+      String(button.dataset.cumulativeFilter === cumulativeStatusFilter)
+    );
+  });
+
+  if (filterLabel) {
+    const labels = {
+      UP_TO_DATE: "Members up to date",
+      ARREARS: "Members in arrears",
+      CREDIT: "Members with credit"
+    };
+    filterLabel.textContent = cumulativeStatusFilter
+      ? `Showing: ${labels[cumulativeStatusFilter] || "Selected status"}`
+      : "Showing all member positions";
+  }
+
+  if (showAllButton) {
+    showAllButton.hidden = !cumulativeStatusFilter;
+  }
+
 
   if (!container) {
     return;
@@ -3650,10 +3694,10 @@ function renderCumulativePosition() {
         <td colspan="7">
           <div class="empty-state">
             <strong>
-              No group members
+              No members in this status
             </strong>
             <span>
-              No cumulative accounting positions were returned.
+              No cumulative accounting positions match this filter.
             </span>
           </div>
         </td>
@@ -3667,6 +3711,14 @@ function renderCumulativePosition() {
 
   const positions =
     cumulativePositions
+      .filter(position => {
+        if (!cumulativeStatusFilter) return true;
+        return normalizeCumulativeStatus(
+          position.status,
+          position.arrears,
+          position.credit
+        ) === cumulativeStatusFilter;
+      })
       .slice()
       .sort(
         (
