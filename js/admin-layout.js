@@ -2294,16 +2294,9 @@ export async function boot() {
       "admin authorization";
 
 
-    if (
-      !isAdminAccount()
-    ) {
-
-      window.location.replace(
-        "member-dashboard.html"
-      );
-
+    if (!isAdminAccount()) {
+      redirectWithNotice("No access", "member-dashboard.html");
       return;
-
     }
 
 
