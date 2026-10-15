@@ -13,7 +13,7 @@
     .account-stat,.account-card{border:1px solid #e2e8f0;border-radius:14px;background:#fff;padding:16px;min-width:0}
     .account-stat span,.account-profile-field span{display:block;color:#64748b;font-size:.76rem;font-weight:700;margin-bottom:6px}
     .account-stat strong{display:block;font-size:1.15rem;overflow-wrap:anywhere;color:#1f2937}
-    .account-card{margin-bottom:18px}.account-card h2{font-size:1.1rem;margin:0 0 12px}
+    .account-card{margin-bottom:18px}.account-card h2{font-size:1.1rem;margin:0 0 12px}.account-allocation-list{display:grid;gap:0}.account-allocation-row{display:flex;justify-content:space-between;gap:16px;padding:10px 0;border-bottom:1px solid #e2e8f0}.account-allocation-row:last-child{border-bottom:0}.account-allocation-row strong{font-variant-numeric:tabular-nums;text-align:right}.account-allocation-note{margin-top:10px;font-size:.85rem}
     .account-profile{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
     .account-profile-field strong{display:block;overflow-wrap:anywhere}
     .account-toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin-bottom:14px}
@@ -49,6 +49,13 @@
       <h2 id="summaryHeading">Personal financial summary</h2>
       <p class="account-muted">Contribution status is taken from canonical accounting. Pending payment evidence is not counted as a recognized contribution.</p>
       <div id="myAccountSummary" class="account-grid"></div>
+    </section>
+    <section class="account-card" aria-labelledby="allocationHeading">
+      <h2 id="allocationHeading">Allocation by Contribution Type</h2>
+      <p class="account-muted">Recognized contributions allocated to each contribution obligation type. Pending payment evidence is excluded.</p>
+      <div id="myAccountAllocationTypes" class="account-allocation-list"><p class="account-muted">Loading allocation breakdown…</p></div>
+      <div id="myAccountAllocationTotals"></div>
+      <p id="myAccountAllocationNote" class="account-allocation-note account-muted" role="status" hidden></p>
     </section>
     <section id="myAccountLoansSection" class="account-card" hidden aria-labelledby="loanHeading">
       <h2 id="loanHeading">My loans</h2><div id="myAccountLoanSummary" class="account-grid"></div>

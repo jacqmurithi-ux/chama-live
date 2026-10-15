@@ -13,7 +13,18 @@ export async function loadMyAccountBundle() {
   if (!bundle?.member?.id) {
     throw new Error("Your personal member account could not be resolved. Please contact your group administrator; no duplicate account has been created.");
   }
-  return normalizeBundle(bundle);
+  const { data: allocationData, error: allocationError } = await supabase.rpc("cl_get_my_account_allocation_breakdown");
+  const allocationBreakdown = Array.isArray(allocationData) ? allocationData[0] : allocationData;
+  if (allocationError || !allocationBreakdown || !Array.isArray(allocationBreakdown.allocationsByType)) {
+    // Keep the existing account usable before the additive read-only RPC is deployed.
+    // Never substitute zeroes for an unavailable breakdown.
+    console.warn("My Account allocation breakdown unavailable", allocationError || "Invalid response");
+    return normalizeBundle({
+      ...bundle,
+      allocationBreakdown: { available: false, allocationsByType: [] }
+    });
+  }
+  return normalizeBundle({ ...bundle, allocationBreakdown: { ...allocationBreakdown, available: true } });
 }
 
 export async function uploadMyPaymentProof(file, bundle) {
@@ -73,6 +84,19 @@ function normalizeBundle(bundle) {
   return {
     ...bundle,
     member: bundle.member || {},
+    allocationBreakdown: {
+      ...bundle.allocationBreakdown,
+      available: bundle.allocationBreakdown?.available === true,
+      recognizedContributions: asNumber(bundle.allocationBreakdown?.recognizedContributions),
+      totalAllocatedAcrossTypes: asNumber(bundle.allocationBreakdown?.totalAllocatedAcrossTypes),
+      unallocatedAmount: asNumber(bundle.allocationBreakdown?.unallocatedAmount),
+      allocationExceedsRecognized: bundle.allocationBreakdown?.allocationExceedsRecognized === true,
+      allocationsByType: asArray(bundle.allocationBreakdown?.allocationsByType).map(row => ({
+        contributionTypeId: row.contributionTypeId || null,
+        contributionType: String(row.contributionType || "Unclassified / legacy"),
+        allocatedAmount: asNumber(row.allocatedAmount)
+      }))
+    },
     summary: {
       ...bundle.summary,
       recognizedContributions: asNumber(bundle.summary?.recognizedContributions),

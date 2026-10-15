@@ -83,7 +83,7 @@ function renderBundle() {
     ["Role", m.role], ["Member since", date(m.join_date)], ["Membership status", m.status]
   ].map(([label, value]) => `<div class="account-profile-field"><span>${escapeAccountHtml(label)}</span><strong>${escapeAccountHtml(value || "—")}</strong></div>`).join("");
   el("myAccountSummary").innerHTML = [
-    summaryCard("Recognized contributions", money(s.recognizedContributions)),
+    summaryCard("All Contributions", money(s.recognizedContributions)),
     summaryCard("Allocated to Monthly Obligations", money(s.totalAllocated)),
     summaryCard("Total arrears", money(s.totalArrears)),
     summaryCard("Monthly due", money(s.monthlyDue)),
@@ -92,6 +92,23 @@ function renderBundle() {
     summaryCard("Carry-forward credit", money(s.carryForwardCredit)),
     summaryCard("Fines outstanding", money(s.finesOutstanding))
   ].join("");
+  const allocation = bundle.allocationBreakdown;
+  const allocationAvailable = allocation.available === true;
+  el("myAccountAllocationTypes").innerHTML = !allocationAvailable
+    ? '<p class="account-muted">The contribution-type breakdown is temporarily unavailable. Existing account figures remain unchanged.</p>'
+    : allocation.allocationsByType.length
+      ? allocation.allocationsByType.map(row => `<div class="account-allocation-row"><span>${escapeAccountHtml(row.contributionType)}</span><strong>${escapeAccountHtml(money(row.allocatedAmount))}</strong></div>`).join("")
+      : '<p class="account-muted">No allocations to contribution obligations are recorded yet.</p>';
+  el("myAccountAllocationTotals").innerHTML = allocationAvailable ? [
+    summaryCard("Total allocated across all types", money(allocation.totalAllocatedAcrossTypes)),
+    summaryCard("Unallocated recognized contributions", money(allocation.unallocatedAmount))
+  ].join("") : "";
+  const allocationNote = el("myAccountAllocationNote");
+  allocationNote.hidden = !allocationAvailable || !allocation.allocationExceedsRecognized;
+  allocationNote.textContent = allocationAvailable && allocation.allocationExceedsRecognized
+    ? "The recorded allocations exceed recognized contributions. Please ask an authorized group official to review the accounting records; this page has not changed them."
+    : "";
+
   const loanSection = el("myAccountLoansSection");
   loanSection.hidden = !bundle.loansEnabled;
   if (bundle.loansEnabled) {
