@@ -34,7 +34,7 @@
 </div><button class="loan-btn" type="submit">Save loan settings</button>
 </form>
 </section>
-<div class="loan-grid">
+<div id="loanApplyOverviewGrid" class="loan-grid">
 <section class="loan-card">
 <h2>Apply for a loan</h2><p id="loanLimits" class="loan-muted">Loan limits load after settings are configured.</p>
 <form id="loanApplyForm" class="loan-form" data-permission-page="loans" data-permission-action="apply">
@@ -58,7 +58,7 @@
 <section id="loanPendingRepaymentsCard" class="loan-card loan-hidden" style="margin-top:16px"><h2>Repayments awaiting confirmation</h2><div class="loan-table-wrap"><table id="loanPendingRepaymentTable" class="loan-table"><thead><tr><th>Member</th><th>Amount</th><th>Date</th><th>Reference</th><th>Action</th></tr></thead><tbody id="loanPendingRepaymentRows"><tr><td colspan="5">No pending repayments.</td></tr></tbody></table></div></section>
 <section id="loanOverdueCard" class="loan-card loan-hidden" style="margin-top:16px"><h2>Overdue loans</h2><div id="loanOverdueRows"><p class="loan-muted">No overdue loans.</p></div></section>
 <section id="loanGroupSummaryCard" class="loan-card loan-hidden" style="margin-top:16px"><h2>Group loan overview</h2><div id="loanGroupSummary" class="loan-summary"></div></section>
-<section class="loan-card" style="margin-top:16px">
+<section id="loanApplicationsCard" class="loan-card" style="margin-top:16px">
 <div style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap"><h2>Loan applications and active loans</h2><button id="loanExportCsv" class="loan-btn secondary" type="button" data-permission-page="loans" data-permission-action="export">Export loan report (CSV)</button></div><div id="loanTableFilters" class="loan-grid loan-hidden" style="margin:12px 0"><label>Search by member<input id="loanSearch" type="search" placeholder="Member name"></label><label>Filter by status<select id="loanStatusFilter"><option value="">All statuses</option><option value="submitted">Pending</option><option value="approved">Approved / awaiting disbursement</option><option value="rejected">Rejected</option><option value="active">Active</option><option value="overdue">Overdue</option><option value="cleared">Cleared</option><option value="cancelled">Cancelled</option></select></label></div>
 <div class="loan-table-wrap"><table id="loanApplicationsTable" class="loan-table"><thead><tr><th>Member</th><th>Requested</th><th>Approved</th><th>Period</th><th>Status</th><th>Submitted</th><th>Actions</th></tr></thead><tbody id="loanRows"><tr><td colspan="7">Loading loans…</td></tr></tbody></table></div>
 </section>
