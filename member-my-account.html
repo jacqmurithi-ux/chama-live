@@ -32,6 +32,11 @@
     .account-records-count{color:#64748b;font-size:.82rem;align-self:center}
     .account-records-filter{display:grid;gap:5px}
     .account-records-filter select{min-height:40px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:9px;background:#fff;color:#0f172a}
+    .account-month-filter-bar{display:flex;align-items:end;gap:14px;flex-wrap:wrap;padding:14px;margin:0 0 14px;border:1px solid #99f6e4;border-left:5px solid #0f766e;border-radius:10px;background:#f0fdfa}
+    .account-month-filter-bar .account-records-filter{min-width:min(100%,280px);flex:1}
+    .account-month-filter-bar .account-records-filter label{font-size:.9rem;color:#115e59}
+    .account-month-filter-bar .account-records-filter select{width:100%;min-height:44px;font-size:1rem;border-color:#0f766e}
+    .account-month-filter-help{margin:0 0 2px;color:#475569;font-size:.82rem}
     .account-records-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:12px}
 
     .account-table th{background:#f8fafc;color:#64748b;font-size:.72rem;text-transform:uppercase}.account-status{display:inline-block;border-radius:999px;background:#f1f5f9;padding:4px 8px;font-size:.75rem;font-weight:700}
@@ -95,8 +100,16 @@
           <span class="account-records-chevron" aria-hidden="true">⌄</span>
         </summary>
         <div class="account-records-content">
+          <div class="account-month-filter-bar account-no-print">
+            <div class="account-field account-records-filter">
+              <label for="accountMonthFilter">Filter records by month</label>
+              <select id="accountMonthFilter" aria-label="Filter records by month">
+                <option value="all">All months</option>
+              </select>
+            </div>
+            <p class="account-month-filter-help">Choose a month to show only records from that month.</p>
+          </div>
           <div class="account-toolbar account-no-print">
-            <div class="account-field account-records-filter"><label for="accountMonthFilter">Month</label><select id="accountMonthFilter"><option value="all">All months</option></select></div>
             <div class="account-field"><label for="accountSortField">Sort by</label><select id="accountSortField"><option value="date">Date</option><option value="amount">Amount</option><option value="type">Type</option><option value="status">Status</option></select></div>
             <div class="account-field"><label for="accountSortDirection">Order</label><select id="accountSortDirection"><option value="desc">Descending</option><option value="asc">Ascending</option></select></div>
             <button id="accountExportCsv" class="account-btn" type="button">Download CSV</button>
