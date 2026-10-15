@@ -79,6 +79,7 @@ let members = [];
 let contributions = [];
 let expenses = [];
 let meetings = [];
+let announcements = [];
 let attendance = [];
 
 let supportCases = 0;
@@ -927,6 +928,41 @@ async function loadMeetings() {
       ? data
       : [];
 
+}
+
+async function loadRecentAnnouncements() {
+  const { data, error } = await supabase
+    .from("announcements")
+    .select("id,title,body,created_at")
+    .eq("group_id", currentGroupId)
+    .order("created_at", { ascending: false })
+    .limit(5);
+
+  if (error) throw error;
+  announcements = Array.isArray(data) ? data : [];
+}
+
+function renderRecentAnnouncements() {
+  const container = el("recentAnnouncementList");
+  if (!container) return;
+
+  if (optionalLoadErrors.announcements) {
+    container.innerHTML = '<p class="empty-state" role="status">Announcements could not be loaded right now.</p>';
+    return;
+  }
+
+  if (!announcements.length) {
+    container.innerHTML = '<p class="empty-state">There are no announcements for this group yet.</p>';
+    return;
+  }
+
+  container.innerHTML = announcements.map(item => `
+    <article class="announcement-item" style="padding:14px 0;border-bottom:1px solid var(--dashboard-border,#e5e7eb)">
+      <h3 style="margin:0 0 5px;font-size:1rem">${escapeHtml(item.title || "Group announcement")}</h3>
+      <p class="muted" style="margin:0 0 8px;font-size:.85rem">${escapeHtml(formatDate(item.created_at))}</p>
+      <div style="white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.55">${escapeHtml(item.body || "")}</div>
+    </article>
+  `).join("");
 }
 
 
@@ -2497,6 +2533,7 @@ async function loadData() {
     ["contributions", loadContributions],
     ["expenses", loadExpenses],
     ["meetings", loadMeetings],
+    ["announcements", loadRecentAnnouncements],
     ["supportCases", loadSupportCases],
     ["plans", loadPlans],
     ["activities", loadActivities],
@@ -4201,6 +4238,8 @@ function renderDashboard() {
   renderRecentExpenses();
 
   renderUpcomingMeetings();
+
+  renderRecentAnnouncements();
 
   renderAttendanceSummary();
 
