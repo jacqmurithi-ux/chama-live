@@ -1717,7 +1717,7 @@ async function loadMeetingDocuments() {
   if (meetingDocumentMeta) {
     meetingDocumentMeta.textContent = files.length
       ? `${files.length} private file${files.length === 1 ? "" : "s"} attached to this meeting.`
-      : "No files uploaded yet.";
+      : "No minutes attachment uploaded. This is optional.";
   }
 
   meetingDocumentList.innerHTML = files.length
@@ -1730,7 +1730,7 @@ async function loadMeetingDocuments() {
           <button type="button" class="btn btn-secondary" data-document-download="${escapeHtml(file.id)}">Download</button>
         </div>
       `).join("")
-    : '<p class="muted">Attach the signed attendance sheet, agenda, minutes, resolutions, or other meeting files here.</p>';
+    : '<p class="muted">Optionally attach the meeting minutes as a PDF or DOCX file.</p>';
 }
 
 async function uploadMeetingFiles() {
@@ -1788,7 +1788,7 @@ async function uploadMeetingFiles() {
     }
 
     if (meetingDocumentFile) meetingDocumentFile.value = "";
-    showDocumentMessage("Meeting file(s) uploaded securely.");
+    showDocumentMessage("Minutes attachment uploaded securely.");
     await loadMeetingDocuments();
   } finally {
     if (uploadMeetingDocument) {
