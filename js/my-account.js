@@ -61,7 +61,7 @@ function recordMonthKey(row) {
   if (!Number.isNaN(parsed.getTime())) {
     return `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, "0")}`;
   }
-  const match = String(raw).match(/^(\\d{4})-(\\d{2})/);
+  const match = String(raw).match(/^(\d{4})-(\d{2})/);
   return match ? `${match[1]}-${match[2]}` : "";
 }
 function populateRecordMonthFilter() {
