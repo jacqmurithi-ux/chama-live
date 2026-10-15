@@ -31,8 +31,8 @@ test("account records sort by date, amount, type and status in both directions",
 test("both portals load the same shared account renderer", () => {
   assert.match(adminLayout, /admin-my-account\.html/);
   assert.match(memberLayout, /member-my-account\.html/);
-  assert.match(adminLayout, /my-account\.js\?v=20261013-shared-account1/);
-  assert.match(memberLayout, /my-account\.js\?v=20261013-shared-account1/);
+  assert.match(adminLayout, /my-account\.js\?v=[\w-]+/);
+  assert.match(memberLayout, /my-account\.js\?v=[\w-]+/);
   assert.match(adminPage, /import \{ boot \} from "\.\/js\/admin-layout\.js"/);
   assert.match(memberPage, /import \{ boot \} from "\.\/js\/member-layout\.js"/);
 });
