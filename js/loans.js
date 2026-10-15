@@ -194,12 +194,13 @@ async function loadOfficialSections(){
  const byId=new Map(members.map(m=>[m.id,m]));
  const ownApproval=loanApprovals.find(a=>a.approval_slot===officeSlot);
  const awaiting=officeSlot?loans.filter(l=>l.status==="submitted"&&l.member_id!==ctx.member.id&&!loanApprovals.some(a=>a.loan_id===l.id&&a.approval_slot===officeSlot)): [];
- $("loanReviewRows").innerHTML=awaiting.map(l=>{
+ const reviewRows=await Promise.all(awaiting.map(async l=>{
   const history=loans.filter(x=>x.member_id===l.member_id&&x.id!==l.id);
   let historyBalance=0;for(const past of history.filter(x=>["active","overdue"].includes(x.status))){const {data:ss}=await supabase.from("loan_repayment_schedule").select("principal_due,interest_due,penalty_due,amount_paid").eq("loan_id",past.id);for(const s of ss||[])historyBalance+=Math.max(0,Number(s.principal_due)+Number(s.interest_due)+Number(s.penalty_due)-Number(s.amount_paid));}
   const guarantor=byId.get(l.guarantor_member_id)?.name|| (l.guarantor_member_id?"Guarantor":"None");
   return '<tr><td>'+esc(byId.get(l.member_id)?.name||"Member")+'</td><td>KES '+money(l.requested_amount)+'</td><td>'+l.period_months+' months</td><td>'+esc(l.purpose)+'</td><td>'+esc(guarantor)+' ('+esc(l.guarantor_status||"not_required")+')</td><td>'+history.length+' previous loan(s); outstanding KES '+money(historyBalance)+'</td><td><div class="loan-actions"><button class="loan-btn" data-review="approved" data-id="'+esc(l.id)+'">Approve</button><button class="loan-btn secondary" data-review="rejected" data-id="'+esc(l.id)+'">Reject</button><button class="loan-btn secondary" data-detail="'+esc(l.id)+'">View</button></div></td></tr>';
- }).join("")||'<tr><td colspan="7">No loans awaiting your office decision.</td></tr>';
+ }));
+ $("loanReviewRows").innerHTML=reviewRows.join("")||'<tr><td colspan="7">No loans awaiting your office decision.</td></tr>';
 
  const {data:pending,error:pendingError}=await supabase.from("loan_repayments")
   .select("id,loan_id,group_id,amount,payment_date,reference,status")
