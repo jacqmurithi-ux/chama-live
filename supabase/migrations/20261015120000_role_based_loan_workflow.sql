@@ -32,6 +32,12 @@ create index if not exists loan_audit_group_loan_created_idx
   on public.loan_audit(group_id, loan_id, created_at desc);
 
 alter table public.loan_audit enable row level security;
+alter table public.loan_settings enable row level security;
+alter table public.loan_applications enable row level security;
+alter table public.loan_approvals enable row level security;
+alter table public.loan_repayment_schedule enable row level security;
+alter table public.loan_repayments enable row level security;
+alter table public.loan_repayment_allocations enable row level security;
 
 -- Backfill the new settings switch from the existing module switch.
 update public.loan_settings s
@@ -121,6 +127,9 @@ begin
     elsif old.approved_amount is distinct from new.approved_amount or old.disbursed_at is distinct from new.disbursed_at then
       v_action := 'loan_edited';
       v_detail := jsonb_build_object('approved_amount',new.approved_amount,'disbursed_at',new.disbursed_at);
+    elsif old.guarantor_status is distinct from new.guarantor_status then
+      v_action := 'guarantor_response';
+      v_detail := jsonb_build_object('guarantor_status',new.guarantor_status,'guarantor_member_id',new.guarantor_member_id);
     else
       return new;
     end if;
@@ -148,13 +157,13 @@ begin
       'max_amount',new.max_loan_amount,'max_period_months',new.max_period_months,'late_penalty',new.late_penalty);
     v_actor := coalesce(v_actor,new.updated_by);
   else
-    return coalesce(new,old);
+    return new;
   end if;
   insert into public.loan_audit(group_id,loan_id,actor_id,action,detail)
   values(v_group_id,v_loan_id,v_actor,v_action,coalesce(v_detail,'{}'::jsonb));
-  return coalesce(new,old);
+  return new;
 end
-$$;
+$;
 
 drop trigger if exists cl_loan_audit_application on public.loan_applications;
 create trigger cl_loan_audit_application
@@ -434,8 +443,8 @@ declare v_loan public.loan_applications%rowtype;
 begin
   select * into v_loan from public.loan_applications where id=p_loan_id and group_id=p_group_id;
   if not found then raise exception 'Loan application not found.' using errcode='P0002'; end if;
-  if p_decision='rejected' and length(btrim(coalesce(p_reason,'')))=0 then
-    raise exception 'A reason is required when rejecting a loan.' using errcode='22023';
+  if length(btrim(coalesce(p_reason,'')))=0 then
+    raise exception 'A reason is required for an approval or rejection.' using errcode='22023';
   end if;
   return public.cl_loan_review_authorized(p_group_id,p_loan_id,p_decision,p_reason,
     case when p_decision='approved' then v_loan.requested_amount else null end);
@@ -627,6 +636,25 @@ begin
   return public.cl_get_group_loan_summary(p_group_id);
 end
 $$;
+
+drop policy if exists loan_settings_read_member on public.loan_settings;
+create policy loan_settings_read_member on public.loan_settings
+for select to authenticated
+using (exists(select 1 from public.members m
+  where m.group_id=loan_settings.group_id
+    and (m.user_id=auth.uid() or m.auth_user_id=auth.uid())
+    and lower(coalesce(m.status,'active'))='active'
+    and lower(coalesce(m.onboarding_status,'active'))='active'));
+
+drop policy if exists loan_applications_read_guarantor on public.loan_applications;
+create policy loan_applications_read_guarantor on public.loan_applications
+for select to authenticated
+using (exists(select 1 from public.members m
+  where m.id=loan_applications.guarantor_member_id
+    and m.group_id=loan_applications.group_id
+    and (m.user_id=auth.uid() or m.auth_user_id=auth.uid())
+    and lower(coalesce(m.status,'active'))='active'
+    and lower(coalesce(m.onboarding_status,'active'))='active'));
 
 -- Loan audit is readable only by authorized group officials; no direct client writes.
 drop policy if exists loan_audit_read_official on public.loan_audit;
