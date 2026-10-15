@@ -257,6 +257,25 @@ create trigger cl_loan_validate_application
 before insert on public.loan_applications
 for each row execute function public.cl_loan_validate_application();
 
+-- Once captured at application time, loan terms are immutable even if settings change before approval/disbursement.
+create or replace function public.cl_loan_preserve_term_snapshots()
+returns trigger
+language plpgsql security definer
+set search_path = public, pg_temp
+as $
+begin
+  if old.interest_rate_snapshot is not null then new.interest_rate_snapshot:=old.interest_rate_snapshot; end if;
+  if old.interest_type_snapshot is not null then new.interest_type_snapshot:=old.interest_type_snapshot; end if;
+  if old.penalty_snapshot is not null then new.penalty_snapshot:=old.penalty_snapshot; end if;
+  return new;
+end
+$;
+
+drop trigger if exists cl_loan_preserve_term_snapshots on public.loan_applications;
+create trigger cl_loan_preserve_term_snapshots
+before update on public.loan_applications
+for each row execute function public.cl_loan_preserve_term_snapshots();
+
 -- Only the explicitly recorded office may fill its approval slot; Admin role alone is insufficient.
 create or replace function public.cl_loan_validate_office_approval()
 returns trigger
