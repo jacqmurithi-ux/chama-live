@@ -115,6 +115,9 @@ begin
   into v_total_allocated
   from public.contribution_allocations ca
   join public.contribution_obligations o on o.id = ca.obligation_id
+  join public.contributions c
+    on c.id = ca.payment_id
+   and c.group_id = v_member.group_id
   where o.group_id = v_member.group_id
     and o.member_id = v_member.id
     and o.obligation_month <= date_trunc('month', current_date)::date
