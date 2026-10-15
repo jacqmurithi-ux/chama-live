@@ -987,7 +987,7 @@ for select to authenticated
 using (
   public.cl_group_module_enabled(group_id,'loans')
   and (
-    public.cl_user_has_role(group_id,array['admin','chairperson','secretary','treasurer']::text[])
+    public.cl_user_has_role(group_id,array['admin']::text[])
     or exists(select 1 from public.members m where m.group_id=loan_audit.group_id
       and (m.user_id=auth.uid() or m.auth_user_id=auth.uid())
       and lower(regexp_replace(replace(replace(btrim(coalesce(m.actual_position,'')),'_',' '),'-',' '),'[[:space:]]+',' ','g')) in
