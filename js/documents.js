@@ -69,7 +69,7 @@ function getFilteredDocuments() {
   const query = $("docsSearch").value.trim().toLocaleLowerCase();
   return documents.filter(doc => {
     const categoryMatches = selectedCategory === "All" || doc.category === selectedCategory;
-    const haystack = [doc.title, doc.description, doc.category, doc.original_file_name].join(" ").toLocaleLowerCase();
+    const haystack = [doc.title, doc.document_type, doc.description, doc.category, doc.original_file_name].join(" ").toLocaleLowerCase();
     return categoryMatches && (!query || haystack.includes(query));
   }).sort((a,b) => {
     if (a.category === "Constitution" && b.category !== "Constitution") return -1;
@@ -94,6 +94,7 @@ function cardMarkup(doc, formOnly = false) {
   const recent = isRecent(doc.updated_at || doc.created_at);
   const pinned = doc.category === "Constitution";
   const description = doc.description ? '<p class="docs-description">' + esc(doc.description) + '</p>' : "";
+  const otherTypeTag = doc.category === "Other" && doc.document_type ? '<span class="docs-tag">' + esc(doc.document_type) + '</span>' : "";
   const versions = versionsByDocument.get(doc.id) || [];
   const versionHistory = versions.length ? '<details class="docs-more"><summary>Version history (' + versions.length + ')</summary>' + versions.map(version =>
     '<div class="docs-version"><div><strong>Version ' + version.version_number + '</strong><br><span>' + esc(formatDate(version.created_at)) + ' · ' + esc(formatSize(version.file_size)) + ' · ' + esc(displayNameFor(version.uploaded_by)) + '</span></div><button class="docs-btn" type="button" data-download-version="' + esc(version.id) + '">Download</button></div>'
@@ -107,7 +108,7 @@ function cardMarkup(doc, formOnly = false) {
     actions.push('<button class="docs-btn" type="button" data-delete="' + esc(doc.id) + '">Delete</button>');
   }
   return '<article class="docs-card ' + (pinned ? 'is-constitution' : '') + '" data-doc-card="' + esc(doc.id) + '">' +
-    '<div class="docs-card-head"><div class="docs-file-icon ' + kind + '" aria-hidden="true">' + label + '</div><div style="min-width:0;flex:1"><div class="docs-card-title">' + esc(doc.title) + '</div><div class="docs-tags"><span class="docs-tag">' + esc(doc.category) + '</span>' + (pinned ? '<span class="docs-tag">Pinned</span>' : '') + (recent ? '<span class="docs-new">New</span>' : '') + '</div></div></div>' +
+    '<div class="docs-card-head"><div class="docs-file-icon ' + kind + '" aria-hidden="true">' + label + '</div><div style="min-width:0;flex:1"><div class="docs-card-title">' + esc(doc.title) + '</div><div class="docs-tags"><span class="docs-tag">' + esc(doc.category) + '</span>' + otherTypeTag + (pinned ? '<span class="docs-tag">Pinned</span>' : '') + (recent ? '<span class="docs-new">New</span>' : '') + '</div></div></div>' +
     description +
     '<div class="docs-meta"><span>' + esc(formatSize(doc.file_size)) + '</span><span>Updated ' + esc(formatDate(doc.updated_at || doc.created_at)) + '</span><span>By ' + esc(documentUploader(doc)) + '</span>' + (doc.meeting_id ? '<span>Meeting linked</span>' : '') + '</div>' +
     '<div class="docs-actions">' + actions.join("") + '</div>' + versionHistory + '</article>';
@@ -143,7 +144,7 @@ function renderDocuments() {
 }
 async function loadData() {
   const {data: docs, error} = await supabase.from("documents")
-    .select("id,group_id,title,storage_path,uploaded_by,created_at,category,description,file_size,mime_type,meeting_id,updated_at")
+    .select("id,group_id,title,storage_path,uploaded_by,created_at,category,document_type,description,file_size,mime_type,meeting_id,updated_at")
     .eq("group_id", groupId)
     .order("created_at", {ascending:false});
   if (error) throw error;
@@ -158,7 +159,7 @@ async function loadData() {
     .order("date", {ascending:false});
   if (!meetingError) meetings = meetingRows || [];
   const {data: versions, error: versionsError} = await supabase.from("document_versions")
-    .select("id,document_id,group_id,version_number,title,category,description,storage_path,file_size,mime_type,uploaded_by,created_at,meeting_id")
+    .select("id,document_id,group_id,version_number,title,category,document_type,description,storage_path,file_size,mime_type,uploaded_by,created_at,meeting_id")
     .eq("group_id", groupId)
     .order("version_number", {ascending:false});
   if (versionsError) console.warn("Document version history unavailable", versionsError);
@@ -230,6 +231,9 @@ function openSheet(doc = null) {
   $("docsTitleInput").value = doc?.title || "";
   $("docsCategoryInput").value = doc?.category || "Other";
   $("docsDescriptionInput").value = doc?.description || "";
+  $("docsOtherTypeInput").value = doc?.document_type || "";
+  $("docsOtherTypeField").hidden = $("docsCategoryInput").value !== "Other";
+  $("docsOtherTypeInput").required = $("docsCategoryInput").value === "Other";
   $("docsMeetingInput").value = doc?.meeting_id || "";
   $("docsMeetingField").hidden = $("docsCategoryInput").value !== "Minutes";
   $("docsFileInput").value = "";
@@ -266,10 +270,13 @@ async function submitDocument(event) {
   const title = $("docsTitleInput").value.trim();
   const category = $("docsCategoryInput").value;
   const description = $("docsDescriptionInput").value.trim() || null;
+  const documentType = category === "Other" ? $("docsOtherTypeInput").value.trim() : null;
   const meetingId = category === "Minutes" ? ($("docsMeetingInput").value || null) : null;
   const file = $("docsFileInput").files[0];
   if (!title) return showFormStatus("Enter a document title.", "error");
   if (!CATEGORIES.includes(category)) return showFormStatus("Choose a valid category.", "error");
+  if (category === "Other" && !documentType) return showFormStatus("Specify the document type when Category is Other.", "error");
+  if (documentType && documentType.length > 80) return showFormStatus("Document type must be 80 characters or fewer.", "error");
   let fileInfo;
   try { fileInfo = normalizeFile(file); } catch (error) { return showFormStatus(error.message, "error"); }
   if (category === "Minutes" && meetingId && !meetings.some(meeting => meeting.id === meetingId)) {
@@ -295,6 +302,7 @@ async function submitDocument(event) {
       storage_path:path,
       uploaded_by:context.member.id,
       category,
+      document_type:documentType,
       description,
       file_size:file.size,
       mime_type:fileInfo.mime,
@@ -361,6 +369,10 @@ function bindEvents() {
   $("docsCancel").addEventListener("click", closeSheet);
   $("docsSheet").addEventListener("click", event => { if (event.target === $("docsSheet")) closeSheet(); });
   $("docsCategoryInput").addEventListener("change", () => {
+    const isOther = $("docsCategoryInput").value === "Other";
+    $("docsOtherTypeField").hidden = !isOther;
+    $("docsOtherTypeInput").required = isOther;
+    if (!isOther) $("docsOtherTypeInput").value = "";
     $("docsMeetingField").hidden = $("docsCategoryInput").value !== "Minutes";
   });
   $("docsSearch").addEventListener("input", renderDocuments);
