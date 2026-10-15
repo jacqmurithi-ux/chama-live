@@ -310,8 +310,8 @@ $("loanSettingsForm").addEventListener("submit",async e=>{
  catch(err){status(errorText(err),true);}
 });
 $("loanApplyForm").addEventListener("submit",async e=>{
- e.preventDefault();const f=e.currentTarget.elements;
- try{if(!settings||!groupLoansEnabled)throw new Error("Loans are not yet available for this group.");if(Number(f.amount.value)>Number(settings.max_loan_amount)||Number(f.period.value)>Number(settings.max_period_months))throw new Error("Requested amount or period exceeds the group maximum.");if(loans.some(l=>l.member_id===ctx.member.id&&["submitted","approved","overdue"].includes(l.status)))throw new Error("You already have a pending application or an overdue loan.");await rpc("cl_loan_apply",{p_group_id:ctx.group.id,p_requested_amount:Number(f.amount.value),p_period_months:Number(f.period.value),p_purpose:f.purpose.value,p_guarantor_member_id:f.guarantor.value||null});e.currentTarget.reset();status("Loan application submitted.");await loadNotifications();await loadLoans();}
+ e.preventDefault();const form=e.currentTarget;const f=form.elements;
+ try{if(!settings||!groupLoansEnabled)throw new Error("Loans are not yet available for this group.");if(Number(f.amount.value)>Number(settings.max_loan_amount)||Number(f.period.value)>Number(settings.max_period_months))throw new Error("Requested amount or period exceeds the group maximum.");if(loans.some(l=>l.member_id===ctx.member.id&&["submitted","approved","overdue"].includes(l.status)))throw new Error("You already have a pending application or an overdue loan.");await rpc("cl_loan_apply",{p_group_id:ctx.group.id,p_requested_amount:Number(f.amount.value),p_period_months:Number(f.period.value),p_purpose:f.purpose.value,p_guarantor_member_id:f.guarantor.value||null});form.reset();status("Loan application submitted.");await loadNotifications();await loadLoans();}
  catch(err){status(errorText(err),true);}
 });
 async function handleLoanAction(e){
@@ -361,9 +361,9 @@ $("loanOverdueRows").addEventListener("click",async e=>{
  try{await rpc("send_loan_reminder",{p_loan_id:b.dataset.sendReminder});status("Repayment reminder sent.");await loadNotifications();await loadOfficialSections();}catch(err){status(errorText(err),true);}
 });
 $("loanRepaymentForm").addEventListener("submit",async e=>{
- e.preventDefault();if(!selectedLoan||!allowed("repayment"))return status("View only: you cannot record repayments.",true);
- const f=e.currentTarget.elements;
- try{await rpc("record_repayment",{p_group_id:ctx.group.id,p_loan_id:selectedLoan.id,p_amount:f.amount.value,p_paid_on:f.payment_date.value,p_reference:f.reference.value||null});status("Repayment submitted. It remains pending until an official confirms it.");e.currentTarget.reset();await loadNotifications();await loadLoans();if(selectedLoan)await showDetail(selectedLoan.id);}
+ e.preventDefault();const form=e.currentTarget;if(!selectedLoan||!allowed("repayment"))return status("View only: you cannot record repayments.",true);
+ const f=form.elements;
+ try{await rpc("record_repayment",{p_group_id:ctx.group.id,p_loan_id:selectedLoan.id,p_amount:f.amount.value,p_paid_on:f.payment_date.value,p_reference:f.reference.value||null});status("Repayment submitted. It remains pending until an official confirms it.");form.reset();await loadNotifications();await loadLoans();if(selectedLoan)await showDetail(selectedLoan.id);}
  catch(err){status(errorText(err),true);}
 });
 async function initializeLoans(){
