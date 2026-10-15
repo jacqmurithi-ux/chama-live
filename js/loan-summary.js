@@ -46,7 +46,7 @@ export async function loadGroupLoanSummary(supabase, groupId) {
   if (group?.loans_enabled !== true) return null;
 
   const { data, error } = await supabase.rpc(
-    "cl_get_group_loan_summary",
+    "group_loan_summary",
     { p_group_id: groupId }
   );
 
