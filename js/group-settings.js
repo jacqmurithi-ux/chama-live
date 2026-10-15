@@ -37,16 +37,10 @@ export async function initGroupSettings() {
   };
   Object.entries(values).forEach(([id, value]) => { if (byId(id)) byId(id).textContent = value; });
 
-  const [{ data: existingData, error: existingError }, { data: moduleData, error: moduleError }] = await Promise.all([
-    supabase.rpc("get_group_module_settings", { p_group_id: groupId }),
-    supabase.rpc("get_group_optional_modules", { p_group_id: groupId })
-  ]);
-  if (existingError) throw existingError;
-  if (moduleError) throw moduleError;
-  const existing = Array.isArray(existingData) ? existingData[0] : existingData;
-  setChecked("merryGoRoundEnabled", existing?.merry_go_round_enabled);
-  setChecked("loansEnabled", existing?.loans_enabled);
-  moduleKeys.forEach(key => setChecked("module-" + key, moduleData?.[key] === true));
+  // The shared layout already fetched these flags for navigation and guards.
+  setChecked("merryGoRoundEnabled", group.merry_go_round_enabled);
+  setChecked("loansEnabled", group.loans_enabled);
+  moduleKeys.forEach(key => setChecked("module-" + key, group.modules?.[key] === true));
 
   const setBusy = busy => document.querySelectorAll("#existingModulesForm button, #existingModulesForm input, #optionalModulesForm button, #optionalModulesForm input").forEach(node => { node.disabled = busy || !canEdit; });
   setBusy(false);
