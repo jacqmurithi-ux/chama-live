@@ -4004,7 +4004,7 @@ function renderUpcomingMeetings() {
   const recentCompleted = upcoming.length ? [] : meetings
     .filter(meeting => String(meeting.status || "").toLowerCase() === "completed")
     .sort((a, b) => normalizeDate(b.date).localeCompare(normalizeDate(a.date)))
-    .slice(0, 5);
+    .slice(0, 1);
 
   const rows = upcoming.length ? upcoming : recentCompleted;
 
