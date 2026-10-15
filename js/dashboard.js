@@ -3180,170 +3180,136 @@ function renderSummary() {
    Presentation only: canonical RPC values remain authoritative.
 ========================================================= */
 
-function monthlyStatusDisplay(row) {
-  const due = Number(row.monthlyDue) || 0;
-  const applied = Number(row.appliedThisMonth) || 0;
-  const credit = Number(row.carryForward) || 0;
-  const outstanding = Number(row.currentOutstanding) || 0;
+function monthlyStatusCategory(row) {
+  const due = Math.max(0, numberValue(row.monthlyDue));
+  const applied = Math.max(0, numberValue(row.appliedThisMonth));
+  const credit = Math.max(0, numberValue(row.carryForward));
+  const outstanding = Math.max(0, numberValue(row.currentOutstanding));
 
-  if (due <= 0 && outstanding <= 0 && applied > 0) {
-    return "No Monthly Obligation";
-  }
-
-  if (outstanding > 0) {
-    return "Outstanding";
-  }
-
-  if (credit > 0) {
-    return "Credit";
-  }
-
-  if (due > 0 && applied >= due) {
-    return "Paid";
-  }
-
-  return "Outstanding";
+  // Members without a monthly obligation are not classified as paid or outstanding.
+  if (due <= 0) return null;
+  if (outstanding > 0 || applied + 0.01 < due) return "outstanding";
+  if (credit > 0) return "credit";
+  return "up-to-date";
 }
 
+function monthlyStatusDisplay(row) {
+  const category = monthlyStatusCategory(row);
+  if (category === "outstanding") return "Outstanding";
+  if (category === "credit") return "Paid with credit";
+  if (category === "up-to-date") return "Up to date";
+  return "No Monthly Obligation";
+}
+
+function monthlyStatusLabel(category) {
+  if (category === "up-to-date") return "Up to date";
+  if (category === "outstanding") return "Outstanding";
+  if (category === "credit") return "Paid with credit";
+  return "Monthly contribution status";
+}
 
 /* =========================================================
-   MEMBER STATUS TABLE
+   MONTHLY STATUS SUMMARY + ON-DEMAND MEMBER LIST
 ========================================================= */
+function renderMemberStatus(selectedCategory = null) {
+  const container = el("memberStatusRows");
+  const dialog = el("monthlyStatusDialog");
+  const title = el("monthlyStatusDialogTitle");
+  const description = el("monthlyStatusDialogDescription");
 
-function renderMemberStatus() {
+  const counts = {
+    "up-to-date": 0,
+    outstanding: 0,
+    credit: 0
+  };
 
-  const container =
-    el("memberStatusRows");
-
-
-  if (!container) {
-
-    console.warn(
-      "CHAMA LIVE: #memberStatusRows not found."
-    );
-
-    return;
-
+  for (const row of (Array.isArray(monthlyStatus) ? monthlyStatus : [])) {
+    const category = monthlyStatusCategory(row);
+    if (category && Object.prototype.hasOwnProperty.call(counts, category)) {
+      counts[category] += 1;
+    }
   }
 
+  setText("monthlyStatusUpToDateCount", counts["up-to-date"]);
+  setText("monthlyStatusOutstandingCount", counts.outstanding);
+  setText("monthlyStatusCreditCount", counts.credit);
 
-  if (!monthlyStatus.length) {
+  const totalClassified = counts["up-to-date"] + counts.outstanding + counts.credit;
+  const note = el("monthlyStatusSummaryNote");
+  if (note) {
+    note.textContent = totalClassified === monthlyStatus.length
+      ? "Counts reflect active members with a monthly obligation for the selected month. Non-monthly contributions are reported separately."
+      : `Counts reflect ${totalClassified} members with a monthly obligation. ${Math.max(0, monthlyStatus.length - totalClassified)} member(s) without a monthly obligation are excluded. Non-monthly contributions are reported separately.`;
+  }
 
+  // Assign handlers rather than adding listeners repeatedly: this renderer can run after refreshes.
+  document.querySelectorAll("[data-monthly-status]").forEach(button => {
+    button.onclick = () => {
+      const category = button.getAttribute("data-monthly-status");
+      if (!Object.prototype.hasOwnProperty.call(counts, category)) return;
+      renderMemberStatus(category);
+      if (dialog && typeof dialog.showModal === "function" && !dialog.open) {
+        dialog.showModal();
+      } else if (dialog) {
+        dialog.setAttribute("open", "");
+      }
+    };
+  });
+
+  const closeButton = el("monthlyStatusDialogClose");
+  if (closeButton) {
+    closeButton.onclick = () => {
+      if (dialog && typeof dialog.close === "function" && dialog.open) dialog.close();
+      else if (dialog) dialog.removeAttribute("open");
+    };
+  }
+
+  if (!container) return;
+
+  if (!selectedCategory) {
     container.innerHTML = `
-      <tr>
-        <td colspan="7">
-          <div class="empty-state">
-            <strong>No member accounting rows</strong>
-            <span>
-              No canonical member accounting rows were returned.
-            </span>
-          </div>
-        </td>
-      </tr>
-    `;
-
+      <tr><td colspan="7"><div class="empty-state">
+        <strong>Select a status above to view members</strong>
+        <span>The dashboard keeps this list collapsed until you choose a status.</span>
+      </div></td></tr>`;
     return;
-
   }
 
+  if (title) title.textContent = monthlyStatusLabel(selectedCategory);
+  if (description) {
+    description.textContent = `${counts[selectedCategory]} member(s) in this monthly contribution status.`;
+  }
 
-  container.innerHTML =
-    monthlyStatus
-      .map(
-        row => {
+  const rows = monthlyStatus.filter(row => monthlyStatusCategory(row) === selectedCategory);
+  if (!rows.length) {
+    container.innerHTML = `
+      <tr><td colspan="7"><div class="empty-state">
+        <strong>No members in this status</strong>
+        <span>There are currently no active members in this category for the selected month.</span>
+      </div></td></tr>`;
+    return;
+  }
 
-          const status =
-            String(
-              row.status ||
-              "outstanding"
-            )
-              .trim()
-              .toLowerCase();
+  container.innerHTML = rows.map(row => {
+    const label = monthlyStatusDisplay(row);
+    const badgeClass = selectedCategory === "outstanding"
+      ? "status-outstanding"
+      : selectedCategory === "credit"
+        ? "status-paid"
+        : "status-active";
 
-
-          const statusLabel =
-            monthlyStatusDisplay(row);
-
-          const statusClassName =
-            statusClass(
-              statusLabel
-            );
-
-
-          return `
-            <tr>
-
-              <td>
-                <strong>
-                  ${escapeHtml(
-                    row.memberName
-                  )}
-                </strong>
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  money(
-                    row.monthlyDue
-                  )
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  money(
-                    row.previousOutstanding
-                  )
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  money(
-                    row.appliedThisMonth
-                  )
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  money(
-                    row.carryForward
-                  )
-                )}
-              </td>
-
-              <td>
-                <strong>
-                  ${escapeHtml(
-                    money(
-                      row.currentOutstanding
-                    )
-                  )}
-                </strong>
-              </td>
-
-              <td>
-                <span
-                  class="status-badge status-${escapeHtml(
-                    statusClassName
-                  )}"
-                >
-                  ${escapeHtml(
-                    statusLabel
-                  )}
-                </span>
-              </td>
-
-            </tr>
-          `;
-
-        }
-      )
-      .join("");
-
+    return `
+      <tr>
+        <td><strong>${escapeHtml(row.memberName || "Member")}</strong></td>
+        <td>${escapeHtml(money(row.monthlyDue))}</td>
+        <td>${escapeHtml(money(row.previousOutstanding))}</td>
+        <td>${escapeHtml(money(row.appliedThisMonth))}</td>
+        <td>${escapeHtml(money(row.carryForward))}</td>
+        <td><strong>${escapeHtml(money(row.currentOutstanding))}</strong></td>
+        <td><span class="status-badge ${badgeClass}">${escapeHtml(label)}</span></td>
+      </tr>`;
+  }).join("");
 }
-
 
 /* =========================================================
    CUMULATIVE POSITION SUMMARY
