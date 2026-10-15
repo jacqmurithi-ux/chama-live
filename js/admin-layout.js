@@ -82,6 +82,7 @@ import {
 
 import { applyRolePermissions } from "./role-permissions.js?v=loan-export-policy-20261013";
 import { supabase } from "./supabase.js";
+import { trackGroupPageUsage } from "./page-usage.js";
 import { initFeedbackButton } from "./feedback.js";
 import { initOnboardingChecklist } from "./onboarding-checklist.js";
 
@@ -2357,6 +2358,9 @@ export async function boot() {
        can use this flag to avoid duplicate initialization
        when they are loaded by admin-layout.js.
     ------------------------------------------------------- */
+
+    // Record only the allowlisted page key and group after access checks pass.
+    trackGroupPageUsage(context, page);
 
     window.__CHAMA_LIVE_LAYOUT_LOADING__ =
       true;
