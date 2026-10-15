@@ -1191,6 +1191,10 @@ function normalizedPosition(position) {
 }
 
 export function canViewSettings(position = context?.role || context?.member?.role) {
+  return ["admin", "administrator", "chairperson", "treasurer", "secretary"].includes(normalizedPosition(position));
+}
+
+export function canChangeSettings(position = context?.role || context?.member?.role) {
   return ["admin", "administrator"].includes(normalizedPosition(position));
 }
 
