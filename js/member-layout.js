@@ -201,8 +201,14 @@ const OFFICIAL_PERSONAL_ACCOUNT_PAGES = new Set([
   "member-profile.html"
 ]);
 
+function canViewGroupSettings() {
+  const role = normalizeRole(context?.role || context?.member?.role);
+  return ["admin", "administrator", "chairperson", "treasurer", "secretary"].includes(role);
+}
+
 function resolveMemberNavigationItem(item) {
   const targetPage = item.href.split("/").pop().split("?")[0];
+  if (targetPage === "group-settings.html" && !canViewGroupSettings()) return null;
   if (targetPage === "merry-go-round.html" && context?.group?.merry_go_round_enabled !== true) return null;
   if (targetPage === "loans.html" && context?.group?.loans_enabled !== true) return null;
   if (targetPage === "member-activities.html" && context?.group?.modules?.plans !== true) return null;
@@ -396,6 +402,10 @@ const MEMBER_NAVIGATION = [
     href: "member-milestones.html"
   },
   {
+    label: "Group Settings",
+    href: "group-settings.html"
+  },
+  {
     label: "My Profile",
     href: "member-profile.html"
   },
@@ -434,7 +444,8 @@ const MEMBER_DESKTOP_NAVIGATION_GROUPS = [
       { label: "Activities", href: "member-activities.html" },
       { label: "Documents", href: "documents.html?portal=member" },
       { label: "Assets", href: "member-assets.html" },
-      { label: "Milestones", href: "member-milestones.html" }
+      { label: "Milestones", href: "member-milestones.html" },
+      { label: "Group Settings", href: "group-settings.html" }
     ]
   ],
   [
