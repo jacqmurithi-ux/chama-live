@@ -984,7 +984,7 @@ function renderRecentAnnouncements() {
         <h3 style="margin:0 0 5px;font-size:1rem">${escapeHtml(item.title || "Group announcement")}</h3>
         <p class="muted" style="margin:0 0 8px;font-size:.85rem">${escapeHtml(formatDate(item.created_at))}</p>
         <div style="white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.55">${escapeHtml(item.body || "")}</div>
-        ${isDocumentNotice ? '<p style="margin:10px 0 0"><a class="button secondary" href="documents.html?portal=admin">Open Documents</a></p>' : ""}
+        ${isDocumentNotice ? '<p style="margin:10px 0 0"><a href="documents.html?portal=admin" style="display:inline-flex;align-items:center;min-height:36px;padding:8px 12px;border-radius:8px;background:#0a7d3b;color:#fff;text-decoration:none;font-weight:700;font-size:.85rem">Open Documents</a></p>' : ""}
       </article>
     `;
   }).join("");
