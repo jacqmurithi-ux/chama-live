@@ -631,6 +631,3 @@ else {
    READY
 ========================================================= */
 
-console.log(
-  "CHAMA LIVE: member-login.js ready"
-);
