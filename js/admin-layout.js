@@ -198,7 +198,7 @@ const PAGE_SCRIPTS = {
   ],
 
   "loans.html": [
-    "./loans.js?v=20261015-loan-audit-log-fix1",
+    "./loans.js?v=20261015-loan-syntax-fix1",
     "initLoans"
   ],
 
