@@ -105,6 +105,17 @@ async function loadMembers(){
  if(error)throw error;members=data||[];
  $("loanApplyForm").elements.guarantor.innerHTML='<option value="">No guarantor selected</option>'+members.filter(m=>m.id!==ctx.member.id).map(m=>'<option value="'+esc(m.id)+'">'+esc(m.name)+(m.member_number?' · '+esc(m.member_number):"")+'</option>').join("");
 }
+function applyLoanFilters(){
+ const query=String($("loanSearch")?.value||"").trim().toLowerCase();
+ const statusFilter=String($("loanStatusFilter")?.value||"");
+ document.querySelectorAll("#loanRows tr[data-member-name]").forEach(row=>{
+  const name=row.dataset.memberName||"",status=row.dataset.loanStatus||"";
+  row.style.display=(!query||name.includes(query))&&(!statusFilter||status===statusFilter)?"":"none";
+ });
+}
+$("loanSearch").addEventListener("input",applyLoanFilters);
+$("loanStatusFilter").addEventListener("change",applyLoanFilters);
+
 async function loadLoans(){
  let query=supabase.from("loan_applications").select("id,group_id,member_id,requested_amount,approved_amount,period_months,purpose,guarantor_member_id,guarantor_status,status,decision_note,interest_rate_snapshot,interest_type_snapshot,penalty_snapshot,approved_by,approved_at,disbursed_at,created_at").eq("group_id",ctx.group.id);
  if(memberOnly) query=query.eq("member_id",ctx.member.id);
@@ -130,7 +141,7 @@ async function loadLoans(){
   const approvalCount=votes.filter(a=>a.decision==="approved").length;
   const shownStatus=l.status==="submitted"&&!memberOnly?"Pending · Approved by "+approvalCount+" of 3":statusLabel(l);
   const memberCell=memberOnly?"":'<td data-label="Member">'+esc(name)+'</td>';
-  return '<tr>'+memberCell+'<td data-label="Requested">KES '+money(l.requested_amount)+'</td><td data-label="Approved">'+(l.approved_amount==null?"—":"KES "+money(l.approved_amount))+'</td><td data-label="Period">'+l.period_months+' months</td><td data-label="Status"><span class="loan-pill">'+esc(shownStatus)+'</span></td><td data-label="Submitted">'+esc(l.created_at?new Date(l.created_at).toLocaleDateString():"—")+'</td><td data-label="Actions"><div class="loan-muted" aria-label="Required office approvals">'+approvalSummary+'</div><div class="loan-actions">'+actions+'</div></td></tr>';
+  return '<tr data-member-name="'+esc(name.toLowerCase())+'" data-loan-status="'+esc(l.status)+'">'+memberCell+'<td data-label="Requested">KES '+money(l.requested_amount)+'</td><td data-label="Approved">'+(l.approved_amount==null?"—":"KES "+money(l.approved_amount))+'</td><td data-label="Period">'+l.period_months+' months</td><td data-label="Status"><span class="loan-pill">'+esc(shownStatus)+'</span></td><td data-label="Submitted">'+esc(l.created_at?new Date(l.created_at).toLocaleDateString():"—")+'</td><td data-label="Actions"><div class="loan-muted" aria-label="Required office approvals">'+approvalSummary+'</div><div class="loan-actions">'+actions+'</div></td></tr>';
  }).join("")||'<tr><td colspan="7">No loan applications yet.</td></tr>';
  const overviewLoans=memberPortal?loans.filter(l=>l.member_id===ctx.member.id):loans;
  const outstandingIds=overviewLoans.filter(l=>["active","overdue"].includes(l.status));
@@ -151,6 +162,7 @@ async function loadLoans(){
  $("loanApplicationGate").textContent=!enabled?"Loans are not yet available for this group.":pending?"You already have a pending application. Wait for the decision before applying again.":hasOverdue?"You cannot apply while you have an overdue loan. Clear the overdue balance first.":"";
  $("loanViewMode").textContent=memberOnly?"Member view: only your own applications and repayment details.":isAdmin&&!officeSlot?"Admin-only account: you may manage settings but cannot approve or disburse loans without an explicit office.":official?"Official view: group applications and totals.":"";
  const table=$("loanApplicationsTable");if(table)table.classList.toggle("member-only",memberOnly);
+ $("loanTableFilters").classList.toggle("loan-hidden",!official);applyLoanFilters();
  const header=$("loanRows").closest("table").querySelector("thead th:first-child");if(header)header.style.display=memberOnly?"none":"";
  await loadOfficialSections();
  if(selectedLoan){const fresh=loans.find(l=>l.id===selectedLoan.id);selectedLoan=fresh||null;if(selectedLoan)await showDetail(selectedLoan.id);}
