@@ -31,11 +31,6 @@ import {
 } from "./auth.js";
 
 
-console.log(
-  "CHAMA LIVE: meetings.js loaded"
-);
-
-
 /* =========================================================
    ELEMENTS
 ========================================================= */
@@ -2314,6 +2309,3 @@ export const initMeetings =
    and layout.js dynamic initialization.
 ========================================================= */
 
-console.log(
-  "CHAMA LIVE: meetings.js ready"
-);
