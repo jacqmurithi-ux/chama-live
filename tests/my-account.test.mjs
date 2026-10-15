@@ -133,3 +133,27 @@ test("exports do not claim native Excel or public proof URLs", () => {
   assert.doesNotMatch(ui, /createPublicUrl/);
   assert.match(service, /my-account-payment-proofs/);
 });
+
+
+test("both personal account pages include every shared renderer HTML target", () => {
+  const requiredTargets = [
+    "myAccountName",
+    "myAccountMeta",
+    "myAccountProfile",
+    "myAccountSummary",
+    "myAccountAllocationTypes",
+    "myAccountAllocationTotals",
+    "myAccountAllocationNote",
+    "myAccountLoansSection",
+    "myAccountLoanSummary",
+    "myAccountRecords",
+    "myAccountLoading",
+    "myAccountContent",
+    "myAccountError"
+  ];
+  for (const page of [adminPage, memberPage]) {
+    for (const id of requiredTargets) {
+      assert.ok(page.includes(`id="${id}"`), `personal account page is missing #${id}`);
+    }
+  }
+});
