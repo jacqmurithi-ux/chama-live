@@ -154,7 +154,7 @@ async function loadLoans(){
  }
  $("loanCount").textContent=String(overviewLoans.length);$("loanOutstanding").textContent="KES "+money(outstanding);$("loanOverdue").textContent=String(overdue);
  let nextDue=null;
- for(const l of outstandingIds){const {data:ss,error:se}=await supabase.from("loan_repayment_schedule").select("due_date,principal_due,interest_due,penalty_due,amount_paid").eq("loan_id",l.id).gte("due_date",today()).order("due_date").limit(1);if(!se&&ss?.length&&(!nextDue||ss[0].due_date<nextDue))nextDue=ss[0].due_date;}
+ for(const l of outstandingIds){const {data:ss,error:se}=await supabase.from("loan_repayment_schedule").select("due_date,principal_due,interest_due,penalty_due,amount_paid").eq("loan_id",l.id).gte("due_date",today()).order("due_date");if(!se){const next=(ss||[]).find(s=>Number(s.amount_paid)<Number(s.principal_due)+Number(s.interest_due)+Number(s.penalty_due));if(next&&(!nextDue||next.due_date<nextDue))nextDue=next.due_date;}}
  $("loanNextDue").textContent=nextDue||"—";
  const pending=overviewLoans.some(l=>["submitted","approved"].includes(l.status));const hasOverdue=overdue>0||overviewLoans.some(l=>l.status==="overdue");
  const enabled=Boolean(settings&&settings.enabled&&groupLoansEnabled);
