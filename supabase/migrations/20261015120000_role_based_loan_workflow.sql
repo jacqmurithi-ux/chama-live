@@ -116,8 +116,8 @@ declare
 begin
   v_actor := auth.uid();
   if tg_table_name='loan_applications' then
-    v_group_id := coalesce(new.group_id,old.group_id);
-    v_loan_id := coalesce(new.id,old.id);
+    v_group_id := new.group_id;
+    v_loan_id := new.id;
     if tg_op='INSERT' then
       v_action := 'application_submitted';
       v_detail := jsonb_build_object('requested_amount',new.requested_amount,'period_months',new.period_months,'status',new.status);
@@ -151,7 +151,7 @@ begin
       return new;
     end if;
   elsif tg_table_name='loan_settings' then
-    v_group_id := coalesce(new.group_id,old.group_id); v_loan_id := null;
+    v_group_id := new.group_id; v_loan_id := null;
     v_action := 'settings_updated';
     v_detail := jsonb_build_object('enabled',new.enabled,'annual_rate',new.interest_rate,'interest_method',new.interest_type,
       'max_amount',new.max_loan_amount,'max_period_months',new.max_period_months,'late_penalty',new.late_penalty);
@@ -521,17 +521,26 @@ begin
   if v_repayment.amount>v_total then raise exception 'Repayment exceeds the outstanding loan balance.' using errcode='22023'; end if;
   v_remaining:=v_repayment.amount;
   for r in
-    select * from public.loan_repayment_schedule s
+    select s.*,
+      coalesce(a.penalty_paid,0) as penalty_paid,
+      coalesce(a.interest_paid,0) as interest_paid,
+      coalesce(a.principal_paid,0) as principal_paid
+    from public.loan_repayment_schedule s
+    left join (
+      select schedule_id,sum(penalty_amount) penalty_paid,
+        sum(interest_amount) interest_paid,sum(principal_amount) principal_paid
+      from public.loan_repayment_allocations group by schedule_id
+    ) a on a.schedule_id=s.id
     where s.loan_id=v_loan.id and s.group_id=v_loan.group_id
       and s.amount_paid < s.principal_due+s.interest_due+s.penalty_due
-    order by s.due_date,s.installment_no for update
+    order by s.due_date,s.installment_no for update of s
   loop
     exit when v_remaining<=0;
-    v_penalty:=least(v_remaining,greatest(r.penalty_due,0));
+    v_penalty:=least(v_remaining,greatest(r.penalty_due-r.penalty_paid,0));
     v_remaining:=v_remaining-v_penalty;
-    v_interest:=least(v_remaining,greatest(r.interest_due,0));
+    v_interest:=least(v_remaining,greatest(r.interest_due-r.interest_paid,0));
     v_remaining:=v_remaining-v_interest;
-    v_principal:=least(v_remaining,greatest(r.principal_due,0));
+    v_principal:=least(v_remaining,greatest(r.principal_due-r.principal_paid,0));
     v_remaining:=v_remaining-v_principal;
     v_paid:=v_penalty+v_interest+v_principal;
     if v_paid>0 then
