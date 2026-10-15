@@ -2775,16 +2775,6 @@ async function initializeGroupManagement() {
 
             applyAuthorizationUI();
 
-            try {
-                await loadGroupModuleSettings();
-            } catch (error) {
-                setModuleSettingsStatus(
-                    error?.message || "Optional module settings could not be loaded.",
-                    true
-                );
-                console.error("[Group Management] Module settings failed to load:", error);
-            }
-
             if (
                 elements.groupManagementStatus
             ) {
