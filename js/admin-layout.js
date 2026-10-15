@@ -497,7 +497,7 @@ const NAVIGATION_GROUPS = [
     "Home",
     [
       ["dashboard.html", "Dashboard"],
-      ["documents.html", "Documents"],
+      ["documents.html?portal=admin", "Documents"],
       ["admin-getting-started.html", "Getting Started"]
     ]
   ],
