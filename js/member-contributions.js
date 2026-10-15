@@ -145,6 +145,12 @@ const contributionRows =
     "memberContributionRows"
   );
 
+const contributionMonthFilter =
+  document.getElementById("memberContributionMonthFilter");
+
+const contributionFilterCount =
+  document.getElementById("memberContributionFilterCount");
+
 
 /* =========================================================
    PAYMENT EVIDENCE
@@ -1409,110 +1415,77 @@ function renderCanonicalPosition() {
    RENDER CONTRIBUTION HISTORY
 ========================================================= */
 
-function renderContributionHistory() {
-
-  if (!contributionRows) {
-    return;
-  }
-
-
-  if (!contributions.length) {
-
-    contributionRows.innerHTML = `
-      <tr>
-        <td
-          colspan="6"
-          class="cl-empty"
-        >
-          No contribution records found.
-        </td>
-      </tr>
-    `;
-
-    return;
-
-  }
+function contributionMonthKey(contribution) {
+  const rawDate = contribution?.contribution_date || contribution?.created_at || "";
+  const match = String(rawDate).match(/^(\\d{4})-(\\d{2})/);
+  return match ? `${match[1]}-${match[2]}` : "";
+}
 
 
-  contributionRows.innerHTML =
-    contributions
-      .map(
-        contribution => {
+function populateContributionMonthFilter() {
+  if (!contributionMonthFilter) return;
 
-          const method =
-            normalizePaymentMethod(
-              contribution.payment_method
-            );
+  const previousValue = contributionMonthFilter.value || "all";
+  const months = [...new Set(
+    contributions.map(contributionMonthKey).filter(Boolean)
+  )].sort((a, b) => b.localeCompare(a));
 
-          const reference =
-            contribution.mpesa_reference ||
-            contribution.reference ||
-            "—";
+  contributionMonthFilter.innerHTML = [
+    '<option value="all">All months</option>',
+    ...months.map(month =>
+      `<option value="${escapeHtml(month)}">${escapeHtml(formatAccountingMonth(month))}</option>`
+    )
+  ].join("");
 
-          return `
-            <tr>
-
-              <td data-label="Date">
-                ${escapeHtml(
-                  formatDate(
-                    contribution.contribution_date ||
-                    contribution.created_at
-                  )
-                )}
-              </td>
-
-              <td
-                data-label="Amount"
-                class="cl-money-cell"
-              >
-                <strong>
-                  ${escapeHtml(
-                    money(
-                      contribution.amount
-                    )
-                  )}
-                </strong>
-              </td>
-
-              <td data-label="Type">
-                ${escapeHtml(
-                  contribution.contribution_type ||
-                  "—"
-                )}
-              </td>
-
-              <td data-label="Payment Method">
-                ${escapeHtml(
-                  method || "—"
-                )}
-              </td>
-
-              <td data-label="Reference">
-                ${escapeHtml(
-                  reference
-                )}
-              </td>
-
-              <td data-label="Notes">
-                ${escapeHtml(
-                  contribution.notes ||
-                  "—"
-                )}
-              </td>
-
-            </tr>
-          `;
-
-        }
-      )
-      .join("");
-
+  contributionMonthFilter.value = months.includes(previousValue) ? previousValue : "all";
 }
 
 
 /* =========================================================
-   RENDER PAYMENT EVIDENCE
+   RENDER CONTRIBUTION HISTORY
 ========================================================= */
+
+function renderContributionHistory() {
+  if (!contributionRows) return;
+
+  const selectedMonth = contributionMonthFilter?.value || "all";
+  const visibleContributions = selectedMonth === "all"
+    ? contributions
+    : contributions.filter(contribution => contributionMonthKey(contribution) === selectedMonth);
+
+  if (contributionFilterCount) {
+    contributionFilterCount.textContent = selectedMonth === "all"
+      ? `Showing all ${visibleContributions.length} of ${contributions.length} records`
+      : `Showing ${visibleContributions.length} of ${contributions.length} records`;
+  }
+
+  if (!visibleContributions.length) {
+    const message = contributions.length
+      ? "No contribution records found for this month."
+      : "No contribution records found.";
+    contributionRows.innerHTML = `
+      <tr><td colspan="6" class="cl-empty">${escapeHtml(message)}</td></tr>
+    `;
+    return;
+  }
+
+  contributionRows.innerHTML = visibleContributions.map(contribution => {
+    const method = normalizePaymentMethod(contribution.payment_method);
+    const reference = contribution.mpesa_reference || contribution.reference || "—";
+
+    return `
+      <tr>
+        <td data-label="Date">${escapeHtml(formatDate(contribution.contribution_date || contribution.created_at))}</td>
+        <td data-label="Amount" class="cl-money-cell"><strong>${escapeHtml(money(contribution.amount))}</strong></td>
+        <td data-label="Type">${escapeHtml(contribution.contribution_type || "—")}</td>
+        <td data-label="Payment Method">${escapeHtml(method || "—")}</td>
+        <td data-label="Reference">${escapeHtml(reference)}</td>
+        <td data-label="Notes">${escapeHtml(contribution.notes || "—")}</td>
+      </tr>
+    `;
+  }).join("");
+}
+
 
 function evidenceStatusLabel(
   status
@@ -2376,6 +2349,7 @@ export async function initMemberContributions() {
 
     renderCanonicalPosition();
 
+    populateContributionMonthFilter();
     renderContributionHistory();
 
     renderPaymentEvidence();
@@ -2414,6 +2388,11 @@ export async function initMemberContributions() {
 /* =========================================================
    EVENTS
 ========================================================= */
+
+if (contributionMonthFilter && !contributionMonthFilter.dataset.clContributionMonthBound) {
+  contributionMonthFilter.dataset.clContributionMonthBound = "true";
+  contributionMonthFilter.addEventListener("change", renderContributionHistory);
+}
 
 if (
   paymentEvidenceForm &&
