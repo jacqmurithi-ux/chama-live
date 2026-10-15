@@ -59,7 +59,7 @@ function showFormStatus(message, type = "") {
   box.hidden = !message;
 }
 function displayNameFor(userId) {
-  const match = members.find(member => member.user_id === userId || member.auth_user_id === userId);
+  const match = members.find(member => member.id === userId || member.user_id === userId || member.auth_user_id === userId);
   return match?.name || (userId === currentUser?.id ? context?.member?.name : null) || "Group official";
 }
 function documentUploader(doc) {
@@ -283,7 +283,7 @@ async function submitDocument(event) {
       group_id:groupId,
       title,
       storage_path:path,
-      uploaded_by:currentUser.id,
+      uploaded_by:context.member.id,
       category,
       description,
       file_size:file.size,
