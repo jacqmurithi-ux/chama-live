@@ -4287,8 +4287,8 @@ export async function renderOptionalModuleCards() {
   if (group.modules?.plans === true) modules.push({ href: "plans-activities.html", title: "Plans & Activities", description: "Plan group activities and track progress." });
   if (group.modules?.assets === true) modules.push({ href: "assets.html", title: "Assets", description: "View and manage the group's asset register." });
   if (group.modules?.milestones === true) modules.push({ href: "milestones.html", title: "Milestones", description: "Record and review group milestones." });
-  const role = String(window.__CHAMA_LIVE_ADMIN_CONTEXT__?.role || "").trim().toLowerCase();
-  if (group.modules?.migration === true && ["admin", "administrator"].includes(role)) modules.push({ href: "data-migration.html", title: "Data Migration", description: "Validate and preview member migration records." });
+  const role = String(window.__CHAMA_LIVE_ADMIN_CONTEXT__?.role || window.__CHAMA_LIVE_ADMIN_CONTEXT__?.member?.role || "").trim().toLowerCase();
+  if (group.modules?.migration === true && ["admin", "administrator", "chairperson", "treasurer", "secretary"].includes(role)) modules.push({ href: "data-migration.html", title: "Data Migration", description: "Validate and preview member migration records." });
   cards.replaceChildren();
   modules.forEach(module => {
     const link = document.createElement("a");
