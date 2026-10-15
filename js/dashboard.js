@@ -1590,7 +1590,7 @@ async function loadCustomContributionStatuses() {
   // through the secured, idempotent accounting RPC before reading statuses.
   const { data: customTypes, error: typeError } = await supabase
     .from("contribution_types")
-    .select("id,group_id,code")
+    .select("id,group_id,code,name")
     .eq("group_id", currentGroupId)
     .eq("code", "custom");
 
