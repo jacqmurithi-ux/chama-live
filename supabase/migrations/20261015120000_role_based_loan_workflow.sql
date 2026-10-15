@@ -50,6 +50,15 @@ set enabled = g.loans_enabled
 from public.groups g
 where g.id=s.group_id;
 
+-- Preserve the best available current terms for loans created before snapshots existed.
+update public.loan_applications l
+set interest_rate_snapshot=coalesce(l.interest_rate_snapshot,s.interest_rate),
+    interest_type_snapshot=coalesce(l.interest_type_snapshot,s.interest_type),
+    penalty_snapshot=coalesce(l.penalty_snapshot,s.late_penalty)
+from public.loan_settings s
+where s.group_id=l.group_id
+  and (l.interest_rate_snapshot is null or l.interest_type_snapshot is null or l.penalty_snapshot is null);
+
 create or replace function public.current_group_id()
 returns uuid
 language sql stable security definer
