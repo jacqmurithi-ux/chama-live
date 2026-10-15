@@ -117,7 +117,7 @@ $("loanSearch").addEventListener("input",applyLoanFilters);
 $("loanStatusFilter").addEventListener("change",applyLoanFilters);
 
 async function loadLoans(){
- let query=supabase.from("loan_applications").select("id,group_id,member_id,requested_amount,approved_amount,period_months,purpose,guarantor_member_id,guarantor_status,status,decision_note,interest_rate_snapshot,interest_type_snapshot,penalty_snapshot,approved_by,approved_at,disbursed_at,created_at").eq("group_id",ctx.group.id);
+ let query=supabase.from("loan_applications").select("id,group_id,member_id,requested_amount,approved_amount,period_months,purpose,guarantor_member_id,status,decision_note,interest_rate_snapshot,interest_type_snapshot,approved_by,approved_at,disbursed_at,created_at").eq("group_id",ctx.group.id);
  if(memberOnly) query=query.eq("member_id",ctx.member.id);
  const {data,error}=await query.order("created_at",{ascending:false});
  if(error)throw error;loans=data||[];
@@ -201,7 +201,7 @@ async function loadGuarantorRequests(){
  card.classList.remove("loan-hidden");
  const {data,error}=await supabase.from("loan_applications")
   .select("id,member_id,requested_amount,period_months,purpose,created_at")
-  .eq("group_id",ctx.group.id).eq("guarantor_member_id",ctx.member.id).eq("guarantor_status","pending")
+  .eq("group_id",ctx.group.id).eq("guarantor_member_id",ctx.member.id).eq("status","submitted")
   .order("created_at",{ascending:false});
  if(error){$("loanGuarantorRows").innerHTML='<p class="loan-muted">Guarantor requests are unavailable until member-scoped access is enabled.</p>';return;}
  const byId=new Map(members.map(m=>[m.id,m]));
@@ -217,7 +217,7 @@ async function loadOfficialSections(){
   const history=loans.filter(x=>x.member_id===l.member_id&&x.id!==l.id);
   let historyBalance=0;for(const past of history.filter(x=>["active","overdue"].includes(x.status))){const {data:ss}=await supabase.from("loan_repayment_schedule").select("principal_due,interest_due,penalty_due,amount_paid").eq("loan_id",past.id);for(const s of ss||[])historyBalance+=Math.max(0,Number(s.principal_due)+Number(s.interest_due)+Number(s.penalty_due)-Number(s.amount_paid));}
   const guarantor=byId.get(l.guarantor_member_id)?.name|| (l.guarantor_member_id?"Guarantor":"None");
-  return '<tr><td data-label="Applicant">'+esc(byId.get(l.member_id)?.name||"Member")+'</td><td data-label="Amount">KES '+money(l.requested_amount)+'</td><td data-label="Period">'+l.period_months+' months</td><td data-label="Purpose">'+esc(l.purpose)+'</td><td data-label="Guarantor">'+esc(guarantor)+' ('+esc(l.guarantor_status||"not_required")+')</td><td data-label="History / balance">'+history.length+' previous loan(s); outstanding KES '+money(historyBalance)+'</td><td data-label="Action"><div class="loan-actions"><button class="loan-btn" data-review="approved" data-id="'+esc(l.id)+'">Approve</button><button class="loan-btn secondary" data-review="rejected" data-id="'+esc(l.id)+'">Reject</button><button class="loan-btn secondary" data-detail="'+esc(l.id)+'">View</button></div></td></tr>';
+  return '<tr><td data-label="Applicant">'+esc(byId.get(l.member_id)?.name||"Member")+'</td><td data-label="Amount">KES '+money(l.requested_amount)+'</td><td data-label="Period">'+l.period_months+' months</td><td data-label="Purpose">'+esc(l.purpose)+'</td><td data-label="Guarantor">'+esc(guarantor)+' ('+esc((l.guarantor_member_id?"nominated":"not required"))+')</td><td data-label="History / balance">'+history.length+' previous loan(s); outstanding KES '+money(historyBalance)+'</td><td data-label="Action"><div class="loan-actions"><button class="loan-btn" data-review="approved" data-id="'+esc(l.id)+'">Approve</button><button class="loan-btn secondary" data-review="rejected" data-id="'+esc(l.id)+'">Reject</button><button class="loan-btn secondary" data-detail="'+esc(l.id)+'">View</button></div></td></tr>';
  }));
  $("loanReviewRows").innerHTML=reviewRows.join("")||'<tr><td colspan="7">No loans awaiting your office decision.</td></tr>';
 
@@ -284,7 +284,7 @@ async function showDetail(id){
  $("loanSchedule").innerHTML='<h3>Repayment schedule</h3><table class="loan-table"><thead><tr><th>#</th><th>Due</th><th>Principal</th><th>Interest</th><th>Penalty</th><th>Paid</th><th>Balance</th><th>Status</th></tr></thead><tbody>'+ (rows||'<tr><td colspan="8">Schedule is created after disbursement.</td></tr>')+'</tbody></table><h3 style="margin-top:18px">Repayments (pending until confirmed)</h3><table class="loan-table"><thead><tr><th>Date</th><th>Amount</th><th>Method</th><th>Reference</th><th>Status</th></tr></thead><tbody>'+ (pRows||'<tr><td colspan="5">No repayments recorded.</td></tr>')+'</tbody></table>';
  const {data:approvalRows,error:approvalError}=await supabase.from("loan_approvals").select("approval_slot,decision,note,created_at").eq("loan_id",id).order("created_at");
  if(approvalError&&!memberOnly)throw approvalError;
- $("loanApprovalProgress").innerHTML='<p><strong>Approval progress</strong>: '+APPROVAL_OFFICES.map(([slot,label])=>{const v=(approvalRows||[]).find(a=>a.approval_slot===slot);return esc(label)+": "+(v?esc(v.decision==="approved"?"Approved":"Rejected")+(v.note?" — "+esc(v.note):""):"Pending");}).join(" · ")+'</p><p><strong>Guarantor status</strong>: '+esc(selectedLoan.guarantor_status||"not_required")+'</p>';
+ $("loanApprovalProgress").innerHTML='<p><strong>Approval progress</strong>: '+APPROVAL_OFFICES.map(([slot,label])=>{const v=(approvalRows||[]).find(a=>a.approval_slot===slot);return esc(label)+": "+(v?esc(v.decision==="approved"?"Approved":"Rejected")+(v.note?" — "+esc(v.note):""):"Pending");}).join(" · ")+'</p><p><strong>Guarantor status</strong>: '+esc(selectedLoan.guarantor_member_id?"nominated":"not required")+'</p>';
  if(official){const {data:audit,error:ae}=await supabase.from("loan_audit").select("actor_id,action,detail,created_at").eq("loan_id",id).order("created_at",{ascending:false}).limit(30);if(ae)throw ae;$("loanAuditTrail").innerHTML='<h3>Audit trail</h3>'+((audit||[]).map(a=>{const actor=members.find(m=>m.auth_user_id===a.actor_id||m.user_id===a.actor_id);return '<p class="loan-muted">'+esc(a.action)+' · '+esc(actor?.name||"Authorized user")+' · '+esc(new Date(a.created_at).toLocaleString())+' · '+esc(JSON.stringify(a.detail))+'</p>';}).join("")||'<p class="loan-muted">No audit events yet.</p>');}else $("loanAuditTrail").innerHTML="";
  $("loanRepaymentForm").elements.payment_date.value=today();applyPermissions();
 }
