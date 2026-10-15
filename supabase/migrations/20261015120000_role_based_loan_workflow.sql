@@ -121,7 +121,7 @@ create or replace function public.cl_loan_actor(p_group_id uuid, p_write boolean
 returns uuid
 language plpgsql stable security definer
 set search_path = public, pg_temp
-as $
+as $$
 declare v_member public.members%rowtype;
 begin
   if auth.uid() is null then raise exception 'Authentication required' using errcode='28000'; end if;
@@ -141,8 +141,7 @@ begin
   ) then raise exception 'View only: you do not have permission to manage loans' using errcode='42501'; end if;
   return v_member.id;
 end
-$;
-
+$$;
 create or replace function public.cl_loan_audit_row()
 returns trigger
 language plpgsql security definer
@@ -204,8 +203,7 @@ begin
   values(v_group_id,v_loan_id,v_actor,v_action,coalesce(v_detail,'{}'::jsonb));
   return new;
 end
-$;
-
+$$;
 drop trigger if exists cl_loan_audit_application on public.loan_applications;
 create trigger cl_loan_audit_application
 after insert or update on public.loan_applications
@@ -289,15 +287,14 @@ create or replace function public.cl_loan_preserve_term_snapshots()
 returns trigger
 language plpgsql security definer
 set search_path = public, pg_temp
-as $
+as $$
 begin
   if old.interest_rate_snapshot is not null then new.interest_rate_snapshot:=old.interest_rate_snapshot; end if;
   if old.interest_type_snapshot is not null then new.interest_type_snapshot:=old.interest_type_snapshot; end if;
   if old.penalty_snapshot is not null then new.penalty_snapshot:=old.penalty_snapshot; end if;
   return new;
 end
-$;
-
+$$;
 drop trigger if exists cl_loan_preserve_term_snapshots on public.loan_applications;
 create trigger cl_loan_preserve_term_snapshots
 before update on public.loan_applications
@@ -530,7 +527,7 @@ create or replace function public.disburse_loan(p_group_id uuid,p_loan_id uuid,p
 returns uuid
 language plpgsql security definer
 set search_path = public, pg_temp
-as $
+as $$
 declare
   v_actor uuid;
   v_member public.members%rowtype;
@@ -589,8 +586,7 @@ begin
   values(p_group_id,p_loan_id,auth.uid(),'loan_disbursed',jsonb_build_object('principal',v_principal,'interest_total',v_interest_total,'period_months',v_loan.period_months,'disbursed_date',coalesce(p_disbursed_date,current_date)));
   return p_loan_id;
 end
-$;
-
+$$;
 -- Repayments are requests until an official confirms them. Legacy immediate-allocation RPCs are revoked from clients below.
 create or replace function public.record_repayment(
   p_group_id uuid,p_loan_id uuid,p_amount numeric,p_paid_on date,p_reference text default null
@@ -768,7 +764,7 @@ create or replace function public.group_loan_summary(p_group_id uuid)
 returns jsonb
 language plpgsql security definer
 set search_path = public, pg_temp
-as $
+as $$
 declare v_member uuid; v_summary jsonb;
 begin
   v_member:=public.cl_loan_actor(p_group_id,false);
@@ -790,8 +786,7 @@ begin
   ) into v_summary;
   return v_summary;
 end
-$;
-
+$$;
 drop policy if exists loan_settings_read_member on public.loan_settings;
 create policy loan_settings_read_member on public.loan_settings
 for select to authenticated
