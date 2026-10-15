@@ -414,7 +414,6 @@ const MEMBER_DESKTOP_NAVIGATION_GROUPS = [
     "Home",
     [
       { label: "Home", href: "member-dashboard.html" },
-      { label: "Documents", href: "documents.html?portal=member" },
       { label: "My Account", href: "member-my-account.html" },
       { label: "Getting Started", href: "member-getting-started.html" }
     ]
