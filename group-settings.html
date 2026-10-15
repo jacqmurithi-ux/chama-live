@@ -10,7 +10,7 @@
 body{background:#f8fafc;color:#172b23}.settings-wrap{max-width:1080px;margin:28px auto;padding:0 18px 44px}
 .settings-head{margin-bottom:22px}.settings-head h1{margin:0 0 8px;font-size:clamp(1.6rem,4vw,2.2rem)}.settings-head p{color:#64748b;margin:0;line-height:1.6}
 .settings-card{background:#fff;border:1px solid #e2e8f0;border-radius:16px;margin:16px 0;overflow:hidden}.settings-card-head{padding:18px 20px;border-bottom:1px solid #e2e8f0}.settings-card-head h2{font-size:1.15rem;margin:0 0 6px}.settings-card-head p{color:#64748b;margin:0;line-height:1.5}.settings-body{padding:18px 20px}
-.details-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.detail{padding:12px;border:1px solid #e5e7eb;border-radius:10px;min-width:0}.detail small{display:block;color:#64748b;margin-bottom:5px}.detail strong{overflow-wrap:anywhere}
+.details-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.detail{padding:12px;border:1px solid #e5e7eb;border-radius:10px;min-width:0}.detail small{display:block;color:#64748b;margin-bottom:5px}.detail strong{overflow-wrap:anywhere}.detail-wide{grid-column:1/-1}
 .setting-row{display:flex;gap:14px;align-items:flex-start;padding:15px 0;border-bottom:1px solid #edf2f7}.setting-row:last-of-type{border-bottom:0}.setting-row input{width:20px;height:20px;flex:0 0 auto;margin-top:2px;accent-color:#0a7d3b}.setting-row strong{display:block;margin-bottom:4px}.setting-row p{margin:0;color:#64748b;line-height:1.5;font-size:.92rem}
 .settings-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:18px}.settings-actions button{border:0;border-radius:10px;background:#0a7d3b;color:#fff;font-weight:700;padding:11px 16px;cursor:pointer}.settings-actions button:disabled{opacity:.55;cursor:wait}
 .settings-status{display:none;margin:16px 0 0;padding:11px 13px;border-radius:10px;font-weight:650}.settings-status.success{display:block;background:#ecfdf3;color:#027a48}.settings-status.error{display:block;background:#fef3f2;color:#b42318}.settings-link{color:#087f5b;font-weight:700;text-decoration:none}
@@ -28,7 +28,8 @@ body{background:#f8fafc;color:#172b23}.settings-wrap{max-width:1080px;margin:28p
 <div class="detail"><small>Registration number</small><strong id="groupRegistration">—</strong></div>
 <div class="detail"><small>Phone</small><strong id="groupPhone">—</strong></div>
 <div class="detail"><small>Email</small><strong id="groupEmail">—</strong></div>
-<div class="detail"><small>Location</small><strong id="groupLocation">—</strong></div>
+<div class="detail"><small>Country</small><strong id="groupCountry">—</strong></div>
+<div class="detail detail-wide"><small>Description</small><strong id="groupDescription">—</strong></div>
 </div><p style="margin:16px 0 0"><a class="settings-link" href="group-management.html">Edit group details and contribution settings →</a></p>
 </div></section>
 <section class="settings-card"><div class="settings-card-head"><h2>Existing optional features</h2><p>These preserve the current Loans and Merry-go-round controls.</p></div><div class="settings-body">
