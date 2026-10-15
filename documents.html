@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0f766e">
+  <meta name="description" content="Private group documents and forms for CHAMA LIVE members.">
+  <title>Documents — CHAMA LIVE</title>
+  <link rel="stylesheet" href="./css/app.css">
+  <style>
+    .documents-page{width:min(100% - 28px,980px);margin:0 auto;padding:18px 0 110px;color:var(--cl-text,#172033)}
+    .docs-hero,.docs-toolbar,.docs-card,.docs-empty,.docs-skeleton,.docs-sheet-panel{background:#fff;border:1px solid var(--cl-border,#dfeae8);border-radius:18px;box-shadow:var(--cl-shadow-sm,0 4px 16px rgba(15,118,110,.045))}
+    .docs-hero{padding:22px;background:linear-gradient(135deg,#effaf8,#fff 78%);margin-bottom:16px}
+    .docs-eyebrow{font-size:.76rem;font-weight:800;letter-spacing:.08em;color:#0f766e;text-transform:uppercase}
+    .docs-hero h1{font-size:clamp(1.6rem,5vw,2.2rem);margin:5px 0 4px}
+    .docs-hero p{margin:0;color:#667085}
+    .docs-identity{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:15px;font-size:.9rem}
+    .docs-identity span{color:#475467}
+    .docs-identity strong{color:#172033}
+    .docs-count{display:inline-flex;align-items:center;gap:7px;background:#dff7ee;color:#075e4d;border-radius:999px;padding:7px 12px;font-weight:800;margin-top:15px}
+    .docs-toolbar{padding:14px;margin-bottom:14px}
+    .docs-search{width:100%;min-height:48px;border:1px solid #cbd5e1;border-radius:12px;padding:11px 13px;font:inherit;box-sizing:border-box}
+    .docs-chips{display:flex;gap:8px;overflow-x:auto;padding:12px 0 2px;scrollbar-width:thin}
+    .docs-chip{flex:0 0 auto;min-height:44px;border:1px solid #cbd5e1;border-radius:999px;background:#fff;padding:8px 13px;color:#344054;font:inherit;font-weight:700;cursor:pointer}
+    .docs-chip[aria-pressed=true]{background:#0f766e;color:#fff;border-color:#0f766e}
+    .docs-chip span{opacity:.8;margin-left:5px}
+    .docs-section-title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:22px 2px 10px}
+    .docs-section-title h2{font-size:1.08rem;margin:0}
+    .docs-list{display:grid;grid-template-columns:1fr;gap:12px}
+    .docs-card{padding:16px;min-width:0}
+    .docs-card.is-constitution{border:2px solid #d5a62e;background:linear-gradient(135deg,#fffdf2,#fff 75%)}
+    .docs-card-head{display:flex;gap:12px;align-items:flex-start}
+    .docs-file-icon{display:grid;place-items:center;width:48px;height:48px;flex:0 0 48px;border-radius:13px;background:#f3f4f6;color:#475467;font-size:.75rem;font-weight:900}
+    .docs-file-icon.pdf{background:#fee2e2;color:#b91c1c}.docs-file-icon.word{background:#dbeafe;color:#1d4ed8}.docs-file-icon.excel{background:#dcfce7;color:#166534}.docs-file-icon.image{background:#f3e8ff;color:#7e22ce}
+    .docs-card-title{font-weight:800;font-size:1.03rem;line-height:1.35;overflow-wrap:anywhere}
+    .docs-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
+    .docs-tag,.docs-new{display:inline-flex;align-items:center;border-radius:999px;padding:4px 8px;font-size:.72rem;font-weight:800}
+    .docs-tag{background:#eef2f6;color:#475467}.docs-new{background:#dcfce7;color:#166534}
+    .docs-description{margin:12px 0 0;color:#475467;white-space:pre-wrap;overflow-wrap:anywhere}
+    .docs-meta{display:flex;flex-wrap:wrap;gap:5px 13px;margin-top:12px;color:#667085;font-size:.8rem}
+    .docs-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:15px}
+    .docs-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:46px;border:1px solid #cbd5e1;border-radius:11px;background:#fff;color:#344054;padding:10px 14px;font:inherit;font-weight:800;text-decoration:none;cursor:pointer}
+    .docs-btn-primary{background:#0f766e;color:#fff;border-color:#0f766e;flex:1}
+    .docs-btn:disabled{opacity:.55;cursor:wait}
+    .docs-more{margin-top:12px;border-top:1px solid #e5e7eb;padding-top:10px}
+    .docs-more summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-weight:800;color:#0f766e}
+    .docs-version{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid #eef2f6;font-size:.86rem}
+    .docs-version:last-child{border-bottom:0}
+    .docs-empty{text-align:center;padding:34px 20px;color:#667085}
+    .docs-empty strong{display:block;color:#172033;font-size:1.1rem;margin-bottom:6px}
+    .docs-skeleton{padding:16px;margin-bottom:12px}
+    .docs-shimmer{height:13px;border-radius:8px;background:linear-gradient(90deg,#edf2f2 25%,#f8fbfb 50%,#edf2f2 75%);background-size:200% 100%;animation:docs-shimmer 1.2s infinite}
+    .docs-shimmer.large{height:22px;width:58%;margin-bottom:12px}.docs-shimmer.short{width:38%;margin-top:12px}
+    @keyframes docs-shimmer{to{background-position:-200% 0}}
+    .docs-fab{position:fixed;right:20px;bottom:24px;z-index:1100;min-height:54px;border:0;border-radius:999px;background:#0f766e;color:#fff;padding:0 22px;font-weight:900;font-size:1rem;box-shadow:0 10px 30px #0f766e45;cursor:pointer}
+    .docs-overlay{position:fixed;inset:0;z-index:15000;background:#10182880;display:flex;align-items:flex-end;justify-content:center}
+    .docs-overlay[hidden]{display:none}
+    .docs-sheet-panel{width:min(100%,680px);max-height:92dvh;overflow:auto;border-radius:22px 22px 0 0;padding:20px 18px 28px}
+    .docs-sheet-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px}
+    .docs-sheet-head h2{margin:0;font-size:1.25rem}
+    .docs-close{width:44px;height:44px;border:1px solid #d0d5dd;border-radius:12px;background:#fff;font-size:1.3rem}
+    .docs-form{display:grid;gap:13px}
+    .docs-field label{display:block;font-weight:800;font-size:.88rem;margin-bottom:6px}
+    .docs-field input,.docs-field select,.docs-field textarea{width:100%;min-height:46px;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:10px;padding:10px 12px;font:inherit;background:#fff}
+    .docs-field textarea{min-height:86px;resize:vertical}
+    .docs-field small{display:block;color:#667085;margin-top:5px}
+    .docs-form-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:5px}
+    .docs-status{margin:12px 0;padding:12px;border-radius:10px;background:#f0f9ff;color:#075985}
+    .docs-status.error{background:#fef2f2;color:#991b1b}.docs-status.success{background:#ecfdf3;color:#166534}
+    .docs-inline-actions{display:flex;gap:8px;flex-wrap:wrap}
+    [hidden]{display:none!important}
+    @media(min-width:700px){.documents-page{padding-top:26px}.docs-overlay{align-items:center;padding:20px}.docs-sheet-panel{border-radius:22px}.docs-list{gap:14px}.docs-card{padding:20px}.docs-fab{right:32px;bottom:32px}}
+    @media(prefers-reduced-motion:reduce){.docs-shimmer{animation:none}}
+  </style>
+</head>
+<body>
+  <main class="documents-page">
+    <section class="docs-hero" aria-labelledby="docsWelcome">
+      <div class="docs-eyebrow">Group library</div>
+      <h1 id="docsWelcome">Documents</h1>
+      <p>Find your group’s constitution, forms, minutes and policies in one place.</p>
+      <div class="docs-identity">
+        <span>Group: <strong id="docsGroupName">Loading…</strong></span>
+        <span>Member: <strong id="docsMemberName">Loading…</strong></span>
+        <span>Position: <strong id="docsPosition">Loading…</strong></span>
+      </div>
+      <div class="docs-count"><span aria-hidden="true">▤</span><span id="docsCount">Loading documents…</span></div>
+    </section>
+
+    <div id="docsStatus" class="docs-status" role="status" aria-live="polite" hidden></div>
+
+    <section class="docs-toolbar" aria-label="Search and filter documents">
+      <input id="docsSearch" class="docs-search" type="search" placeholder="Search documents and forms…" autocomplete="off" aria-label="Search documents">
+      <div id="docsCategoryChips" class="docs-chips" role="group" aria-label="Filter by category"></div>
+    </section>
+
+    <section id="docsFormsSection" hidden aria-labelledby="docsFormsHeading">
+      <div class="docs-section-title"><h2 id="docsFormsHeading">Forms & templates</h2><span id="docsFormsCount"></span></div>
+      <div id="docsFormsList" class="docs-list"></div>
+    </section>
+
+    <section aria-labelledby="docsMainHeading">
+      <div class="docs-section-title"><h2 id="docsMainHeading">Group documents</h2><span id="docsResultsCount"></span></div>
+      <div id="docsLoading" aria-label="Loading documents">
+        <div class="docs-skeleton"><div class="docs-shimmer large"></div><div class="docs-shimmer"></div><div class="docs-shimmer short"></div></div>
+        <div class="docs-skeleton"><div class="docs-shimmer large"></div><div class="docs-shimmer"></div><div class="docs-shimmer short"></div></div>
+      </div>
+      <div id="docsList" class="docs-list" hidden></div>
+      <div id="docsEmpty" class="docs-empty" hidden><strong>No documents yet</strong><span id="docsEmptyMessage">Your group’s documents will appear here when available.</span></div>
+    </section>
+  </main>
+
+  <button id="docsUploadFab" class="docs-fab" type="button" hidden>＋ Upload</button>
+
+  <div id="docsSheet" class="docs-overlay" hidden>
+    <section class="docs-sheet-panel" role="dialog" aria-modal="true" aria-labelledby="docsSheetTitle">
+      <div class="docs-sheet-head"><h2 id="docsSheetTitle">Upload document</h2><button id="docsCloseSheet" class="docs-close" type="button" aria-label="Close upload form">×</button></div>
+      <form id="docsForm" class="docs-form">
+        <div class="docs-field"><label for="docsTitleInput">Document title *</label><input id="docsTitleInput" name="title" required maxlength="160" placeholder="e.g. Constitution or Loan application form"></div>
+        <div class="docs-field"><label for="docsCategoryInput">Category *</label><select id="docsCategoryInput" name="category" required><option>Constitution</option><option>Forms</option><option>Minutes</option><option>Policies</option><option>Other</option></select></div>
+        <div class="docs-field"><label for="docsDescriptionInput">Description (optional)</label><textarea id="docsDescriptionInput" name="description" maxlength="1000" placeholder="What is this document for?"></textarea></div>
+        <div class="docs-field" id="docsMeetingField" hidden><label for="docsMeetingInput">Link to meeting</label><select id="docsMeetingInput" name="meeting_id"><option value="">Not linked to a meeting</option></select><small>Linked Minutes documents also appear in the meeting’s attachments.</small></div>
+        <div class="docs-field"><label for="docsFileInput">File *</label><input id="docsFileInput" name="file" type="file" accept=".pdf,.docx,.xlsx,.jpg,.jpeg,.png,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,image/jpeg,image/png" required><small>PDF, DOCX, XLSX, JPG or PNG. Maximum 10 MB.</small></div>
+        <div id="docsFormStatus" class="docs-status" role="status" aria-live="polite" hidden></div>
+        <div class="docs-form-actions"><button id="docsSubmit" class="docs-btn docs-btn-primary" type="submit">Upload document</button><button id="docsCancel" class="docs-btn" type="button">Cancel</button></div>
+      </form>
+    </section>
+  </div>
+
+  <script type="module">
+    const memberPortal = new URLSearchParams(location.search).get("portal") === "member";
+    if (memberPortal) {
+      const layout = await import("./js/member-layout.js?v=20261015-documents1");
+      await layout.boot();
+    } else {
+      const layout = await import("./js/admin-layout.js?v=20261015-documents1");
+      await layout.boot();
+    }
+  </script>
+</body>
+</html>
