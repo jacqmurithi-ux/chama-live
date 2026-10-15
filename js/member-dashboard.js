@@ -1713,7 +1713,7 @@ async function loadMeetings() {
 
   const [{ data: upcoming, error: upcomingError }, { data: completed, error: completedError }] = await Promise.all([
     supabase.from("meetings").select("id,date,title,venue,agenda,status").eq("group_id",groupId).eq("status","upcoming").order("date",{ascending:true}).limit(5),
-    supabase.from("meetings").select("id,date,title,venue,agenda,status").eq("group_id",groupId).eq("status","completed").order("date",{ascending:false}).limit(5)
+    supabase.from("meetings").select("id,date,title,venue,agenda,status").eq("group_id",groupId).eq("status","completed").order("date",{ascending:false}).limit(1)
   ]);
   if (upcomingError) throw upcomingError;
   if (completedError) throw completedError;
