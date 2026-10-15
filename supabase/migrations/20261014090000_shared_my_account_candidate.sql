@@ -1,5 +1,5 @@
--- Candidate migration: shared, auth-derived My Account services.
--- Do not apply to production until candidate validation and explicit authorization.
+-- Production migration: shared, auth-derived My Account services.
+-- Allocation totals join the canonical contribution record and group scope.
 
 alter table public.member_payment_evidence
   add column if not exists proof_storage_path text;
