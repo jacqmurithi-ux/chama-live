@@ -263,6 +263,11 @@ const PAGE_SCRIPTS = {
     "initPage"
   ],
 
+  "data-migration.html": [
+    "./data-migration.js?v=20261015-module-guard",
+    "initDataMigration"
+  ],
+
   "admin-my-account.html": [
     "./my-account.js?v=20261013-shared-account1",
     "initMyAccount"
