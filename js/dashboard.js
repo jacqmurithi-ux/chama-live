@@ -3558,301 +3558,76 @@ function cumulativeStatusClass(
 ========================================================= */
 
 function renderCumulativePosition() {
+  const summary = getCumulativeSummary();
 
-  const summary =
-    getCumulativeSummary();
+  setText("cumulativeUpToDateCount", summary.complete ? summary.upToDateCount : "—");
+  setText("cumulativeArrearsCount", summary.complete ? summary.arrearsCount : "—");
+  setText("cumulativeCreditCount", summary.complete ? summary.creditCount : "—");
+  setText("cumulativeArrearsAmount", summary.complete ? money(summary.arrearsAmount) : "—");
+  setText("cumulativeCreditAmount", summary.complete ? money(summary.creditAmount) : "—");
 
+  if (cumulativeFilterEventsBound) return;
 
-  setText(
-    "cumulativeUpToDateCount",
-    summary.complete
-      ? summary.upToDateCount
-      : "—"
-  );
+  const dialog = el("cumulativeMemberDialog");
+  const rows = el("cumulativeMemberDialogRows");
+  const title = el("cumulativeMemberDialogTitle");
+  const description = el("cumulativeMemberDialogDescription");
+  const closeButton = el("cumulativeMemberDialogClose");
+  const labels = {
+    UP_TO_DATE: "Members up to date",
+    ARREARS: "Members in arrears",
+    CREDIT: "Members with credit"
+  };
 
+  document.querySelectorAll("[data-cumulative-filter]").forEach(button => {
+    button.addEventListener("click", () => {
+      const selectedStatus = button.dataset.cumulativeFilter;
+      if (!dialog || !rows) return;
 
-  setText(
-    "cumulativeArrearsCount",
-    summary.complete
-      ? summary.arrearsCount
-      : "—"
-  );
+      if (!summary.complete) {
+        rows.innerHTML = '<tr><td colspan="7"><div class="empty-state"><strong>Cumulative position unavailable</strong><span>The complete cumulative accounting set could not be loaded.</span></div></td></tr>';
+      } else {
+        const matchingPositions = (cumulativePositions || [])
+          .filter(position => normalizeCumulativeStatus(position.status, position.arrears, position.credit) === selectedStatus)
+          .slice()
+          .sort((a, b) => memberName(a.memberId).localeCompare(memberName(b.memberId)));
 
+        rows.innerHTML = matchingPositions.length
+          ? matchingPositions.map(position => {
+              const status = normalizeCumulativeStatus(position.status, position.arrears, position.credit);
+              return `<tr>
+                <td><strong>${escapeHtml(memberName(position.memberId))}</strong></td>
+                <td>${escapeHtml(money(position.totalPaid))}</td>
+                <td>${escapeHtml(money(position.totalDue))}</td>
+                <td>${escapeHtml(money(position.totalAllocated))}</td>
+                <td><strong>${escapeHtml(money(Math.max(0, numberValue(position.arrears))))}</strong></td>
+                <td><strong>${escapeHtml(money(Math.max(0, numberValue(position.credit))))}</strong></td>
+                <td><span class="status-badge ${escapeHtml(cumulativeStatusClass(status))}">${escapeHtml(cumulativeStatusLabel(status))}</span></td>
+              </tr>`;
+            }).join("")
+          : '<tr><td colspan="7"><div class="empty-state"><strong>No members in this status</strong><span>There are currently no members in this cumulative status.</span></div></td></tr>';
+      }
 
-  setText(
-    "cumulativeCreditCount",
-    summary.complete
-      ? summary.creditCount
-      : "—"
-  );
-
-
-  setText(
-    "cumulativeArrearsAmount",
-    summary.complete
-      ? money(
-          summary.arrearsAmount
-        )
-      : "—"
-  );
-
-
-  setText(
-    "cumulativeCreditAmount",
-    summary.complete
-      ? money(
-          summary.creditAmount
-        )
-      : "—"
-  );
-
-
-  const container =
-    el(
-      "cumulativePositionRows"
-    );
-
-  const filterLabel = el("cumulativeFilterLabel");
-  const showAllButton = el("cumulativeShowAll");
-  const filterButtons = document.querySelectorAll("[data-cumulative-filter]");
-
-  if (!cumulativeFilterEventsBound) {
-    filterButtons.forEach(button => {
-      button.addEventListener("click", () => {
-        cumulativeStatusFilter = button.dataset.cumulativeFilter || null;
-        renderCumulativePosition();
-      });
+      if (title) title.textContent = labels[selectedStatus] || "Cumulative member positions";
+      if (description) description.textContent = "Review individual member positions using the same cumulative accounting figures shown in the dashboard.";
+      if (typeof dialog.showModal === "function") dialog.showModal();
+      else dialog.setAttribute("open", "");
     });
-
-    showAllButton?.addEventListener("click", () => {
-      cumulativeStatusFilter = null;
-      renderCumulativePosition();
-    });
-
-    cumulativeFilterEventsBound = true;
-  }
-
-  filterButtons.forEach(button => {
-    button.setAttribute(
-      "aria-pressed",
-      String(button.dataset.cumulativeFilter === cumulativeStatusFilter)
-    );
   });
 
-  if (filterLabel) {
-    const labels = {
-      UP_TO_DATE: "Members up to date",
-      ARREARS: "Members in arrears",
-      CREDIT: "Members with credit"
-    };
-    filterLabel.textContent = cumulativeStatusFilter
-      ? `Showing: ${labels[cumulativeStatusFilter] || "Selected status"}`
-      : "Showing all member positions";
-  }
+  closeButton?.addEventListener("click", () => {
+    if (dialog && typeof dialog.close === "function") dialog.close();
+    else dialog?.removeAttribute("open");
+  });
 
-  if (showAllButton) {
-    showAllButton.hidden = !cumulativeStatusFilter;
-  }
+  dialog?.addEventListener("click", event => {
+    if (event.target === dialog) {
+      if (typeof dialog.close === "function") dialog.close();
+      else dialog.removeAttribute("open");
+    }
+  });
 
-
-  if (!container) {
-    return;
-  }
-
-
-  if (
-    !summary.complete
-  ) {
-
-    container.innerHTML = `
-      <tr>
-        <td colspan="7">
-          <div class="empty-state">
-            <strong>
-              Cumulative position unavailable
-            </strong>
-            <span>
-              The complete cumulative accounting set
-              could not be loaded.
-            </span>
-          </div>
-        </td>
-      </tr>
-    `;
-
-    return;
-
-  }
-
-
-  if (
-    !cumulativePositions.length
-  ) {
-
-    container.innerHTML = `
-      <tr>
-        <td colspan="7">
-          <div class="empty-state">
-            <strong>
-              No group members
-            </strong>
-            <span>
-              No cumulative accounting positions were returned.
-            </span>
-          </div>
-        </td>
-      </tr>
-    `;
-
-    return;
-
-  }
-
-
-  const positions =
-    cumulativePositions
-      .filter(position => {
-        if (!cumulativeStatusFilter) return true;
-        return normalizeCumulativeStatus(
-          position.status,
-          position.arrears,
-          position.credit
-        ) === cumulativeStatusFilter;
-      })
-      .slice()
-      .sort(
-        (
-          a,
-          b
-        ) =>
-          memberName(
-            a.memberId
-          ).localeCompare(
-            memberName(
-              b.memberId
-            )
-          )
-      );
-
-
-  if (!positions.length) {
-    container.innerHTML = `
-      <tr>
-        <td colspan="7">
-          <div class="empty-state">
-            <strong>No members in this status</strong>
-            <span>There are currently no members in the selected cumulative status.</span>
-          </div>
-        </td>
-      </tr>
-    `;
-    return;
-  }
-
-
-  container.innerHTML =
-    positions
-      .map(
-        position => {
-
-          const status =
-            normalizeCumulativeStatus(
-              position.status,
-              position.arrears,
-              position.credit
-            );
-
-
-          const statusClassName =
-            cumulativeStatusClass(
-              status
-            );
-
-
-          const arrearsAmount =
-            Math.max(0, numberValue(position.arrears));
-
-          const creditAmount =
-            Math.max(0, numberValue(position.credit));
-
-          return `
-            <tr>
-
-              <td>
-                <strong>
-                  ${escapeHtml(
-                    memberName(
-                      position.memberId
-                    )
-                  )}
-                </strong>
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  money(
-                    position.totalPaid
-                  )
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  money(
-                    position.totalDue
-                  )
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  money(
-                    position.totalAllocated
-                  )
-                )}
-              </td>
-
-              <td>
-                <strong>
-                  ${escapeHtml(
-                    money(
-                      arrearsAmount
-                    )
-                  )}
-                </strong>
-              </td>
-
-              <td>
-                <strong>
-                  ${escapeHtml(
-                    money(
-                      creditAmount
-                    )
-                  )}
-                </strong>
-              </td>
-
-              <td>
-                <span
-                  class="status-badge ${escapeHtml(
-                    statusClassName
-                  )}"
-                >
-                  ${escapeHtml(
-                    cumulativeStatusLabel(
-                      status
-                    )
-                  )}
-                </span>
-              </td>
-
-            </tr>
-          `;
-
-        }
-      )
-      .join("");
-
+  cumulativeFilterEventsBound = true;
 }
 
 
