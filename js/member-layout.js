@@ -64,6 +64,7 @@ const MEMBER_PORTAL_ROLES = new Set([
 
 const MEMBER_PAGES = new Set([
   "member-dashboard.html",
+  "documents.html",
   "member-contributions.html",
   "member-accounting.html",
   "member-activities.html",
@@ -81,6 +82,11 @@ const PAGE_SCRIPTS = {
   "member-dashboard.html": {
     path: "./member-dashboard.js?v=20261013-loan-summary-dashboard1",
     initializer: "initMemberDashboard"
+  },
+
+  "documents.html": {
+    path: "./documents.js?v=20261015-documents1",
+    initializer: "initDocuments"
   },
 
   "member-contributions.html": {
@@ -357,6 +363,10 @@ const MEMBER_NAVIGATION = [
     href: "member-dashboard.html"
   },
   {
+    label: "Documents",
+    href: "documents.html?portal=member"
+  },
+  {
     label: "My Contributions",
     href: "member-contributions.html"
   },
@@ -404,6 +414,7 @@ const MEMBER_DESKTOP_NAVIGATION_GROUPS = [
     "Home",
     [
       { label: "Home", href: "member-dashboard.html" },
+      { label: "Documents", href: "documents.html?portal=member" },
       { label: "My Account", href: "member-my-account.html" },
       { label: "Getting Started", href: "member-getting-started.html" }
     ]
@@ -421,6 +432,7 @@ const MEMBER_DESKTOP_NAVIGATION_GROUPS = [
     "Group",
     [
       { label: "Activities", href: "member-activities.html" },
+      { label: "Documents", href: "documents.html?portal=member" },
       { label: "Assets", href: "member-assets.html" },
       { label: "Milestones", href: "member-milestones.html" }
     ]
