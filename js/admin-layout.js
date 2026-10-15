@@ -168,7 +168,7 @@ const ADMIN_PAGES = new Set([
 const PAGE_SCRIPTS = {
 
   "dashboard.html": [
-    "./dashboard.js?v=20261015-custom-status-summary4",
+    "./dashboard.js?v=20261015-cumulative-status-filter1",
     "initDashboard"
   ],
 
