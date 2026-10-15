@@ -34,7 +34,7 @@ test("both portals load the same shared account renderer", () => {
   assert.match(adminLayout, /my-account\.js\?v=[\w-]+/);
   assert.match(memberLayout, /my-account\.js\?v=[\w-]+/);
   assert.match(adminPage, /import \{ boot \} from "\.\/js\/admin-layout\.js"/);
-  assert.match(memberPage, /import \{ boot \} from "\.\/js\/member-layout\.js"/);
+  assert.match(memberPage, /import \\{ boot \\} from "\\.\\/js\\/member-layout\\.js(?:\\?v=[\\w-]+)?"/);
 });
 
 test("member dashboard profile link routes to the shared personal account", async () => {
