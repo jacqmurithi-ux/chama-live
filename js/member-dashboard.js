@@ -1822,7 +1822,7 @@ async function loadRecentAnnouncements() {
         <strong>${escapeHtml(item.title || "Group announcement")}</strong>
         <small style="display:block;margin:5px 0 8px">${escapeHtml(formatDate(item.created_at))}</small>
         <div style="white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.55">${escapeHtml(item.body || "")}</div>
-        ${isDocumentNotice ? '<p style="margin:10px 0 0"><a class="member-button secondary" href="documents.html?portal=member">Open Documents</a></p>' : ""}
+        ${isDocumentNotice ? '<p style="margin:10px 0 0"><a href="documents.html?portal=member" style="display:inline-flex;align-items:center;min-height:36px;padding:8px 12px;border-radius:8px;background:#0a7d3b;color:#fff;text-decoration:none;font-weight:700;font-size:.85rem">Open Documents</a></p>' : ""}
       </article>
     `;
   }).join("");
