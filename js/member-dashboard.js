@@ -1772,6 +1772,38 @@ async function loadMeetings() {
   };
 }
 
+async function loadRecentAnnouncements() {
+  const container = byId("memberRecentAnnouncements");
+  if (!container) return;
+
+  const { data, error } = await supabase
+    .from("announcements")
+    .select("id,title,body,created_at")
+    .eq("group_id", groupId)
+    .order("created_at", { ascending: false })
+    .limit(5);
+
+  if (error) {
+    console.warn("CHAMA LIVE: group announcements could not be loaded.", error);
+    container.innerHTML = '<p class="member-muted" role="status">Announcements could not be loaded right now.</p>';
+    return;
+  }
+
+  const rows = Array.isArray(data) ? data : [];
+  if (!rows.length) {
+    container.innerHTML = '<p class="member-muted">There are no announcements for this group yet.</p>';
+    return;
+  }
+
+  container.innerHTML = rows.map(item => `
+    <article class="member-dashboard-list-item" style="display:block;padding:14px 0;border-bottom:1px solid #e2e8f0">
+      <strong>${escapeHtml(item.title || "Group announcement")}</strong>
+      <small style="display:block;margin:5px 0 8px">${escapeHtml(formatDate(item.created_at))}</small>
+      <div style="white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.55">${escapeHtml(item.body || "")}</div>
+    </article>
+  `).join("");
+}
+
 /* =========================================================
    GROUP ACTIVITIES
    ========================================================= */
@@ -2348,6 +2380,7 @@ async function loadDashboard() {
         loadMyFinePosition(),
         loadMyContributionActivity(),
         loadMeetings(),
+        loadRecentAnnouncements(),
         loadMyAttendanceSummary(),
         loadActivities(),
         loadPlansAndGoals(),
@@ -2360,6 +2393,7 @@ async function loadDashboard() {
       myFineResult,
       myContributionActivityResult,
       meetingsResult,
+      announcementsResult,
       attendanceResult,
       activitiesResult,
       plansResult,
@@ -2413,6 +2447,7 @@ async function loadDashboard() {
     void myFineResult;
     void myContributionActivityResult;
     void meetingsResult;
+    void announcementsResult;
     void attendanceResult;
     void activitiesResult;
     void plansResult;
