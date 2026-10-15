@@ -101,7 +101,7 @@ function cardMarkup(doc, formOnly = false) {
   const actions = [
     '<button class="docs-btn docs-btn-primary" type="button" data-download="' + esc(doc.id) + '">↓ Download</button>'
   ];
-  if (isOfficial() && !formOnly) {
+  if (isOfficial()) {
     actions.push('<button class="docs-btn" type="button" data-edit="' + esc(doc.id) + '">Edit / replace</button>');
     actions.push('<button class="docs-btn" type="button" data-rename="' + esc(doc.id) + '">Rename</button>');
     actions.push('<button class="docs-btn" type="button" data-delete="' + esc(doc.id) + '">Delete</button>');
@@ -173,7 +173,7 @@ async function loadData() {
   $("docsMemberName").textContent = context?.member?.name || "Member";
   $("docsPosition").textContent = context?.member?.actual_position || context?.member?.role || "Member";
   $("docsUploadFab").hidden = !isOfficial();
-  $("docsMeetingField").hidden = false;
+  $("docsMeetingField").hidden = true;
   $("docsMeetingInput").innerHTML = '<option value="">Not linked to a meeting</option>' + meetings.map(meeting =>
     '<option value="' + esc(meeting.id) + '">' + esc(meeting.title) + ' · ' + esc(formatDate(meeting.date)) + '</option>'
   ).join("");
@@ -231,6 +231,7 @@ function openSheet(doc = null) {
   $("docsCategoryInput").value = doc?.category || "Other";
   $("docsDescriptionInput").value = doc?.description || "";
   $("docsMeetingInput").value = doc?.meeting_id || "";
+  $("docsMeetingField").hidden = $("docsCategoryInput").value !== "Minutes";
   $("docsFileInput").value = "";
   $("docsFileInput").required = true;
   $("docsCategoryInput").disabled = Boolean(doc);
