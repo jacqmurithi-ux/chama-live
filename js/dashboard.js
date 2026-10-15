@@ -3918,126 +3918,67 @@ function renderRecentExpenses() {
 ========================================================= */
 
 function renderUpcomingMeetings() {
-
-  const container =
-    el(
-      "upcomingMeetingRows"
-    );
-
+  const container = el("upcomingMeetingRows");
+  const heading = el("meetingsTitle");
+  const subtitle = el("meetingsSubtitle");
 
   if (!container) {
-
-    console.warn(
-      "CHAMA LIVE: #upcomingMeetingRows not found."
-    );
-
+    console.warn("CHAMA LIVE: #upcomingMeetingRows not found.");
     return;
-
   }
 
+  const today = getToday();
+  const upcoming = meetings
+    .filter(meeting => {
+      const status = String(meeting.status || "upcoming").toLowerCase();
+      return normalizeDate(meeting.date) >= today &&
+        !["completed", "cancelled"].includes(status);
+    })
+    .sort((a, b) => normalizeDate(a.date).localeCompare(normalizeDate(b.date)))
+    .slice(0, 5);
 
-  const today =
-    getToday();
+  // When there is no upcoming meeting, surface recent completed meetings here
+  // so the dashboard still confirms what was completed and notified.
+  const recentCompleted = upcoming.length ? [] : meetings
+    .filter(meeting => String(meeting.status || "").toLowerCase() === "completed")
+    .sort((a, b) => normalizeDate(b.date).localeCompare(normalizeDate(a.date)))
+    .slice(0, 5);
 
+  const rows = upcoming.length ? upcoming : recentCompleted;
 
-  const rows =
-    meetings
-      .filter(
-        meeting =>
-          normalizeDate(
-            meeting.date
-          ) >= today
-      )
-      .sort(
-        (
-          a,
-          b
-        ) =>
-          normalizeDate(
-            a.date
-          )
-            .localeCompare(
-              normalizeDate(
-                b.date
-              )
-            )
-      )
-      .slice(
-        0,
-        5
-      );
-
+  if (heading) heading.textContent = upcoming.length ? "Upcoming meetings" : "Recent meeting updates";
+  if (subtitle) {
+    subtitle.textContent = upcoming.length
+      ? "Scheduled group meetings from today onward."
+      : "No meetings are scheduled from today onward. Recent completed meetings are shown here.";
+  }
 
   if (!rows.length) {
-
     container.innerHTML = `
       <tr>
         <td colspan="4">
           <div class="empty-state">
-            <strong>No upcoming meetings.</strong>
-            <span>
-              Scheduled meetings will appear here.
-            </span>
+            <strong>No upcoming or recently completed meetings.</strong>
+            <span>Scheduled meetings will appear here. Completed meetings will be listed here when available.</span>
           </div>
         </td>
       </tr>
     `;
-
     return;
-
   }
 
-
-  container.innerHTML =
-    rows
-      .map(
-        row => {
-
-          return `
-            <tr>
-
-              <td>
-                ${escapeHtml(
-                  formatDate(
-                    row.date
-                  )
-                )}
-              </td>
-
-              <td>
-                <strong>
-                  ${escapeHtml(
-                    row.title ||
-                    "Meeting"
-                  )}
-                </strong>
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  row.venue ||
-                  "—"
-                )}
-              </td>
-
-              <td>
-                <span class="status-badge">
-                  ${escapeHtml(
-                    row.status ||
-                    "Upcoming"
-                  )}
-                </span>
-              </td>
-
-            </tr>
-          `;
-
-        }
-      )
-      .join("");
-
+  container.innerHTML = rows.map(row => {
+    const completed = String(row.status || "").toLowerCase() === "completed";
+    return `
+      <tr>
+        <td>${escapeHtml(formatDate(row.date))}</td>
+        <td><strong>${escapeHtml(row.title || "Meeting")}</strong></td>
+        <td>${escapeHtml(row.venue || "—")}</td>
+        <td><span class="status-badge ${completed ? "status-approved" : "status-upcoming"}">${completed ? "Completed" : escapeHtml(row.status || "Upcoming")}</span></td>
+      </tr>
+    `;
+  }).join("");
 }
-
 
 /* =========================================================
    OPERATIONS SNAPSHOT
