@@ -90,9 +90,9 @@ async function loadSettings(){
   $("loanSettingsUpdated").textContent="Last updated by "+(editor?.name||"group Admin")+" on "+(settings.updated_at?new Date(settings.updated_at).toLocaleString():"—")+".";
   $("loanLimits").textContent="Annual rate "+settings.interest_rate+"% · "+settings.interest_type.replaceAll("_"," ")+" · Maximum KES "+money(settings.max_loan_amount)+" · Up to "+settings.max_period_months+" months · Late penalty KES "+money(settings.late_penalty)+" per overdue installment.";
  }else {
-  $("loanEnabled").checked=false;
-  $("loanSettingsUpdated").textContent="Loan settings have not been saved.";
-  $("loanLimits").textContent="Loans are not yet available for this group.";
+  $("loanEnabled").checked=Boolean(groupLoansEnabled);
+  $("loanSettingsUpdated").textContent=groupLoansEnabled?"Loans are enabled, but the loan terms have not been configured yet.":"Loan settings have not been saved.";
+  $("loanLimits").textContent=groupLoansEnabled?"Enter and save the group\u2019s loan terms above to open applications.":"Loans are not yet available for this group.";
  }
  const enabled=Boolean(settings&&groupLoansEnabled);
  $("loanApplyForm").querySelector("button[type=submit]").disabled=!enabled;
