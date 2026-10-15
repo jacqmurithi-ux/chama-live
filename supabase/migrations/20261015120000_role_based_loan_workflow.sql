@@ -530,12 +530,66 @@ create or replace function public.disburse_loan(p_group_id uuid,p_loan_id uuid,p
 returns uuid
 language plpgsql security definer
 set search_path = public, pg_temp
-as $$
+as $
+declare
+  v_actor uuid;
+  v_member public.members%rowtype;
+  v_loan public.loan_applications%rowtype;
+  v_i integer;
+  v_principal numeric(14,2);
+  v_interest numeric(14,2);
+  v_opening numeric(14,2);
+  v_principal_each numeric(14,2);
+  v_remaining numeric(14,2);
+  v_due date;
+  v_interest_total numeric(14,2);
 begin
-  -- The trigger on loan_applications independently enforces Treasurer + three approvals.
-  return public.cl_loan_disburse(p_group_id,p_loan_id,p_disbursed_date);
+  v_actor:=public.cl_loan_actor(p_group_id,false);
+  select * into v_member from public.members m where m.id=v_actor and m.group_id=p_group_id;
+  if not (
+    lower(regexp_replace(replace(replace(btrim(coalesce(v_member.actual_position,'')),'_',' '),'-',' '),'[[:space:]]+',' ','g'))='treasurer'
+    or lower(regexp_replace(replace(replace(btrim(coalesce(v_member.actual_position_name,'')),'_',' '),'-',' '),'[[:space:]]+',' ','g'))='treasurer'
+  ) then raise exception 'Only the Treasurer can disburse.' using errcode='42501'; end if;
+  select * into v_loan from public.loan_applications where id=p_loan_id and group_id=p_group_id for update;
+  if not found then raise exception 'Loan application not found.' using errcode='P0002'; end if;
+  if v_loan.status<>'approved' then raise exception 'Only approved loans can be disbursed.' using errcode='55000'; end if;
+  if (select count(distinct a.approval_slot) from public.loan_approvals a
+      where a.loan_id=p_loan_id and a.decision='approved'
+        and a.approval_slot in ('chairperson','treasurer','secretary'))<>3 then
+    raise exception 'A loan cannot be disbursed until Chairperson, Treasurer and Secretary have all approved.' using errcode='55000';
+  end if;
+  if exists(select 1 from public.loan_repayment_schedule where loan_id=p_loan_id) then
+    raise exception 'Repayment schedule already exists.' using errcode='55000';
+  end if;
+  if v_loan.approved_amount is null or v_loan.approved_amount<=0
+    or v_loan.interest_rate_snapshot is null or v_loan.interest_type_snapshot is null then
+    raise exception 'Loan terms were not snapshotted at application time.' using errcode='55000';
+  end if;
+  v_principal:=v_loan.approved_amount;
+  v_principal_each:=round(v_principal/v_loan.period_months,2);
+  v_remaining:=v_principal;
+  for v_i in 1..v_loan.period_months loop
+    v_due:=(coalesce(p_disbursed_date,current_date)+make_interval(months=>v_i))::date;
+    v_opening:=v_remaining;
+    if v_i=v_loan.period_months then v_principal_each:=v_remaining; end if;
+    if v_loan.interest_type_snapshot='flat' then
+      v_interest:=round(v_principal*v_loan.interest_rate_snapshot/100/12,2);
+    else
+      v_interest:=round(v_opening*v_loan.interest_rate_snapshot/100/12,2);
+    end if;
+    insert into public.loan_repayment_schedule(group_id,loan_id,installment_no,due_date,principal_due,interest_due,status)
+    values(p_group_id,p_loan_id,v_i,v_due,v_principal_each,v_interest,'pending');
+    v_remaining:=round(v_remaining-v_principal_each,2);
+  end loop;
+  select coalesce(sum(interest_due),0) into v_interest_total from public.loan_repayment_schedule where loan_id=p_loan_id;
+  update public.loan_applications set status='active',disbursed_by=auth.uid(),
+    disbursed_at=coalesce(p_disbursed_date,current_date)::timestamptz,updated_at=now()
+  where id=p_loan_id;
+  insert into public.loan_audit(group_id,loan_id,actor_id,action,detail)
+  values(p_group_id,p_loan_id,auth.uid(),'loan_disbursed',jsonb_build_object('principal',v_principal,'interest_total',v_interest_total,'period_months',v_loan.period_months,'disbursed_date',coalesce(p_disbursed_date,current_date)));
+  return p_loan_id;
 end
-$$;
+$;
 
 -- Repayments are requests until an official confirms them. Legacy immediate-allocation RPCs are revoked from clients below.
 create or replace function public.record_repayment(
@@ -712,14 +766,29 @@ create or replace function public.group_loan_summary(p_group_id uuid)
 returns jsonb
 language plpgsql security definer
 set search_path = public, pg_temp
-as $$
+as $
+declare v_member uuid; v_summary jsonb;
 begin
+  v_member:=public.cl_loan_actor(p_group_id,false);
   if not (
-    public.cl_user_has_role(p_group_id,array['admin','chairperson','secretary','treasurer']::text[])
+    public.cl_user_has_role(p_group_id,array['admin']::text[])
+    or exists(select 1 from public.members m where m.id=v_member and m.group_id=p_group_id and (
+      lower(regexp_replace(replace(replace(btrim(coalesce(m.actual_position,'')),'_',' '),'-',' '),'[[:space:]]+',' ','g')) in ('chairperson','vice chairperson','chair','vice chair','treasurer','secretary','vice secretary')
+      or lower(regexp_replace(replace(replace(btrim(coalesce(m.actual_position_name,'')),'_',' '),'-',' '),'[[:space:]]+',' ','g')) in ('chairperson','vice chairperson','chair','vice chair','treasurer','secretary','vice secretary')
+    ))
   ) then raise exception 'Only group officials can view loan totals.' using errcode='42501'; end if;
-  return public.cl_get_group_loan_summary(p_group_id);
+  select jsonb_build_object(
+    'totalDisbursed',coalesce((select sum(l.approved_amount) from public.loan_applications l where l.group_id=p_group_id and l.disbursed_at is not null),0),
+    'interestGained',coalesce((select sum(a.interest_amount) from public.loan_repayment_allocations a join public.loan_repayments r on r.id=a.repayment_id where a.group_id=p_group_id and r.status='confirmed'),0),
+    'membersBenefited',coalesce((select count(distinct l.member_id) from public.loan_applications l where l.group_id=p_group_id and l.disbursed_at is not null),0),
+    'outstandingAmount',coalesce((select sum(greatest(s.principal_due+s.interest_due+s.penalty_due-s.amount_paid,0))
+      from public.loan_repayment_schedule s join public.loan_applications l on l.id=s.loan_id
+      where l.group_id=p_group_id and l.status in ('active','overdue')),0),
+    'activeLoansCount',coalesce((select count(*) from public.loan_applications l where l.group_id=p_group_id and l.status in ('active','overdue')),0)
+  ) into v_summary;
+  return v_summary;
 end
-$$;
+$;
 
 drop policy if exists loan_settings_read_member on public.loan_settings;
 create policy loan_settings_read_member on public.loan_settings
