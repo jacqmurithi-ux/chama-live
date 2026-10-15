@@ -942,6 +942,27 @@ async function loadRecentAnnouncements() {
   announcements = Array.isArray(data) ? data : [];
 }
 
+function subscribeToAnnouncementUpdates() {
+  if (!currentGroupId || typeof supabase.channel !== "function") return;
+
+  supabase
+    .channel(`group-announcements-${currentGroupId}`)
+    .on("postgres_changes", {
+      event: "INSERT",
+      schema: "public",
+      table: "announcements",
+      filter: `group_id=eq.${currentGroupId}`
+    }, async () => {
+      try {
+        await loadRecentAnnouncements();
+        renderRecentAnnouncements();
+      } catch (error) {
+        console.warn("[CHAMA LIVE] Live group announcements could not refresh.", error);
+      }
+    })
+    .subscribe();
+}
+
 function renderRecentAnnouncements() {
   const container = el("recentAnnouncementList");
   if (!container) return;
@@ -4351,7 +4372,7 @@ export async function initDashboard() {
     renderDashboard();
     await renderOptionalModuleCards();
     await renderGroupLoanSummary();
-
+    subscribeToAnnouncementUpdates();
 
     clearStatus();
 
