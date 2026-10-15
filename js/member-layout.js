@@ -35,6 +35,7 @@ import { initFeedbackButton } from "./feedback.js";
 
 import { applyRolePermissions } from "./role-permissions.js";
 import { supabase } from "./supabase.js";
+import { trackGroupPageUsage } from "./page-usage.js";
 
 
 /* =========================================================
@@ -1689,6 +1690,9 @@ export async function boot() {
       window.location.replace("member-dashboard.html");
       return;
     }
+
+    // Record only the allowlisted page key and group after access checks pass.
+    trackGroupPageUsage(context, currentPage);
 
     window.__CHAMA_LIVE_LAYOUT_LOADING__ =
       true;
