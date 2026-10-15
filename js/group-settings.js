@@ -29,7 +29,8 @@ export async function initGroupSettings() {
     groupRegistration: group.registration_number || "—",
     groupPhone: group.phone || "—",
     groupEmail: group.email || "—",
-    groupLocation: group.location || group.town || "—"
+    groupCountry: group.country || "—",
+    groupDescription: group.description || "—"
   };
   Object.entries(values).forEach(([id, value]) => { if (byId(id)) byId(id).textContent = value; });
 
