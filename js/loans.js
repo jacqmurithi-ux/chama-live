@@ -5,7 +5,7 @@ import { canWrite, applyRolePermissions } from "./role-permissions.js?v=loan-thr
 const $ = id => document.getElementById(id);
 const money = value => Number(value || 0).toLocaleString("en-KE",{minimumFractionDigits:2,maximumFractionDigits:2});
 const esc = value => String(value ?? "").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-let ctx, settings, loans=[], members=[], loanApprovals=[], selectedLoan=null, official=false;
+let ctx, settings, loans=[], members=[], loanApprovals=[], selectedLoan=null, official=false, isAdmin=false, officeSlot=null, memberOnly=false, groupLoansEnabled=false;
 // Portal mode is an explicit UI boundary: an Admin visiting the Member Portal sees their own loan account only.
 const memberPortal = new URLSearchParams(window.location.search).get("portal") === "member";
 
@@ -26,41 +26,75 @@ const APPROVAL_OFFICES = [
 
 function status(message,error=false){$("loanStatus").textContent=message;$("loanStatus").classList.toggle("error",error);}
 function errorText(error){return [error?.message,error?.details,error?.hint,error?.code?("Code: "+error.code):null].filter(Boolean).join(" — ")||"Request failed.";}
-function allowed(action){return memberPortal ? action === "apply" : canWrite("loans",action,ctx?.member);}
+function allowed(action,loan=null){
+ if(action==="apply") return true;
+ if(action==="settings") return isAdmin&&!memberPortal;
+ if(action==="review") return Boolean(officeSlot)&&(!loan||loan.member_id!==ctx.member.id);
+ if(action==="disburse") return officeSlot==="treasurer";
+ if(action==="repayment") return Boolean(selectedLoan&&selectedLoan.member_id===ctx.member.id&&["active","overdue"].includes(selectedLoan.status));
+ if(action==="confirm") return isAdmin||Boolean(officeSlot);
+ if(action==="export") return official;
+ return false;
+}
+function statusLabel(loan){
+ const s=loan.status;
+ if(s==="submitted") return "Pending";
+ if(s==="approved") return "Approved (awaiting disbursement)";
+ if(s==="active") return "Active";
+ if(s==="overdue") return "Overdue";
+ if(s==="cleared") return "Cleared";
+ if(s==="cancelled") return "Cancelled";
+ if(s==="rejected") return "Rejected";
+ return s||"Pending";
+}
 async function rpc(name,args){const {data,error}=await supabase.rpc(name,args);if(error)throw error;return data;}
 function today(){return new Date().toISOString().slice(0,10);}
 function applyPermissions(){
   applyRolePermissions({page:"loans",member:ctx.member});
-  $("loanSettingsCard").classList.toggle("loan-hidden",memberPortal);
-  $("loanExportCsv").classList.toggle("loan-hidden",memberPortal);
-  $("loanRepaymentPanel").classList.toggle("loan-hidden",memberPortal||!selectedLoan||!["active","overdue"].includes(selectedLoan.status));
+  $("loanSettingsCard").classList.toggle("loan-hidden",memberPortal||!isAdmin);
+  $("loanExportCsv").classList.toggle("loan-hidden",!official);
+  $("loanReviewCard").classList.toggle("loan-hidden",!officeSlot);
+  $("loanPendingRepaymentsCard").classList.toggle("loan-hidden",!official);
+  $("loanOverdueCard").classList.toggle("loan-hidden",!official);
+  $("loanGroupSummaryCard").classList.toggle("loan-hidden",!official);
+  $("loanRepaymentPanel").classList.toggle("loan-hidden",!selectedLoan||selectedLoan.member_id!==ctx.member.id||!["active","overdue"].includes(selectedLoan.status));
 }
 async function loadNotifications(){
- let query=supabase.from("loan_notifications").select("id,event_type,title,message,created_at,read_at").eq("group_id",ctx.group.id);
- // Fail closed rather than expose group-wide notifications in the Member Portal.
- if(memberPortal) query=query.eq("member_id",ctx.member.id);
+ let query=supabase.from("loan_notifications").select("id,event_type,title,message,created_at,read_at").eq("group_id",ctx.group.id).eq("recipient_member_id",ctx.member.id);
  const {data,error}=await query.order("created_at",{ascending:false}).limit(20);
  if(error){if(memberPortal){$("loanNotifications").innerHTML='<p class="loan-muted">Personal loan notifications are not available for this account yet.</p>';console.warn("CHAMA LIVE: Member-scoped loan notifications unavailable.",error);return;}throw error;}
  const rows=data||[];
+ $("loanNotificationsCard").querySelector("h2").textContent="My loan notifications";
  $("loanNotifications").innerHTML=rows.map(n=>'<article class="loan-notification '+(n.read_at?'':'unread')+'"><div style="display:flex;justify-content:space-between;gap:12px;align-items:start;flex-wrap:wrap"><strong>'+esc(n.title)+'</strong>'+(n.read_at?'':'<button type="button" class="loan-btn secondary" data-notification-read="'+esc(n.id)+'">Mark read</button>')+'</div><p>'+esc(n.message)+'</p><small class="loan-muted">'+esc(new Date(n.created_at).toLocaleString())+'</small></article>').join("")||'<p class="loan-muted">No loan notifications yet.</p>';
 }
 $("loanNotifications").addEventListener("click",async e=>{
  const b=e.target.closest("[data-notification-read]");if(!b)return;
  try{
-  const {error}=await supabase.from("loan_notifications").update({read_at:new Date().toISOString()}).eq("id",b.dataset.notificationRead).is("read_at",null);
+  const {error}=await supabase.from("loan_notifications").update({read_at:new Date().toISOString()}).eq("id",b.dataset.notificationRead).eq("recipient_member_id",ctx.member.id).is("read_at",null);
   if(error)throw error;
   await loadNotifications();
  }catch(err){status(errorText(err),true);}
 });
 async function loadSettings(){
- const {data,error}=await supabase.from("loan_settings").select("interest_rate,interest_type,max_loan_amount,max_period_months,late_penalty").eq("group_id",ctx.group.id).maybeSingle();
+ const {data,error}=await supabase.from("loan_settings").select("enabled,interest_rate,interest_type,max_loan_amount,max_period_months,late_penalty,updated_by,updated_at").eq("group_id",ctx.group.id).maybeSingle();
  if(error)throw error; settings=data||null;
  if(settings){
   const f=$("loanSettingsForm").elements;
   for(const key of ["interest_rate","interest_type","max_loan_amount","max_period_months","late_penalty"]) f[key].value=settings[key];
-  $("loanLimits").textContent="Maximum KES "+money(settings.max_loan_amount)+" · Up to "+settings.max_period_months+" months · "+settings.interest_rate+"% annual ("+settings.interest_type.replaceAll("_"," ")+").";
- }else $("loanLimits").textContent="The group Admin must save loan settings before members can apply.";
- $("loanApplyForm").querySelector("button[type=submit]").disabled=!settings;
+  $("loanEnabled").checked=Boolean(settings.enabled);
+  const editor=members.find(m=>m.auth_user_id===settings.updated_by||m.user_id===settings.updated_by);
+  $("loanSettingsUpdated").textContent="Last updated by "+(editor?.name||"group Admin")+" on "+(settings.updated_at?new Date(settings.updated_at).toLocaleString():"—")+".";
+  $("loanLimits").textContent="Annual rate "+settings.interest_rate+"% · "+settings.interest_type.replaceAll("_"," ")+" · Maximum KES "+money(settings.max_loan_amount)+" · Up to "+settings.max_period_months+" months · Late penalty KES "+money(settings.late_penalty)+" per overdue installment.";
+ }else {
+  $("loanEnabled").checked=false;
+  $("loanSettingsUpdated").textContent="Loan settings have not been saved.";
+  $("loanLimits").textContent="Loans are not yet available for this group.";
+ }
+ const enabled=Boolean(settings&&settings.enabled&&groupLoansEnabled);
+ $("loanApplyForm").querySelector("button[type=submit]").disabled=!enabled;
+ $("loanApplicationGate").textContent=enabled?"":"Loans are not yet available for this group.";
+ for(const name of ["amount","period","purpose","guarantor"]) $("loanApplyForm").elements[name].disabled=!enabled;
+ renderPreview();
 }
 async function loadMembers(){
  const {data,error}=await supabase.from("members").select("id,name,member_number,status,onboarding_status").eq("group_id",ctx.group.id).eq("status","active").eq("onboarding_status","active").order("name");
@@ -68,27 +102,31 @@ async function loadMembers(){
  $("loanApplyForm").elements.guarantor.innerHTML='<option value="">No guarantor selected</option>'+members.filter(m=>m.id!==ctx.member.id).map(m=>'<option value="'+esc(m.id)+'">'+esc(m.name)+(m.member_number?' · '+esc(m.member_number):"")+'</option>').join("");
 }
 async function loadLoans(){
- let query=supabase.from("loan_applications").select("id,group_id,member_id,requested_amount,approved_amount,period_months,purpose,guarantor_member_id,status,decision_note,interest_rate_snapshot,interest_type_snapshot,approved_by,approved_at,disbursed_at,created_at").eq("group_id",ctx.group.id);
- if(memberPortal) query=query.eq("member_id",ctx.member.id);
+ let query=supabase.from("loan_applications").select("id,group_id,member_id,requested_amount,approved_amount,period_months,purpose,guarantor_member_id,guarantor_status,status,decision_note,interest_rate_snapshot,interest_type_snapshot,penalty_snapshot,approved_by,approved_at,disbursed_at,created_at").eq("group_id",ctx.group.id);
+ if(memberOnly) query=query.eq("member_id",ctx.member.id);
  const {data,error}=await query.order("created_at",{ascending:false});
  if(error)throw error;loans=data||[];
- if(!memberPortal){const {data:approvalData,error:approvalError}=await supabase.from("loan_approvals").select("loan_id,approval_slot,decision,approver_user_id,note,created_at").eq("group_id",ctx.group.id);if(approvalError)throw approvalError;loanApprovals=approvalData||[];}else{loanApprovals=[];}
+ if(loans.length){let aq=supabase.from("loan_approvals").select("loan_id,approval_slot,decision,approver_user_id,note,created_at").eq("group_id",ctx.group.id);if(memberOnly)aq=aq.in("loan_id",loans.map(l=>l.id));const {data:approvalData,error:approvalError}=await aq;if(approvalError)throw approvalError;loanApprovals=approvalData||[];}else loanApprovals=[];
  const memberById=new Map(members.map(m=>[m.id,m]));
  const ownSlot=loanApprovalSlot(ctx.member);
  $("loanRows").innerHTML=loans.map(l=>{
   const m=memberById.get(l.member_id);const name=m?.name||(l.member_id===ctx.member.id?"You":"Member");
   const votes=loanApprovals.filter(a=>a.loan_id===l.id);
   const ownVote=votes.find(a=>a.approval_slot===ownSlot);
-  const canDecide=l.status==="submitted"&&allowed("review")&&Boolean(ownSlot)&&!ownVote&&l.member_id!==ctx.member.id;
-  const approvalSummary=memberPortal ? "" : APPROVAL_OFFICES.map(([slot,label])=>{
+  const canDecide=l.status==="submitted"&&allowed("review",l)&&Boolean(ownSlot)&&!ownVote&&l.member_id!==ctx.member.id;
+  const approvalSummary=memberOnly ? "" : APPROVAL_OFFICES.map(([slot,label])=>{
    const vote=votes.find(a=>a.approval_slot===slot);
    const text=vote?(vote.decision==="approved"?"Approved":"Rejected"):"Pending";
    return '<span style="display:inline-block;margin:2px 6px 2px 0">'+esc(label)+': '+esc(text)+'</span>';
   }).join("");
-  let actions='<button class="loan-btn secondary" data-detail="'+esc(l.id)+'">Details</button>';
+  let actions='<button class="loan-btn secondary" data-detail="'+esc(l.id)+'">View</button>';
+  if(memberOnly&&l.status==="submitted"&&l.member_id===ctx.member.id)actions+='<button class="loan-btn secondary" data-cancel="'+esc(l.id)+'">Cancel</button>';
   if(canDecide) actions+='<button class="loan-btn" data-review="approved" data-id="'+esc(l.id)+'">Approve</button><button class="loan-btn secondary" data-review="rejected" data-id="'+esc(l.id)+'">Reject</button>';
-  if(!memberPortal&&l.status==="approved") actions+='<button class="loan-btn" data-disburse="'+esc(l.id)+'" '+(allowed("disburse")?"":"disabled") +'>Disburse</button>';
-  return '<tr><td>'+(memberPortal?"Your loan":esc(name))+'</td><td>KES '+money(l.requested_amount)+'</td><td>'+(l.approved_amount==null?"—":"KES "+money(l.approved_amount))+'</td><td>'+l.period_months+' months</td><td><span class="loan-pill">'+esc(l.status)+'</span></td><td>'+esc(l.created_at?new Date(l.created_at).toLocaleDateString():"—")+'</td><td><div class="loan-muted" aria-label="Required office approvals">'+approvalSummary+'</div><div class="loan-actions">'+actions+'</div></td></tr>';
+  if(official&&l.status==="approved"&&allowed("disburse")) actions+='<button class="loan-btn" data-disburse="'+esc(l.id)+'">Disburse</button>';
+  const approvalCount=votes.filter(a=>a.decision==="approved").length;
+  const shownStatus=l.status==="submitted"&&!memberOnly?"Pending · Approved by "+approvalCount+" of 3":statusLabel(l);
+  const memberCell=memberOnly?"":'<td>'+esc(name)+'</td>';
+  return '<tr>'+memberCell+'<td>KES '+money(l.requested_amount)+'</td><td>'+(l.approved_amount==null?"—":"KES "+money(l.approved_amount))+'</td><td>'+l.period_months+' months</td><td><span class="loan-pill">'+esc(shownStatus)+'</span></td><td>'+esc(l.created_at?new Date(l.created_at).toLocaleDateString():"—")+'</td><td><div class="loan-muted" aria-label="Required office approvals">'+approvalSummary+'</div><div class="loan-actions">'+actions+'</div></td></tr>';
  }).join("")||'<tr><td colspan="7">No loan applications yet.</td></tr>';
  const outstandingIds=loans.filter(l=>["active","overdue"].includes(l.status));
  let outstanding=0, overdue=0;
@@ -99,13 +137,21 @@ async function loadLoans(){
   if((schedules||[]).some(s=>s.due_date<today()&&Number(s.amount_paid)<Number(s.principal_due)+Number(s.interest_due)+Number(s.penalty_due)))overdue++;
  }
  $("loanCount").textContent=String(loans.length);$("loanOutstanding").textContent="KES "+money(outstanding);$("loanOverdue").textContent=String(overdue);
- if(memberPortal){$("loanCount").previousElementSibling.textContent="Your applications / loans";$("loanOutstanding").previousElementSibling.textContent="Your outstanding balance";$("loanOverdue").previousElementSibling.textContent="Your overdue loans";}
- $("loanViewMode").textContent=memberPortal?"Member view: only your own applications and repayment details.":official?"Official view: applications and group totals.":"Member view: only your own applications and repayment details.";
+ let nextDue=null;
+ for(const l of outstandingIds){const {data:ss,error:se}=await supabase.from("loan_repayment_schedule").select("due_date,principal_due,interest_due,penalty_due,amount_paid").eq("loan_id",l.id).gte("due_date",today()).order("due_date").limit(1);if(!se&&ss?.length&&(!nextDue||ss[0].due_date<nextDue))nextDue=ss[0].due_date;}
+ $("loanNextDue").textContent=nextDue||"—";
+ const pending=loans.some(l=>["submitted","approved"].includes(l.status));const hasOverdue=loans.some(l=>l.status==="overdue");
+ const enabled=Boolean(settings&&settings.enabled&&groupLoansEnabled);
+ $("loanApplyForm").querySelector("button[type=submit]").disabled=!enabled||pending||hasOverdue;
+ $("loanApplicationGate").textContent=!enabled?"Loans are not yet available for this group.":pending?"You already have a pending application. Wait for the decision before applying again.":hasOverdue?"You cannot apply while you have an overdue loan. Clear the overdue balance first.":"";
+ $("loanViewMode").textContent=memberOnly?"Member view: only your own applications and repayment details.":isAdmin&&!officeSlot?"Admin-only account: you may manage settings but cannot approve or disburse loans without an explicit office.":official?"Official view: group applications and totals.":"";
+ const header=$("loanRows").closest("table").querySelector("thead th:first-child");if(header)header.style.display=memberOnly?"none":"";
+ await loadOfficialSections();
  if(selectedLoan){const fresh=loans.find(l=>l.id===selectedLoan.id);selectedLoan=fresh||null;if(selectedLoan)await showDetail(selectedLoan.id);}
  applyPermissions();
 }
 async function exportLoansCsv(){
- if(!canWrite("loans","export",ctx.member)){status("View only: you cannot export group loan reports.",true);return;}
+ if(!allowed("export")){status("View only: you cannot export group loan reports.",true);return;}
  try{
   const memberById=new Map(members.map(m=>[m.id,m]));
   const rows=[["Loan ID","Member","Requested KES","Approved KES","Period months","Purpose","Status","Interest rate %","Interest type","Submitted at","Disbursed at","Principal due KES","Interest due KES","Penalty due KES","Paid KES","Outstanding KES","Overdue installments"]];
@@ -133,7 +179,7 @@ async function showDetail(id){
  $("loanDetailCard").classList.remove("loan-hidden");$("loanDetailTitle").textContent="Loan details · "+selectedLoan.status;
  const {data:schedules,error}=await supabase.from("loan_repayment_schedule").select("id,installment_no,due_date,principal_due,interest_due,penalty_due,amount_paid,status").eq("loan_id",id).order("installment_no");
  if(error)throw error;
- const {data:payments,error:pe}=await supabase.from("loan_repayments").select("payment_date,amount,payment_method,reference").eq("loan_id",id).order("payment_date",{ascending:false});
+ const {data:payments,error:pe}=await supabase.from("loan_repayments").select("payment_date,amount,payment_method,reference,status,confirmed_at").eq("loan_id",id).order("payment_date",{ascending:false});
  if(pe)throw pe;
  const rows=(schedules||[]).map(s=>'<tr><td>'+s.installment_no+'</td><td>'+esc(s.due_date)+'</td><td>'+money(s.principal_due)+'</td><td>'+money(s.interest_due)+'</td><td>'+money(s.penalty_due)+'</td><td>'+money(s.amount_paid)+'</td><td>'+esc(s.status)+'</td></tr>').join("");
  const pRows=(payments||[]).map(p=>'<tr><td>'+esc(p.payment_date)+'</td><td>'+money(p.amount)+'</td><td>'+esc(p.payment_method)+'</td><td>'+esc(p.reference||"—")+'</td></tr>').join("");
@@ -143,30 +189,30 @@ async function showDetail(id){
 $("loanSettingsForm").addEventListener("submit",async e=>{
  e.preventDefault();if(!allowed("settings"))return status("View only: only Admin can change loan settings.",true);
  const f=e.currentTarget.elements;
- try{await rpc("cl_loan_update_settings",{p_group_id:ctx.group.id,p_interest_rate:f.interest_rate.value,p_interest_type:f.interest_type.value,p_max_loan_amount:f.max_loan_amount.value,p_max_period_months:Number(f.max_period_months.value),p_late_penalty:f.late_penalty.value});status("Loan settings saved and audit logged.");await loadSettings();await loadNotifications();}
+ try{await rpc("set_loan_settings",{p_group_id:ctx.group.id,p_enabled:$("loanEnabled").checked,p_interest_rate:f.interest_rate.value,p_interest_type:f.interest_type.value,p_max_loan_amount:f.max_loan_amount.value,p_max_period_months:Number(f.max_period_months.value),p_late_penalty:f.late_penalty.value});status("Loan settings saved. Changes apply to new applications only.");groupLoansEnabled=$("loanEnabled").checked;ctx.group.loans_enabled=groupLoansEnabled;await loadSettings();await loadNotifications();await loadLoans();}
  catch(err){status(errorText(err),true);}
 });
 $("loanApplyForm").addEventListener("submit",async e=>{
  e.preventDefault();const f=e.currentTarget.elements;
- try{await rpc("cl_loan_apply",{p_group_id:ctx.group.id,p_requested_amount:f.amount.value,p_period_months:Number(f.period.value),p_purpose:f.purpose.value,p_guarantor_member_id:f.guarantor.value||null});e.currentTarget.reset();status("Loan application submitted.");await loadNotifications();await loadLoans();}
+ try{await rpc("apply_for_loan",{p_group_id:ctx.group.id,p_amount:f.amount.value,p_period:Number(f.period.value),p_purpose:f.purpose.value,p_guarantor_id:f.guarantor.value||null});e.currentTarget.reset();status("Loan application submitted.");await loadNotifications();await loadLoans();}
  catch(err){status(errorText(err),true);}
 });
 $("loanRows").addEventListener("click",async e=>{
  const b=e.target.closest("button");if(!b)return;
  try{
   if(b.dataset.detail){await showDetail(b.dataset.detail);return;}
+  if(b.dataset.cancel){if(!confirm("Cancel this pending loan application?"))return;await rpc("cancel_loan",{p_loan_id:b.dataset.cancel});status("Loan application cancelled.");await loadLoans();await loadNotifications();return;}
   if(b.dataset.review){
    if(!allowed("review"))throw new Error("Only the designated Chairperson, Treasurer or Secretary can review loan applications.");
-   const id=b.dataset.id;let note=null,amount=null;
+   const id=b.dataset.id;let note=null;
    const loan=loans.find(l=>l.id===id);
    if(!loan||loan.status!=="submitted")throw new Error("Only pending loan applications can receive an office decision.");
    if(loan.member_id===ctx.member.id)throw new Error("You cannot approve or reject your own loan.");
    const slot=loanApprovalSlot(ctx.member);
    if(!slot)throw new Error("Only the designated Chairperson, Treasurer or Secretary can approve loans.");
    if(loanApprovals.some(a=>a.loan_id===id&&a.approval_slot===slot))throw new Error("Your office has already submitted a decision for this loan.");
-   if(b.dataset.review==="rejected"){note=prompt("Reason for rejection:");if(!note?.trim())return;}
-   else {const raw=prompt("Loan amount all three offices must approve (KES)",String(loan.approved_amount??loan.requested_amount));if(raw===null)return;amount=raw;}
-   await rpc("cl_loan_review_authorized",{p_group_id:ctx.group.id,p_loan_id:id,p_decision:b.dataset.review,p_decision_note:note,p_approved_amount:amount});
+   note=prompt((b.dataset.review==="rejected"?"Reason for rejection:":"Reason / note for approval:"));if(!note?.trim())return;
+   await rpc("decide_loan",{p_group_id:ctx.group.id,p_loan_id:id,p_decision:b.dataset.review,p_reason:note});
    await loadNotifications();await loadLoans();
    const updated=loans.find(l=>l.id===id);
    if(updated?.status==="approved")status("All three office approvals are recorded. Loan approved for disbursement.");
@@ -177,7 +223,7 @@ $("loanRows").addEventListener("click",async e=>{
   if(b.dataset.disburse){
    if(!allowed("disburse"))throw new Error("View only: you cannot disburse loans.");
    if(!confirm("Disburse this approved loan and generate the repayment schedule?"))return;
-   await rpc("cl_loan_disburse",{p_group_id:ctx.group.id,p_loan_id:b.dataset.disburse,p_disbursed_date:today()});
+   await rpc("disburse_loan",{p_group_id:ctx.group.id,p_loan_id:b.dataset.disburse,p_disbursed_date:today()});
    status("Loan disbursed and schedule generated.");await loadNotifications();await loadLoans();await showDetail(b.dataset.disburse);
   }
  }catch(err){status(errorText(err),true);}
@@ -185,19 +231,26 @@ $("loanRows").addEventListener("click",async e=>{
 $("loanRepaymentForm").addEventListener("submit",async e=>{
  e.preventDefault();if(!selectedLoan||!allowed("repayment"))return status("View only: you cannot record repayments.",true);
  const f=e.currentTarget.elements;
- try{await rpc("cl_loan_record_repayment_authorized",{p_group_id:ctx.group.id,p_loan_id:selectedLoan.id,p_amount:f.amount.value,p_payment_date:f.payment_date.value,p_payment_method:f.method.value,p_reference:f.reference.value||null,p_note:f.note.value||null});status("Repayment recorded and allocated to the earliest outstanding installments.");e.currentTarget.reset();await loadNotifications();await loadLoans();if(selectedLoan)await showDetail(selectedLoan.id);}
+ try{await rpc("record_repayment",{p_group_id:ctx.group.id,p_loan_id:selectedLoan.id,p_amount:f.amount.value,p_paid_on:f.payment_date.value,p_reference:f.reference.value||null});status("Repayment submitted. It remains pending until an official confirms it.");e.currentTarget.reset();await loadNotifications();await loadLoans();if(selectedLoan)await showDetail(selectedLoan.id);}
  catch(err){status(errorText(err),true);}
 });
 async function initializeLoans(){
  try{
   ctx=await getMyApplicationContext();if(!ctx?.group?.id)throw new Error("Unable to resolve your active group.");
-  const enabled=await rpc("cl_group_module_enabled",{p_group_id:ctx.group.id,p_module:"loans"});
-  if(!enabled){status("Loans is disabled for this group. Ask the group Admin to enable it.",true);return;}
+    const roles=[String(ctx.member?.role||"").trim().toLowerCase()];
+  isAdmin=roles.some(r=>["admin","administrator"].includes(r));
+  officeSlot=loanApprovalSlot(ctx.member);
+  official=!memberPortal||Boolean(officeSlot);
+  memberOnly=memberPortal&&!officeSlot;
+  groupLoansEnabled=Boolean(await rpc("cl_group_module_enabled",{p_group_id:ctx.group.id,p_module:"loans"}));
+  if(!groupLoansEnabled&&!isAdmin){status("Loans are not yet available for this group.",true);return;}
   $("loanContent").classList.remove("loan-hidden");
-  const roles=[String(ctx.member?.role||"").toLowerCase(),String(ctx.member?.actual_position||"").toLowerCase(),String(ctx.member?.actual_position_name||"").toLowerCase()];
-  official=!memberPortal&&roles.some(r=>["admin","administrator","chairperson","vice chairperson","treasurer","secretary","vice secretary"].includes(r));
-  if(memberPortal){$("loanSettingsCard").classList.add("loan-hidden");$("loanExportCsv").classList.add("loan-hidden");$("loanRows").closest("section").querySelector("h2").textContent="My loan applications";}
-  await loadMembers();await loadSettings();await loadNotifications();if(!memberPortal)await rpc("cl_loan_refresh_statuses",{p_group_id:ctx.group.id});await loadLoans();applyPermissions();if(!memberPortal&&!loanApprovalSlot(ctx.member)&&official)status("Loan approvals require an explicitly recorded Chairperson, Treasurer or Secretary office. Admin-only accounts cannot approve loans.",true);else status("Loans loaded for "+(ctx.group.name||"your group")+".");
+  if(memberOnly){$("loanSettingsCard").classList.add("loan-hidden");$("loanExportCsv").classList.add("loan-hidden");$("loanRows").closest("section").querySelector("h2").textContent="My applications and loans";}
+  await loadMembers();await loadSettings();await loadNotifications();
+  if(official){await rpc("apply_late_penalties",{p_group_id:ctx.group.id}).catch(err=>console.warn("Late penalty refresh unavailable:",err));await rpc("cl_loan_refresh_statuses",{p_group_id:ctx.group.id}).catch(err=>console.warn("Loan status refresh unavailable:",err));}
+  await loadLoans();await loadGuarantorRequests();applyPermissions();
+  if(isAdmin&&!officeSlot)status("Admin-only account: settings and reports are available, but loan approval and disbursement require an explicit office.");
+  else status("Loans loaded for "+(ctx.group.name||"your group")+".");
  }catch(err){status(errorText(err),true);}
 }
 export async function initLoans(){return initializeLoans();}
