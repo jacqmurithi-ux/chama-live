@@ -30,7 +30,7 @@ function today(){return new Date().toISOString().slice(0,10);}
 function applyPermissions(){
   applyRolePermissions({page:"loans",member:ctx.member});
   $("loanSettingsCard").classList.remove("loan-hidden");
-  $("loanRepaymentPanel").classList.toggle("loan-hidden",!selectedLoan||!["active","overdue"].includes(selectedLoan.status));
+  $("loanRepaymentPanel").classList.toggle("loan-hidden",memberPortal||!selectedLoan||!["active","overdue"].includes(selectedLoan.status));
 }
 async function loadNotifications(){
  const {data,error}=await supabase.from("loan_notifications").select("id,event_type,title,message,created_at,read_at").eq("group_id",ctx.group.id).order("created_at",{ascending:false}).limit(20);
@@ -80,7 +80,7 @@ async function loadLoans(){
   }).join("");
   let actions='<button class="loan-btn secondary" data-detail="'+esc(l.id)+'">Details</button>';
   if(canDecide) actions+='<button class="loan-btn" data-review="approved" data-id="'+esc(l.id)+'">Approve</button><button class="loan-btn secondary" data-review="rejected" data-id="'+esc(l.id)+'">Reject</button>';
-  if(l.status==="approved") actions+='<button class="loan-btn" data-disburse="'+esc(l.id)+'" '+(allowed("disburse")?"":"disabled") +'>Disburse</button>';
+  if(!memberPortal&&l.status==="approved") actions+='<button class="loan-btn" data-disburse="'+esc(l.id)+'" '+(allowed("disburse")?"":"disabled") +'>Disburse</button>';
   return '<tr><td>'+esc(name)+'</td><td>KES '+money(l.requested_amount)+'</td><td>'+(l.approved_amount==null?"—":"KES "+money(l.approved_amount))+'</td><td>'+l.period_months+' months</td><td><span class="loan-pill">'+esc(l.status)+'</span></td><td>'+esc(l.created_at?new Date(l.created_at).toLocaleDateString():"—")+'</td><td><div class="loan-muted" aria-label="Required office approvals">'+approvalSummary+'</div><div class="loan-actions">'+actions+'</div></td></tr>';
  }).join("")||'<tr><td colspan="7">No loan applications yet.</td></tr>';
  const outstandingIds=loans.filter(l=>["active","overdue"].includes(l.status));
