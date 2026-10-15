@@ -133,7 +133,7 @@
     const portal = new URLSearchParams(location.search).get("portal") || "member";
     const memberPortal = portal !== "admin";
     if (memberPortal) {
-      const layout = await import("./js/member-layout.js?v=20261015-documents1");
+      const layout = await import("./js/member-layout.js?v=20261015-no-group-settings-member-portal");
       await layout.boot();
     } else {
       const layout = await import("./js/admin-layout.js?v=20261015-documents1");
