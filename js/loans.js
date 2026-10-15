@@ -231,14 +231,29 @@ async function loadOfficialSections(){
  $("loanOverdueRows").innerHTML=overdue.map(l=>'<article class="loan-notification"><strong>'+esc(byId.get(l.member_id)?.name||"Member")+'</strong><p>KES '+money(l.approved_amount||l.requested_amount)+' · '+l.period_months+' months · '+esc(l.status)+'</p><div class="loan-actions"><button class="loan-btn secondary" data-detail="'+esc(l.id)+'">View schedule</button><button class="loan-btn" data-send-reminder="'+esc(l.id)+'">Send reminder</button></div></article>').join("")||'<p class="loan-muted">No overdue loans.</p>';
 
  try{
-  const summary=await rpc("group_loan_summary",{p_group_id:ctx.group.id});
+  // Calculate the official overview from the same RLS-protected records already used by this page.
+  // This avoids depending on a group_loan_summary RPC that is absent from the production schema.
+  const disbursed=loans.filter(l=>Boolean(l.disbursed_at)||["active","overdue","cleared"].includes(l.status));
+  let totalDisbursed=0, scheduledInterest=0, outstandingAmount=0;
+  const benefited=new Set();
+  for(const loan of disbursed){
+   totalDisbursed+=Number(loan.approved_amount??loan.requested_amount??0);
+   benefited.add(loan.member_id);
+   const {data:schedules,error:scheduleError}=await supabase.from("loan_repayment_schedule")
+    .select("principal_due,interest_due,penalty_due,amount_paid").eq("loan_id",loan.id);
+   if(scheduleError)throw scheduleError;
+   for(const s of schedules||[]){
+    scheduledInterest+=Number(s.interest_due||0);
+    outstandingAmount+=Math.max(0,Number(s.principal_due||0)+Number(s.interest_due||0)+Number(s.penalty_due||0)-Number(s.amount_paid||0));
+   }
+  }
   const values=[
-   ["Disbursed total",summary.totalDisbursed],["Interest gained",summary.interestGained],
-   ["Members benefited",summary.membersBenefited],["Outstanding",summary.outstandingAmount],
-   ["Active loans",summary.activeLoansCount]
+   ["Total disbursed",totalDisbursed],["Scheduled interest",scheduledInterest],
+   ["Members benefited",benefited.size],["Outstanding",outstandingAmount],
+   ["Active loans",disbursed.filter(l=>["active","overdue"].includes(l.status)).length]
   ];
   $("loanGroupSummary").innerHTML=values.map(([label,value])=>'<div class="loan-stat"><small>'+esc(label)+'</small><strong>'+(label==="Members benefited"||label==="Active loans"?String(value??0):"KES "+money(value))+'</strong></div>').join("");
- }catch(err){$("loanGroupSummary").innerHTML='<p class="loan-muted">Group loan overview is not available: '+esc(err.message)+'</p>';}
+ }catch(err){$("loanGroupSummary").innerHTML='<p class="loan-muted">Group loan overview is not available: '+esc(errorText(err))+'</p>';}
  applyPermissions();
 }
 
