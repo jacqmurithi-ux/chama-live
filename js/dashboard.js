@@ -956,13 +956,17 @@ function renderRecentAnnouncements() {
     return;
   }
 
-  container.innerHTML = announcements.map(item => `
-    <article class="announcement-item" style="padding:14px 0;border-bottom:1px solid var(--dashboard-border,#e5e7eb)">
-      <h3 style="margin:0 0 5px;font-size:1rem">${escapeHtml(item.title || "Group announcement")}</h3>
-      <p class="muted" style="margin:0 0 8px;font-size:.85rem">${escapeHtml(formatDate(item.created_at))}</p>
-      <div style="white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.55">${escapeHtml(item.body || "")}</div>
-    </article>
-  `).join("");
+  container.innerHTML = announcements.map(item => {
+    const isDocumentNotice = /^(new group document:|document updated:)/i.test(String(item.title || ""));
+    return `
+      <article class="announcement-item" style="padding:14px 0;border-bottom:1px solid var(--dashboard-border,#e5e7eb)">
+        <h3 style="margin:0 0 5px;font-size:1rem">${escapeHtml(item.title || "Group announcement")}</h3>
+        <p class="muted" style="margin:0 0 8px;font-size:.85rem">${escapeHtml(formatDate(item.created_at))}</p>
+        <div style="white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.55">${escapeHtml(item.body || "")}</div>
+        ${isDocumentNotice ? '<p style="margin:10px 0 0"><a class="button secondary" href="documents.html?portal=admin">Open Documents</a></p>' : ""}
+      </article>
+    `;
+  }).join("");
 }
 
 
