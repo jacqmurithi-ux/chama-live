@@ -198,7 +198,7 @@ const PAGE_SCRIPTS = {
   ],
 
   "loans.html": [
-    "./loans.js?v=20261015-multiple-guarantors1",
+    "./loans.js?v=20261015-admin-hide-loan-apply1",
     "initLoans"
   ],
 
