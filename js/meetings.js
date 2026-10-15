@@ -11,7 +11,7 @@
    • Mark completed
    • Cancel meeting
    • Restore cancelled meeting
-   • Save minutes and resolutions
+   • Save the meeting brief
    • Delete meetings
    • Filter by status
    • Upcoming / Completed / Cancelled totals
@@ -1716,7 +1716,7 @@ async function loadMeetingDocuments() {
   if (meetingDocumentMeta) {
     meetingDocumentMeta.textContent = files.length
       ? `${files.length} private file${files.length === 1 ? "" : "s"} attached to this meeting.`
-      : "No minutes attachment uploaded. This is optional.";
+      : "No minutes documents linked yet. Upload a document in Documents and link it to this meeting.";
   }
 
   meetingDocumentList.innerHTML = files.length
@@ -1729,7 +1729,7 @@ async function loadMeetingDocuments() {
           <button type="button" class="btn btn-secondary" data-document-download="${escapeHtml(file.id)}">Download</button>
         </div>
       `).join("")
-    : '<p class="muted">Optionally attach the meeting minutes as a PDF or DOCX file, or link a document from the Documents page.</p>';
+    : '<p class="muted">Upload meeting minutes in Documents and link them to this meeting to make them available here.</p>';
 }
 
 async function downloadMeetingFile(documentId) {
