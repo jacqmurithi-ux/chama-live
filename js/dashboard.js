@@ -1562,7 +1562,7 @@ async function loadCustomContributionStatuses() {
   if (customTypeIds.length) {
     const { data: activePeriods, error: periodError } = await supabase
       .from("contribution_periods")
-      .select("id,group_id,contribution_type_id,status")
+      .select("id,group_id,contribution_type_id,status,amount,due_date")
       .eq("group_id", currentGroupId)
       .in("contribution_type_id", customTypeIds)
       .in("status", ["open", "due", "grace"]);
@@ -1677,40 +1677,40 @@ function renderCustomContributionStatuses() {
   const dialogTitle = el("customContributionStatusDialogTitle");
   const dialogDescription = el("customContributionStatusDialogDescription");
 
-  document.querySelectorAll("[data-custom-period-status]").forEach(button => {
-    button.onclick = () => {
-      const periodId = button.getAttribute("data-period-id");
-      const status = button.getAttribute("data-custom-period-status");
-      const period = periods.find(item => String(item.periodId) === String(periodId));
-      if (!period || !Object.prototype.hasOwnProperty.call(statusLabels, status)) return;
+  container.onclick = event => {
+    const button = event.target.closest("[data-custom-period-status]");
+    if (!button || !container.contains(button)) return;
+    const periodId = button.getAttribute("data-period-id");
+    const status = button.getAttribute("data-custom-period-status");
+    const period = periods.find(item => String(item.periodId) === String(periodId));
+    if (!period || !Object.prototype.hasOwnProperty.call(statusLabels, status)) return;
 
-      const filtered = rows.filter(row =>
-        String(row.periodId) === String(periodId) && row.status === status
-      );
-      if (dialogTitle) dialogTitle.textContent = `${period.contributionName} · ${statusLabels[status]}`;
-      if (dialogDescription) {
-        dialogDescription.textContent = `${filtered.length} member(s) · Due ${period.dueDate ? formatDate(period.dueDate) : "date not set"}`;
-      }
+    const filtered = rows.filter(row =>
+      String(row.periodId) === String(periodId) && row.status === status
+    );
+    if (dialogTitle) dialogTitle.textContent = `${period.contributionName} · ${statusLabels[status]}`;
+    if (dialogDescription) {
+      dialogDescription.textContent = `${filtered.length} member(s) · Due ${period.dueDate ? formatDate(period.dueDate) : "date not set"}`;
+    }
 
-      if (!filtered.length) {
-        memberRows.innerHTML = `<tr><td colspan="6"><div class="empty-state">
-          <strong>No members in this status</strong><span>No member obligations currently match this category.</span>
-        </div></td></tr>`;
-      } else {
-        memberRows.innerHTML = filtered.map(row => `<tr>
-          <td><strong>${escapeHtml(row.memberName)}</strong></td>
-          <td>${escapeHtml(row.contributionName)}${row.dueDate ? `<small class="table-subtext">Due ${escapeHtml(formatDate(row.dueDate))}</small>` : ""}</td>
-          <td>${escapeHtml(money(row.due))}</td>
-          <td>${escapeHtml(money(row.applied))}</td>
-          <td>${escapeHtml(money(row.outstanding))}</td>
-          <td><span class="status-badge status-${escapeHtml(statusClass(row.status))}">${escapeHtml(statusLabels[row.status])}</span></td>
-        </tr>`).join("");
-      }
+    if (!filtered.length) {
+      memberRows.innerHTML = `<tr><td colspan="6"><div class="empty-state">
+        <strong>No members in this status</strong><span>No member obligations currently match this category.</span>
+      </div></td></tr>`;
+    } else {
+      memberRows.innerHTML = filtered.map(row => `<tr>
+        <td><strong>${escapeHtml(row.memberName)}</strong></td>
+        <td>${escapeHtml(row.contributionName)}${row.dueDate ? `<small class="table-subtext">Due ${escapeHtml(formatDate(row.dueDate))}</small>` : ""}</td>
+        <td>${escapeHtml(money(row.due))}</td>
+        <td>${escapeHtml(money(row.applied))}</td>
+        <td>${escapeHtml(money(row.outstanding))}</td>
+        <td><span class="status-badge status-${escapeHtml(statusClass(row.status))}">${escapeHtml(statusLabels[row.status])}</span></td>
+      </tr>`).join("");
+    }
 
-      if (dialog && typeof dialog.showModal === "function" && !dialog.open) dialog.showModal();
-      else if (dialog) dialog.setAttribute("open", "");
-    };
-  });
+    if (dialog && typeof dialog.showModal === "function" && !dialog.open) dialog.showModal();
+    else if (dialog) dialog.setAttribute("open", "");
+  };
 
   const closeButton = el("customContributionStatusDialogClose");
   if (closeButton) {
