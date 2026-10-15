@@ -4279,18 +4279,34 @@ export async function renderOptionalModuleCards() {
   const section = document.getElementById("optionalModules");
   const cards = document.getElementById("optionalModuleCards");
   if (!section || !cards || !currentGroupId) return;
-  try {
-    const { data, error } = await supabase.rpc("get_group_module_settings", { p_group_id: currentGroupId });
-    if (error) throw error;
-    const settings = Array.isArray(data) ? data[0] : data;
-    const modules = [];
-    if (settings?.merry_go_round_enabled === true) modules.push({ href: "merry-go-round.html", title: "Merry-go-round", description: "Manage contribution cycles, payout order and round progress." });
-    cards.innerHTML = modules.map(m => '<a href="'+m.href+'" style="display:block;padding:16px;border:1px solid #d1d5db;border-radius:14px;background:#fff;color:inherit;text-decoration:none"><strong style="display:block;margin-bottom:6px">'+m.title+'</strong><span style="color:#64748b;font-size:.9rem">'+m.description+'</span><span style="display:block;margin-top:10px;color:#087f5b;font-weight:700">Open module →</span></a>').join("");
-    section.hidden = modules.length === 0;
-  } catch (error) {
-    section.hidden = true;
-    console.warn("[CHAMA LIVE] Optional module cards hidden because settings could not be verified.", error);
-  }
+  // admin-layout.js already read the authenticated group's flags once for this page.
+  const group = window.__CHAMA_LIVE_ADMIN_CONTEXT__?.group || {};
+  const modules = [];
+  if (group.merry_go_round_enabled === true) modules.push({ href: "merry-go-round.html", title: "Merry-go-round", description: "Manage contribution cycles, payout order and round progress." });
+  if (group.loans_enabled === true) modules.push({ href: "loans.html", title: "Loans", description: "Review loan requests, approvals and repayments." });
+  if (group.modules?.plans === true) modules.push({ href: "plans-activities.html", title: "Plans & Activities", description: "Plan group activities and track progress." });
+  if (group.modules?.assets === true) modules.push({ href: "assets.html", title: "Assets", description: "View and manage the group's asset register." });
+  if (group.modules?.milestones === true) modules.push({ href: "milestones.html", title: "Milestones", description: "Record and review group milestones." });
+  const role = String(window.__CHAMA_LIVE_ADMIN_CONTEXT__?.role || "").trim().toLowerCase();
+  if (group.modules?.migration === true && ["admin", "administrator"].includes(role)) modules.push({ href: "data-migration.html", title: "Data Migration", description: "Validate and preview member migration records." });
+  cards.replaceChildren();
+  modules.forEach(module => {
+    const link = document.createElement("a");
+    link.href = module.href;
+    link.style.cssText = "display:block;padding:16px;border:1px solid #d1d5db;border-radius:14px;background:#fff;color:inherit;text-decoration:none";
+    const title = document.createElement("strong");
+    title.style.cssText = "display:block;margin-bottom:6px";
+    title.textContent = module.title;
+    const description = document.createElement("span");
+    description.style.cssText = "color:#64748b;font-size:.9rem";
+    description.textContent = module.description;
+    const action = document.createElement("span");
+    action.style.cssText = "display:block;margin-top:10px;color:#087f5b;font-weight:700";
+    action.textContent = "Open module →";
+    link.append(title, description, action);
+    cards.appendChild(link);
+  });
+  section.hidden = modules.length === 0;
 }
 
 export async function initDashboard() {
