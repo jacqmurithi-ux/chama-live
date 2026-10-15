@@ -80,12 +80,12 @@ $("loanNotifications").addEventListener("click",async e=>{
  }catch(err){status(errorText(err),true);}
 });
 async function loadSettings(){
- const {data,error}=await supabase.from("loan_settings").select("enabled,interest_rate,interest_type,max_loan_amount,max_period_months,late_penalty,updated_by,updated_at").eq("group_id",ctx.group.id).maybeSingle();
+ const {data,error}=await supabase.from("loan_settings").select("interest_rate,interest_type,max_loan_amount,max_period_months,late_penalty,updated_by,updated_at").eq("group_id",ctx.group.id).maybeSingle();
  if(error)throw error; settings=data||null;
  if(settings){
   const f=$("loanSettingsForm").elements;
   for(const key of ["interest_rate","interest_type","max_loan_amount","max_period_months","late_penalty"]) f[key].value=settings[key];
-  $("loanEnabled").checked=Boolean(settings.enabled);
+  $("loanEnabled").checked=Boolean(groupLoansEnabled);
   const editor=members.find(m=>m.auth_user_id===settings.updated_by||m.user_id===settings.updated_by);
   $("loanSettingsUpdated").textContent="Last updated by "+(editor?.name||"group Admin")+" on "+(settings.updated_at?new Date(settings.updated_at).toLocaleString():"—")+".";
   $("loanLimits").textContent="Annual rate "+settings.interest_rate+"% · "+settings.interest_type.replaceAll("_"," ")+" · Maximum KES "+money(settings.max_loan_amount)+" · Up to "+settings.max_period_months+" months · Late penalty KES "+money(settings.late_penalty)+" per overdue installment.";
@@ -94,7 +94,7 @@ async function loadSettings(){
   $("loanSettingsUpdated").textContent="Loan settings have not been saved.";
   $("loanLimits").textContent="Loans are not yet available for this group.";
  }
- const enabled=Boolean(settings&&settings.enabled&&groupLoansEnabled);
+ const enabled=Boolean(settings&&groupLoansEnabled);
  $("loanApplyForm").querySelector("button[type=submit]").disabled=!enabled;
  $("loanApplicationGate").textContent=enabled?"":"Loans are not yet available for this group.";
  for(const name of ["amount","period","purpose","guarantor"]) $("loanApplyForm").elements[name].disabled=!enabled;
@@ -157,7 +157,7 @@ async function loadLoans(){
  for(const l of outstandingIds){const {data:ss,error:se}=await supabase.from("loan_repayment_schedule").select("due_date,principal_due,interest_due,penalty_due,amount_paid").eq("loan_id",l.id).gte("due_date",today()).order("due_date");if(!se){const next=(ss||[]).find(s=>Number(s.amount_paid)<Number(s.principal_due)+Number(s.interest_due)+Number(s.penalty_due));if(next&&(!nextDue||next.due_date<nextDue))nextDue=next.due_date;}}
  $("loanNextDue").textContent=nextDue||"—";
  const pending=overviewLoans.some(l=>["submitted","approved"].includes(l.status));const hasOverdue=overdue>0||overviewLoans.some(l=>l.status==="overdue");
- const enabled=Boolean(settings&&settings.enabled&&groupLoansEnabled);
+ const enabled=Boolean(settings&&groupLoansEnabled);
  $("loanApplyForm").querySelector("button[type=submit]").disabled=!enabled||pending||hasOverdue;
  $("loanApplicationGate").textContent=!enabled?"Loans are not yet available for this group.":pending?"You already have a pending application. Wait for the decision before applying again.":hasOverdue?"You cannot apply while you have an overdue loan. Clear the overdue balance first.":"";
  $("loanViewMode").textContent=memberOnly?"Member view: only your own applications and repayment details.":isAdmin&&!officeSlot?"Admin-only account: you may manage settings but cannot approve or disburse loans without an explicit office.":official?"Official view: group applications and totals.":"";
@@ -179,7 +179,7 @@ function renderPreview(){
  const f=$("loanApplyForm").elements;
  const amount=Number(f.amount.value||0), period=Number(f.period.value||0);
  const rate=Number(settings?.interest_rate||0), method=settings?.interest_type||"flat";
- if(!settings||!settings.enabled||!groupLoansEnabled){$("loanPreview").textContent="Loans are not yet available for this group.";return;}
+ if(!settings||!groupLoansEnabled){$("loanPreview").textContent="Loans are not yet available for this group.";return;}
  if(amount<=0||period<1){$("loanPreview").textContent="Enter an amount and period to preview the estimated installment, interest and total repayable.";return;}
  if(amount>Number(settings.max_loan_amount)||period>Number(settings.max_period_months)){
   $("loanPreview").textContent="Requested amount or period exceeds the group maximum. Maximum KES "+money(settings.max_loan_amount)+" for "+settings.max_period_months+" months.";
@@ -291,12 +291,12 @@ async function showDetail(id){
 $("loanSettingsForm").addEventListener("submit",async e=>{
  e.preventDefault();if(!allowed("settings"))return status("View only: only Admin can change loan settings.",true);
  const f=e.currentTarget.elements;
- try{await rpc("set_loan_settings",{p_group_id:ctx.group.id,p_enabled:$("loanEnabled").checked,p_interest_rate:f.interest_rate.value,p_interest_type:f.interest_type.value,p_max_loan_amount:f.max_loan_amount.value,p_max_period_months:Number(f.max_period_months.value),p_late_penalty:f.late_penalty.value});groupLoansEnabled=$("loanEnabled").checked;ctx.group.loans_enabled=groupLoansEnabled;await loadSettings();if(!groupLoansEnabled){toggleDisabledMode(true);status("Loans are not yet available for this group.");return;}toggleDisabledMode(false);await loadNotifications();if(official)await rpc("apply_late_penalties",{p_group_id:ctx.group.id}).catch(()=>{});await loadLoans();await loadGuarantorRequests();applyPermissions();status("Loan settings saved. Changes apply only to new applications.");}
+ try{await rpc("cl_loan_update_settings",{p_group_id:ctx.group.id,p_interest_rate:Number(f.interest_rate.value),p_interest_type:f.interest_type.value,p_max_loan_amount:Number(f.max_loan_amount.value),p_max_period_months:Number(f.max_period_months.value),p_late_penalty:Number(f.late_penalty.value)});await loadSettings();if(!groupLoansEnabled){toggleDisabledMode(true);status("Loan terms saved. Enable the Loans module in Group Management when ready.");return;}toggleDisabledMode(false);await loadNotifications();if(official)await rpc("apply_late_penalties",{p_group_id:ctx.group.id}).catch(()=>{});await loadLoans();await loadGuarantorRequests();applyPermissions();status("Loan settings saved. Changes apply only to new applications.");}
  catch(err){status(errorText(err),true);}
 });
 $("loanApplyForm").addEventListener("submit",async e=>{
  e.preventDefault();const f=e.currentTarget.elements;
- try{if(!settings||!settings.enabled||!groupLoansEnabled)throw new Error("Loans are not yet available for this group.");if(Number(f.amount.value)>Number(settings.max_loan_amount)||Number(f.period.value)>Number(settings.max_period_months))throw new Error("Requested amount or period exceeds the group maximum.");if(loans.some(l=>l.member_id===ctx.member.id&&["submitted","approved","overdue"].includes(l.status)))throw new Error("You already have a pending application or an overdue loan.");await rpc("apply_for_loan",{p_group_id:ctx.group.id,p_amount:f.amount.value,p_period:Number(f.period.value),p_purpose:f.purpose.value,p_guarantor_id:f.guarantor.value||null});e.currentTarget.reset();status("Loan application submitted.");await loadNotifications();await loadLoans();}
+ try{if(!settings||!groupLoansEnabled)throw new Error("Loans are not yet available for this group.");if(Number(f.amount.value)>Number(settings.max_loan_amount)||Number(f.period.value)>Number(settings.max_period_months))throw new Error("Requested amount or period exceeds the group maximum.");if(loans.some(l=>l.member_id===ctx.member.id&&["submitted","approved","overdue"].includes(l.status)))throw new Error("You already have a pending application or an overdue loan.");await rpc("apply_for_loan",{p_group_id:ctx.group.id,p_amount:f.amount.value,p_period:Number(f.period.value),p_purpose:f.purpose.value,p_guarantor_id:f.guarantor.value||null});e.currentTarget.reset();status("Loan application submitted.");await loadNotifications();await loadLoans();}
  catch(err){status(errorText(err),true);}
 });
 async function handleLoanAction(e){
