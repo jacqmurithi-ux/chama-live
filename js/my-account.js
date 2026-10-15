@@ -238,6 +238,7 @@ function bindForm() {
 async function initializeLoanApplication() {
   const section = el("myAccountLoanApplicationSection");
   if (!section || !bundle?.loansEnabled || !bundle?.member?.group_id) return;
+  let moduleConfirmedEnabled = false;
   try {
     const { data: enabled, error: enabledError } = await supabase.rpc("cl_group_module_enabled", {
       p_group_id: bundle.member.group_id,
@@ -245,6 +246,7 @@ async function initializeLoanApplication() {
     });
     if (enabledError) throw enabledError;
     if (enabled !== true) return;
+    moduleConfirmedEnabled = true;
     section.hidden = false;
 
     const { data: settings, error: settingsError } = await supabase
@@ -321,9 +323,11 @@ async function initializeLoanApplication() {
       }
     });
   } catch (error) {
-    section.hidden = false;
-    setMessage("myAccountLoanApplicationInfo", error?.message || "Unable to load loan application details. Please try again later.", true);
-    el("myAccountLoanApplicationSubmit").disabled = true;
+    section.hidden = !moduleConfirmedEnabled;
+    if (moduleConfirmedEnabled) {
+      setMessage("myAccountLoanApplicationInfo", error?.message || "Unable to load loan application details. Please try again later.", true);
+      el("myAccountLoanApplicationSubmit").disabled = true;
+    }
   }
 }
 
