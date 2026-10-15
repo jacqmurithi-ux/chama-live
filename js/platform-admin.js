@@ -2404,9 +2404,22 @@ async function loadPlatformOverview() {
      * its server-side authorization boundary.
      */
 
-    await loadPendingApplications();
-
+    /*
+     * Load the platform-owner feedback inbox immediately after
+     * authorization succeeds. Keep it independent of application
+     * review so an unrelated application-list failure cannot hide it.
+     */
     await loadPlatformFeedback();
+
+    try {
+      await loadPendingApplications();
+    } catch (applicationError) {
+      console.error("CHAMA LIVE: pending applications could not load.", applicationError);
+      showMessage(
+        "Platform overview and feedback are available, but pending applications could not be loaded. Use Refresh to try again.",
+        "error"
+      );
+    }
 
   } catch (error) {
 
