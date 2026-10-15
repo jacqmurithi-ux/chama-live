@@ -155,7 +155,7 @@ function renderPreview(){
  const f=$("loanApplyForm").elements;
  const amount=Number(f.amount.value||0), period=Number(f.period.value||0);
  const rate=Number(settings?.interest_rate||0), method=settings?.interest_type||"flat";
- if(!settings||!groupLoansEnabled){$("loanPreview").textContent="Loans are not yet available for this group.";return;}
+ if(!settings||!settings.enabled||!groupLoansEnabled){$("loanPreview").textContent="Loans are not yet available for this group.";return;}
  if(amount<=0||period<1){$("loanPreview").textContent="Enter an amount and period to preview the estimated installment, interest and total repayable.";return;}
  if(amount>Number(settings.max_loan_amount)||period>Number(settings.max_period_months)){
   $("loanPreview").textContent="Requested amount or period exceeds the group maximum. Maximum KES "+money(settings.max_loan_amount)+" for "+settings.max_period_months+" months.";
@@ -172,7 +172,7 @@ for(const field of ["amount","period"]) $("loanApplyForm").elements[field].addEv
 
 async function loadGuarantorRequests(){
  const card=$("loanGuarantorCard");
- if(!memberOnly){card.classList.add("loan-hidden");return;}
+ if(!memberPortal){card.classList.add("loan-hidden");return;}
  card.classList.remove("loan-hidden");
  const {data,error}=await supabase.from("loan_applications")
   .select("id,member_id,requested_amount,period_months,purpose,created_at")
@@ -246,9 +246,13 @@ async function showDetail(id){
  if(error)throw error;
  const {data:payments,error:pe}=await supabase.from("loan_repayments").select("payment_date,amount,payment_method,reference,status,confirmed_at").eq("loan_id",id).order("payment_date",{ascending:false});
  if(pe)throw pe;
- const rows=(schedules||[]).map(s=>'<tr><td>'+s.installment_no+'</td><td>'+esc(s.due_date)+'</td><td>'+money(s.principal_due)+'</td><td>'+money(s.interest_due)+'</td><td>'+money(s.penalty_due)+'</td><td>'+money(s.amount_paid)+'</td><td>'+esc(s.status)+'</td></tr>').join("");
- const pRows=(payments||[]).map(p=>'<tr><td>'+esc(p.payment_date)+'</td><td>'+money(p.amount)+'</td><td>'+esc(p.payment_method)+'</td><td>'+esc(p.reference||"—")+'</td></tr>').join("");
- $("loanSchedule").innerHTML='<h3>Repayment schedule</h3><table class="loan-table"><thead><tr><th>#</th><th>Due</th><th>Principal</th><th>Interest</th><th>Penalty</th><th>Paid</th><th>Status</th></tr></thead><tbody>'+ (rows||'<tr><td colspan="7">Schedule is created after disbursement.</td></tr>')+'</tbody></table><h3 style="margin-top:18px">Payments</h3><table class="loan-table"><thead><tr><th>Date</th><th>Amount</th><th>Method</th><th>Reference</th></tr></thead><tbody>'+ (pRows||'<tr><td colspan="4">No repayments recorded.</td></tr>')+'</tbody></table>';
+ const rows=(schedules||[]).map(s=>'<tr><td>'+s.installment_no+'</td><td>'+esc(s.due_date)+'</td><td>'+money(s.principal_due)+'</td><td>'+money(s.interest_due)+'</td><td>'+money(s.penalty_due)+'</td><td>'+money(s.amount_paid)+'</td><td>'+money(Math.max(0,Number(s.principal_due)+Number(s.interest_due)+Number(s.penalty_due)-Number(s.amount_paid)))+'</td><td>'+esc(s.status)+'</td></tr>').join("");
+ const pRows=(payments||[]).map(p=>'<tr><td>'+esc(p.payment_date)+'</td><td>'+money(p.amount)+'</td><td>'+esc(p.payment_method)+'</td><td>'+esc(p.reference||"—")+'</td><td>'+esc(p.status||"confirmed")+'</td></tr>').join("");
+ $("loanSchedule").innerHTML='<h3>Repayment schedule</h3><table class="loan-table"><thead><tr><th>#</th><th>Due</th><th>Principal</th><th>Interest</th><th>Penalty</th><th>Paid</th><th>Balance</th><th>Status</th></tr></thead><tbody>'+ (rows||'<tr><td colspan="8">Schedule is created after disbursement.</td></tr>')+'</tbody></table><h3 style="margin-top:18px">Repayments (pending until confirmed)</h3><table class="loan-table"><thead><tr><th>Date</th><th>Amount</th><th>Method</th><th>Reference</th><th>Status</th></tr></thead><tbody>'+ (pRows||'<tr><td colspan="5">No repayments recorded.</td></tr>')+'</tbody></table>';
+ const {data:approvalRows,error:approvalError}=await supabase.from("loan_approvals").select("approval_slot,decision,note,created_at").eq("loan_id",id).order("created_at");
+ if(approvalError&&!memberOnly)throw approvalError;
+ $("loanApprovalProgress").innerHTML='<p><strong>Approval progress</strong>: '+APPROVAL_OFFICES.map(([slot,label])=>{const v=(approvalRows||[]).find(a=>a.approval_slot===slot);return esc(label)+": "+(v?esc(v.decision==="approved"?"Approved":"Rejected")+(v.note?" — "+esc(v.note):""):"Pending");}).join(" · ")+'</p><p><strong>Guarantor status</strong>: '+esc(selectedLoan.guarantor_status||"not_required")+'</p>';
+ if(official){const {data:audit,error:ae}=await supabase.from("loan_audit").select("actor_id,action,detail,created_at").eq("loan_id",id).order("created_at",{ascending:false}).limit(30);if(ae)throw ae;$("loanAuditTrail").innerHTML='<h3>Audit trail</h3>'+((audit||[]).map(a=>'<p class="loan-muted">'+esc(a.action)+' · '+esc(new Date(a.created_at).toLocaleString())+' · '+esc(JSON.stringify(a.detail))+'</p>').join("")||'<p class="loan-muted">No audit events yet.</p>');}else $("loanAuditTrail").innerHTML="";
  $("loanRepaymentForm").elements.payment_date.value=today();applyPermissions();
 }
 $("loanSettingsForm").addEventListener("submit",async e=>{
@@ -262,7 +266,7 @@ $("loanApplyForm").addEventListener("submit",async e=>{
  try{await rpc("apply_for_loan",{p_group_id:ctx.group.id,p_amount:f.amount.value,p_period:Number(f.period.value),p_purpose:f.purpose.value,p_guarantor_id:f.guarantor.value||null});e.currentTarget.reset();status("Loan application submitted.");await loadNotifications();await loadLoans();}
  catch(err){status(errorText(err),true);}
 });
-$("loanRows").addEventListener("click",async e=>{
+async function handleLoanAction(e){
  const b=e.target.closest("button");if(!b)return;
  try{
   if(b.dataset.detail){await showDetail(b.dataset.detail);return;}
@@ -292,6 +296,21 @@ $("loanRows").addEventListener("click",async e=>{
    status("Loan disbursed and schedule generated.");await loadNotifications();await loadLoans();await showDetail(b.dataset.disburse);
   }
  }catch(err){status(errorText(err),true);}
+}
+$("loanRows").addEventListener("click",handleLoanAction);
+$("loanReviewRows").addEventListener("click",handleLoanAction);
+$("loanPendingRepaymentRows").addEventListener("click",async e=>{
+ const b=e.target.closest("[data-confirm-repayment]");if(!b)return;
+ if(!allowed("confirm"))return status("Only an authorized official can confirm repayments.",true);
+ try{await rpc("confirm_repayment",{p_repayment_id:b.dataset.confirmRepayment});status("Repayment confirmed and allocated to the oldest unpaid installments.");await loadLoans();await loadNotifications();}catch(err){status(errorText(err),true);}
+});
+$("loanGuarantorRows").addEventListener("click",async e=>{
+ const b=e.target.closest("[data-guarantor-response]");if(!b)return;
+ try{await rpc("respond_guarantor",{p_loan_id:b.dataset.loanId,p_accept:b.dataset.guarantorResponse==="true"});status("Guarantor response recorded.");await loadGuarantorRequests();await loadNotifications();}catch(err){status(errorText(err),true);}
+});
+$("loanOverdueRows").addEventListener("click",async e=>{
+ const b=e.target.closest("[data-send-reminder]");if(!b)return;
+ try{await rpc("send_loan_reminder",{p_loan_id:b.dataset.sendReminder});status("Repayment reminder sent.");await loadNotifications();await loadOfficialSections();}catch(err){status(errorText(err),true);}
 });
 $("loanRepaymentForm").addEventListener("submit",async e=>{
  e.preventDefault();if(!selectedLoan||!allowed("repayment"))return status("View only: you cannot record repayments.",true);
