@@ -240,7 +240,7 @@ async function exportLoansCsv(){
  if(!allowed("export")){status("View only: you cannot export group loan reports.",true);return;}
  try{
   const memberById=new Map(members.map(m=>[m.id,m]));
-  const rows=[["Loan ID","Member","Requested KES","Approved KES","Period months","Purpose","Status","Interest rate %","Interest type","Submitted at","Disbursed at","Principal due KES","Interest due KES","Penalty due KES","Paid KES","Outstanding KES","Overdue installments"]];
+  const rows=[["Loan ID","Member","Requested KES","Approved KES","Period months","Purpose","Status","Chairperson decision","Treasurer decision","Secretary decision","Interest rate %","Interest type","Submitted at","Disbursed at","Principal due KES","Interest due KES","Penalty due KES","Confirmed repayments KES","Pending repayments KES","Outstanding KES","Overdue installments"]];
   for(const loan of loans){
    const {data:schedules,error}=await supabase.from("loan_repayment_schedule").select("due_date,principal_due,interest_due,penalty_due,amount_paid").eq("loan_id",loan.id);
    if(error)throw error;
@@ -251,7 +251,13 @@ async function exportLoansCsv(){
    }
    const outstanding=Math.max(0,principal+interest+penalty-paid);
    const member=memberById.get(loan.member_id);
-   rows.push([loan.id,member?.name||(loan.member_id===ctx.member.id?"You":"Member"),loan.requested_amount??"",loan.approved_amount??"",loan.period_months,loan.purpose,loan.status,loan.interest_rate_snapshot??"",loan.interest_type_snapshot??"",loan.created_at??"",loan.disbursed_at??"",principal.toFixed(2),interest.toFixed(2),penalty.toFixed(2),paid.toFixed(2),outstanding.toFixed(2),overdue]);
+   const votes=loanApprovals.filter(a=>a.loan_id===loan.id);
+   const decision=slot=>{const v=votes.find(a=>a.approval_slot===slot);return v?(v.decision+(v.note?": "+v.note:"")):"Pending";};
+   const {data:repayments,error:repaymentError}=await supabase.from("loan_repayments").select("amount,status").eq("loan_id",loan.id);
+   if(repaymentError)throw repaymentError;
+   const confirmed=(repayments||[]).filter(p=>p.status==="confirmed").reduce((sum,p)=>sum+Number(p.amount||0),0);
+   const pending=(repayments||[]).filter(p=>p.status==="pending").reduce((sum,p)=>sum+Number(p.amount||0),0);
+   rows.push([loan.id,member?.name||(loan.member_id===ctx.member.id?"You":"Member"),loan.requested_amount??"",loan.approved_amount??"",loan.period_months,loan.purpose,loan.status,decision("chairperson"),decision("treasurer"),decision("secretary"),loan.interest_rate_snapshot??"",loan.interest_type_snapshot??"",loan.created_at??"",loan.disbursed_at??"",principal.toFixed(2),interest.toFixed(2),penalty.toFixed(2),confirmed.toFixed(2),pending.toFixed(2),outstanding.toFixed(2),overdue]);
   }
   const csv=rows.map(row=>row.map(value=>{const s=String(value??"");return '"'+s.replace(/"/g,'""')+'"';}).join(",")).join("\r\n");
   const blob=new Blob(["\uFEFF",csv],{type:"text/csv;charset=utf-8"});
