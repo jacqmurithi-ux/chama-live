@@ -909,6 +909,12 @@ grant select on public.loan_audit to authenticated;
 revoke execute on function public.cl_loan_record_repayment(uuid,uuid,numeric,date,text,text,text) from public, anon, authenticated;
 revoke execute on function public.cl_loan_record_repayment_authorized(uuid,uuid,numeric,date,text,text,text) from public, anon, authenticated;
 
+-- Lock down legacy entry points that bypass the three-office workflow or confirmation queue.
+revoke all on function public.cl_loan_review(uuid,uuid,text,text,numeric) from public, anon, authenticated;
+revoke all on function public.cl_loan_disburse(uuid,uuid,date) from public, anon, authenticated;
+revoke all on function public.cl_loan_refresh_statuses(uuid) from public, anon, authenticated;
+revoke all on function public.cl_loan_emit_notification(uuid,uuid,uuid,text,text,text) from public, anon, authenticated;
+
 -- Only authenticated callers may use these RPC endpoints.
 revoke all on function public.current_group_id() from public, anon;
 revoke all on function public.is_group_admin() from public, anon;
