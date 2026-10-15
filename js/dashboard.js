@@ -1314,8 +1314,8 @@ async function loadActiveContributionTypes() {
 
     const monthlyTypeIds = (Array.isArray(contributionTypeRows) ? contributionTypeRows : [])
       .filter(type => {
-        const code = String(type.code || "").trim().toLowerCase().replace(/[\\s_-]+/g, "");
-        const name = String(type.name || "").trim().toLowerCase().replace(/[\\s_-]+/g, "");
+        const code = String(type.code || "").trim().toLowerCase().replace(/[\s_-]+/g, "");
+        const name = String(type.name || "").trim().toLowerCase().replace(/[\s_-]+/g, "");
         return code === "monthly" || code === "monthlycontribution" ||
           name === "monthly" || name === "monthlycontribution";
       })
