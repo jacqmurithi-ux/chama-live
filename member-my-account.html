@@ -77,6 +77,21 @@
     <section id="myAccountLoansSection" class="account-card" hidden aria-labelledby="loanHeading">
       <h2 id="loanHeading">My loans</h2><div id="myAccountLoanSummary" class="account-grid"></div>
     </section>
+    <section id="myAccountLoanApplicationSection" class="account-card" hidden aria-labelledby="loanApplicationHeading">
+      <h2 id="loanApplicationHeading">Apply for a loan</h2>
+      <p class="account-muted">Submit a request to your group. Your application will be reviewed by the designated group officials; submitting it does not mean the loan is approved or disbursed.</p>
+      <p id="myAccountLoanApplicationInfo" class="account-message" role="status">Loading the group's loan limits…</p>
+      <form id="myAccountLoanApplicationForm">
+        <div class="account-form-grid">
+          <div class="account-field"><label for="myLoanAmount">Requested amount (KES)</label><input id="myLoanAmount" name="amount" type="number" min="1" step="0.01" required></div>
+          <div class="account-field"><label for="myLoanPeriod">Repayment period (months)</label><input id="myLoanPeriod" name="period" type="number" min="1" max="120" step="1" required></div>
+          <div class="account-field wide"><label for="myLoanPurpose">Purpose</label><textarea id="myLoanPurpose" name="purpose" rows="3" minlength="3" maxlength="2000" required placeholder="Explain what the loan will be used for"></textarea></div>
+          <div class="account-field wide"><label for="myLoanGuarantor">Optional guarantor</label><select id="myLoanGuarantor" name="guarantor"><option value="">No guarantor selected</option></select></div>
+        </div>
+        <p id="myAccountLoanApplicationMessage" class="account-message" hidden role="status"></p>
+        <button id="myAccountLoanApplicationSubmit" class="account-btn account-btn-primary" type="submit">Submit loan application</button>
+      </form>
+    </section>
     <section id="myAccountPaymentCard" class="account-card" aria-labelledby="paymentHeading">
       <h2 id="paymentHeading">Submit my payment for verification</h2>
       <p class="account-muted">Submitting evidence does not record a contribution. An authorized verifier must review it first.</p>
