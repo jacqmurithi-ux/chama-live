@@ -52,7 +52,7 @@
     .docs-shimmer{height:13px;border-radius:8px;background:linear-gradient(90deg,#edf2f2 25%,#f8fbfb 50%,#edf2f2 75%);background-size:200% 100%;animation:docs-shimmer 1.2s infinite}
     .docs-shimmer.large{height:22px;width:58%;margin-bottom:12px}.docs-shimmer.short{width:38%;margin-top:12px}
     @keyframes docs-shimmer{to{background-position:-200% 0}}
-    .docs-fab{position:fixed;right:20px;bottom:24px;z-index:1100;min-height:54px;border:0;border-radius:999px;background:#0f766e;color:#fff;padding:0 22px;font-weight:900;font-size:1rem;box-shadow:0 10px 30px #0f766e45;cursor:pointer}
+    .docs-fab{position:fixed;right:16px;bottom:calc(96px + env(safe-area-inset-bottom,0px));z-index:12000;display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:60px;border:2px solid #fff;border-radius:999px;background:#0a7d3b;color:#fff;padding:0 22px;font-weight:900;font-size:1.02rem;letter-spacing:.01em;box-shadow:0 5px 0 #075b2b,0 12px 28px rgba(16,24,40,.28);cursor:pointer;text-shadow:0 1px 1px rgba(0,0,0,.15);-webkit-tap-highlight-color:transparent}.docs-fab .docs-fab-plus{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;background:#fff;color:#075b2b;font-size:1.5rem;line-height:1;font-weight:900;text-shadow:none}.docs-fab:focus-visible{outline:3px solid #fdb022;outline-offset:4px}.docs-fab:active{transform:translateY(2px);box-shadow:0 3px 0 #075b2b,0 7px 16px rgba(16,24,40,.22)}
     .docs-overlay{position:fixed;inset:0;z-index:15000;background:#10182880;display:flex;align-items:flex-end;justify-content:center}
     .docs-overlay[hidden]{display:none}
     .docs-sheet-panel{width:min(100%,680px);max-height:92dvh;overflow:auto;border-radius:22px 22px 0 0;padding:20px 18px 28px}
@@ -69,7 +69,7 @@
     .docs-status.error{background:#fef2f2;color:#991b1b}.docs-status.success{background:#ecfdf3;color:#166534}
     .docs-inline-actions{display:flex;gap:8px;flex-wrap:wrap}
     [hidden]{display:none!important}
-    @media(min-width:700px){.documents-page{padding-top:26px}.docs-overlay{align-items:center;padding:20px}.docs-sheet-panel{border-radius:22px}.docs-list{gap:14px}.docs-card{padding:20px}.docs-fab{right:32px;bottom:32px}}
+    @media(min-width:700px){.documents-page{padding-top:26px}.docs-overlay{align-items:center;padding:20px}.docs-sheet-panel{border-radius:22px}.docs-list{gap:14px}.docs-card{padding:20px}.docs-fab{right:32px;bottom:32px;min-height:58px}}
     @media(prefers-reduced-motion:reduce){.docs-shimmer{animation:none}}
   </style>
 </head>
@@ -110,7 +110,7 @@
     </section>
   </main>
 
-  <button id="docsUploadFab" class="docs-fab" type="button" hidden>＋ Upload</button>
+  <button id="docsUploadFab" class="docs-fab" type="button" aria-label="Upload a group document" hidden><span class="docs-fab-plus" aria-hidden="true">+</span><span>Upload document</span></button>
 
   <div id="docsSheet" class="docs-overlay" hidden>
     <section class="docs-sheet-panel" role="dialog" aria-modal="true" aria-labelledby="docsSheetTitle">
