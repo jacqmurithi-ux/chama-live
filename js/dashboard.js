@@ -58,7 +58,7 @@ import {
   getMyApplicationContext
 } from "./auth.js";
 
-import { loadGroupLoanSummary } from "./loan-summary.js";
+import { loadGroupLoanSummary } from "./loan-summary.js?v=20261015-role-based-loans1";
 
 
 console.log(
