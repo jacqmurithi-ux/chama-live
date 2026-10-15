@@ -1122,6 +1122,20 @@ function injectStyles() {
         font-size: 9px;
       }
     }
+
+    /* Shared desktop content frame: keep admin tools readable instead of edge-to-edge. */
+    @media (min-width: 821px) {
+      .layout > .main,
+      .layout > main,
+      .main-content,
+      .page-content {
+        width: min(calc(100% - 40px), 1440px);
+        max-width: 1440px;
+        margin-left: auto !important;
+        margin-right: auto !important;
+        box-sizing: border-box;
+      }
+    }
   `;
 
   document.head.appendChild(style);
