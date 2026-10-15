@@ -84,7 +84,7 @@ function renderBundle() {
   ].map(([label, value]) => `<div class="account-profile-field"><span>${escapeAccountHtml(label)}</span><strong>${escapeAccountHtml(value || "—")}</strong></div>`).join("");
   el("myAccountSummary").innerHTML = [
     summaryCard("Recognized contributions", money(s.recognizedContributions)),
-    summaryCard("Total allocated", money(s.totalAllocated)),
+    summaryCard("Allocated to Monthly Obligations", money(s.totalAllocated)),
     summaryCard("Total arrears", money(s.totalArrears)),
     summaryCard("Monthly due", money(s.monthlyDue)),
     summaryCard("Allocated to obligations this month", money(s.appliedThisMonth)),
