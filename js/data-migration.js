@@ -1007,7 +1007,7 @@ function bind() {
   }
 }
 
-async function init() {
+export async function initDataMigration() {
   try {
     step("upload");
 
@@ -1049,4 +1049,3 @@ async function init() {
   }
 }
 
-init();
