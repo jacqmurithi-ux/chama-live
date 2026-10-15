@@ -169,6 +169,12 @@ async function loadLoans(){
  applyPermissions();
 }
 
+function toggleDisabledMode(disabled){
+ const ids=["loanNotificationsCard","loanApplyOverviewGrid","loanGuarantorCard","loanReviewCard","loanPendingRepaymentsCard","loanOverdueCard","loanGroupSummaryCard","loanApplicationsCard","loanDetailCard"];
+ for(const id of ids){const node=$(id);if(node)node.classList.toggle("loan-hidden",disabled);}
+ if(!disabled){$("loanDetailCard").classList.add("loan-hidden");}
+ $("loanSettingsCard").classList.toggle("loan-hidden",memberPortal||!isAdmin);
+}
 function renderPreview(){
  const f=$("loanApplyForm").elements;
  const amount=Number(f.amount.value||0), period=Number(f.period.value||0);
@@ -285,7 +291,7 @@ async function showDetail(id){
 $("loanSettingsForm").addEventListener("submit",async e=>{
  e.preventDefault();if(!allowed("settings"))return status("View only: only Admin can change loan settings.",true);
  const f=e.currentTarget.elements;
- try{await rpc("set_loan_settings",{p_group_id:ctx.group.id,p_enabled:$("loanEnabled").checked,p_interest_rate:f.interest_rate.value,p_interest_type:f.interest_type.value,p_max_loan_amount:f.max_loan_amount.value,p_max_period_months:Number(f.max_period_months.value),p_late_penalty:f.late_penalty.value});status("Loan settings saved. Changes apply to new applications only.");groupLoansEnabled=$("loanEnabled").checked;ctx.group.loans_enabled=groupLoansEnabled;await loadSettings();await loadNotifications();await loadLoans();}
+ try{await rpc("set_loan_settings",{p_group_id:ctx.group.id,p_enabled:$("loanEnabled").checked,p_interest_rate:f.interest_rate.value,p_interest_type:f.interest_type.value,p_max_loan_amount:f.max_loan_amount.value,p_max_period_months:Number(f.max_period_months.value),p_late_penalty:f.late_penalty.value});groupLoansEnabled=$("loanEnabled").checked;ctx.group.loans_enabled=groupLoansEnabled;await loadSettings();if(!groupLoansEnabled){toggleDisabledMode(true);status("Loans are not yet available for this group.");return;}toggleDisabledMode(false);await loadNotifications();if(official)await rpc("apply_late_penalties",{p_group_id:ctx.group.id}).catch(()=>{});await loadLoans();await loadGuarantorRequests();applyPermissions();status("Loan settings saved. Changes apply only to new applications.");}
  catch(err){status(errorText(err),true);}
 });
 $("loanApplyForm").addEventListener("submit",async e=>{
@@ -354,13 +360,17 @@ async function initializeLoans(){
   official=!memberPortal||Boolean(officeSlot);
   memberOnly=memberPortal&&!officeSlot;
   groupLoansEnabled=Boolean(await rpc("cl_group_module_enabled",{p_group_id:ctx.group.id,p_module:"loans"}));
-  if(!groupLoansEnabled&&!isAdmin){status("Loans are not yet available for this group.",true);return;}
+  if(!groupLoansEnabled){
+    if(!isAdmin||memberPortal){status("Loans are not yet available for this group.");return;}
+    $("loanContent").classList.remove("loan-hidden");await loadMembers();await loadSettings();toggleDisabledMode(true);
+    $("loanSettingsCard").classList.remove("loan-hidden");status("Loans are not yet available for this group. Enable them in Loan settings when ready.");return;
+  }
   $("loanContent").classList.remove("loan-hidden");
   if(memberOnly){$("loanSettingsCard").classList.add("loan-hidden");$("loanExportCsv").classList.add("loan-hidden");$("loanRows").closest("section").querySelector("h2").textContent="My applications and loans";}
   await loadMembers();await loadSettings();await loadNotifications();
   if(official){await rpc("apply_late_penalties",{p_group_id:ctx.group.id}).catch(err=>console.warn("Late penalty refresh unavailable:",err));}
   await loadLoans();await loadGuarantorRequests();applyPermissions();
-  if(isAdmin&&!officeSlot)status("Admin-only account: settings and reports are available, but loan approval and disbursement require an explicit office.");
+  if(isAdmin&&!officeSlot)status(memberPortal?"Admin-only account: use the Admin Portal to manage settings and reports; approval and disbursement require an explicit office.":"Admin-only account: settings and reports are available, but loan approval and disbursement require an explicit office.");
   else status("Loans loaded for "+(ctx.group.name||"your group")+".");
  }catch(err){status(errorText(err),true);}
 }
