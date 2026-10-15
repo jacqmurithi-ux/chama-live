@@ -3,6 +3,8 @@ import { loadMyAccountBundle, uploadMyPaymentProof, submitMyPaymentEvidence, log
 let initialized = false;
 let bundle = null;
 let recordRows = [];
+let visibleRecordRows = [];
+let showAllRecords = false;
 
 const money = value => new Intl.NumberFormat("en-KE", { style: "currency", currency: "KES", maximumFractionDigits: 2 }).format(Number(value || 0));
 const date = value => value ? new Date(value).toLocaleDateString("en-KE", { day: "2-digit", month: "short", year: "numeric" }) : "—";
@@ -53,17 +55,53 @@ function recordSet() {
   }));
   return [...contributions, ...evidence, ...loans, ...fines];
 }
+function recordMonthKey(row) {
+  const raw = row.date || "";
+  const parsed = new Date(raw);
+  if (!Number.isNaN(parsed.getTime())) {
+    return `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, "0")}`;
+  }
+  const match = String(raw).match(/^(\\d{4})-(\\d{2})/);
+  return match ? `${match[1]}-${match[2]}` : "";
+}
+function populateRecordMonthFilter() {
+  const select = el("accountMonthFilter");
+  if (!select) return;
+  const previous = select.value || "all";
+  const months = [...new Set(recordSet().map(recordMonthKey).filter(Boolean))].sort((a,b) => b.localeCompare(a));
+  select.innerHTML = ['<option value="all">All months</option>', ...months.map(month => {
+    const [year, number] = month.split("-");
+    const label = new Date(Number(year), Number(number) - 1, 1).toLocaleDateString("en-KE", { month: "long", year: "numeric" });
+    return `<option value="${month}">${escapeAccountHtml(label)}</option>`;
+  })].join("");
+  select.value = months.includes(previous) ? previous : "all";
+}
 function renderRecords() {
   const field = el("accountSortField")?.value || "date";
   const direction = el("accountSortDirection")?.value || "desc";
-  recordRows = sortAccountRecords(recordSet(), field, direction);
+  const selectedMonth = el("accountMonthFilter")?.value || "all";
+  const allSortedRows = sortAccountRecords(recordSet(), field, direction);
+  recordRows = allSortedRows;
+  const monthRows = selectedMonth === "all" ? allSortedRows : allSortedRows.filter(row => recordMonthKey(row) === selectedMonth);
+  visibleRecordRows = showAllRecords ? monthRows : monthRows.slice(0, 5);
   const body = el("myAccountRecords");
   if (!body) return;
-  if (!recordRows.length) {
-    body.innerHTML = '<tr><td colspan="6" class="account-empty">No personal financial records are available yet.</td></tr>';
+  const count = el("myAccountRecordsCount");
+  if (count) count.textContent = selectedMonth === "all"
+    ? `Showing ${visibleRecordRows.length} of ${monthRows.length} records`
+    : `Showing ${visibleRecordRows.length} of ${monthRows.length} records for selected month`;
+  const summary = el("myAccountRecordsSummary");
+  if (summary) summary.textContent = showAllRecords ? "Showing all matching records" : "Latest 5 matching records shown";
+  const showAllButton = el("accountShowAllRecords");
+  if (showAllButton) {
+    showAllButton.hidden = monthRows.length <= 5 || showAllRecords;
+    showAllButton.textContent = "Show all records";
+  }
+  if (!monthRows.length) {
+    body.innerHTML = '<tr><td colspan="6" class="account-empty">No records found for this month.</td></tr>';
     return;
   }
-  body.innerHTML = recordRows.map(row => `<tr>
+  body.innerHTML = visibleRecordRows.map(row => `<tr>
     <td>${escapeAccountHtml(date(row.date))}</td>
     <td>${escapeAccountHtml(row.type)}</td>
     <td>${escapeAccountHtml(money(row.amount))}</td>
@@ -118,6 +156,7 @@ function renderBundle() {
       summaryCard("Loan balance outstanding", money(s.loansOutstanding))
     ].join("");
   }
+  populateRecordMonthFilter();
   renderRecords();
 }
 function toCsv(rows) {
@@ -181,8 +220,16 @@ function bindForm() {
     el("paymentReference").required = mpesa;
     el("paymentReferenceWrap").hidden = !mpesa;
   });
-  ["accountSortField", "accountSortDirection"].forEach(id => el(id)?.addEventListener("change", renderRecords));
-  ["accountExportCsv", "accountExportExcel", "accountExportPdf", "accountPrint"].forEach(id => {
+  ["accountSortField", "accountSortDirection", "accountMonthFilter"].forEach(id => el(id)?.addEventListener("change", () => {
+    showAllRecords = false;
+    renderRecords();
+  }));
+  el("accountShowAllRecords")?.addEventListener("click", () => {
+    showAllRecords = true;
+    renderRecords();
+  });
+  el("accountExportCsv")?.addEventListener("click", () => exportRecords("csv"));
+  ["accountExportExcel", "accountExportPdf", "accountPrint"].forEach(id => {
     el(id)?.addEventListener("click", () => exportRecords(({ accountExportCsv: "csv", accountExportExcel: "excel", accountExportPdf: "pdf", accountPrint: "print" })[id]));
   });
 }
