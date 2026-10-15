@@ -120,7 +120,7 @@ const PAGE_SCRIPTS = {
   },
 
   "member-my-account.html": {
-    path: "./my-account.js?v=20261013-shared-account1",
+    path: "./my-account.js?v=20261015-records-collapse5",
     initializer: "initMyAccount"
   },
   "merry-go-round.html": {
