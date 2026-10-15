@@ -1122,6 +1122,23 @@ async function refreshSelectedCustomContribution() {
   );
 
   try {
+    // Repair missing per-member custom-contribution obligations through the
+    // authorized, idempotent accounting RPC before reading canonical status.
+    const requestId = globalThis.crypto?.randomUUID?.();
+    if (!requestId) {
+      throw new Error("A secure request ID could not be generated. Refresh and try again.");
+    }
+
+    const { error: ensureError } = await supabase.rpc(
+      "ensure_custom_contribution_member_obligations",
+      {
+        p_group_id: currentGroup.id,
+        p_period_id: selectedId,
+        p_request_id: requestId
+      }
+    );
+    if (ensureError) throw ensureError;
+
     const { data, error } = await supabase.rpc(
       "get_group_custom_contribution_status",
       { p_group_id: currentGroup.id }
