@@ -41,7 +41,7 @@
 <label>Requested amount (KES)<input name="amount" type="number" min="1" step="0.01" required></label>
 <label>Repayment period (months)<input name="period" type="number" min="1" max="120" step="1" required></label>
 <label>Purpose<textarea name="purpose" minlength="3" maxlength="2000" required placeholder="Explain what the loan will be used for"></textarea></label>
-<label>Optional guarantor<select name="guarantor"><option value="">No guarantor selected</option></select></label>
+<label>Guarantors (optional; select up to 5)<select name="guarantor" multiple size="5" aria-describedby="loanGuarantorHelp"></select></label><p id="loanGuarantorHelp" class="loan-muted">Choose one or more active members. Leave unselected if no guarantor is required.</p>
 <div id="loanPreview" class="loan-status" aria-live="polite">Enter an amount and period to preview repayments.</div>
 <button class="loan-btn" type="submit">Submit application</button>
 <p id="loanApplicationGate" class="loan-muted" role="status"></p>
@@ -78,8 +78,8 @@
 </section>
 </main>
 <script type="module">
-import { boot as bootAdmin } from "./js/admin-layout.js?v=20261015-loan-form-reset-fix1";
-import { boot as bootMember } from "./js/member-layout.js?v=20261015-loan-form-reset-fix1";
+import { boot as bootAdmin } from "./js/admin-layout.js?v=20261015-multiple-guarantors1";
+import { boot as bootMember } from "./js/member-layout.js?v=20261015-multiple-guarantors1";
 if (new URLSearchParams(window.location.search).get("portal") === "member") {
   bootMember();
 } else {
