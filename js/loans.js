@@ -6,6 +6,8 @@ const $ = id => document.getElementById(id);
 const money = value => Number(value || 0).toLocaleString("en-KE",{minimumFractionDigits:2,maximumFractionDigits:2});
 const esc = value => String(value ?? "").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 let ctx, settings, loans=[], members=[], loanApprovals=[], selectedLoan=null, official=false;
+// Portal mode is an explicit UI boundary: an Admin visiting the Member Portal sees their own loan account only.
+const memberPortal = new URLSearchParams(window.location.search).get("portal") === "member";
 
 function loanApprovalSlot(member = {}) {
  const clean = value => String(value ?? "").trim().toLowerCase().replace(/[_-]+/g," ").replace(/\s+/g," ");
@@ -24,17 +26,21 @@ const APPROVAL_OFFICES = [
 
 function status(message,error=false){$("loanStatus").textContent=message;$("loanStatus").classList.toggle("error",error);}
 function errorText(error){return [error?.message,error?.details,error?.hint,error?.code?("Code: "+error.code):null].filter(Boolean).join(" — ")||"Request failed.";}
-function allowed(action){return canWrite("loans",action,ctx?.member);}
+function allowed(action){return memberPortal ? action === "apply" : canWrite("loans",action,ctx?.member);}
 async function rpc(name,args){const {data,error}=await supabase.rpc(name,args);if(error)throw error;return data;}
 function today(){return new Date().toISOString().slice(0,10);}
 function applyPermissions(){
   applyRolePermissions({page:"loans",member:ctx.member});
-  $("loanSettingsCard").classList.remove("loan-hidden");
+  $("loanSettingsCard").classList.toggle("loan-hidden",memberPortal);
+  $("loanExportCsv").classList.toggle("loan-hidden",memberPortal);
   $("loanRepaymentPanel").classList.toggle("loan-hidden",memberPortal||!selectedLoan||!["active","overdue"].includes(selectedLoan.status));
 }
 async function loadNotifications(){
- const {data,error}=await supabase.from("loan_notifications").select("id,event_type,title,message,created_at,read_at").eq("group_id",ctx.group.id).order("created_at",{ascending:false}).limit(20);
- if(error)throw error;
+ let query=supabase.from("loan_notifications").select("id,event_type,title,message,created_at,read_at").eq("group_id",ctx.group.id);
+ // Fail closed rather than expose group-wide notifications in the Member Portal.
+ if(memberPortal) query=query.eq("member_id",ctx.member.id);
+ const {data,error}=await query.order("created_at",{ascending:false}).limit(20);
+ if(error){if(memberPortal){$("loanNotifications").innerHTML='<p class="loan-muted">Personal loan notifications are not available for this account yet.</p>';console.warn("CHAMA LIVE: Member-scoped loan notifications unavailable.",error);return;}throw error;}
  const rows=data||[];
  $("loanNotifications").innerHTML=rows.map(n=>'<article class="loan-notification '+(n.read_at?'':'unread')+'"><div style="display:flex;justify-content:space-between;gap:12px;align-items:start;flex-wrap:wrap"><strong>'+esc(n.title)+'</strong>'+(n.read_at?'':'<button type="button" class="loan-btn secondary" data-notification-read="'+esc(n.id)+'">Mark read</button>')+'</div><p>'+esc(n.message)+'</p><small class="loan-muted">'+esc(new Date(n.created_at).toLocaleString())+'</small></article>').join("")||'<p class="loan-muted">No loan notifications yet.</p>';
 }
@@ -62,10 +68,11 @@ async function loadMembers(){
  $("loanApplyForm").elements.guarantor.innerHTML='<option value="">No guarantor selected</option>'+members.filter(m=>m.id!==ctx.member.id).map(m=>'<option value="'+esc(m.id)+'">'+esc(m.name)+(m.member_number?' · '+esc(m.member_number):"")+'</option>').join("");
 }
 async function loadLoans(){
- const {data,error}=await supabase.from("loan_applications").select("id,group_id,member_id,requested_amount,approved_amount,period_months,purpose,guarantor_member_id,status,decision_note,interest_rate_snapshot,interest_type_snapshot,approved_by,approved_at,disbursed_at,created_at").eq("group_id",ctx.group.id).order("created_at",{ascending:false});
+ let query=supabase.from("loan_applications").select("id,group_id,member_id,requested_amount,approved_amount,period_months,purpose,guarantor_member_id,status,decision_note,interest_rate_snapshot,interest_type_snapshot,approved_by,approved_at,disbursed_at,created_at").eq("group_id",ctx.group.id);
+ if(memberPortal) query=query.eq("member_id",ctx.member.id);
+ const {data,error}=await query.order("created_at",{ascending:false});
  if(error)throw error;loans=data||[];
- const {data:approvalData,error:approvalError}=await supabase.from("loan_approvals").select("loan_id,approval_slot,decision,approver_user_id,note,created_at").eq("group_id",ctx.group.id);
- if(approvalError)throw approvalError;loanApprovals=approvalData||[];
+ if(!memberPortal){const {data:approvalData,error:approvalError}=await supabase.from("loan_approvals").select("loan_id,approval_slot,decision,approver_user_id,note,created_at").eq("group_id",ctx.group.id);if(approvalError)throw approvalError;loanApprovals=approvalData||[];}else{loanApprovals=[];}
  const memberById=new Map(members.map(m=>[m.id,m]));
  const ownSlot=loanApprovalSlot(ctx.member);
  $("loanRows").innerHTML=loans.map(l=>{
@@ -73,7 +80,7 @@ async function loadLoans(){
   const votes=loanApprovals.filter(a=>a.loan_id===l.id);
   const ownVote=votes.find(a=>a.approval_slot===ownSlot);
   const canDecide=l.status==="submitted"&&allowed("review")&&Boolean(ownSlot)&&!ownVote&&l.member_id!==ctx.member.id;
-  const approvalSummary=APPROVAL_OFFICES.map(([slot,label])=>{
+  const approvalSummary=memberPortal ? "" : APPROVAL_OFFICES.map(([slot,label])=>{
    const vote=votes.find(a=>a.approval_slot===slot);
    const text=vote?(vote.decision==="approved"?"Approved":"Rejected"):"Pending";
    return '<span style="display:inline-block;margin:2px 6px 2px 0">'+esc(label)+': '+esc(text)+'</span>';
@@ -81,7 +88,7 @@ async function loadLoans(){
   let actions='<button class="loan-btn secondary" data-detail="'+esc(l.id)+'">Details</button>';
   if(canDecide) actions+='<button class="loan-btn" data-review="approved" data-id="'+esc(l.id)+'">Approve</button><button class="loan-btn secondary" data-review="rejected" data-id="'+esc(l.id)+'">Reject</button>';
   if(!memberPortal&&l.status==="approved") actions+='<button class="loan-btn" data-disburse="'+esc(l.id)+'" '+(allowed("disburse")?"":"disabled") +'>Disburse</button>';
-  return '<tr><td>'+esc(name)+'</td><td>KES '+money(l.requested_amount)+'</td><td>'+(l.approved_amount==null?"—":"KES "+money(l.approved_amount))+'</td><td>'+l.period_months+' months</td><td><span class="loan-pill">'+esc(l.status)+'</span></td><td>'+esc(l.created_at?new Date(l.created_at).toLocaleDateString():"—")+'</td><td><div class="loan-muted" aria-label="Required office approvals">'+approvalSummary+'</div><div class="loan-actions">'+actions+'</div></td></tr>';
+  return '<tr><td>'+(memberPortal?"Your loan":esc(name))+'</td><td>KES '+money(l.requested_amount)+'</td><td>'+(l.approved_amount==null?"—":"KES "+money(l.approved_amount))+'</td><td>'+l.period_months+' months</td><td><span class="loan-pill">'+esc(l.status)+'</span></td><td>'+esc(l.created_at?new Date(l.created_at).toLocaleDateString():"—")+'</td><td><div class="loan-muted" aria-label="Required office approvals">'+approvalSummary+'</div><div class="loan-actions">'+actions+'</div></td></tr>';
  }).join("")||'<tr><td colspan="7">No loan applications yet.</td></tr>';
  const outstandingIds=loans.filter(l=>["active","overdue"].includes(l.status));
  let outstanding=0, overdue=0;
@@ -92,7 +99,8 @@ async function loadLoans(){
   if((schedules||[]).some(s=>s.due_date<today()&&Number(s.amount_paid)<Number(s.principal_due)+Number(s.interest_due)+Number(s.penalty_due)))overdue++;
  }
  $("loanCount").textContent=String(loans.length);$("loanOutstanding").textContent="KES "+money(outstanding);$("loanOverdue").textContent=String(overdue);
- $("loanViewMode").textContent=official?"Official view: applications and group totals.":"Member view: only your own applications and repayment details.";
+ if(memberPortal){$("loanCount").previousElementSibling.textContent="Your applications / loans";$("loanOutstanding").previousElementSibling.textContent="Your outstanding balance";$("loanOverdue").previousElementSibling.textContent="Your overdue loans";}
+ $("loanViewMode").textContent=memberPortal?"Member view: only your own applications and repayment details.":official?"Official view: applications and group totals.":"Member view: only your own applications and repayment details.";
  if(selectedLoan){const fresh=loans.find(l=>l.id===selectedLoan.id);selectedLoan=fresh||null;if(selectedLoan)await showDetail(selectedLoan.id);}
  applyPermissions();
 }
@@ -187,8 +195,9 @@ async function initializeLoans(){
   if(!enabled){status("Loans is disabled for this group. Ask the group Admin to enable it.",true);return;}
   $("loanContent").classList.remove("loan-hidden");
   const roles=[String(ctx.member?.role||"").toLowerCase(),String(ctx.member?.actual_position||"").toLowerCase(),String(ctx.member?.actual_position_name||"").toLowerCase()];
-  official=roles.some(r=>["admin","administrator","chairperson","vice chairperson","treasurer","secretary","vice secretary"].includes(r));
-  await loadMembers();await loadSettings();await loadNotifications();await rpc("cl_loan_refresh_statuses",{p_group_id:ctx.group.id});await loadLoans();applyPermissions();if(!loanApprovalSlot(ctx.member)&&official)status("Loan approvals require an explicitly recorded Chairperson, Treasurer or Secretary office. Admin-only accounts cannot approve loans.",true);else status("Loans loaded for "+(ctx.group.name||"your group")+".");
+  official=!memberPortal&&roles.some(r=>["admin","administrator","chairperson","vice chairperson","treasurer","secretary","vice secretary"].includes(r));
+  if(memberPortal){$("loanSettingsCard").classList.add("loan-hidden");$("loanExportCsv").classList.add("loan-hidden");$("loanRows").closest("section").querySelector("h2").textContent="My loan applications";}
+  await loadMembers();await loadSettings();await loadNotifications();if(!memberPortal)await rpc("cl_loan_refresh_statuses",{p_group_id:ctx.group.id});await loadLoans();applyPermissions();if(!memberPortal&&!loanApprovalSlot(ctx.member)&&official)status("Loan approvals require an explicitly recorded Chairperson, Treasurer or Secretary office. Admin-only accounts cannot approve loans.",true);else status("Loans loaded for "+(ctx.group.name||"your group")+".");
  }catch(err){status(errorText(err),true);}
 }
 export async function initLoans(){return initializeLoans();}
