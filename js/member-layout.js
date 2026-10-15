@@ -128,7 +128,7 @@ const PAGE_SCRIPTS = {
     initializer: "initMerryGoRound"
   },
   "loans.html": {
-    path: "./loans.js?v=20261015-member-portal-isolation1",
+    path: "./loans.js?v=20261015-loan-settings-schema-fix2",
     initializer: "initLoans"
   }
 };
