@@ -1,7 +1,7 @@
 import { supabase } from "./supabase.js";
 import { requireAuth, getMyMember } from "./auth.js";
 
-console.log("CHAMA LIVE: milestones.js loaded");
+
 
 
 /* =========================================================
@@ -72,16 +72,8 @@ export async function initPage() {
     await loadMilestones();
 
 
-    console.log(
-      "CHAMA LIVE: Milestones context ready",
-      {
-        groupId: state.groupId,
-        groupName: state.groupName,
-        role:
-          state.currentMember?.role ||
-          null
-      }
-    );
+    
+
 
   }
 
@@ -2972,6 +2964,4 @@ function showMessage(
 }
 
 
-console.log(
-  "CHAMA LIVE: milestones.js ready"
-);
+
