@@ -51,6 +51,8 @@ async function rpc(name,args){const {data,error}=await supabase.rpc(name,args);i
 function today(){return new Date().toISOString().slice(0,10);}
 function applyPermissions(){
   applyRolePermissions({page:"loans",member:ctx.member});
+  // Loan applications are member-facing only; hide this card for every Admin Portal user.
+  $("loanApplyCard").classList.toggle("loan-hidden",!memberPortal);
   $("loanSettingsCard").classList.toggle("loan-hidden",memberPortal||!isAdmin);
   $("loanExportCsv").classList.toggle("loan-hidden",!official);
   $("loanReviewCard").classList.toggle("loan-hidden",!officeSlot);
