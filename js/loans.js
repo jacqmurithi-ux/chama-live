@@ -358,7 +358,7 @@ async function initializeLoans(){
   $("loanContent").classList.remove("loan-hidden");
   if(memberOnly){$("loanSettingsCard").classList.add("loan-hidden");$("loanExportCsv").classList.add("loan-hidden");$("loanRows").closest("section").querySelector("h2").textContent="My applications and loans";}
   await loadMembers();await loadSettings();await loadNotifications();
-  if(official){await rpc("apply_late_penalties",{p_group_id:ctx.group.id}).catch(err=>console.warn("Late penalty refresh unavailable:",err));await rpc("cl_loan_refresh_statuses",{p_group_id:ctx.group.id}).catch(err=>console.warn("Loan status refresh unavailable:",err));}
+  if(official){await rpc("apply_late_penalties",{p_group_id:ctx.group.id}).catch(err=>console.warn("Late penalty refresh unavailable:",err));}
   await loadLoans();await loadGuarantorRequests();applyPermissions();
   if(isAdmin&&!officeSlot)status("Admin-only account: settings and reports are available, but loan approval and disbursement require an explicit office.");
   else status("Loans loaded for "+(ctx.group.name||"your group")+".");
