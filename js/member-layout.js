@@ -138,24 +138,22 @@ let bootStarted = false;
 let context = null;
 
 async function loadOptionalModuleFlags() {
+  const defaults = { plans: false, assets: false, milestones: false, migration: false };
   try {
-    const { data, error } = await supabase.rpc("get_group_module_settings", {
-      p_group_id: context?.member?.group_id
-    });
-    if (error) throw error;
-    const row = Array.isArray(data) ? data[0] : data;
-    context.group = {
-      ...(context.group || {}),
-      merry_go_round_enabled: row?.merry_go_round_enabled === true,
-      loans_enabled: row?.loans_enabled === true
-    };
+    const [{ data: existingData, error: existingError }, { data: moduleData, error: moduleError }] = await Promise.all([
+      supabase.rpc("get_group_module_settings", { p_group_id: context?.member?.group_id }),
+      supabase.rpc("get_group_optional_modules", { p_group_id: context?.member?.group_id })
+    ]);
+    if (existingError) throw existingError;
+    if (moduleError) throw moduleError;
+    const row = Array.isArray(existingData) ? existingData[0] : existingData;
+    const modules = moduleData && typeof moduleData === "object"
+      ? Object.fromEntries(Object.keys(defaults).map(key => [key, moduleData[key] === true]))
+      : defaults;
+    context.group = { ...(context.group || {}), merry_go_round_enabled: row?.merry_go_round_enabled === true, loans_enabled: row?.loans_enabled === true, modules };
   } catch (error) {
     console.warn("[CHAMA LIVE] Optional module navigation is hidden because settings could not be verified.", error);
-    context.group = {
-      ...(context.group || {}),
-      merry_go_round_enabled: false,
-      loans_enabled: false
-    };
+    context.group = { ...(context.group || {}), merry_go_round_enabled: false, loans_enabled: false, modules: defaults };
   }
 }
 
@@ -207,6 +205,9 @@ function resolveMemberNavigationItem(item) {
   const targetPage = item.href.split("/").pop().split("?")[0];
   if (targetPage === "merry-go-round.html" && context?.group?.merry_go_round_enabled !== true) return null;
   if (targetPage === "loans.html" && context?.group?.loans_enabled !== true) return null;
+  if (targetPage === "member-activities.html" && context?.group?.modules?.plans !== true) return null;
+  if (targetPage === "member-assets.html" && context?.group?.modules?.assets !== true) return null;
+  if (targetPage === "member-milestones.html" && context?.group?.modules?.milestones !== true) return null;
 
   // My Account is already a dedicated navigation entry. Hide legacy aliases
   // for officials instead of rendering several duplicate My Account links.
@@ -1669,10 +1670,19 @@ export async function boot() {
       return;
     }
 
+    const requiredModule = {
+      "member-activities.html": "plans",
+      "member-assets.html": "assets",
+      "member-milestones.html": "milestones"
+    }[currentPage];
     if (
       (currentPage === "merry-go-round.html" && context.group?.merry_go_round_enabled !== true) ||
-      (currentPage === "loans.html" && context.group?.loans_enabled !== true)
+      (currentPage === "loans.html" && context.group?.loans_enabled !== true) ||
+      (requiredModule && context.group?.modules?.[requiredModule] !== true)
     ) {
+      try {
+        sessionStorage.setItem("chama-layout-notice", requiredModule || currentPage === "loans.html" ? "This module isn't activated for your group." : "This module isn't activated for your group.");
+      } catch (_) {}
       window.location.replace("member-dashboard.html");
       return;
     }
@@ -1687,6 +1697,19 @@ export async function boot() {
     renderDesktopNavigation();
     renderMobileMenuToggle();
     renderBottomNavigation();
+
+    try {
+      const notice = sessionStorage.getItem("chama-layout-notice");
+      if (notice) {
+        sessionStorage.removeItem("chama-layout-notice");
+        const banner = document.createElement("div");
+        banner.setAttribute("role", "status");
+        banner.textContent = notice;
+        banner.style.cssText = "position:fixed;z-index:20000;top:82px;left:50%;transform:translateX(-50%);max-width:92vw;padding:12px 16px;background:#fff7ed;color:#9a3412;border:1px solid #fed7aa;border-radius:12px;font-weight:700";
+        document.body.appendChild(banner);
+        window.setTimeout(() => banner.remove(), 6500);
+      }
+    } catch (_) {}
 
     await loadCurrentPageFeature();
 
