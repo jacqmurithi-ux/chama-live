@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0a7d3b">
+<title>Group Settings — CHAMA LIVE</title>
+<link rel="stylesheet" href="./css/app.css">
+<style>
+body{background:#f8fafc;color:#172b23}.settings-wrap{max-width:1080px;margin:28px auto;padding:0 18px 44px}
+.settings-head{margin-bottom:22px}.settings-head h1{margin:0 0 8px;font-size:clamp(1.6rem,4vw,2.2rem)}.settings-head p{color:#64748b;margin:0;line-height:1.6}
+.settings-card{background:#fff;border:1px solid #e2e8f0;border-radius:16px;margin:16px 0;overflow:hidden}.settings-card-head{padding:18px 20px;border-bottom:1px solid #e2e8f0}.settings-card-head h2{font-size:1.15rem;margin:0 0 6px}.settings-card-head p{color:#64748b;margin:0;line-height:1.5}.settings-body{padding:18px 20px}
+.details-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.detail{padding:12px;border:1px solid #e5e7eb;border-radius:10px;min-width:0}.detail small{display:block;color:#64748b;margin-bottom:5px}.detail strong{overflow-wrap:anywhere}
+.setting-row{display:flex;gap:14px;align-items:flex-start;padding:15px 0;border-bottom:1px solid #edf2f7}.setting-row:last-of-type{border-bottom:0}.setting-row input{width:20px;height:20px;flex:0 0 auto;margin-top:2px;accent-color:#0a7d3b}.setting-row strong{display:block;margin-bottom:4px}.setting-row p{margin:0;color:#64748b;line-height:1.5;font-size:.92rem}
+.settings-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:18px}.settings-actions button{border:0;border-radius:10px;background:#0a7d3b;color:#fff;font-weight:700;padding:11px 16px;cursor:pointer}.settings-actions button:disabled{opacity:.55;cursor:wait}
+.settings-status{display:none;margin:16px 0 0;padding:11px 13px;border-radius:10px;font-weight:650}.settings-status.success{display:block;background:#ecfdf3;color:#027a48}.settings-status.error{display:block;background:#fef3f2;color:#b42318}.settings-link{color:#087f5b;font-weight:700;text-decoration:none}
+@media(max-width:760px){.details-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.settings-wrap{margin-top:18px}.settings-body{padding:15px}}@media(max-width:480px){.details-grid{grid-template-columns:1fr}.settings-card-head{padding:16px}}
+</style>
+</head>
+<body>
+<header class="topbar"><div class="topbar-inner"><a class="brand" href="dashboard.html">CHAMA <span>LIVE</span></a><nav class="top-nav" aria-label="Admin navigation"></nav><div class="topbar-actions"><span data-user-name></span><button id="logout" type="button">Sign out</button></div></div></header>
+<main class="settings-wrap">
+<header class="settings-head"><h1>Group Settings</h1><p>Manage optional features for this group. Turning a module off preserves its saved records.</p></header>
+<section class="settings-card"><div class="settings-card-head"><h2>Group details</h2><p>Current information associated with your signed-in group.</p></div><div class="settings-body">
+<div class="details-grid">
+<div class="detail"><small>Group name</small><strong id="groupName">Loading…</strong></div>
+<div class="detail"><small>Category</small><strong id="groupCategory">—</strong></div>
+<div class="detail"><small>Registration number</small><strong id="groupRegistration">—</strong></div>
+<div class="detail"><small>Phone</small><strong id="groupPhone">—</strong></div>
+<div class="detail"><small>Email</small><strong id="groupEmail">—</strong></div>
+<div class="detail"><small>Location</small><strong id="groupLocation">—</strong></div>
+</div><p style="margin:16px 0 0"><a class="settings-link" href="group-management.html">Edit group details and contribution settings →</a></p>
+</div></section>
+<section class="settings-card"><div class="settings-card-head"><h2>Existing optional features</h2><p>These preserve the current Loans and Merry-go-round controls.</p></div><div class="settings-body">
+<form id="existingModulesForm">
+<label class="setting-row" for="merryGoRoundEnabled"><input id="merryGoRoundEnabled" type="checkbox"><span><strong>Merry-go-round</strong><p>Manage contribution rounds, payout order and payouts.</p></span></label>
+<label class="setting-row" for="loansEnabled"><input id="loansEnabled" type="checkbox"><span><strong>Loans</strong><p>Manage loan requests, approvals, repayments and balances.</p></span></label>
+<div class="settings-actions"><button type="submit">Save existing feature settings</button></div>
+</form></div></section>
+<section class="settings-card"><div class="settings-card-head"><h2>Modules</h2><p>All four modules default to off for new groups. Turning a module off blocks access without deleting its data.</p></div><div class="settings-body">
+<form id="optionalModulesForm">
+<label class="setting-row" for="module-plans"><input id="module-plans" type="checkbox"><span><strong>Plans &amp; Activities</strong><p>Plan group activities and track progress towards group goals.</p></span></label>
+<label class="setting-row" for="module-assets"><input id="module-assets" type="checkbox"><span><strong>Assets</strong><p>Maintain an inventory of group-owned assets and their values.</p></span></label>
+<label class="setting-row" for="module-milestones"><input id="module-milestones" type="checkbox"><span><strong>Milestones</strong><p>Record important group achievements and milestone events.</p></span></label>
+<label class="setting-row" for="module-migration"><input id="module-migration" type="checkbox"><span><strong>Data Migration</strong><p>Access admin-only member migration preview and validation tools.</p></span></label>
+<div class="settings-actions"><button type="submit">Save module settings</button></div>
+</form><p id="settingsStatus" class="settings-status" role="status" aria-live="polite"></p>
+</div></section>
+</main>
+<script type="module">import { boot } from "./js/admin-layout.js"; boot().catch(error => console.error("Group Settings boot failed:", error));</script>
+</body>
+</html>
