@@ -127,6 +127,24 @@ const saveMeetingAttendance =
 const saveMinutes =
   document.getElementById("saveMinutes");
 
+const meetingDocumentPanel =
+  document.getElementById("meetingDocumentPanel");
+
+const meetingDocumentFile =
+  document.getElementById("meetingDocumentFile");
+
+const uploadMeetingDocument =
+  document.getElementById("uploadMeetingDocument");
+
+const meetingDocumentMeta =
+  document.getElementById("meetingDocumentMeta");
+
+const meetingDocumentList =
+  document.getElementById("meetingDocumentList");
+
+const meetingDocumentMessage =
+  document.getElementById("meetingDocumentMessage");
+
 
 /* =========================================================
    STATE
@@ -808,7 +826,9 @@ function renderDetails() {
 
   if (!selectedMeeting) {
     detailsCard.hidden = true;
+    detailsCard.classList.remove("is-visible");
     if (meetingAttendance) meetingAttendance.hidden = true;
+    if (meetingDocumentPanel) meetingDocumentPanel.hidden = true;
     if (meetingRsvpSummary) meetingRsvpSummary.hidden = true;
     return;
   }
@@ -887,7 +907,9 @@ function renderDetails() {
   }
 
   detailsCard.hidden = false;
+  detailsCard.classList.add("is-visible");
   if (meetingAttendance) meetingAttendance.hidden = false;
+  if (meetingDocumentPanel) meetingDocumentPanel.hidden = false;
 
   if (completeMeeting) {
     completeMeeting.hidden = status !== "upcoming";
@@ -908,6 +930,7 @@ function renderDetails() {
   }
 
   loadMeetingAttendance().catch(showError);
+  loadMeetingDocuments().catch(showError);
 }
 
 
@@ -1663,6 +1686,192 @@ async function saveMeetingMinutes() {
 
 
 /* =========================================================
+   PRIVATE MEETING FILES
+========================================================= */
+
+function showDocumentMessage(message, isError = false) {
+  if (!meetingDocumentMessage) return;
+  meetingDocumentMessage.textContent = message || "";
+  meetingDocumentMessage.style.color = isError ? "#b42318" : "#667085";
+}
+
+async function loadMeetingDocuments() {
+  if (!selectedMeeting || !groupId || !meetingDocumentList) return;
+
+  const { data, error } = await supabase
+    .from("meeting_documents")
+    .select("id, storage_path, file_name, content_type, size_bytes, created_at")
+    .eq("group_id", groupId)
+    .eq("meeting_id", selectedMeeting.id)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+
+  const files = Array.isArray(data) ? data : [];
+  if (meetingDocumentMeta) {
+    meetingDocumentMeta.textContent = files.length
+      ? `${files.length} private file${files.length === 1 ? "" : "s"} attached to this meeting.`
+      : "No files uploaded yet.";
+  }
+
+  meetingDocumentList.innerHTML = files.length
+    ? files.map(file => `
+        <div class="meeting-file-row">
+          <div>
+            <strong>${escapeHtml(file.file_name)}</strong>
+            <div class="meeting-document-meta">${escapeHtml((Number(file.size_bytes || 0) / 1024).toFixed(0))} KB · ${escapeHtml(formatDate(file.created_at))}</div>
+          </div>
+          <button type="button" class="btn btn-secondary" data-document-download="${escapeHtml(file.id)}">Download</button>
+        </div>
+      `).join("")
+    : '<p class="muted">Attach the signed attendance sheet, agenda, minutes, resolutions, or other meeting files here.</p>';
+}
+
+async function uploadMeetingFiles() {
+  if (!selectedMeeting || !groupId) throw new Error("Select a meeting before uploading files.");
+  const files = Array.from(meetingDocumentFile?.files || []);
+  if (!files.length) return;
+
+  if (uploadMeetingDocument) {
+    uploadMeetingDocument.disabled = true;
+    uploadMeetingDocument.textContent = "Uploading…";
+  }
+
+  try {
+    for (const file of files) {
+      const extension = String(file.name.split(".").pop() || "").toLowerCase();
+      const mime = extension === "pdf"
+        ? "application/pdf"
+        : extension === "docx"
+          ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          : "";
+
+      if (!mime) throw new Error("Only PDF and DOCX files are allowed.");
+      if (!file.size || file.size > 10 * 1024 * 1024) {
+        throw new Error("Each meeting file must be smaller than 10 MB.");
+      }
+
+      const safeName = file.name
+        .normalize("NFKD")
+        .replace(/[^a-zA-Z0-9._-]+/g, "_")
+        .slice(-180);
+      const uniqueName = `${crypto.randomUUID()}-${safeName || (extension === "pdf" ? "meeting.pdf" : "meeting.docx")}`;
+      const path = `${groupId}/${selectedMeeting.id}/${uniqueName}`;
+
+      const { error: uploadError } = await supabase
+        .storage.from("meeting-files")
+        .upload(path, file, { contentType: mime, upsert: false });
+
+      if (uploadError) throw uploadError;
+
+      const { error: metadataError } = await supabase
+        .from("meeting_documents")
+        .insert({
+          group_id: groupId,
+          meeting_id: selectedMeeting.id,
+          storage_path: path,
+          file_name: file.name.slice(0, 255),
+          content_type: mime,
+          size_bytes: file.size
+        });
+
+      if (metadataError) {
+        await supabase.storage.from("meeting-files").remove([path]);
+        throw metadataError;
+      }
+    }
+
+    if (meetingDocumentFile) meetingDocumentFile.value = "";
+    showDocumentMessage("Meeting file(s) uploaded securely.");
+    await loadMeetingDocuments();
+  } finally {
+    if (uploadMeetingDocument) {
+      uploadMeetingDocument.disabled = false;
+      uploadMeetingDocument.textContent = "Upload Files";
+    }
+  }
+}
+
+async function downloadMeetingFile(documentId) {
+  if (!selectedMeeting || !groupId) throw new Error("Select a meeting first.");
+
+  const { data: fileRecord, error: recordError } = await supabase
+    .from("meeting_documents")
+    .select("storage_path, file_name")
+    .eq("id", documentId)
+    .eq("group_id", groupId)
+    .eq("meeting_id", selectedMeeting.id)
+    .single();
+
+  if (recordError) throw recordError;
+
+  const { data, error } = await supabase
+    .storage.from("meeting-files")
+    .download(fileRecord.storage_path);
+
+  if (error) throw error;
+
+  const url = URL.createObjectURL(data);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileRecord.file_name;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 30000);
+}
+
+
+/* =========================================================
+   COMPLETE MEETING + PUBLISH GROUP ANNOUNCEMENT
+========================================================= */
+
+async function completeMeetingAndNotify() {
+  if (!selectedMeeting) throw new Error("Select a meeting first.");
+
+  const brief = String(minutesInput?.value || "").trim();
+  const resolution = String(resolutionInput?.value || "").trim();
+
+  if (brief.length < 5) {
+    throw new Error("Enter a short meeting brief (at least 5 characters) before completing the meeting.");
+  }
+  if (brief.length > 3000) {
+    throw new Error("Keep the meeting brief to 3,000 characters or fewer.");
+  }
+
+  if (completeMeeting) {
+    completeMeeting.disabled = true;
+    completeMeeting.textContent = "Completing and notifying…";
+  }
+
+  try {
+    const { data, error } = await supabase.rpc("cl_complete_meeting_and_notify", {
+      p_meeting_id: selectedMeeting.id,
+      p_brief: brief,
+      p_resolution: resolution || null
+    });
+
+    if (error) throw error;
+    if (!data?.id) throw new Error("Meeting completion was not confirmed.");
+
+    selectedMeeting = data;
+    await loadMeetings();
+    renderMetrics();
+    renderMeetings();
+    renderDetails();
+
+    showStatus("Meeting completed. A group announcement with the brief and resolutions has been published.");
+    setTimeout(() => showStatus(""), 5000);
+  } finally {
+    if (completeMeeting) {
+      completeMeeting.disabled = false;
+      completeMeeting.textContent = "Complete Meeting & Notify Members";
+    }
+  }
+}
+
+
+/* =========================================================
    DELETE
 ========================================================= */
 
@@ -1921,24 +2130,48 @@ function setupButtons() {
   completeMeeting?.addEventListener(
     "click",
     async () => {
-
       try {
-
         clearError();
-
-        await updateMeetingStatus(
-          "completed"
-        );
-
-      }
-      catch (error) {
-
+        await completeMeetingAndNotify();
+      } catch (error) {
         showError(error);
-
       }
-
     }
   );
+
+  uploadMeetingDocument?.addEventListener("click", () => {
+    if (!selectedMeeting) {
+      showError(new Error("Select a meeting before uploading files."));
+      return;
+    }
+    meetingDocumentFile?.click();
+  });
+
+  meetingDocumentFile?.addEventListener("change", async () => {
+    try {
+      clearError();
+      await uploadMeetingFiles();
+    } catch (error) {
+      showDocumentMessage(error?.message || String(error), true);
+      showError(error);
+    }
+  });
+
+  meetingDocumentList?.addEventListener("click", async event => {
+    const button = event.target.closest("button[data-document-download]");
+    if (!button) return;
+    button.disabled = true;
+    button.textContent = "Preparing…";
+    try {
+      await downloadMeetingFile(button.dataset.documentDownload);
+    } catch (error) {
+      showDocumentMessage(error?.message || String(error), true);
+      showError(error);
+    } finally {
+      button.disabled = false;
+      button.textContent = "Download";
+    }
+  });
 
 
   cancelMeeting?.addEventListener(
