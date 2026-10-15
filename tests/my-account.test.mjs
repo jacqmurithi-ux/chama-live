@@ -10,6 +10,9 @@ const memberLayout = await read("../js/member-layout.js");
 const adminPage = await read("../admin-my-account.html");
 const memberPage = await read("../member-my-account.html");
 const migration = await read("../supabase/migrations/20261014090000_shared_my_account_candidate.sql");
+const expenses = await read("../js/expenses.js");
+const rolePermissions = await read("../js/role-permissions.js");
+const reports = await read("../js/reports.js");
 
 test("shared account data and payment endpoints derive identity server-side", () => {
   assert.match(service, /rpc\("cl_get_my_account_bundle"\)/);
@@ -46,7 +49,7 @@ test("official personal-account routes redirect away from member-only and group-
     assert.ok(memberLayout.includes(`"${page}"`), `missing official route guard for ${page}`);
   }
   assert.match(memberLayout, /function resolveMemberNavigationItem\(item\)/);
-  assert.match(memberLayout, /isAdminAccount\(\)[\s\S]*?OFFICIAL_PERSONAL_ACCOUNT_PAGES\.has\(item\.href\.split\("\/"\)\.pop\(\)\)/);
+  assert.match(memberLayout, /function resolveMemberNavigationItem\(item\)[\s\S]*?isAdminAccount\(\)[\s\S]*?OFFICIAL_PERSONAL_ACCOUNT_PAGES\.has\(targetPage\)/);
   assert.match(memberLayout, /items\.map\(resolveMemberNavigationItem\)\.filter\(Boolean\)/);
   assert.match(memberLayout, /const resolvedItem = resolveMemberNavigationItem\(item\)/);
   assert.match(memberLayout, /My Account is already a dedicated navigation entry[\s\S]*?return null;/);
@@ -85,8 +88,25 @@ test("monthly allocation label distinguishes obligation allocation from payment 
 test("lifetime allocations match the canonical monthly-status allocation scope", () => {
   assert.match(migration, /total_allocated numeric := 0/);
   assert.match(migration, /join public\.contribution_obligations o on o\.id = ca\.obligation_id/);
-  assert.match(migration, /and o\.obligation_month <= date_trunc\('month', current_date\)::date;/);
+  assert.match(migration, /and o\.obligation_month <= date_trunc\('month', current_date\)::date/);
+  assert.match(migration, /and o\.contribution_type_id = \([\s\S]*?lower\(trim\(coalesce\(ct\.code, ''\)\)\) = 'monthly'[\s\S]*?lower\(trim\(coalesce\(ct\.name, ''\)\)\) = 'monthly'[\s\S]*?limit 1\s*\);/);
   assert.doesNotMatch(migration, /and o\.rule_id is not null\s+and o\.obligation_month <= date_trunc/);
+});
+
+test("expense approval UI uses member identity and respects the three backend office slots", () => {
+  assert.match(expenses, /expense\.recorded_by !== currentMember\.id/);
+  assert.match(expenses, /approval\.approver_user_id === currentUser\?\.id/);
+  assert.match(expenses, /approval\.approval_slot === slot/);
+  assert.match(expenses, /rpc\("submit_expense_approval"/);
+  assert.match(rolePermissions, /"approve-chair": CHAIR_SLOT/);
+  assert.match(rolePermissions, /"approve-treasurer": new Set\(\["treasurer"\]\)/);
+  assert.match(rolePermissions, /"approve-secretary": SECRETARY_SLOT/);
+  assert.match(rolePermissions, /declaredExpenseApprovalSlot\(member\)/);
+});
+
+test("manual report date edits activate the custom date range", () => {
+  assert.match(reports, /for \(const id of \["fromDate", "toDate"\]\)[\s\S]*?preset\.value = "custom"[\s\S]*?generateReport\(\)/);
+  assert.doesNotMatch(reports, /const regularFilters = \[[^\]]*"(?:fromDate|toDate)"/);
 });
 
 test("loan outstanding includes principal, interest and penalties net of all repayment allocations", () => {

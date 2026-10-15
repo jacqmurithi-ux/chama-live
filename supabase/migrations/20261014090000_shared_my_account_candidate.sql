@@ -105,9 +105,10 @@ begin
   where s.member_id = v_member.id
   limit 1;
 
-  -- Keep lifetime allocation/arrears aligned to the canonical monthly-status RPC:
-  -- total_due_to_date comes from rule-backed obligations, while allocation totals
-  -- include allocations attached to all obligations through the current month.
+  -- Match get_canonical_member_monthly_status(): both due and allocated
+  -- totals must use the group's canonical Monthly contribution type only.
+  -- Dev-fund/initiative allocations must not offset monthly arrears or inflate
+  -- monthly credit. The canonical RPC selects one Monthly type by this ordering.
   v_total_due_to_date := coalesce((v_monthly->>'total_due_to_date')::numeric, 0);
 
   select coalesce(sum(ca.amount), 0)
@@ -116,7 +117,21 @@ begin
   join public.contribution_obligations o on o.id = ca.obligation_id
   where o.group_id = v_member.group_id
     and o.member_id = v_member.id
-    and o.obligation_month <= date_trunc('month', current_date)::date;
+    and o.obligation_month <= date_trunc('month', current_date)::date
+    and o.contribution_type_id = (
+      select ct.id
+      from public.contribution_types ct
+      where ct.group_id = v_member.group_id
+        and (
+          lower(trim(coalesce(ct.code, ''))) = 'monthly'
+          or lower(trim(coalesce(ct.name, ''))) = 'monthly'
+        )
+      order by
+        case when lower(trim(coalesce(ct.code, ''))) = 'monthly' then 0 else 1 end,
+        ct.created_at,
+        ct.id
+      limit 1
+    );
 
   select coalesce(jsonb_agg(to_jsonb(c) order by c.contribution_date desc nulls last, c.created_at desc), '[]'::jsonb)
   into v_contributions

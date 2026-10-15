@@ -6212,10 +6212,21 @@ function bindEvents() {
     );
   }
 
+  // Editing either date switches the preset to Custom; otherwise
+  // getDateRange() would silently replace the user's dates with a preset.
+  for (const id of ["fromDate", "toDate"]) {
+    const dateInput = $(id);
+    if (!dateInput) continue;
+
+    dateInput.addEventListener("change", () => {
+      const preset = $("periodPreset");
+      if (preset) preset.value = "custom";
+      generateReport();
+    });
+  }
+
   const regularFilters = [
     "reportType",
-    "fromDate",
-    "toDate",
     "memberFilter",
     "contributionTypeFilter",
     "paymentMethodFilter",

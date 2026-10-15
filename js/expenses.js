@@ -177,20 +177,37 @@ function currentRole() {
 }
 
 function canRecordExpense() {
-  return [
+  // Group Admin has full group-operation control; backend RLS remains
+  // authoritative for the actual insert.
+  return currentRole() === "admin" || [
     "chairperson", "vice chairperson",
     "secretary", "vice secretary", "treasurer"
   ].includes(currentRole());
 }
 
-// Approval eligibility is only a UI hint. The database RPC enforces the
-// three distinct approval slots and blocks self-approval.
+// The backend RPC remains authoritative. Match its three office slots
+// so the UI does not offer a decision when the approver's slot is occupied.
+function currentApprovalSlot() {
+  const positions = [
+    normalizeOffice(currentMember?.actual_position),
+    normalizeOffice(currentMember?.actual_position_name)
+  ];
+
+  if (positions.some(position =>
+    ["chairperson", "vice chairperson", "chair", "vice chair"].includes(position)
+  )) return "chair";
+
+  if (positions.includes("treasurer")) return "treasurer";
+
+  if (positions.some(position =>
+    ["secretary", "vice secretary"].includes(position)
+  )) return "secretary";
+
+  return null;
+}
+
 function canApproveExpense() {
-  return [
-    "chairperson", "vice chairperson",
-    "treasurer",
-    "secretary", "vice secretary"
-  ].includes(currentRole());
+  return currentApprovalSlot() !== null;
 }
 
 function canManageExpenses() {
@@ -747,26 +764,37 @@ function renderExpenses() {
             expense.category
           );
 
-        const approvedSlots = expenseApprovals.filter(
-          approval => approval.expense_id === expense.id &&
-            approval.decision === "approved"
-        ).length;
+        const approvedSlots = new Set(
+          expenseApprovals
+            .filter(approval =>
+              approval.expense_id === expense.id &&
+              approval.decision === "approved"
+            )
+            .map(approval => approval.approval_slot)
+        ).size;
 
+        const slot = currentApprovalSlot();
         const alreadyVoted = expenseApprovals.some(
           approval => approval.expense_id === expense.id &&
             approval.approver_user_id === currentUser?.id
         );
+        const slotTaken = Boolean(slot) && expenseApprovals.some(
+          approval => approval.expense_id === expense.id &&
+            approval.approval_slot === slot
+        );
 
         const canVote = status === "pending" &&
           canApproveExpense() &&
-          expense.recorded_by !== currentUser?.id &&
-          !alreadyVoted;
+          Boolean(currentMember?.id) &&
+          expense.recorded_by !== currentMember.id &&
+          !alreadyVoted &&
+          !slotTaken;
 
         const actions = canVote ? `
-          <button type="button" data-action="approve" data-id="${escapeHtml(expense.id)}">
+          <button type="button" data-action="approve" data-permission-page="expenses" data-permission-action="approve-${escapeHtml(slot)}" data-id="${escapeHtml(expense.id)}">
             Approve
           </button>
-          <button type="button" data-action="reject" data-id="${escapeHtml(expense.id)}">
+          <button type="button" data-action="reject" data-permission-page="expenses" data-permission-action="approve-${escapeHtml(slot)}" data-id="${escapeHtml(expense.id)}">
             Reject
           </button>
           <span class="muted" role="status">${approvedSlots}/3 approvals</span>

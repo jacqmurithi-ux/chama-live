@@ -148,14 +148,18 @@ const POLICY = {
     view: GROUP_MANAGEMENT,
     // Admin may submit expenses but cannot fill any required approval slot.
     create: new Set(["admin", "chairperson", "vice chairperson", "treasurer", "secretary", "vice secretary"]),
-    // The current schema has only one approval_status field. Until a
-    // distinct-person three-slot backend workflow exists, all approval,
-    // edit and delete actions fail closed in the UI.
+    // The existing backend RPC enforces three distinct office slots:
+    // chair/vice chair, treasurer, and secretary/vice secretary.
+    // These are UI eligibility hints only; the RPC remains authoritative.
     edit: new Set(),
     delete: new Set(),
-    "approve-chair": new Set(),
-    "approve-treasurer": new Set(),
-    "approve-secretary": new Set()
+    approve: new Set([
+      "chairperson", "vice chairperson", "treasurer",
+      "secretary", "vice secretary"
+    ]),
+    "approve-chair": CHAIR_SLOT,
+    "approve-treasurer": new Set(["treasurer"]),
+    "approve-secretary": SECRETARY_SLOT
   },
   fines: {
     view: GROUP_MANAGEMENT,
@@ -227,6 +231,15 @@ const roleCan = (roles, page, action, member) => {
   return [...roles].some(role => rule.has(role));
 };
 
+function declaredExpenseApprovalSlot(member = {}) {
+  const clean = value => normalize(value).replace(/[_-]+/g, " ").replace(/\s+/g, " ");
+  const declared = [member.actual_position, member.actual_position_name].map(clean);
+  if (declared.some(value => ["chairperson", "vice chairperson", "chair", "vice chair"].includes(value))) return "chair";
+  if (declared.some(value => value === "treasurer")) return "treasurer";
+  if (declared.some(value => ["secretary", "vice secretary"].includes(value))) return "secretary";
+  return null;
+}
+
 function loanApprovalOffice(member = {}) {
   const clean = value => normalize(value).replace(/[_-]+/g, " ").replace(/\s+/g, " ");
   const declared = [member.actual_position, member.actual_position_name].map(clean);
@@ -244,15 +257,27 @@ export function canWrite(page, action, member, options = {}) {
   const actionKey = normalize(action);
   const roles = getGroupRoles(member);
 
-  // Loan approval follows the expense workflow: the actual office must be
-  // explicitly declared, and technical role labels alone do not fill a slot.
+  // Expense approval mirrors the backend RPC's declared-office mapping.
+  // A technical Admin may approve only when they also hold one of the
+  // required offices; the UI must not infer an office from the Admin role.
+  const expenseApprovalActions = new Set([
+    "approve", "approve-chair", "approve-treasurer", "approve-secretary"
+  ]);
+  if (pageKey === "expenses" && expenseApprovalActions.has(actionKey)) {
+    if (options.isVerifiedPlatformAdmin === true || member?.is_platform_admin === true) return false;
+    const slot = declaredExpenseApprovalSlot(member);
+    if (!slot) return false;
+    return actionKey === "approve" || actionKey === `approve-${slot}`;
+  }
+
+  // Loan review requires an explicitly declared office.
   if (pageKey === "loans" && actionKey === "review") {
     return loanApprovalOffice(member) !== null;
   }
 
   // Group Admin can perform ordinary group operations regardless of the
-  // narrower office matrix. The exception is expense approval: Admin cannot
-  // occupy or override any of the three distinct office-holder slots.
+  // narrower office matrix. Expense approvals are handled above using the
+  // actual declared office, matching the backend's three-slot contract.
   if (roles.has("admin")) {
     return !(pageKey === "expenses" &&
       ["approve", "approve-chair", "approve-treasurer", "approve-secretary"].includes(actionKey));
