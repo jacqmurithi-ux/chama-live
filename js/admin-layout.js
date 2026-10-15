@@ -198,7 +198,7 @@ const PAGE_SCRIPTS = {
   ],
 
   "loans.html": [
-    "./loans.js?v=20261015-loan-settings-schema-fix2",
+    "./loans.js?v=20261015-loan-guarantor-schema-fix1",
     "initLoans"
   ],
 
