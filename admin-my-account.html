@@ -50,6 +50,13 @@
       <p class="account-muted">Contribution status is taken from canonical accounting. Pending payment evidence is not counted as a recognized contribution.</p>
       <div id="myAccountSummary" class="account-grid"></div>
     </section>
+    <section class="account-card" aria-labelledby="allocationHeading">
+      <h2 id="allocationHeading">Allocation by Contribution Type</h2>
+      <p class="account-muted">Recognized contributions allocated to each contribution obligation type. Pending payment evidence is excluded.</p>
+      <div id="myAccountAllocationTypes" class="account-allocation-list"><p class="account-muted">Loading allocation breakdown…</p></div>
+      <div id="myAccountAllocationTotals"></div>
+      <p id="myAccountAllocationNote" class="account-allocation-note account-muted" role="status" hidden></p>
+    </section>
     <section id="myAccountLoansSection" class="account-card" hidden aria-labelledby="loanHeading">
       <h2 id="loanHeading">My loans</h2><div id="myAccountLoanSummary" class="account-grid"></div>
     </section>
