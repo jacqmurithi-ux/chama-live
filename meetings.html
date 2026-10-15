@@ -11,7 +11,7 @@
 
   <meta
     name="description"
-    content="Schedule meetings, manage the meeting lifecycle, record attendance, and keep informative meeting minutes and resolutions."
+    content="Schedule meetings, manage attendance, and retain a clear meeting brief and history."
   >
 
   <link rel="stylesheet" href="./css/app.css">
@@ -706,8 +706,7 @@
 
           <p>
             Schedule meetings, manage the meeting lifecycle, record attendance,
-            and keep informative minutes and resolutions so your group has a
-            clear meeting history.
+            and keep a clear meeting brief and history for your group.
           </p>
         </div>
 
@@ -1017,26 +1016,21 @@
         </div>
 
         <div class="meeting-section-body" id="meetingLifecycleControls">
-          <div class="meeting-detail-grid">
+          <div class="meeting-detail-grid" style="grid-template-columns:minmax(0,1fr)">
             <div class="meeting-detail-card">
               <h3 for="minutes">Meeting Brief</h3>
               <p class="meeting-form-help">Summarize the key discussions and what happened. Required before completing and notifying members.</p>
               <textarea id="minutes" rows="5" maxlength="3000" style="width:100%;box-sizing:border-box" placeholder="Briefly summarize the meeting (max 3,000 characters)."></textarea>
             </div>
-            <div class="meeting-detail-card">
-              <h3 for="resolution">Resolutions & Follow-up</h3>
-              <p class="meeting-form-help">Record decisions, responsible persons, and next steps.</p>
-              <textarea id="resolution" rows="5" maxlength="3000" style="width:100%;box-sizing:border-box" placeholder="Decisions and follow-up actions (optional)."></textarea>
-            </div>
           </div>
           <div class="meeting-detail-actions">
-            <button type="button" id="saveMinutes" class="btn btn-secondary" data-permission-page="meetings" data-permission-action="edit">Save Minutes & Resolutions</button>
+            <button type="button" id="saveMinutes" class="btn btn-secondary" data-permission-page="meetings" data-permission-action="edit">Save Meeting Brief</button>
             <button type="button" id="completeMeeting" class="btn btn-primary" data-permission-page="meetings" data-permission-action="edit">Complete Meeting & Notify Members</button>
             <button type="button" id="cancelMeeting" class="btn btn-secondary" data-permission-page="meetings" data-permission-action="edit">Cancel Meeting</button>
             <button type="button" id="restoreMeeting" class="btn btn-secondary" data-permission-page="meetings" data-permission-action="edit" hidden>Restore Meeting</button>
             <button type="button" id="deleteMeeting" class="btn btn-danger" data-permission-page="meetings" data-permission-action="delete">Delete Meeting</button>
           </div>
-          <p class="meeting-form-help">Completing a meeting publishes its brief and resolutions as a group announcement. This does not change the recorded attendance or quorum.</p>
+          <p class="meeting-form-help">Completing a meeting publishes its brief as a group announcement. This does not change the recorded attendance or quorum.</p>
         </div>
 
       </section>
@@ -1201,14 +1195,14 @@
             <div>
 
               <h3>
-                Optional Minutes Attachment
+                Meeting Documents
               </h3>
 
               <div
                 id="meetingDocumentMeta"
                 class="meeting-document-meta"
               >
-                No minutes attachment uploaded. This is optional.
+                No minutes documents linked yet. Upload a document in Documents and link it to this meeting.
               </div>
 
             </div>
@@ -1217,21 +1211,6 @@
               id="meetingDocumentActions"
               class="meeting-document-actions"
             >
-
-              <input
-                type="file"
-                id="meetingDocumentFile"
-                accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                hidden
-              >
-
-              <button
-                type="button"
-                id="uploadMeetingDocument"
-                class="btn btn-primary"
-               data-permission-page="meetings" data-permission-action="edit">
-                Attach Minutes
-              </button>
 
               <button
                 type="button"
@@ -1255,7 +1234,7 @@
           ></div>
 
           <div id="meetingDocumentList" aria-live="polite">
-            <p class="muted">Select a meeting to view its optional minutes attachment.</p>
+            <p class="muted">Select a meeting to view documents linked from the Documents page.</p>
           </div>
 
 
