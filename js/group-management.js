@@ -952,6 +952,8 @@ async function loadContributionSettings() {
 
     syncContributionRuleUI("monthly");
     renderContributionCycleSummary();
+
+
 }
 
 async function saveMonthlyContribution(event) {

@@ -1,0 +1,48 @@
+-- STAGE ONLY: non-internal triggers recovered from production catalog 2026-10-14.
+-- Trigger functions must be installed first; review ordering and security before applying.
+
+CREATE TRIGGER trg_other_payment_request_guard BEFORE UPDATE ON private.other_contribution_payment_requests FOR EACH ROW EXECUTE FUNCTION private.cl_other_payment_request_guard();
+CREATE TRIGGER charge_payments_guard_immutable BEFORE DELETE OR UPDATE ON charge_payments FOR EACH ROW EXECUTE FUNCTION charge_payments_guard_immutable();
+CREATE TRIGGER trg_cl_guard_contribution_allocation BEFORE INSERT OR UPDATE ON contribution_allocations FOR EACH ROW EXECUTE FUNCTION cl_guard_contribution_allocation();
+CREATE TRIGGER audit_delete_trigger BEFORE DELETE ON contribution_goals FOR EACH ROW EXECUTE FUNCTION log_deleted_row();
+CREATE TRIGGER contribution_goals_updated_at BEFORE UPDATE ON contribution_goals FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+CREATE TRIGGER trg_validate_initiative_payment_allocation BEFORE INSERT OR UPDATE ON contribution_initiative_allocations FOR EACH ROW EXECUTE FUNCTION validate_initiative_payment_allocation();
+CREATE TRIGGER trg_cl_other_obligation_lineage BEFORE INSERT OR UPDATE OF group_id, member_id, contribution_type_id, obligation_month, economic_month, rule_id, period_id, component_kind, parent_obligation_id ON contribution_obligations FOR EACH ROW EXECUTE FUNCTION private.cl_other_obligation_lineage();
+CREATE TRIGGER trg_cl_other_period_immutable BEFORE UPDATE ON contribution_periods FOR EACH ROW EXECUTE FUNCTION private.cl_other_period_immutable();
+CREATE TRIGGER audit_delete_trigger BEFORE DELETE ON contributions FOR EACH ROW EXECUTE FUNCTION log_deleted_row();
+CREATE TRIGGER contributions_set_recorded_by BEFORE INSERT OR UPDATE ON contributions FOR EACH ROW EXECUTE FUNCTION set_recorded_by_from_auth();
+CREATE TRIGGER contributions_validate_recorded_by BEFORE INSERT OR UPDATE ON contributions FOR EACH ROW EXECUTE FUNCTION validate_recorded_by();
+CREATE TRIGGER trg_cl_guard_open_financial_period BEFORE INSERT OR DELETE OR UPDATE ON contributions FOR EACH ROW EXECUTE FUNCTION cl_guard_open_financial_period();
+CREATE TRIGGER trg_normalize_contribution_recorded_by BEFORE INSERT OR UPDATE OF recorded_by, group_id ON contributions FOR EACH ROW EXECUTE FUNCTION normalize_contribution_recorded_by();
+CREATE TRIGGER audit_delete_trigger BEFORE DELETE ON expenses FOR EACH ROW EXECUTE FUNCTION log_deleted_row();
+CREATE TRIGGER expenses_set_recorded_by BEFORE INSERT OR UPDATE OF recorded_by, group_id ON expenses FOR EACH ROW EXECUTE FUNCTION set_recorded_by_from_auth();
+CREATE TRIGGER expenses_validate_recorded_by BEFORE INSERT OR UPDATE OF recorded_by, group_id ON expenses FOR EACH ROW EXECUTE FUNCTION validate_recorded_by();
+CREATE TRIGGER guard_expense_approval_status_trigger BEFORE INSERT OR UPDATE OF approval_status ON expenses FOR EACH ROW EXECUTE FUNCTION guard_expense_approval_status();
+CREATE TRIGGER prevent_closed_month_expense_trigger BEFORE INSERT OR DELETE OR UPDATE ON expenses FOR EACH ROW EXECUTE FUNCTION prevent_closed_month_expense();
+CREATE TRIGGER trg_resolve_expense_recorded_by BEFORE INSERT OR UPDATE OF recorded_by, group_id ON expenses FOR EACH ROW EXECUTE FUNCTION resolve_expense_recorded_by();
+CREATE TRIGGER financial_charges_guard_identity BEFORE UPDATE ON financial_charges FOR EACH ROW EXECUTE FUNCTION financial_charges_guard_identity();
+CREATE TRIGGER financial_charges_guard_obligation_contract BEFORE INSERT OR UPDATE OF group_id, member_id, obligation_id, accounting_month ON financial_charges FOR EACH ROW EXECUTE FUNCTION financial_charges_guard_obligation_contract();
+CREATE TRIGGER financial_charges_guard_status BEFORE INSERT OR UPDATE ON financial_charges FOR EACH ROW EXECUTE FUNCTION financial_charges_guard_status();
+CREATE TRIGGER financial_charges_normalize_type BEFORE INSERT OR UPDATE OF charge_type ON financial_charges FOR EACH ROW EXECUTE FUNCTION financial_charges_normalize_type();
+CREATE TRIGGER financial_charges_set_updated_at BEFORE UPDATE ON financial_charges FOR EACH ROW EXECUTE FUNCTION financial_charges_set_updated_at();
+CREATE TRIGGER trg_group_activities_updated_at BEFORE UPDATE ON group_activities FOR EACH ROW EXECUTE FUNCTION cl_group_activities_set_updated_at();
+CREATE TRIGGER trg_group_activities_validate BEFORE INSERT OR UPDATE ON group_activities FOR EACH ROW EXECUTE FUNCTION cl_validate_group_activity();
+CREATE TRIGGER trg_group_assets_updated_at BEFORE UPDATE ON group_assets FOR EACH ROW EXECUTE FUNCTION cl_group_assets_set_updated_at();
+CREATE TRIGGER trg_group_assets_validate BEFORE INSERT OR UPDATE ON group_assets FOR EACH ROW EXECUTE FUNCTION cl_validate_group_asset();
+CREATE TRIGGER audit_delete_trigger BEFORE DELETE ON group_invites FOR EACH ROW EXECUTE FUNCTION log_deleted_row();
+CREATE TRIGGER trg_group_milestones_updated_at BEFORE UPDATE ON group_milestones FOR EACH ROW EXECUTE FUNCTION cl_group_milestones_set_updated_at();
+CREATE TRIGGER trg_group_milestones_validate BEFORE INSERT OR UPDATE ON group_milestones FOR EACH ROW EXECUTE FUNCTION cl_validate_group_milestone();
+CREATE TRIGGER trg_group_plans_updated_at BEFORE UPDATE ON group_plans FOR EACH ROW EXECUTE FUNCTION cl_group_plans_set_updated_at();
+CREATE TRIGGER trg_group_plans_validate BEFORE INSERT OR UPDATE ON group_plans FOR EACH ROW EXECUTE FUNCTION cl_validate_group_plan();
+CREATE TRIGGER trg_group_support_cases_updated_at BEFORE UPDATE ON group_support_cases FOR EACH ROW EXECUTE FUNCTION cl_group_support_cases_set_updated_at();
+CREATE TRIGGER trg_group_support_cases_validate BEFORE INSERT OR UPDATE ON group_support_cases FOR EACH ROW EXECUTE FUNCTION cl_validate_group_support_case();
+CREATE TRIGGER audit_delete_trigger BEFORE DELETE ON groups FOR EACH ROW EXECUTE FUNCTION log_deleted_row();
+CREATE TRIGGER loan_application_notifications AFTER INSERT OR UPDATE OF status ON loan_applications FOR EACH ROW EXECUTE FUNCTION cl_loan_notify_application_change();
+CREATE TRIGGER loan_disbursement_requires_three_approvals BEFORE UPDATE OF status ON loan_applications FOR EACH ROW EXECUTE FUNCTION cl_loan_guard_disbursement_approvals();
+CREATE TRIGGER loan_approval_requires_declared_office BEFORE INSERT ON loan_approvals FOR EACH ROW EXECUTE FUNCTION cl_loan_guard_approval_office();
+CREATE TRIGGER loan_repayment_notifications AFTER INSERT ON loan_repayments FOR EACH ROW EXECUTE FUNCTION cl_loan_notify_repayment();
+CREATE TRIGGER loan_repayment_recorder_role_guard BEFORE INSERT ON loan_repayments FOR EACH ROW EXECUTE FUNCTION cl_loan_guard_repayment_recorder();
+CREATE TRIGGER audit_delete_trigger BEFORE DELETE ON meetings FOR EACH ROW EXECUTE FUNCTION log_deleted_row();
+CREATE TRIGGER audit_delete_trigger BEFORE DELETE ON members FOR EACH ROW EXECUTE FUNCTION log_deleted_row();
+CREATE TRIGGER trg_enforce_member_position_snapshot BEFORE UPDATE OF actual_position, actual_position_name ON members FOR EACH ROW EXECUTE FUNCTION enforce_member_position_snapshot();
+CREATE TRIGGER trg_sync_membership_number BEFORE INSERT OR UPDATE OF member_number, membership_number ON members FOR EACH ROW EXECUTE FUNCTION sync_membership_number();
