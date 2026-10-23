@@ -1,7 +1,9 @@
 # CHAMA LIVE Tutorial 01: Group Admin
-**Lesson 1 of the role-by-role series** · Audience: the group creator/first administrator (Member 001).
+**Lesson 1 of the role-by-role series** · Audience: the person who creates a chama account through sign-up and becomes Group Admin / Member 001. This is not the Platform Admin.
 
-> **Status warning:** The public landing page describes email confirmation and platform review, but the current `js/auth.js` documentation says its authentication core has no platform-admin review dependency. Pending → Active enforcement is therefore a gap to verify, not a behaviour this tutorial can promise.
+**Keep these roles separate:** The Group Admin is the person signing up and onboarding their own group (Member 001). The Platform Admin is a separate platform-level role. If platform authorization is required, only the implemented Platform Admin workflow can perform it; the group creator cannot approve their own group.
+
+> **Status gap:** Public copy describes email confirmation and platform review, but the current `js/auth.js` documentation says its authentication core has no Platform Admin review dependency. The expected Pending → Active journey must be verified in the actual signup/status enforcement before we claim it works.
 
 ## 1. Group creation journey
 1. Open **Create Your Group / Sign up** (`signup.html`). Enter accurate account and group details with an email you can access.
@@ -121,7 +123,7 @@ This is a safe operating guide, not a claim that every role/action combination h
 - **Checklist not complete:** Reopen the page, verify saved data and refresh. Report it if still incomplete.
 
 ## Gaps found
-1. **Pending → Active:** public copy describes review, but `js/auth.js` says the auth core has no platform-admin review dependency. Verify signup RPC, status fields, platform tools and gates.
+1. **Pending → Active:** public copy describes review, but `js/auth.js` says the auth core has no Platform Admin review dependency. Verify signup RPC, status fields, Platform Admin tools and gates. The Group Admin who signs up is not the Platform Admin.
 2. **Email confirmation:** deployed Supabase Auth setting and resend/recovery path are not established by reviewed frontend files.
 3. **Checklist predicates:** `js/admin-layout.js` loads `initOnboardingChecklist`; verify all eight rules in `js/onboarding-checklist.js` against live data.
 4. **Opening balances:** verify current UI/RPC, cut-off handling, correction process and checklist predicate.
