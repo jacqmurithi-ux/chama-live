@@ -1,0 +1,1814 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<base href="/">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Reports — CHAMA LIVE</title>
+
+  <link rel="stylesheet" href="./css/app.css" />
+
+  <style>
+    :root {
+      --report-radius: 16px;
+      --report-border: #e5e7eb;
+      --report-muted: #6b7280;
+      --report-bg: #f8fafc;
+      --report-card: #ffffff;
+      --report-primary: #2563eb;
+      --report-success: #15803d;
+      --report-warning: #b45309;
+      --report-danger: #dc2626;
+      --report-purple: #7c3aed;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+
+    body {
+      margin: 0;
+      background: var(--report-bg);
+    }
+
+    .reports-page,
+    .reports-main {
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+    }
+
+    .reports-page {
+      min-height: 100vh;
+    }
+
+    .reports-main {
+      padding: 24px;
+      max-width: 1500px;
+      margin: 0 auto;
+    }
+
+    .reports-hero {
+      background: linear-gradient(135deg, #111827, #1e3a8a);
+      color: #fff;
+      border-radius: 22px;
+      padding: 28px;
+      margin-bottom: 22px;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, .12);
+    }
+
+    .reports-hero h1 {
+      margin: 0 0 8px;
+      font-size: 30px;
+    }
+
+    .reports-hero p {
+      margin: 0;
+      opacity: .9;
+      max-width: 850px;
+      line-height: 1.6;
+    }
+
+    .hero-meta {
+      margin-top: 18px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .hero-chip {
+      background: rgba(255, 255, 255, .12);
+      border: 1px solid rgba(255, 255, 255, .18);
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-size: 13px;
+    }
+
+    .report-card {
+      background: var(--report-card);
+      border: 1px solid var(--report-border);
+      border-radius: var(--report-radius);
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 5px 18px rgba(15, 23, 42, .05);
+      min-width: 0;
+    }
+
+    .report-card h2,
+    .report-card h3 {
+      margin-top: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .builder-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+
+    .builder-header p {
+      color: var(--report-muted);
+      margin: 4px 0 0;
+    }
+
+    .filter-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .filter-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .filter-field label {
+      font-size: 13px;
+      font-weight: 700;
+      color: #374151;
+    }
+
+    .filter-field select,
+    .filter-field input {
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+      min-height: 42px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      padding: 9px 11px;
+      background: #fff;
+      color: #111827;
+      outline: none;
+    }
+
+    .filter-field select:focus,
+    .filter-field input:focus {
+      border-color: var(--report-primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, .10);
+    }
+
+    .filter-span-2 {
+      grid-column: span 2;
+    }
+
+    .filter-span-4 {
+      grid-column: span 4;
+    }
+
+    .quick-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .quick-filter {
+      border: 1px solid #d1d5db;
+      background: #fff;
+      border-radius: 999px;
+      padding: 8px 13px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    .quick-filter:hover {
+      border-color: var(--report-primary);
+    }
+
+    .quick-filter.active {
+      background: #eff6ff;
+      border-color: var(--report-primary);
+      color: #1d4ed8;
+    }
+
+    .action-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+      margin-top: 18px;
+      padding-top: 18px;
+      border-top: 1px solid #eef2f7;
+    }
+
+    .report-button {
+      border: 0;
+      border-radius: 10px;
+      min-height: 42px;
+      padding: 9px 15px;
+      cursor: pointer;
+      font-weight: 800;
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    .report-button:hover {
+      filter: brightness(.97);
+    }
+
+    .report-button:disabled {
+      opacity: .6;
+      cursor: not-allowed;
+      filter: none;
+    }
+
+    .report-button.primary {
+      background: var(--report-primary);
+      color: #fff;
+    }
+
+    .report-button.success {
+      background: var(--report-success);
+      color: #fff;
+    }
+
+    .report-button.info {
+      background: #2563eb;
+      color: #fff;
+    }
+
+    .report-button.secondary-export {
+      background: #475569;
+      color: #fff;
+    }
+
+    .status-message,
+    .error-message {
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 16px;
+      font-size: 14px;
+    }
+
+    .status-message {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1d4ed8;
+    }
+
+    .error-message {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #b91c1c;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 13px;
+      margin-bottom: 20px;
+    }
+
+    .summary-card {
+      background: #fff;
+      border: 1px solid var(--report-border);
+      border-radius: 15px;
+      padding: 16px;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, .04);
+      min-width: 0;
+    }
+
+    .summary-label {
+      color: var(--report-muted);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .summary-value {
+      margin-top: 7px;
+      font-size: 22px;
+      font-weight: 900;
+      color: #111827;
+      overflow-wrap: anywhere;
+    }
+
+    .summary-note {
+      margin-top: 4px;
+      font-size: 12px;
+      color: var(--report-muted);
+    }
+
+    .summary-success .summary-value {
+      color: var(--report-success);
+    }
+
+    .summary-warning .summary-value {
+      color: var(--report-warning);
+    }
+
+    .summary-danger .summary-value {
+      color: var(--report-danger);
+    }
+
+    .summary-purple .summary-value {
+      color: var(--report-purple);
+    }
+
+    .section-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    .section-title p {
+      margin: 0;
+      color: var(--report-muted);
+      font-size: 13px;
+    }
+
+    .table-wrap {
+      width: 100%;
+      max-width: 100%;
+      overflow-x: auto;
+      border: 1px solid var(--report-border);
+      border-radius: 12px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 760px;
+    }
+
+    th,
+    td {
+      padding: 11px 12px;
+      border-bottom: 1px solid #eef2f7;
+      text-align: left;
+      vertical-align: middle;
+      font-size: 13px;
+    }
+
+    th {
+      background: #f8fafc;
+      color: #374151;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .amount {
+      text-align: right;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 5px 9px;
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: capitalize;
+    }
+
+    .status-paid {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .status-credit {
+      background: #ede9fe;
+      color: #6d28d9;
+    }
+
+    .status-partial {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .status-outstanding {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .status-arrears {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .status-up-to-date {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .status-other {
+      background: #e5e7eb;
+      color: #374151;
+    }
+
+    .report-output {
+      min-height: 80px;
+    }
+
+    .report-empty {
+      text-align: center;
+      padding: 34px 16px;
+      color: var(--report-muted);
+    }
+
+    .report-kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .report-kpi {
+      border: 1px solid #e5e7eb;
+      background: #f8fafc;
+      border-radius: 12px;
+      padding: 14px;
+      min-width: 0;
+    }
+
+    .report-kpi strong {
+      display: block;
+      font-size: 20px;
+      margin-top: 5px;
+      overflow-wrap: anywhere;
+    }
+
+    .breakdown-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 20px;
+    }
+
+    .meeting-cards {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 15px;
+    }
+
+    .meeting-card {
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 14px;
+      background: #fff;
+      min-width: 0;
+    }
+
+    .meeting-card strong {
+      display: block;
+      font-size: 20px;
+      margin-top: 5px;
+    }
+
+    .report-footer-note {
+      color: var(--report-muted);
+      font-size: 12px;
+      margin-top: 14px;
+    }
+
+    .print-header {
+      display: none;
+    }
+
+
+    /* Plain-language report narrative */
+    .report-story-card {
+      border-left: 4px solid #15803d;
+    }
+
+    .story-source {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      background: #f0fdf4;
+      color: #166534;
+      border: 1px solid #bbf7d0;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .report-story {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .story-item {
+      background: #f8fafc;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 14px;
+      min-width: 0;
+    }
+
+    .story-item h3 {
+      margin: 0 0 6px;
+      font-size: 14px;
+      color: #111827;
+    }
+
+    .story-item p {
+      margin: 0;
+      color: #4b5563;
+      line-height: 1.55;
+      font-size: 13px;
+    }
+
+    .story-item.story-attention {
+      background: #fffbeb;
+      border-color: #fde68a;
+    }
+
+    .story-item.story-good {
+      background: #f0fdf4;
+      border-color: #bbf7d0;
+    }
+
+    .report-story-empty {
+      padding: 14px;
+      border: 1px dashed #cbd5e1;
+      border-radius: 12px;
+      color: #475569;
+      line-height: 1.6;
+      grid-column: 1 / -1;
+    }
+
+    /* Table headings are interactive sort controls. */
+    .table-wrap th[data-sortable="true"] {
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .table-wrap th[data-sortable="true"]:hover {
+      background: #eef2ff;
+    }
+
+    .table-wrap th[data-sort-direction="asc"]::after {
+      content: " ↑";
+      color: #2563eb;
+    }
+
+    .table-wrap th[data-sort-direction="desc"]::after {
+      content: " ↓";
+      color: #2563eb;
+    }
+
+    /* =====================================================
+       ADMIN PORTAL INTEGRATION
+    ===================================================== */
+
+    .reports-main {
+      padding: 0;
+    }
+
+    .reports-hero,
+    .report-card,
+    .summary-card,
+    .report-kpi,
+    .meeting-card {
+      min-width: 0;
+    }
+
+    .reports-hero h1,
+    .reports-hero p,
+    .report-card h2,
+    .report-card h3 {
+      overflow-wrap: anywhere;
+    }
+
+    @media (max-width: 1100px) {
+      .summary-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .report-kpi-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .filter-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .filter-span-4 {
+        grid-column: span 2;
+      }
+
+      .filter-span-2 {
+        grid-column: span 2;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .reports-main {
+        padding: 14px;
+      }
+
+      .reports-hero {
+        padding: 20px;
+        border-radius: 17px;
+        margin-bottom: 16px;
+      }
+
+      .reports-hero h1 {
+        font-size: 25px;
+      }
+
+      .reports-hero p {
+        font-size: 13px;
+      }
+
+      .hero-chip {
+        max-width: 100%;
+        overflow-wrap: anywhere;
+      }
+
+      .report-story {
+        grid-template-columns: 1fr;
+      }
+
+      .filter-grid,
+      .summary-grid,
+      .report-kpi-grid,
+      .breakdown-grid,
+      .meeting-cards {
+        grid-template-columns: 1fr;
+      }
+
+      .filter-span-2,
+      .filter-span-4 {
+        grid-column: span 1;
+      }
+
+      .report-card {
+        padding: 15px;
+      }
+
+      .summary-card {
+        padding: 14px;
+      }
+
+      .summary-value {
+        font-size: 20px;
+      }
+
+      .report-kpi {
+        padding: 13px;
+      }
+
+      .report-kpi strong {
+        font-size: 19px;
+      }
+
+      .action-bar {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .action-bar .report-button {
+        width: 100%;
+        min-width: 0;
+      }
+    }
+
+    @media (max-width: 430px) {
+      .hero-meta {
+        gap: 7px;
+      }
+
+      .hero-chip {
+        width: 100%;
+        font-size: 12px;
+      }
+
+      .action-bar {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media print {
+      body {
+        background: #fff !important;
+      }
+
+      .no-print,
+      nav,
+      aside,
+      .sidebar,
+      .app-sidebar,
+      .reports-hero,
+      .builder-card,
+      .action-bar,
+      .quick-filters,
+      #statusMessage,
+      #errorMessage {
+        display: none !important;
+      }
+
+      .reports-main {
+        max-width: none;
+        padding: 0;
+      }
+
+      .print-header {
+        display: block !important;
+        margin-bottom: 18px;
+      }
+
+      .print-header h1 {
+        margin: 0 0 5px;
+        font-size: 24px;
+      }
+
+      .print-header p {
+        margin: 3px 0;
+        color: #444;
+        font-size: 12px;
+      }
+
+      .report-card {
+        box-shadow: none !important;
+        border: 1px solid #ddd !important;
+        page-break-inside: avoid;
+      }
+
+      .summary-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .report-kpi-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      table {
+        min-width: 0;
+      }
+
+      th,
+      td {
+        font-size: 10px;
+        padding: 7px;
+      }
+
+      .report-output {
+        display: block !important;
+      }
+    }
+  </style>
+<script src="/js/clean-urls.js?v=20261024" defer></script>
+</head>
+
+<body>
+
+  <!-- =====================================================
+       ADMIN PORTAL SHELL
+  ====================================================== -->
+
+  <header class="topbar">
+    <div class="topbar-inner">
+
+      <div class="brand">
+        CHAMA
+        <span>LIVE</span>
+      </div>
+
+      <nav
+        class="top-nav"
+        aria-label="Admin navigation">
+      </nav>
+
+      <div class="topbar-actions">
+        <span
+          data-user-name
+          class="muted user-name">
+          Admin
+        </span>
+
+        <button
+          id="logout"
+          class="btn btn-secondary"
+          type="button">
+          Sign out
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <div class="layout">
+
+    <aside
+      class="sidebar"
+      aria-label="Admin navigation">
+    </aside>
+
+    <main class="main">
+
+      <div class="reports-page">
+
+        <div class="reports-main">
+
+          <header class="reports-hero no-print">
+            <h1>Reports</h1>
+
+            <p>
+              Use this page to generate read-only reports for contributions, member accounting,
+              outstanding balances, arrears, credit, expenses and meetings. Choose your
+              report and filters, then generate or export all report sections or the currently sorted report table.
+            </p>
+
+            <div class="hero-meta">
+              <span class="hero-chip">
+                Group:
+                <strong id="groupLabel">—</strong>
+              </span>
+
+              <span class="hero-chip">
+                Canonical accounting
+              </span>
+
+              <span class="hero-chip">
+                Print + CSV + Excel
+              </span>
+            </div>
+          </header>
+
+          <div
+            id="statusMessage"
+            class="status-message hidden">
+          </div>
+
+          <div
+            id="errorMessage"
+            class="error-message hidden">
+          </div>
+
+          <section class="print-header">
+            <h1>
+              CHAMA LIVE —
+              <span id="printGroupName">
+                Group Report
+              </span>
+            </h1>
+
+            <p>
+              <strong>Report:</strong>
+              <span id="printReportType">
+                Executive Summary
+              </span>
+            </p>
+
+            <p>
+              <strong>Period:</strong>
+              <span id="printPeriod">—</span>
+            </p>
+
+            <p>
+              <strong>Accounting Month:</strong>
+              <span id="printAccountingMonth">—</span>
+            </p>
+
+            <p>
+              <strong>Generated:</strong>
+              <span id="printGeneratedAt">—</span>
+            </p>
+          </section>
+
+          <!-- REPORT BUILDER -->
+
+          <section class="report-card builder-card no-print">
+
+            <div class="builder-header">
+              <div>
+                <h2>Report Builder</h2>
+
+                <p>
+                  Select the report, period, member and accounting filters.
+                </p>
+              </div>
+            </div>
+
+            <div class="filter-grid">
+
+              <div class="filter-field">
+                <label for="reportType">
+                  Report Type
+                </label>
+
+                <select id="reportType">
+                  <option value="executive">
+                    Executive Summary
+                  </option>
+
+                  <option value="member-contributions">
+                    Member Contributions
+                  </option>
+
+                  <option value="arrears">
+                    Monthly Outstanding
+                  </option>
+
+                  <option value="cumulative-arrears">
+                    Cumulative Arrears
+                  </option>
+
+                  <option value="cumulative-credit">
+                    Cumulative Credit
+                  </option>
+
+                  <option value="cumulative-up-to-date">
+                    Cumulative Up to Date
+                  </option>
+
+                  <option value="credit">
+                    Carry-forward / Credit
+                  </option>
+
+                  <option value="contribution-types">
+                    Contribution Types
+                  </option>
+
+                  <option value="payment-methods">
+                    Payment Methods
+                  </option>
+
+                  <option value="expenses">
+                    Expenses
+                  </option>
+
+                  <option value="cash-flow">
+                    Cash Flow
+                  </option>
+
+                  <option value="meetings">
+                    Meetings
+                  </option>
+
+                  <option value="full">
+                    Full Chama Report
+                  </option>
+                </select>
+              </div>
+
+              <div class="filter-field">
+                <label for="periodPreset">
+                  Period
+                </label>
+
+                <select id="periodPreset">
+                  <option value="this-month">
+                    This Month
+                  </option>
+
+                  <option value="last-month">
+                    Last Month
+                  </option>
+
+                  <option value="this-quarter">
+                    This Quarter
+                  </option>
+
+                  <option value="this-year">
+                    This Year
+                  </option>
+
+                  <option value="custom">
+                    Custom
+                  </option>
+                </select>
+              </div>
+
+              <div class="filter-field">
+                <label for="fromDate">
+                  From
+                </label>
+
+                <input
+                  type="date"
+                  id="fromDate" />
+              </div>
+
+              <div class="filter-field">
+                <label for="toDate">
+                  To
+                </label>
+
+                <input
+                  type="date"
+                  id="toDate" />
+              </div>
+
+              <div class="filter-field">
+                <label for="accountingMonth">
+                  Accounting Month
+                </label>
+
+                <input
+                  type="month"
+                  id="accountingMonth" />
+              </div>
+
+              <div class="filter-field">
+                <label for="memberFilter">
+                  Member
+                </label>
+
+                <select id="memberFilter">
+                  <option value="all">
+                    All Members
+                  </option>
+                </select>
+              </div>
+
+              <div class="filter-field">
+                <label for="statusFilter">
+                  Member Accounting Status
+                </label>
+
+                <select id="statusFilter">
+                  <option value="all">
+                    All Statuses
+                  </option>
+
+                  <option value="paid">
+                    Paid
+                  </option>
+
+                  <option value="partial">
+                    Partial
+                  </option>
+
+                  <option value="outstanding">
+                    Monthly Outstanding
+                  </option>
+
+                  <option value="credit">
+                    Monthly Credit / Carry-forward
+                  </option>
+
+                  <option value="cumulative-arrears">
+                    Cumulative Arrears
+                  </option>
+
+                  <option value="cumulative-credit">
+                    Cumulative Credit
+                  </option>
+
+                  <option value="cumulative-up-to-date">
+                    Cumulative Up to Date
+                  </option>
+
+                  <option value="no-payment">
+                    No Payment
+                  </option>
+                </select>
+              </div>
+
+              <div class="filter-field">
+                <label for="contributionTypeFilter">
+                  Contribution Type
+                </label>
+
+                <select id="contributionTypeFilter">
+                  <option value="all">
+                    All Types
+                  </option>
+
+                  <option value="monthly">
+                    Monthly
+                  </option>
+
+                  <option value="other">
+                    Other Savings
+                  </option>
+                </select>
+              </div>
+
+              <div class="filter-field">
+                <label for="paymentMethodFilter">
+                  Payment Method
+                </label>
+
+                <select id="paymentMethodFilter">
+                  <option value="all">
+                    All Methods
+                  </option>
+                </select>
+              </div>
+
+              <div class="filter-field">
+                <label for="groupBy">
+                  Group By
+                </label>
+
+                <select id="groupBy">
+                  <option value="member">
+                    Member
+                  </option>
+
+                  <option value="month">
+                    Month
+                  </option>
+
+                  <option value="contribution_type">
+                    Contribution Type
+                  </option>
+
+                  <option value="payment_method">
+                    Payment Method
+                  </option>
+
+                  <option value="expense_category">
+                    Expense Category
+                  </option>
+
+                  <option value="status">
+                    Status
+                  </option>
+                </select>
+              </div>
+
+            </div>
+
+            <div class="quick-filters">
+
+              <button
+                class="quick-filter active"
+                type="button"
+                data-quick="all">
+                All Members
+              </button>
+
+              <button
+                class="quick-filter"
+                type="button"
+                data-quick="attention">
+                Needs Attention
+              </button>
+
+              <button
+                class="quick-filter"
+                type="button"
+                data-quick="arrears">
+                Has Previous Outstanding
+              </button>
+
+              <button
+                class="quick-filter"
+                type="button"
+                data-quick="credit">
+                Has Credit
+              </button>
+
+            </div>
+
+            <div class="action-bar">
+
+              <button
+                id="applyFilters"
+                class="report-button primary"
+                type="button">
+                Generate Report
+              </button>
+
+              <button
+                id="resetFilters"
+                class="report-button"
+                type="button">
+                Reset
+              </button>
+
+              <button
+                id="printReport"
+                class="report-button info"
+                type="button" data-permission-page="reports" data-permission-action="export">
+                Print
+              </button>
+
+              <button
+                id="csvButton"
+                class="report-button success"
+                type="button" data-permission-page="reports" data-permission-action="export">
+                CSV
+              </button>
+
+              <button
+                id="excelButton"
+                class="report-button secondary-export"
+                type="button" data-permission-page="reports" data-permission-action="export">
+                Excel
+              </button>
+
+              <button
+                id="sortedCsvButton"
+                class="report-button secondary-export"
+                type="button"
+                title="Download the currently displayed report table in its current sort order" data-permission-page="reports" data-permission-action="export">
+                Download Sorted Report
+              </button>
+
+            </div>
+
+          </section>
+
+          <!-- SUMMARY -->
+
+          <section class="summary-grid">
+
+            <div class="summary-card">
+              <div class="summary-label">
+                Contributions Received
+              </div>
+
+              <div
+                class="summary-value"
+                id="totalContributions">
+                KSh 0.00
+              </div>
+
+              <div class="summary-note">
+                Actual cash received in period
+              </div>
+            </div>
+
+            <div class="summary-card summary-success">
+              <div class="summary-label">
+                Approved Expenses
+              </div>
+
+              <div
+                class="summary-value"
+                id="approvedExpenses">
+                KSh 0.00
+              </div>
+
+              <div class="summary-note">
+                Approved expenses in period
+              </div>
+            </div>
+
+            <div class="summary-card">
+              <div class="summary-label">
+                Period Net
+              </div>
+
+              <div
+                class="summary-value"
+                id="currentBalance">
+                KSh 0.00
+              </div>
+
+              <div class="summary-note">
+                Contributions less approved expenses
+              </div>
+            </div>
+
+            <div class="summary-card summary-warning">
+              <div class="summary-label">
+                Pending Expenses
+              </div>
+
+              <div
+                class="summary-value"
+                id="pendingExpenses">
+                KSh 0.00
+              </div>
+
+              <div class="summary-note">
+                Awaiting approval
+              </div>
+            </div>
+
+            <div class="summary-card summary-danger">
+              <div class="summary-label">
+                Rejected Expenses
+              </div>
+
+              <div
+                class="summary-value"
+                id="rejectedExpenses">
+                KSh 0.00
+              </div>
+
+              <div class="summary-note">
+                Rejected expense records
+              </div>
+            </div>
+
+            <div class="summary-card summary-purple">
+              <div class="summary-label">
+                Active Members
+              </div>
+
+              <div
+                class="summary-value"
+                id="activeMembers">
+                0
+              </div>
+
+              <div class="summary-note">
+                Based on membership status
+              </div>
+            </div>
+
+          </section>
+
+          <!-- ACCOUNTING KPI -->
+
+          <section class="report-kpi-grid">
+
+            <div class="report-kpi">
+              <span>Applied This Month</span>
+
+              <strong id="reportApplied">
+                KSh 0.00
+              </strong>
+            </div>
+
+            <div class="report-kpi">
+              <span>Current Outstanding</span>
+
+              <strong id="reportOutstanding">
+                KSh 0.00
+              </strong>
+            </div>
+
+            <div class="report-kpi">
+              <span>Carry-forward Credit</span>
+
+              <strong id="reportCarryForward">
+                KSh 0.00
+              </strong>
+            </div>
+
+            <div class="report-kpi">
+              <span>Collection Rate</span>
+
+              <strong id="reportCollectionRate">
+                0%
+              </strong>
+            </div>
+
+            <div class="report-kpi">
+              <span>Cumulative Arrears</span>
+
+              <strong id="reportCumulativeArrears">
+                KSh 0.00
+              </strong>
+            </div>
+
+            <div class="report-kpi">
+              <span>Cumulative Credit</span>
+
+              <strong id="reportCumulativeCredit">
+                KSh 0.00
+              </strong>
+            </div>
+
+          </section>
+
+          <!-- REPORT NARRATIVE -->
+          <section class="report-card report-story-card" aria-labelledby="reportStoryTitle">
+            <div class="section-title">
+              <div>
+                <h2 id="reportStoryTitle">What this report tells us</h2>
+                <p id="reportStoryPeriod">A plain-language reading of the selected period.</p>
+              </div>
+              <span class="story-source">Based on selected filters</span>
+            </div>
+            <div id="reportStory" class="report-story" aria-live="polite">
+              Generate a report to see the financial story for this period.
+            </div>
+          </section>
+
+          <!-- DYNAMIC REPORT -->
+
+          <section class="report-card">
+
+            <div class="section-title">
+
+              <div>
+                <h2 id="reportOutputTitle">
+                  Executive Summary
+                </h2>
+
+                <p id="reportOutputSubtitle">
+                  Overview of the selected reporting period.
+                </p>
+              </div>
+
+            </div>
+
+            <div
+              id="reportOutput"
+              class="report-output">
+            </div>
+
+          </section>
+
+          <!-- CUSTOM CONTRIBUTION MEMBER STATUS -->
+
+          <section class="report-card">
+
+            <div class="section-title">
+              <div>
+                <h2>Custom Contribution Member Status</h2>
+                <p>
+                  See whether each member is paid, partial or outstanding
+                  for the selected active contribution. Status is derived
+                  from the canonical accounting records for the selected
+                  contribution. This report does not create or modify
+                  accounting records directly.
+                </p>
+              </div>
+            </div>
+
+            <div class="filter-grid">
+              <div class="filter-field">
+                <label for="customContributionMemberStatusSelect">Contribution</label>
+                <select id="customContributionMemberStatusSelect">
+                  <option value="all">Loading active contributions...</option>
+                </select>
+              </div>
+
+              <div class="filter-field">
+                <label>Viewing</label>
+                <div class="report-filter-value" id="customContributionMemberStatusViewing">—</div>
+              </div>
+            </div>
+
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Member</th>
+                    <th class="amount">Due</th>
+                    <th class="amount">Paid / Allocated</th>
+                    <th class="amount">Outstanding</th>
+                    <th>Due Date</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="customContributionMemberStatusRows">
+                  <tr>
+                    <td colspan="6" class="report-empty">
+                      Select an active contribution to view member status.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+          </section>
+
+          <!-- CONTRIBUTION BREAKDOWN -->
+
+          <section class="report-card">
+
+            <div class="section-title">
+
+              <div>
+                <h2>
+                  Contribution Breakdown
+                </h2>
+
+                <p>
+                  Actual cash received by contribution type.
+                </p>
+              </div>
+
+            </div>
+
+            <div class="table-wrap">
+
+              <table>
+
+                <thead>
+                  <tr>
+                    <th>Contribution Type</th>
+                    <th class="amount">Entries</th>
+                    <th class="amount">Amount</th>
+                    <th class="amount">Share</th>
+                  </tr>
+                </thead>
+
+                <tbody id="contributionBreakdownRows">
+
+                  <tr>
+                    <td
+                      colspan="4"
+                      class="report-empty">
+                      No data.
+                    </td>
+                  </tr>
+
+                </tbody>
+
+              </table>
+
+            </div>
+
+          </section>
+
+          <!-- EXPENSE BREAKDOWN -->
+
+          <section class="report-card">
+
+            <div class="section-title">
+
+              <div>
+                <h2>
+                  Expense Breakdown
+                </h2>
+
+                <p>
+                  Approved expenses grouped by category.
+                </p>
+              </div>
+
+            </div>
+
+            <div class="table-wrap">
+
+              <table>
+
+                <thead>
+                  <tr>
+                    <th>Category</th>
+                    <th class="amount">Entries</th>
+                    <th class="amount">Amount</th>
+                    <th class="amount">Share</th>
+                  </tr>
+                </thead>
+
+                <tbody id="expenseBreakdownRows">
+
+                  <tr>
+                    <td
+                      colspan="4"
+                      class="report-empty">
+                      No data.
+                    </td>
+                  </tr>
+
+                </tbody>
+
+              </table>
+
+            </div>
+
+          </section>
+
+          <!-- CONTRIBUTION ENTRIES -->
+
+          <section class="report-card">
+
+            <div class="section-title">
+
+              <div>
+                <h2>
+                  Contribution Entries
+                </h2>
+
+                <p>
+                  Actual contribution cash records matching the selected filters.
+                </p>
+              </div>
+
+            </div>
+
+            <div class="table-wrap">
+
+              <table>
+
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Member No.</th>
+                    <th>Member</th>
+                    <th>Type</th>
+                    <th>Payment Method</th>
+                    <th class="amount">Amount</th>
+                    <th>Recorded At</th>
+                    <th>Reference ID</th>
+                  </tr>
+                </thead>
+
+                <tbody id="reportContributionEntries">
+
+                  <tr>
+                    <td
+                      colspan="8"
+                      class="report-empty">
+                      No data.
+                    </td>
+                  </tr>
+
+                </tbody>
+
+              </table>
+
+            </div>
+
+          </section>
+
+          <!-- EXPENSE ENTRIES -->
+
+          <section class="report-card">
+
+            <div class="section-title">
+
+              <div>
+                <h2>
+                  Expense Entries
+                </h2>
+
+                <p>
+                  Expenses matching the selected period and group.
+                </p>
+              </div>
+
+            </div>
+
+            <div class="table-wrap">
+
+              <table>
+
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Description</th>
+                    <th>Category</th>
+                    <th class="amount">Amount</th>
+                    <th>Status</th>
+                    <th>Recorded By</th>
+                    <th>Receipt</th>
+                  </tr>
+                </thead>
+
+                <tbody id="reportExpenseEntries">
+
+                  <tr>
+                    <td
+                      colspan="7"
+                      class="report-empty">
+                      No data.
+                    </td>
+                  </tr>
+
+                </tbody>
+
+              </table>
+
+            </div>
+
+          </section>
+
+          <!-- MEETINGS -->
+
+          <section class="report-card">
+
+            <div class="section-title">
+
+              <div>
+                <h2>
+                  Meeting Summary
+                </h2>
+
+                <p>
+                  Meetings within the selected reporting period.
+                </p>
+              </div>
+
+            </div>
+
+            <div class="meeting-cards">
+
+              <div class="meeting-card">
+                <span>Total Meetings</span>
+
+                <strong id="totalMeetings">
+                  0
+                </strong>
+              </div>
+
+              <div class="meeting-card">
+                <span>Upcoming</span>
+
+                <strong id="upcomingMeetings">
+                  0
+                </strong>
+              </div>
+
+              <div class="meeting-card">
+                <span>Completed</span>
+
+                <strong id="completedMeetings">
+                  0
+                </strong>
+              </div>
+
+              <div class="meeting-card">
+                <span>Cancelled</span>
+
+                <strong id="cancelledMeetings">
+                  0
+                </strong>
+              </div>
+
+            </div>
+
+            <div class="table-wrap">
+
+              <table>
+
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Title</th>
+                    <th>Venue</th>
+                    <th>Status</th>
+                    <th>Agenda</th>
+                    <th>Resolution</th>
+                  </tr>
+                </thead>
+
+                <tbody id="meetingRows">
+
+                  <tr>
+                    <td
+                      colspan="6"
+                      class="report-empty">
+                      No meetings.
+                    </td>
+                  </tr>
+
+                </tbody>
+
+              </table>
+
+            </div>
+
+          </section>
+
+          <p class="report-footer-note no-print">
+            CHAMA LIVE uses the canonical obligation → payment → allocation → arrears/credit
+            accounting chain. Monthly accounting status and cumulative member position are
+            read from canonical server-side functions; reports do not recalculate member
+            accounting in JavaScript.
+          </p>
+
+        </div>
+
+      </div>
+
+    </main>
+
+  </div>
+
+  <!-- =====================================================
+       SHARED ADMIN PORTAL BOOT
+
+       IMPORTANT:
+       admin-layout.js is the sole boot owner.
+
+       Canonical mapping:
+       reports.html
+         → ./reports.js
+         → initPage()
+
+       Do not call boot() inline here.
+       Do not import reports.js directly here.
+  ====================================================== -->
+
+  <script type="module">
+    import { boot } from "./js/admin-layout.js";
+    boot();
+  </script>
+
+</body>
+</html>

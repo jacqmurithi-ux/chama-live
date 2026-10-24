@@ -1,0 +1,2619 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+<base href="/">
+
+  <meta charset="utf-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <meta
+    name="theme-color"
+    content="#075c38"
+  >
+
+  <title>
+    Plans & Activities — CHAMA LIVE
+  </title>
+
+  <link
+    rel="stylesheet"
+    href="css/app.css"
+  >
+
+  <style>
+
+    /* =====================================================
+       CHAMA LIVE
+       GROUP OPERATIONS — PLANS & ACTIVITIES
+    ===================================================== */
+
+    :root {
+      --cl-green: #075c38;
+      --cl-green-dark: #043d26;
+      --cl-green-mid: #087443;
+      --cl-green-light: #eaf7f0;
+
+      --cl-gold: #d6a928;
+      --cl-gold-light: #fff8dc;
+
+      --cl-ink: #10271c;
+      --cl-text: #263b31;
+      --cl-muted: #718078;
+
+      --cl-border: #dfe9e3;
+
+      --cl-blue: #285bb5;
+      --cl-blue-bg: #edf4ff;
+
+      --cl-danger: #a52319;
+      --cl-danger-bg: #fff0ee;
+
+      --cl-warning: #9a6800;
+      --cl-warning-bg: #fff8e1;
+
+      --cl-success: #087443;
+      --cl-success-bg: #e9f8f0;
+
+      --cl-shadow-sm:
+        0 5px 18px rgba(4, 61, 38, .055);
+
+      --cl-shadow-md:
+        0 14px 38px rgba(4, 61, 38, .095);
+
+      --cl-radius-xl: 24px;
+      --cl-radius-lg: 19px;
+      --cl-radius-md: 14px;
+      --cl-radius-sm: 10px;
+    }
+
+
+    /* =====================================================
+       PAGE
+    ===================================================== */
+
+    .plans-page {
+      width: min(1440px, calc(100% - 30px));
+      margin: 0 auto;
+      padding: 24px 0 60px;
+    }
+
+
+    /* =====================================================
+       HERO
+    ===================================================== */
+
+    .plans-hero {
+      position: relative;
+      overflow: hidden;
+
+      margin-bottom: 18px;
+      padding: 34px;
+
+      border-radius: var(--cl-radius-xl);
+
+      background:
+        radial-gradient(
+          circle at 92% 18%,
+          rgba(214,169,40,.20),
+          transparent 25%
+        ),
+        radial-gradient(
+          circle at 80% 110%,
+          rgba(255,255,255,.08),
+          transparent 28%
+        ),
+        linear-gradient(
+          135deg,
+          var(--cl-green-dark) 0%,
+          var(--cl-green) 58%,
+          #0b8250 100%
+        );
+
+      color: #fff;
+
+      box-shadow: var(--cl-shadow-md);
+    }
+
+
+    .plans-hero::before {
+      content: "";
+
+      position: absolute;
+
+      width: 300px;
+      height: 300px;
+
+      right: -125px;
+      top: -150px;
+
+      border:
+        1px solid rgba(255,255,255,.10);
+
+      border-radius: 50%;
+
+      box-shadow:
+        0 0 0 35px rgba(255,255,255,.025),
+        0 0 0 70px rgba(255,255,255,.018);
+    }
+
+
+    .plans-hero::after {
+      content: "";
+
+      position: absolute;
+
+      width: 180px;
+      height: 180px;
+
+      right: 160px;
+      bottom: -140px;
+
+      border-radius: 50%;
+
+      background:
+        rgba(214,169,40,.12);
+    }
+
+
+    .plans-hero-content {
+      position: relative;
+      z-index: 2;
+
+      max-width: 900px;
+    }
+
+
+    .plans-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+
+      margin-bottom: 13px;
+      padding: 7px 12px;
+
+      border:
+        1px solid rgba(255,255,255,.16);
+
+      border-radius: 999px;
+
+      background:
+        rgba(255,255,255,.09);
+
+      color:
+        #f6fbf8;
+
+      font-size: 11px;
+      font-weight: 850;
+
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+
+    .plans-hero h1 {
+      margin: 0;
+
+      color: #fff;
+
+      font-size:
+        clamp(30px, 4vw, 46px);
+
+      line-height: 1.06;
+
+      letter-spacing: -.035em;
+
+      font-weight: 900;
+    }
+
+
+    .plans-hero h1 .hero-accent {
+      color: #f2d36a;
+    }
+
+
+    .plans-hero p {
+      max-width: 780px;
+
+      margin:
+        13px 0 0;
+
+      color:
+        rgba(255,255,255,.82);
+
+      font-size: 15px;
+      line-height: 1.7;
+    }
+
+
+    .plans-context {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+
+      margin-top: 18px;
+      padding: 8px 12px;
+
+      border:
+        1px solid rgba(255,255,255,.13);
+
+      border-radius: 10px;
+
+      background:
+        rgba(0,0,0,.10);
+
+      color:
+        rgba(255,255,255,.74);
+
+      font-size: 12px;
+    }
+
+
+    .plans-context strong {
+      color: #fff;
+      font-weight: 850;
+    }
+
+
+    /* =====================================================
+       GROUP CONTEXT STRIP
+    ===================================================== */
+
+    .plans-group-strip {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+
+      margin-bottom: 20px;
+      padding: 13px 16px;
+
+      border:
+        1px solid var(--cl-border);
+
+      border-radius: var(--cl-radius-md);
+
+      background:
+        rgba(255,255,255,.96);
+
+      box-shadow:
+        var(--cl-shadow-sm);
+    }
+
+
+    .plans-group-info {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+    }
+
+
+    .plans-group-icon {
+      display: grid;
+      place-items: center;
+
+      width: 39px;
+      height: 39px;
+
+      border-radius: 11px;
+
+      background:
+        var(--cl-green-light);
+
+      color:
+        var(--cl-green);
+
+      font-size: 18px;
+    }
+
+
+    .plans-group-label {
+      display: block;
+
+      color:
+        var(--cl-muted);
+
+      font-size: 10px;
+      font-weight: 850;
+
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+
+    .plans-group-name {
+      display: block;
+
+      margin-top: 2px;
+
+      color:
+        var(--cl-ink);
+
+      font-size: 15px;
+      font-weight: 850;
+    }
+
+
+    .plans-live {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+
+      color:
+        var(--cl-green);
+
+      font-size: 11px;
+      font-weight: 850;
+
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+
+
+    .plans-live-dot {
+      width: 8px;
+      height: 8px;
+
+      border-radius: 50%;
+
+      background:
+        #19b76c;
+
+      box-shadow:
+        0 0 0 5px rgba(25,183,108,.10);
+    }
+
+
+    /* =====================================================
+       STATUS
+    ===================================================== */
+
+    .plans-status {
+      margin-bottom: 18px;
+      padding: 13px 16px;
+
+      border:
+        1px solid var(--cl-border);
+
+      border-radius: var(--cl-radius-md);
+
+      background:
+        var(--cl-green-light);
+
+      color:
+        var(--cl-green-dark);
+
+      font-size: 13px;
+      font-weight: 700;
+
+      line-height: 1.5;
+    }
+
+
+    .plans-error {
+      margin-bottom: 18px;
+    }
+
+
+    .hidden {
+      display: none !important;
+    }
+
+
+    /* =====================================================
+       SUMMARY
+    ===================================================== */
+
+    .summary {
+      display: grid;
+
+      grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+
+      gap: 15px;
+
+      margin-bottom: 22px;
+    }
+
+
+    .kpi {
+      position: relative;
+      overflow: hidden;
+
+      min-height: 142px;
+
+      padding: 19px;
+
+      border:
+        1px solid var(--cl-border);
+
+      border-radius: var(--cl-radius-lg);
+
+      background:
+        #fff;
+
+      box-shadow:
+        var(--cl-shadow-sm);
+
+      transition:
+        transform .18s ease,
+        box-shadow .18s ease;
+    }
+
+
+    .kpi:hover {
+      transform:
+        translateY(-3px);
+
+      box-shadow:
+        var(--cl-shadow-md);
+    }
+
+
+    .kpi::after {
+      content: "";
+
+      position: absolute;
+
+      width: 105px;
+      height: 105px;
+
+      right: -42px;
+      bottom: -47px;
+
+      border-radius: 50%;
+
+      background:
+        rgba(8,116,67,.055);
+    }
+
+
+    .kpi:nth-child(2)::after {
+      background:
+        rgba(214,169,40,.075);
+    }
+
+
+    .kpi:nth-child(3)::after {
+      background:
+        rgba(40,91,181,.055);
+    }
+
+
+    .kpi:nth-child(4)::after {
+      background:
+        rgba(119,64,170,.055);
+    }
+
+
+    .kpi-label {
+      position: relative;
+      z-index: 2;
+
+      display: block;
+
+      color:
+        var(--cl-muted);
+
+      font-size: 10px;
+      font-weight: 850;
+
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+
+    .kpi-value {
+      position: relative;
+      z-index: 2;
+
+      display: block;
+
+      margin-top: 9px;
+
+      color:
+        var(--cl-ink);
+
+      font-size: 29px;
+      line-height: 1;
+
+      letter-spacing: -.035em;
+
+      font-weight: 900;
+    }
+
+
+    /* =====================================================
+       MAIN CREATION GRID
+    ===================================================== */
+
+    .management-grid {
+      display: grid;
+
+      grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+      gap: 20px;
+
+      align-items: start;
+    }
+
+
+    /* =====================================================
+       CARDS
+    ===================================================== */
+
+    .card-pad {
+      padding: 24px;
+
+      border:
+        1px solid var(--cl-border);
+
+      border-radius:
+        var(--cl-radius-lg);
+
+      background:
+        rgba(255,255,255,.97);
+
+      box-shadow:
+        var(--cl-shadow-sm);
+    }
+
+
+    .card-head {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+
+      margin-bottom: 20px;
+    }
+
+
+    .card-head::before {
+      content: "";
+
+      display: grid;
+
+      place-items: center;
+
+      flex: 0 0 auto;
+
+      width: 39px;
+      height: 39px;
+
+      border-radius: 11px;
+
+      background:
+        var(--cl-green-light);
+
+      color:
+        var(--cl-green);
+    }
+
+
+    .management-grid > section:nth-child(1) .card-head::before {
+      content: "📋";
+    }
+
+
+    .management-grid > section:nth-child(2) .card-head::before {
+      content: "✓";
+      font-weight: 950;
+    }
+
+
+    .card-head h2 {
+      margin: 0 0 4px;
+
+      color:
+        var(--cl-ink);
+
+      font-size: 19px;
+      font-weight: 900;
+
+      letter-spacing: -.02em;
+    }
+
+
+    .card-head p {
+      margin: 0;
+
+      color:
+        var(--cl-muted);
+
+      font-size: 12px;
+
+      line-height: 1.55;
+    }
+
+
+    /* =====================================================
+       FORM
+    ===================================================== */
+
+    .form-grid {
+      display: grid;
+
+      grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+      gap: 16px;
+    }
+
+
+    .full {
+      grid-column:
+        1 / -1;
+    }
+
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+
+    .form-group label {
+      color:
+        var(--cl-text);
+
+      font-size: 12px;
+      font-weight: 850;
+    }
+
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+
+      border:
+        1px solid #d2dfd7;
+
+      border-radius:
+        var(--cl-radius-sm);
+
+      background:
+        #fff;
+
+      color:
+        var(--cl-ink);
+
+      font:
+        inherit;
+
+      font-size:
+        13px;
+
+      outline:
+        none;
+
+      transition:
+        border-color .18s ease,
+        box-shadow .18s ease;
+    }
+
+
+    .form-group input,
+    .form-group select {
+      min-height:
+        43px;
+
+      padding:
+        10px 12px;
+    }
+
+
+    .form-group textarea {
+      min-height:
+        108px;
+
+      padding:
+        11px 12px;
+
+      resize:
+        vertical;
+    }
+
+
+    .form-group input::placeholder,
+    .form-group textarea::placeholder {
+      color:
+        #9ba8a1;
+    }
+
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      border-color:
+        var(--cl-green);
+
+      box-shadow:
+        0 0 0 4px rgba(8,116,67,.09);
+    }
+
+
+    .help {
+      margin:
+        0;
+
+      color:
+        var(--cl-muted);
+
+      font-size:
+        10px;
+
+      line-height:
+        1.5;
+    }
+
+
+    /* =====================================================
+       FORM ACTIONS
+    ===================================================== */
+
+    .form-actions {
+      display: flex;
+
+      align-items: center;
+
+      gap: 9px;
+
+      flex-wrap: wrap;
+
+      margin-top: 21px;
+
+      padding-top: 18px;
+
+      border-top:
+        1px solid #edf2ee;
+    }
+
+
+    .form-actions .btn {
+      min-height:
+        41px;
+    }
+
+
+    /* =====================================================
+       FILTER BAR
+    ===================================================== */
+
+    .filter-bar {
+      display: flex;
+
+      align-items: center;
+
+      gap: 9px;
+
+      flex-wrap: wrap;
+
+      margin:
+        17px 0 15px;
+
+      padding:
+        10px;
+
+      border:
+        1px solid #e6eee9;
+
+      border-radius:
+        var(--cl-radius-md);
+
+      background:
+        #f8faf9;
+    }
+
+
+    .filter-bar select,
+    .filter-bar input {
+      min-height:
+        40px;
+
+      border:
+        1px solid #d6e2da;
+
+      border-radius:
+        9px;
+
+      background:
+        #fff;
+
+      color:
+        var(--cl-text);
+
+      font:
+        inherit;
+
+      font-size:
+        12px;
+
+      outline:
+        none;
+    }
+
+
+    .filter-bar select {
+      min-width:
+        155px;
+
+      padding:
+        8px 10px;
+    }
+
+
+    .filter-bar input {
+      flex:
+        1 1 220px;
+
+      min-width:
+        170px;
+
+      padding:
+        8px 11px;
+    }
+
+
+    .filter-bar input:focus,
+    .filter-bar select:focus {
+      border-color:
+        var(--cl-green);
+
+      box-shadow:
+        0 0 0 3px rgba(8,116,67,.08);
+    }
+
+
+    /* =====================================================
+       TABLE
+    ===================================================== */
+
+    .table-wrap {
+      width:
+        100%;
+
+      overflow-x:
+        auto;
+
+      -webkit-overflow-scrolling:
+        touch;
+
+      border:
+        1px solid #e2ebe5;
+
+      border-radius:
+        var(--cl-radius-md);
+    }
+
+
+    .data-table {
+      width:
+        100%;
+
+      min-width:
+        1080px;
+
+      border-collapse:
+        separate;
+
+      border-spacing:
+        0;
+
+      background:
+        #fff;
+    }
+
+
+    .data-table th,
+    .data-table td {
+      padding:
+        12px 11px;
+
+      border-bottom:
+        1px solid #e8efeb;
+
+      text-align:
+        left;
+
+      vertical-align:
+        middle;
+
+      font-size:
+        12px;
+    }
+
+
+    .data-table th {
+      background:
+        #f5f9f6;
+
+      color:
+        #617168;
+
+      font-size:
+        10px;
+
+      font-weight:
+        900;
+
+      letter-spacing:
+        .07em;
+
+      text-transform:
+        uppercase;
+
+      white-space:
+        nowrap;
+    }
+
+
+    .data-table tbody tr {
+      transition:
+        background .15s ease;
+    }
+
+
+    .data-table tbody tr:hover td {
+      background:
+        #fbfdfc;
+    }
+
+
+    .data-table tbody tr:last-child td {
+      border-bottom:
+        0;
+    }
+
+
+    /* =====================================================
+       PROGRESS
+    ===================================================== */
+
+    .progress-cell {
+      min-width:
+        140px;
+    }
+
+
+    .progress-track {
+      height:
+        8px;
+
+      overflow:
+        hidden;
+
+      border-radius:
+        999px;
+
+      background:
+        #edf3ef;
+    }
+
+
+    .progress-fill {
+      height:
+        100%;
+
+      border-radius:
+        999px;
+
+      background:
+        linear-gradient(
+          90deg,
+          var(--cl-green),
+          #21a366
+        );
+
+      transition:
+        width .25s ease;
+    }
+
+
+    .progress-label {
+      margin-top:
+        5px;
+
+      color:
+        var(--cl-muted);
+
+      font-size:
+        10px;
+
+      font-weight:
+        700;
+    }
+
+
+    /* =====================================================
+       STATUS BADGES
+    ===================================================== */
+
+    .badge {
+      display:
+        inline-flex;
+
+      align-items:
+        center;
+
+      justify-content:
+        center;
+
+      min-width:
+        68px;
+
+      padding:
+        5px 9px;
+
+      border-radius:
+        999px;
+
+      font-size:
+        10px;
+
+      font-weight:
+        850;
+
+      white-space:
+        nowrap;
+
+      text-transform:
+        capitalize;
+    }
+
+
+    .status-planned,
+    .status-not_started {
+      background:
+        #f1f4f2;
+
+      color:
+        #47534c;
+    }
+
+
+    .status-active,
+    .status-in_progress {
+      background:
+        var(--cl-blue-bg);
+
+      color:
+        var(--cl-blue);
+    }
+
+
+    .status-completed {
+      background:
+        var(--cl-success-bg);
+
+      color:
+        var(--cl-success);
+    }
+
+
+    .status-paused,
+    .status-delayed {
+      background:
+        var(--cl-warning-bg);
+
+      color:
+        var(--cl-warning);
+    }
+
+
+    .status-cancelled {
+      background:
+        var(--cl-danger-bg);
+
+      color:
+        var(--cl-danger);
+    }
+
+
+    /* =====================================================
+       ACTIONS
+    ===================================================== */
+
+    .row-actions {
+      display:
+        flex;
+
+      gap:
+        5px;
+
+      flex-wrap:
+        wrap;
+    }
+
+
+    .action {
+      padding:
+        6px 9px;
+
+      border:
+        1px solid #d7e1db;
+
+      border-radius:
+        8px;
+
+      background:
+        #fff;
+
+      color:
+        var(--cl-text);
+
+      cursor:
+        pointer;
+
+      font:
+        inherit;
+
+      font-size:
+        10px;
+
+      font-weight:
+        800;
+
+      transition:
+        border-color .15s ease,
+        background .15s ease,
+        color .15s ease;
+    }
+
+
+    .action:hover:not(:disabled) {
+      border-color:
+        var(--cl-green);
+
+      background:
+        var(--cl-green-light);
+
+      color:
+        var(--cl-green-dark);
+    }
+
+
+    .action:disabled {
+      opacity:
+        .55;
+
+      cursor:
+        not-allowed;
+    }
+
+
+    /* =====================================================
+       EMPTY STATE
+    ===================================================== */
+
+    .empty {
+      padding:
+        48px 18px !important;
+
+      text-align:
+        center !important;
+
+      color:
+        var(--cl-muted);
+
+      background:
+        linear-gradient(
+          135deg,
+          #fcfefd,
+          #f5f9f6
+        );
+    }
+
+
+    /* =====================================================
+       SECTION HEADERS
+    ===================================================== */
+
+    .section-gap {
+      margin-top:
+        20px;
+    }
+
+
+    .section-heading {
+      display:
+        flex;
+
+      justify-content:
+        space-between;
+
+      align-items:
+        flex-start;
+
+      gap:
+        15px;
+    }
+
+
+    /* =====================================================
+       FOOTER
+    ===================================================== */
+
+    .plans-brand-footer {
+      display:
+        flex;
+
+      align-items:
+        center;
+
+      justify-content:
+        space-between;
+
+      gap:
+        16px;
+
+      margin-top:
+        22px;
+
+      padding:
+        18px 20px;
+
+      border:
+        1px solid var(--cl-border);
+
+      border-radius:
+        var(--cl-radius-lg);
+
+      background:
+        linear-gradient(
+          135deg,
+          #eef8f2,
+          #fffaf0
+        );
+    }
+
+
+    .plans-brand {
+      display:
+        flex;
+
+      align-items:
+        center;
+
+      gap:
+        11px;
+    }
+
+
+    .plans-brand-mark {
+      display:
+        grid;
+
+      place-items:
+        center;
+
+      width:
+        40px;
+
+      height:
+        40px;
+
+      border-radius:
+        11px;
+
+      background:
+        var(--cl-green);
+
+      color:
+        #fff;
+
+      font-size:
+        12px;
+
+      font-weight:
+        950;
+    }
+
+
+    .plans-brand strong {
+      display:
+        block;
+
+      color:
+        var(--cl-green-dark);
+
+      font-size:
+        13px;
+
+      font-weight:
+        900;
+    }
+
+
+    .plans-brand span {
+      display:
+        block;
+
+      margin-top:
+        2px;
+
+      color:
+        var(--cl-muted);
+
+      font-size:
+        10px;
+    }
+
+
+    .plans-footer-tag {
+      color:
+        var(--cl-muted);
+
+      font-size:
+        10px;
+
+      font-weight:
+        800;
+
+      text-align:
+        right;
+    }
+
+
+    /* =====================================================
+       RESPONSIVE
+    ===================================================== */
+
+    @media (max-width: 1050px) {
+
+      .summary {
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
+      }
+
+      .management-grid {
+        grid-template-columns:
+          1fr;
+      }
+
+    }
+
+
+    @media (max-width: 720px) {
+
+      .plans-page {
+        width:
+          calc(100% - 18px);
+
+        padding:
+          16px 0 40px;
+      }
+
+
+      .plans-hero {
+        padding:
+          24px 20px;
+
+        border-radius:
+          19px;
+      }
+
+
+      .plans-hero h1 {
+        font-size:
+          31px;
+      }
+
+
+      .plans-hero p {
+        font-size:
+          13px;
+      }
+
+
+      .plans-group-strip {
+        align-items:
+          flex-start;
+
+        flex-direction:
+          column;
+      }
+
+
+      .plans-live {
+        padding-left:
+          50px;
+      }
+
+
+      .card-pad {
+        padding:
+          18px;
+      }
+
+
+      .form-grid {
+        grid-template-columns:
+          1fr;
+      }
+
+
+      .full {
+        grid-column:
+          auto;
+      }
+
+
+      .form-actions {
+        flex-direction:
+          column;
+
+        align-items:
+          stretch;
+      }
+
+
+      .form-actions .btn {
+        width:
+          100%;
+      }
+
+
+      .filter-bar {
+        flex-direction:
+          column;
+
+        align-items:
+          stretch;
+      }
+
+
+      .filter-bar select,
+      .filter-bar input {
+        width:
+          100%;
+
+        min-width:
+          0;
+      }
+
+
+      .plans-brand-footer {
+        align-items:
+          flex-start;
+
+        flex-direction:
+          column;
+      }
+
+
+      .plans-footer-tag {
+        text-align:
+          left;
+      }
+
+    }
+
+
+    @media (max-width: 470px) {
+
+      .summary {
+        grid-template-columns:
+          1fr;
+      }
+
+
+      .kpi {
+        min-height:
+          115px;
+      }
+
+
+      .kpi-value {
+        font-size:
+          27px;
+      }
+
+    }
+
+  </style>
+
+<script src="/js/clean-urls.js?v=20261024" defer></script>
+</head>
+
+
+<body>
+
+
+<!-- =====================================================
+     TOP BAR
+===================================================== -->
+
+<header class="topbar">
+
+  <div class="topbar-inner">
+
+    <div class="brand">
+      CHAMA <span>LIVE</span>
+    </div>
+
+    <div class="top-nav"></div>
+
+    <div class="topbar-actions">
+
+      <button
+        class="btn btn-secondary"
+        id="logout"
+        type="button"
+      >
+        Sign out
+      </button>
+
+    </div>
+
+  </div>
+
+</header>
+
+
+<div class="layout">
+
+  <!-- ===================================================
+       MAIN
+  =================================================== -->
+
+  <main class="main">
+
+    <div class="plans-page">
+
+
+      <!-- =================================================
+           HERO
+      ================================================= -->
+
+      <section class="plans-hero">
+
+        <div class="plans-hero-content">
+
+          <div class="plans-badge">
+
+            📋
+
+            <span>
+              CHAMA LIVE
+            </span>
+
+            <span>
+              •
+            </span>
+
+            <span>
+              Group Operations
+            </span>
+
+          </div>
+
+
+          <h1>
+            Plans &amp;
+            <span class="hero-accent">
+              Activities
+            </span>
+          </h1>
+
+
+          <p>
+            Turn group objectives into structured plans,
+            assign activities, monitor progress and keep
+            everyone aligned — without changing the
+            existing financial and contribution accounting
+            system.
+          </p>
+
+
+          <div class="plans-context">
+
+            <span>
+              👥
+            </span>
+
+            <span>
+              Current group:
+            </span>
+
+            <strong
+              id="groupName"
+              data-group-name
+            >
+              Loading…
+            </strong>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- =================================================
+           GROUP STRIP
+      ================================================= -->
+
+      <section class="plans-group-strip">
+
+        <div class="plans-group-info">
+
+          <div class="plans-group-icon">
+            📋
+          </div>
+
+          <div>
+
+            <span class="plans-group-label">
+              Active group workspace
+            </span>
+
+            <strong
+              id="plansGroupDisplay"
+              class="plans-group-name"
+              data-group-name
+            >
+              Loading…
+            </strong>
+
+          </div>
+
+        </div>
+
+
+        <div class="plans-live">
+
+          <span class="plans-live-dot"></span>
+
+          Live group context
+
+        </div>
+
+      </section>
+
+
+      <!-- =================================================
+           STATUS
+      ================================================= -->
+
+      <div
+        id="status"
+        class="plans-status hidden"
+        role="status"
+        aria-live="polite"
+      ></div>
+
+
+      <div
+        id="error"
+        class="error plans-error hidden"
+        role="alert"
+        aria-live="assertive"
+      ></div>
+
+
+      <!-- =================================================
+           KPI SUMMARY
+      ================================================= -->
+
+      <section class="summary">
+
+
+        <div class="kpi">
+
+          <span class="kpi-label">
+            Total plans
+          </span>
+
+          <strong
+            id="totalPlans"
+            class="kpi-value"
+          >
+            0
+          </strong>
+
+        </div>
+
+
+        <div class="kpi">
+
+          <span class="kpi-label">
+            Active plans
+          </span>
+
+          <strong
+            id="activePlans"
+            class="kpi-value"
+          >
+            0
+          </strong>
+
+        </div>
+
+
+        <div class="kpi">
+
+          <span class="kpi-label">
+            Open activities
+          </span>
+
+          <strong
+            id="openActivities"
+            class="kpi-value"
+          >
+            0
+          </strong>
+
+        </div>
+
+
+        <div class="kpi">
+
+          <span class="kpi-label">
+            Completed activities
+          </span>
+
+          <strong
+            id="completedActivities"
+            class="kpi-value"
+          >
+            0
+          </strong>
+
+        </div>
+
+
+      </section>
+
+
+      <!-- =================================================
+           CREATION FORMS
+      ================================================= -->
+
+      <div class="management-grid">
+
+
+        <!-- ===============================================
+             NEW PLAN
+        ================================================ -->
+
+        <section class="card card-pad">
+
+          <div class="card-head">
+
+            <div>
+
+              <h2>
+                New Plan
+              </h2>
+
+              <p>
+                Create a group plan.
+                New plans default to
+                <strong>Planned</strong>
+                and 0% progress.
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <form id="planForm" data-permission-page="plans-activities" data-permission-action="create">
+
+
+            <div class="form-grid">
+
+
+              <div class="form-group full">
+
+                <label for="planTitle">
+                  Plan title
+                </label>
+
+                <input
+                  id="planTitle"
+                  type="text"
+                  maxlength="200"
+                  required
+                  placeholder="e.g. Timau CBO 2026 Investment Plan"
+                >
+
+              </div>
+
+
+              <div class="form-group">
+
+                <label for="planCategory">
+                  Category
+                </label>
+
+                <select
+                  id="planCategory"
+                  required
+                >
+
+                  <option value="investment">
+                    Investment
+                  </option>
+
+                  <option value="property">
+                    Property
+                  </option>
+
+                  <option value="welfare">
+                    Welfare
+                  </option>
+
+                  <option value="business">
+                    Business
+                  </option>
+
+                  <option value="education">
+                    Education
+                  </option>
+
+                  <option value="membership">
+                    Membership
+                  </option>
+
+                  <option value="fundraising">
+                    Fundraising
+                  </option>
+
+                  <option value="infrastructure">
+                    Infrastructure
+                  </option>
+
+                  <option
+                    value="other"
+                    selected
+                  >
+                    Other
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              <div class="form-group">
+
+                <label for="planStatus">
+                  Status
+                </label>
+
+                <select
+                  id="planStatus"
+                  required
+                >
+
+                  <option
+                    value="planned"
+                    selected
+                  >
+                    Planned
+                  </option>
+
+                  <option value="active">
+                    Active
+                  </option>
+
+                  <option value="paused">
+                    Paused
+                  </option>
+
+                  <option value="completed">
+                    Completed
+                  </option>
+
+                  <option value="cancelled">
+                    Cancelled
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              <div class="form-group">
+
+                <label for="planStart">
+                  Start date
+                </label>
+
+                <input
+                  id="planStart"
+                  type="date"
+                >
+
+              </div>
+
+
+              <div class="form-group">
+
+                <label for="planTarget">
+                  Target date
+                </label>
+
+                <input
+                  id="planTarget"
+                  type="date"
+                >
+
+              </div>
+
+
+              <div class="form-group full">
+
+                <label for="planProgress">
+                  Progress (%)
+                </label>
+
+                <input
+                  id="planProgress"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="1"
+                  value="0"
+                  required
+                >
+
+                <p class="help">
+                  Progress must remain between 0 and 100%.
+                </p>
+
+              </div>
+
+
+              <div class="form-group full">
+
+                <label for="planDescription">
+                  Description
+                </label>
+
+                <textarea
+                  id="planDescription"
+                  rows="4"
+                  maxlength="2000"
+                  placeholder="What does this plan aim to achieve?"
+                ></textarea>
+
+              </div>
+
+
+            </div>
+
+
+            <div class="form-actions">
+
+              <button
+                class="btn btn-primary"
+                type="submit"
+                id="savePlan"
+               data-permission-page="plans-activities" data-permission-action="create">
+                Create Plan
+              </button>
+
+
+              <button
+                class="btn btn-secondary"
+                type="button"
+                id="resetPlan"
+              >
+                Clear
+              </button>
+
+            </div>
+
+
+          </form>
+
+        </section>
+
+
+        <!-- ===============================================
+             NEW ACTIVITY
+        ================================================ -->
+
+        <section class="card card-pad">
+
+          <div class="card-head">
+
+            <div>
+
+              <h2>
+                New Activity
+              </h2>
+
+              <p>
+                Create a task and optionally attach it to
+                a group plan.
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <form id="activityForm" data-permission-page="plans-activities" data-permission-action="create">
+
+
+            <div class="form-grid">
+
+
+              <div class="form-group full">
+
+                <label for="activityTitle">
+                  Activity title
+                </label>
+
+                <input
+                  id="activityTitle"
+                  type="text"
+                  maxlength="200"
+                  required
+                  placeholder="e.g. Identify land for investment"
+                >
+
+              </div>
+
+
+              <div class="form-group full">
+
+                <label for="activityPlan">
+                  Plan
+                </label>
+
+                <select
+                  id="activityPlan"
+                >
+
+                  <option value="">
+                    No linked plan
+                  </option>
+
+                </select>
+
+                <p class="help">
+                  Only plans belonging to the current group
+                  are shown.
+                </p>
+
+              </div>
+
+
+              <div class="form-group">
+
+                <label for="activityAssignee">
+                  Assigned to
+                </label>
+
+                <select
+                  id="activityAssignee"
+                >
+
+                  <option value="">
+                    Unassigned
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              <div class="form-group">
+
+                <label for="activityStatus">
+                  Status
+                </label>
+
+                <select
+                  id="activityStatus"
+                  required
+                >
+
+                  <option
+                    value="not_started"
+                    selected
+                  >
+                    Not started
+                  </option>
+
+                  <option value="planned">
+                    Planned
+                  </option>
+
+                  <option value="in_progress">
+                    In progress
+                  </option>
+
+                  <option value="delayed">
+                    Delayed
+                  </option>
+
+                  <option value="cancelled">
+                    Cancelled
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              <div class="form-group">
+
+                <label for="activityStart">
+                  Start date
+                </label>
+
+                <input
+                  id="activityStart"
+                  type="date"
+                >
+
+              </div>
+
+
+              <div class="form-group">
+
+                <label for="activityDue">
+                  Due date
+                </label>
+
+                <input
+                  id="activityDue"
+                  type="date"
+                >
+
+              </div>
+
+
+              <div class="form-group full">
+
+                <label for="activityProgress">
+                  Progress (%)
+                </label>
+
+                <input
+                  id="activityProgress"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="1"
+                  value="0"
+                  required
+                >
+
+              </div>
+
+
+              <div class="form-group full">
+
+                <label for="activityDescription">
+                  Description
+                </label>
+
+                <textarea
+                  id="activityDescription"
+                  rows="4"
+                  maxlength="2000"
+                  placeholder="What needs to be done?"
+                ></textarea>
+
+              </div>
+
+
+            </div>
+
+
+            <div class="form-actions">
+
+              <button
+                class="btn btn-primary"
+                type="submit"
+                id="saveActivity"
+               data-permission-page="plans-activities" data-permission-action="create">
+                Create Activity
+              </button>
+
+
+              <button
+                class="btn btn-secondary"
+                type="button"
+                id="resetActivity"
+              >
+                Clear
+              </button>
+
+            </div>
+
+
+          </form>
+
+        </section>
+
+
+      </div>
+
+
+      <!-- =================================================
+           PLANS REGISTER
+      ================================================= -->
+
+      <section class="card card-pad section-gap">
+
+
+        <div class="card-head">
+
+          <div>
+
+            <h2>
+              Plans
+            </h2>
+
+            <p>
+              Plans are isolated to the current group by
+              the database security policies.
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <div class="filter-bar">
+
+
+          <select
+            id="planFilterStatus"
+            aria-label="Filter plans by status"
+          >
+
+            <option value="">
+              All plan statuses
+            </option>
+
+            <option value="planned">
+              Planned
+            </option>
+
+            <option value="active">
+              Active
+            </option>
+
+            <option value="completed">
+              Completed
+            </option>
+
+            <option value="paused">
+              Paused
+            </option>
+
+            <option value="cancelled">
+              Cancelled
+            </option>
+
+          </select>
+
+
+          <input
+            id="planSearch"
+            class="search"
+            type="search"
+            placeholder="Search plans…"
+            aria-label="Search plans"
+          >
+
+
+          <button
+            class="btn btn-secondary"
+            id="refreshPlans"
+            type="button"
+          >
+            ↻ Refresh
+          </button>
+
+
+        </div>
+
+
+        <div class="table-wrap">
+
+
+          <table class="data-table">
+
+
+            <thead>
+
+              <tr>
+
+                <th>
+                  Plan
+                </th>
+
+                <th>
+                  Category
+                </th>
+
+                <th>
+                  Dates
+                </th>
+
+                <th>
+                  Status
+                </th>
+
+                <th>
+                  Progress
+                </th>
+
+                <th>
+                  Created
+                </th>
+
+                <th>
+                  Actions
+                </th>
+
+              </tr>
+
+            </thead>
+
+
+            <tbody id="plansBody">
+
+              <tr>
+
+                <td
+                  colspan="7"
+                  class="empty"
+                >
+                  Loading plans…
+                </td>
+
+              </tr>
+
+            </tbody>
+
+
+          </table>
+
+        </div>
+
+
+      </section>
+
+
+      <!-- =================================================
+           ACTIVITIES REGISTER
+      ================================================= -->
+
+      <section class="card card-pad section-gap">
+
+
+        <div class="card-head">
+
+          <div>
+
+            <h2>
+              Activities
+            </h2>
+
+            <p>
+              Activities can be linked to a plan, assigned
+              to a current-group member, and tracked through
+              completion.
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <div class="filter-bar">
+
+
+          <select
+            id="activityFilterStatus"
+            aria-label="Filter activities by status"
+          >
+
+            <option value="">
+              All activity statuses
+            </option>
+
+            <option value="not_started">
+              Not started
+            </option>
+
+            <option value="planned">
+              Planned
+            </option>
+
+            <option value="in_progress">
+              In progress
+            </option>
+
+            <option value="completed">
+              Completed
+            </option>
+
+            <option value="delayed">
+              Delayed
+            </option>
+
+            <option value="cancelled">
+              Cancelled
+            </option>
+
+          </select>
+
+
+          <select
+            id="activityFilterAssignee"
+            aria-label="Filter activities by assignee"
+          >
+
+            <option value="">
+              All assignees
+            </option>
+
+          </select>
+
+
+          <input
+            id="activitySearch"
+            class="search"
+            type="search"
+            placeholder="Search activities…"
+            aria-label="Search activities"
+          >
+
+
+          <button
+            class="btn btn-secondary"
+            id="refreshActivities"
+            type="button"
+          >
+            ↻ Refresh
+          </button>
+
+
+        </div>
+
+
+        <div class="table-wrap">
+
+
+          <table class="data-table">
+
+
+            <thead>
+
+              <tr>
+
+                <th>
+                  Activity
+                </th>
+
+                <th>
+                  Plan
+                </th>
+
+                <th>
+                  Assigned To
+                </th>
+
+                <th>
+                  Dates
+                </th>
+
+                <th>
+                  Status
+                </th>
+
+                <th>
+                  Progress
+                </th>
+
+                <th>
+                  Actions
+                </th>
+
+              </tr>
+
+            </thead>
+
+
+            <tbody id="activitiesBody">
+
+              <tr>
+
+                <td
+                  colspan="7"
+                  class="empty"
+                >
+                  Loading activities…
+                </td>
+
+              </tr>
+
+            </tbody>
+
+
+          </table>
+
+        </div>
+
+
+      </section>
+
+
+      <!-- =================================================
+           FOOTER
+      ================================================= -->
+
+      <section class="plans-brand-footer">
+
+        <div class="plans-brand">
+
+          <div class="plans-brand-mark">
+            CL
+          </div>
+
+          <div>
+
+            <strong>
+              CHAMA LIVE
+            </strong>
+
+            <span>
+              Better groups. Better records.
+              Better decisions.
+            </span>
+
+          </div>
+
+        </div>
+
+
+        <div class="plans-footer-tag">
+          Group Operations • Plans &amp; Activities
+        </div>
+
+      </section>
+
+
+    </div>
+
+  </main>
+
+</div>
+
+
+<!-- =====================================================
+     ADMIN PORTAL BOOT
+===================================================== -->
+
+<script type="module">
+
+  import {
+    boot
+  } from "./js/admin-layout.js";
+
+  boot();
+
+</script>
+
+
+</body>
+
+</html>a
