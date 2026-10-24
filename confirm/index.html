@@ -1,0 +1,922 @@
+<!doctype html>
+
+<html lang="en">
+
+<head>
+<base href="/">
+
+  <meta charset="utf-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <title>Confirm Account — CHAMA LIVE</title>
+
+  <link
+    rel="stylesheet"
+    href="css/app.css"
+  >
+
+<script src="/js/clean-urls.js?v=20261024" defer></script>
+</head>
+
+
+<body>
+
+<main
+  class="main"
+  style="max-width:600px;margin:60px auto;"
+>
+
+  <section class="card">
+
+    <div
+      class="brand"
+      style="margin-bottom:20px;"
+    >
+      CHAMA <span>LIVE</span>
+    </div>
+
+
+    <h1>
+      Confirming Your Account
+    </h1>
+
+
+    <p
+      id="status"
+      class="muted"
+    >
+      Please wait while we confirm your account...
+    </p>
+
+
+    <div
+      id="error"
+      class="error"
+      hidden
+      style="margin-top:20px;"
+    ></div>
+
+  </section>
+
+</main>
+
+
+<script type="module">
+
+import {
+  supabase
+} from "./js/supabase.js";
+
+
+/* =======================================================
+   CONFIGURATION
+======================================================= */
+
+/*
+ * CHAMA LIVE production URL.
+ *
+ * Keep this explicit rather than deriving it from
+ * window.location.origin.
+ *
+ * This prevents an accidental staging/legacy host from
+ * becoming the authentication callback destination.
+ */
+
+const APP_URL =
+  "https://chamalive.co.ke";
+
+
+const CONFIRM_URL =
+  `${APP_URL}/confirm.html`;
+
+
+const LOGIN_URL =
+  `${APP_URL}/login.html`;
+
+
+/* =======================================================
+   ELEMENTS
+======================================================= */
+
+const status =
+  document.getElementById(
+    "status"
+  );
+
+
+const error =
+  document.getElementById(
+    "error"
+  );
+
+
+/* =======================================================
+   HELPERS
+======================================================= */
+
+function setStatus(message) {
+
+  if (status) {
+
+    status.textContent =
+      String(
+        message || ""
+      );
+
+  }
+
+}
+
+
+function showError(message) {
+
+  console.error(
+    "CHAMA LIVE confirmation error:",
+    message
+  );
+
+
+  setStatus(
+    "Account confirmation could not be completed."
+  );
+
+
+  if (error) {
+
+    error.textContent =
+      String(
+        message ||
+        "Unable to complete account confirmation."
+      );
+
+    error.hidden =
+      false;
+
+  }
+
+}
+
+
+/* =======================================================
+   SUBMIT GROUP APPLICATION
+   -------------------------------------------------------
+   IMPORTANT
+   -------------------------------------------------------
+   Email confirmation does NOT create a group.
+
+   The authenticated user submits a pending application
+   through the server-side RPC:
+
+     submit_group_application(
+       p_group_name,
+       p_category,
+       p_description,
+       p_admin_name,
+       p_admin_phone,
+       p_country,
+       p_location,
+       p_town
+     )
+
+   Platform Admin approval remains the group-creation
+   boundary.
+======================================================= */
+
+async function submitGroupApplication(
+  user
+) {
+
+  const metadata =
+    user?.user_metadata ||
+    {};
+
+
+  /* =====================================================
+     ONBOARDING MARKER
+  ====================================================== */
+
+  /*
+   * Only accounts explicitly carrying the onboarding
+   * marker may submit a new group application through
+   * this confirmation boundary.
+   *
+   * Ordinary existing accounts are redirected to login.
+   */
+
+  const isOnboarding =
+    metadata.chama_onboarding === true;
+
+
+  if (!isOnboarding) {
+
+    setStatus(
+      "Account confirmed. Redirecting to sign in..."
+    );
+
+
+    setTimeout(
+      () => {
+
+        window.location.replace(
+          LOGIN_URL
+        );
+
+      },
+      1000
+    );
+
+
+    return;
+
+  }
+
+
+  /* =====================================================
+     READ APPLICATION INFORMATION
+  ====================================================== */
+
+  const groupName =
+    String(
+      metadata.group_name ||
+      ""
+    ).trim();
+
+
+  const category =
+    String(
+      metadata.category ||
+      "other"
+    ).trim();
+
+
+  const description =
+    metadata.description ?
+      String(
+        metadata.description
+      ).trim() :
+      null;
+
+
+  const adminName =
+    String(
+      metadata.admin_name ||
+      ""
+    ).trim();
+
+
+  const adminPhone =
+    String(
+      metadata.admin_phone ||
+      ""
+    ).trim();
+
+
+  const country =
+    String(
+      metadata.country ||
+      "Kenya"
+    ).trim();
+
+
+  const location =
+    String(
+      metadata.location ||
+      ""
+    ).trim();
+
+
+  const town =
+    String(
+      metadata.town ||
+      ""
+    ).trim();
+
+
+  /* =====================================================
+     VALIDATE
+  ====================================================== */
+
+  if (!groupName) {
+
+    throw new Error(
+      "Your account was confirmed, but your group name is missing."
+    );
+
+  }
+
+
+  if (!adminName) {
+
+    throw new Error(
+      "Your account was confirmed, but the administrator name is missing."
+    );
+
+  }
+
+
+  if (!adminPhone) {
+
+    throw new Error(
+      "Your account was confirmed, but the administrator phone number is missing."
+    );
+
+  }
+
+
+  if (!location) {
+
+    throw new Error(
+      "Your account was confirmed, but the group location is missing."
+    );
+
+  }
+
+
+  if (!town) {
+
+    throw new Error(
+      "Your account was confirmed, but the town is missing."
+    );
+
+  }
+
+
+  /* =====================================================
+     SUBMIT APPLICATION
+  ====================================================== */
+
+  setStatus(
+    "Email confirmed. Submitting your group application for review..."
+  );
+
+
+  const {
+    data: application,
+    error: applicationError
+  } =
+    await supabase.rpc(
+      "submit_group_application",
+      {
+
+        p_group_name:
+          groupName,
+
+        p_category:
+          category,
+
+        p_description:
+          description,
+
+        p_admin_name:
+          adminName,
+
+        p_admin_phone:
+          adminPhone,
+
+        p_country:
+          country,
+
+        p_location:
+          location,
+
+        p_town:
+          town
+
+      }
+    );
+
+
+  if (applicationError) {
+
+    throw applicationError;
+
+  }
+
+
+  /*
+   * Do not log the complete application response.
+   *
+   * It may contain identifiers or application data.
+   */
+
+  console.log(
+    "CHAMA LIVE: group application submission completed."
+  );
+
+
+  /* =====================================================
+     VERIFY RESULT
+  ====================================================== */
+
+  if (
+    !application ||
+    application.success !== true
+  ) {
+
+    throw new Error(
+      "Your group application could not be submitted successfully."
+    );
+
+  }
+
+
+  if (!application.application_id) {
+
+    throw new Error(
+      "Your application was submitted, but no application ID was returned."
+    );
+
+  }
+
+
+  /* =====================================================
+     VERIFY PENDING STATE
+  ====================================================== */
+
+  if (
+    application.status !==
+    "pending"
+  ) {
+
+    throw new Error(
+      "Your application was submitted, but its review status could not be confirmed."
+    );
+
+  }
+
+
+  /* =====================================================
+     SUCCESS
+  ====================================================== */
+
+  /*
+   * IMPORTANT:
+   *
+   * No group was created here.
+   *
+   * The database has only accepted the authenticated
+   * group application.
+   *
+   * Platform Admin approval remains responsible for:
+   *
+   *   group creation
+   *   creator member creation
+   *   financial period creation
+   *   subscription initialization
+   *   invoice/cycle initialization
+   *
+   * The user therefore stops at the pending-review
+   * boundary.
+   */
+
+  setStatus(
+    "✓ Email confirmed and group application submitted successfully. Your application is now pending platform-admin review."
+  );
+
+
+  /*
+   * Do not redirect to the dashboard.
+   *
+   * The account does not have an approved group yet.
+   *
+   * Keep the user on this confirmation page so the
+   * application remains explicitly separated from
+   * group creation.
+   */
+
+}
+
+
+/* =======================================================
+   INITIALIZE
+======================================================= */
+
+async function init() {
+
+  try {
+
+    setStatus(
+      "Processing your email confirmation..."
+    );
+
+
+    /* ===================================================
+       STEP 1 — READ AUTH CALLBACK
+    =================================================== */
+
+    const url =
+      new URL(
+        window.location.href
+      );
+
+
+    const errorParam =
+      url.searchParams.get(
+        "error"
+      );
+
+
+    const errorDescription =
+      url.searchParams.get(
+        "error_description"
+      );
+
+
+    if (errorParam) {
+
+      throw new Error(
+        errorDescription ||
+        "The email confirmation link is invalid or has expired."
+      );
+
+    }
+
+
+    /* ===================================================
+       STEP 2 — PKCE CALLBACK
+    =================================================== */
+
+    /*
+     * Supabase PKCE redirects normally contain:
+     *
+     *   ?code=<authorization-code>
+     *
+     * The authorization code must be exchanged for
+     * a session.
+     */
+
+    setStatus(
+      "Confirming your email address..."
+    );
+
+
+    let session =
+      null;
+
+
+    const code =
+      url.searchParams.get(
+        "code"
+      );
+
+
+    if (code) {
+
+      const {
+        data: exchangeData,
+        error: exchangeError
+      } =
+        await supabase.auth.exchangeCodeForSession(
+          code
+        );
+
+
+      if (exchangeError) {
+
+        throw exchangeError;
+
+      }
+
+
+      session =
+        exchangeData?.session ||
+        null;
+
+
+      if (!session) {
+
+        throw new Error(
+          "Email confirmation succeeded, but Supabase did not return a login session."
+        );
+
+      }
+
+    }
+
+
+    /* ===================================================
+       STEP 3 — EXISTING SESSION FALLBACK
+    =================================================== */
+
+    /*
+     * Supabase may already have processed the callback
+     * automatically during client initialization.
+     */
+
+    if (!session) {
+
+      const {
+        data: existingSessionData,
+        error: existingSessionError
+      } =
+        await supabase.auth.getSession();
+
+
+      if (existingSessionError) {
+
+        throw existingSessionError;
+
+      }
+
+
+      session =
+        existingSessionData?.session ||
+        null;
+
+    }
+
+
+    /* ===================================================
+       STEP 4 — AUTH STATE FALLBACK
+    =================================================== */
+
+    /*
+     * If automatic URL processing is still completing,
+     * wait briefly for the authenticated session.
+     */
+
+    if (!session) {
+
+      session =
+        await new Promise(
+          async resolve => {
+
+            let settled =
+              false;
+
+            let subscription =
+              null;
+
+            let timeout =
+              null;
+
+
+            const finish =
+              value => {
+
+                if (settled) {
+
+                  return;
+
+                }
+
+
+                settled =
+                  true;
+
+
+                if (timeout) {
+
+                  clearTimeout(
+                    timeout
+                  );
+
+                }
+
+
+                if (subscription) {
+
+                  subscription.unsubscribe();
+
+                }
+
+
+                resolve(
+                  value ||
+                  null
+                );
+
+              };
+
+
+            const {
+              data: authListener
+            } =
+              await supabase.auth.onAuthStateChange(
+                (
+                  event,
+                  nextSession
+                ) => {
+
+                  if (
+                    nextSession &&
+                    (
+                      event ===
+                        "SIGNED_IN" ||
+                      event ===
+                        "INITIAL_SESSION" ||
+                      event ===
+                        "TOKEN_REFRESHED"
+                    )
+                  ) {
+
+                    finish(
+                      nextSession
+                    );
+
+                  }
+
+                }
+              );
+
+
+            subscription =
+              authListener?.subscription ||
+              null;
+
+
+            timeout =
+              setTimeout(
+                async () => {
+
+                  try {
+
+                    const {
+                      data:
+                        finalSessionData
+                    } =
+                      await supabase.auth.getSession();
+
+
+                    finish(
+                      finalSessionData?.session ||
+                      null
+                    );
+
+                  }
+
+                  catch (
+                    sessionCheckError
+                  ) {
+
+                    console.error(
+                      "CHAMA LIVE session retry error:",
+                      sessionCheckError
+                    );
+
+
+                    finish(
+                      null
+                    );
+
+                  }
+
+                },
+                2000
+              );
+
+
+            /*
+             * Re-check after registering the listener.
+             *
+             * This protects against a small initialization
+             * race.
+             */
+
+            try {
+
+              const {
+                data:
+                  currentSessionData
+              } =
+                await supabase.auth.getSession();
+
+
+              if (
+                currentSessionData?.session
+              ) {
+
+                finish(
+                  currentSessionData.session
+                );
+
+              }
+
+            }
+
+            catch (
+              currentSessionError
+            ) {
+
+              console.error(
+                "CHAMA LIVE current session check error:",
+                currentSessionError
+              );
+
+            }
+
+          }
+        );
+
+    }
+
+
+    /* ===================================================
+       STEP 5 — REQUIRE SESSION
+    =================================================== */
+
+    if (!session) {
+
+      throw new Error(
+        "Your email was confirmed, but a login session could not be established. Please sign in and try again."
+      );
+
+    }
+
+
+    /* ===================================================
+       STEP 6 — CLEAN CALLBACK URL
+    =================================================== */
+
+    /*
+     * Remove the authorization code and other callback
+     * parameters after the session has been established.
+     */
+
+    window.history.replaceState(
+      {},
+      document.title,
+      CONFIRM_URL
+    );
+
+
+    /* ===================================================
+       STEP 7 — GET AUTHENTICATED USER
+    =================================================== */
+
+    setStatus(
+      "Loading your account..."
+    );
+
+
+    const {
+      data: userData,
+      error: userError
+    } =
+      await supabase.auth.getUser();
+
+
+    if (userError) {
+
+      throw userError;
+
+    }
+
+
+    const user =
+      userData?.user;
+
+
+    if (!user) {
+
+      throw new Error(
+        "The confirmed user could not be found."
+      );
+
+    }
+
+
+    /* ===================================================
+       STEP 8 — SUBMIT GROUP APPLICATION
+    =================================================== */
+
+    await submitGroupApplication(
+      user
+    );
+
+  }
+
+  catch (err) {
+
+    console.error(
+      "CHAMA LIVE confirmation error:",
+      err
+    );
+
+
+    showError(
+      err?.message ||
+      "Unable to complete account confirmation."
+    );
+
+  }
+
+}
+
+
+/* =======================================================
+   START
+======================================================= */
+
+init();
+
+</script>
+
+
+</body>
+
+</html>

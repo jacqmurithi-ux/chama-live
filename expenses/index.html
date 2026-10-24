@@ -1,0 +1,1493 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+<base href="/">
+
+  <meta charset="utf-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <meta
+    name="description"
+    content="CHAMA LIVE — Group expense management"
+  >
+
+  <title>Expenses — CHAMA LIVE</title>
+
+  <link
+    rel="stylesheet"
+    href="css/app.css"
+  >
+
+  <style>
+
+    /* =====================================================
+       CHAMA LIVE — ADMIN EXPENSES
+       LIGHT + MOBILE-FRIENDLY PAGE
+    ====================================================== */
+
+    html,
+    body {
+      width: 100%;
+      max-width: 100%;
+      margin: 0;
+      overflow-x: hidden;
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    .main,
+    .expenses-page {
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+    }
+
+    .expenses-page {
+      max-width: 1450px;
+      margin: 0 auto;
+    }
+
+
+    /* =====================================================
+       PAGE HEADER
+    ====================================================== */
+
+    .expenses-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+      margin: 0 auto 20px;
+    }
+
+    .expenses-eyebrow {
+      margin-bottom: 5px;
+      color: #0f766e;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .expenses-header h1 {
+      margin: 0 0 6px;
+      color: #0f172a;
+      font-size: clamp(25px, 4vw, 34px);
+      line-height: 1.15;
+    }
+
+    .expenses-header-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 12px;
+    }
+
+    .expenses-header-actions .btn {
+      min-height: 42px;
+      padding: 9px 14px;
+      border-radius: 10px;
+      font: inherit;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .expenses-header-actions .btn:disabled {
+      opacity: .6;
+      cursor: not-allowed;
+    }
+
+    .expenses-header p {
+      max-width: 680px;
+      margin: 0;
+      line-height: 1.55;
+    }
+
+
+    /* =====================================================
+       STATUS / ERROR
+    ====================================================== */
+
+    .page-message {
+      width: 100%;
+      margin: 0 0 14px;
+      padding: 11px 13px;
+      border-radius: 11px;
+      font-size: 12px;
+      font-weight: 650;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+    }
+
+    #status {
+      color: #0f766e;
+      background: #f0fdfa;
+      border: 1px solid #ccfbf1;
+    }
+
+    #error {
+      color: #9f1239;
+      background: #fff1f2;
+      border: 1px solid #fecdd3;
+    }
+
+    .page-message[hidden] {
+      display: none;
+    }
+
+
+    /* =====================================================
+       METRICS
+    ====================================================== */
+
+    .expense-metrics {
+      display: grid;
+      grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .expense-metric-card {
+      position: relative;
+      min-width: 0;
+      overflow: hidden;
+      padding: 17px;
+      border-radius: 15px;
+      box-shadow:
+        0 5px 18px
+        rgba(15, 23, 42, .04);
+    }
+
+    .expense-metric-card::after {
+      content: "";
+      position: absolute;
+      width: 64px;
+      height: 64px;
+      right: -22px;
+      bottom: -26px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, .38);
+      pointer-events: none;
+    }
+
+    .expense-metric-label {
+      margin-bottom: 7px;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+
+    .expense-metric-value {
+      position: relative;
+      z-index: 1;
+      color: #0f172a;
+      font-size: clamp(21px, 3vw, 27px);
+      font-weight: 800;
+      line-height: 1.15;
+      overflow-wrap: anywhere;
+    }
+
+    .metric-approved {
+      background: #f0fdf4;
+      border: 1px solid #dcfce7;
+    }
+
+    .metric-approved .expense-metric-label,
+    .metric-approved .expense-metric-value {
+      color: #166534;
+    }
+
+    .metric-pending {
+      background: #fffbeb;
+      border: 1px solid #fef3c7;
+    }
+
+    .metric-pending .expense-metric-label,
+    .metric-pending .expense-metric-value {
+      color: #92400e;
+    }
+
+    .metric-rejected {
+      background: #fff1f2;
+      border: 1px solid #ffe4e6;
+    }
+
+    .metric-rejected .expense-metric-label,
+    .metric-rejected .expense-metric-value {
+      color: #9f1239;
+    }
+
+
+    /* =====================================================
+       CARDS
+    ====================================================== */
+
+    .expense-form-card,
+    .expense-ledger-card {
+      width: 100%;
+      min-width: 0;
+      margin-bottom: 18px;
+    }
+
+    .expense-card-header {
+      margin-bottom: 17px;
+    }
+
+    .expense-card-header h2,
+    .expense-form-card h2 {
+      margin: 0 0 5px;
+      color: #0f172a;
+    }
+
+    .expense-card-header p,
+    .expense-form-card > p {
+      margin: 0;
+      line-height: 1.5;
+    }
+
+
+    /* =====================================================
+       FORM
+    ====================================================== */
+
+    .expense-form-grid {
+      display: grid;
+      grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      width: 100%;
+      min-width: 0;
+    }
+
+    .expense-form-full {
+      grid-column: 1 / -1;
+    }
+
+    .form-group {
+      min-width: 0;
+      margin-bottom: 0;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 6px;
+      color: #0f172a;
+      font-size: 12px;
+      font-weight: 750;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      min-height: 45px;
+      padding: 10px 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      background: #ffffff;
+      color: #0f172a;
+      font: inherit;
+    }
+
+    .form-group textarea {
+      min-height: 90px;
+      resize: vertical;
+    }
+
+    .form-group input::placeholder,
+    .form-group textarea::placeholder {
+      color: #94a3b8;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: #14b8a6;
+      box-shadow:
+        0 0 0 3px
+        rgba(20, 184, 166, .10);
+    }
+
+    .other-details-box {
+      display: none;
+      margin: 0;
+      padding: 13px;
+      border: 1px solid #ccfbf1;
+      border-radius: 12px;
+      background: #f0fdfa;
+    }
+
+    .other-details-box.visible {
+      display: block;
+    }
+
+    .other-details-box .form-group {
+      width: 100%;
+    }
+
+    .other-details-help {
+      display: block;
+      margin-top: 5px;
+      font-size: 10px;
+      line-height: 1.4;
+    }
+
+    .expense-form-actions {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+
+    #saveExpense {
+      min-height: 45px;
+      padding: 10px 17px;
+      border-radius: 10px;
+      font-weight: 800;
+    }
+
+    #saveExpense:disabled {
+      opacity: .65;
+      cursor: not-allowed;
+    }
+
+
+    /* =====================================================
+       LEDGER HEADER
+    ====================================================== */
+
+    .ledger-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 15px;
+    }
+
+    .ledger-heading {
+      min-width: 0;
+    }
+
+    .ledger-heading h2 {
+      margin: 0 0 5px;
+      color: #0f172a;
+    }
+
+    .ledger-heading p {
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    .ledger-filters {
+      display: grid;
+      grid-template-columns:
+        repeat(2, minmax(150px, 190px));
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .ledger-filters select {
+      width: 100%;
+      min-height: 42px;
+      padding: 8px 10px;
+      border: 1px solid #e2e8f0;
+      border-radius: 9px;
+      background: #ffffff;
+      color: #334155;
+      font: inherit;
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    .ledger-filters select:focus {
+      outline: none;
+      border-color: #14b8a6;
+      box-shadow:
+        0 0 0 3px
+        rgba(20, 184, 166, .10);
+    }
+
+
+    /* =====================================================
+       TABLE
+    ====================================================== */
+
+    .table-wrap {
+      width: 100%;
+      min-width: 0;
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .expense-table {
+      width: 100%;
+      min-width: 780px;
+      border-collapse: collapse;
+    }
+
+    .expense-table th {
+      white-space: nowrap;
+      font-size: 10px;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+
+    .expense-table td {
+      vertical-align: middle;
+      min-width: 0;
+    }
+
+    .expense-description {
+      max-width: 260px;
+      color: #0f172a;
+      font-weight: 700;
+      line-height: 1.4;
+      overflow-wrap: anywhere;
+    }
+
+    .expense-category {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: fit-content;
+      max-width: 100%;
+      padding: 5px 9px;
+      border: 1px solid #e2e8f0;
+      border-radius: 999px;
+      background: #f8fafc;
+      color: #475569;
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .expense-amount {
+      color: #0f766e;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+
+    /* =====================================================
+       STATUS BADGES
+    ====================================================== */
+
+    .expense-status {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: fit-content;
+      max-width: 100%;
+      padding: 5px 9px;
+      border-radius: 999px;
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .expense-status-pending {
+      background: #fffbeb;
+      color: #92400e;
+    }
+
+    .expense-status-approved {
+      background: #ecfdf5;
+      color: #047857;
+    }
+
+    .expense-status-rejected {
+      background: #fff1f2;
+      color: #be123c;
+    }
+
+
+    /* =====================================================
+       RECEIPT / REFERENCE
+    ====================================================== */
+
+    .expense-reference {
+      display: block;
+      max-width: 190px;
+      color: #475569;
+      font-size: 11px;
+      line-height: 1.4;
+      overflow-wrap: anywhere;
+    }
+
+    .expense-reference a {
+      color: #0f766e;
+      font-weight: 750;
+      text-decoration: none;
+    }
+
+    .expense-reference a:hover {
+      text-decoration: underline;
+    }
+
+
+    /* =====================================================
+       ACTIONS
+    ====================================================== */
+
+    .expense-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      min-width: 160px;
+    }
+
+    .expense-actions .btn {
+      min-height: 34px;
+      padding: 7px 9px;
+      border-radius: 8px;
+      font-size: 10px;
+      font-weight: 750;
+      white-space: nowrap;
+    }
+
+    .expense-actions .btn {
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      color: #334155;
+    }
+
+    .expense-actions .btn-action-approve {
+      border-color: #bbf7d0;
+      background: #f0fdf4;
+      color: #166534;
+    }
+
+    .expense-actions .btn-action-reject {
+      border-color: #fed7aa;
+      background: #fff7ed;
+      color: #9a3412;
+    }
+
+    .expense-actions .btn-action-restore {
+      border-color: #bfdbfe;
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+
+    .expense-actions .btn-action-delete {
+      border-color: #fecdd3;
+      background: #fff1f2;
+      color: #be123c;
+    }
+
+    .expense-actions .btn:hover:not(:disabled) {
+      filter: brightness(.97);
+    }
+
+    .expense-actions .btn:disabled {
+      opacity: .55;
+      cursor: not-allowed;
+    }
+
+
+    /* =====================================================
+       EMPTY STATE
+    ====================================================== */
+
+    .expense-empty {
+      padding: 35px 20px !important;
+      text-align: center;
+    }
+
+    .expense-empty-title {
+      margin-bottom: 4px;
+      color: #0f172a;
+      font-weight: 800;
+    }
+
+    .expense-empty-text {
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+
+    /* =====================================================
+       TABLET
+    ====================================================== */
+
+    @media (max-width: 950px) {
+
+      .expense-metrics {
+        grid-template-columns:
+          repeat(3, minmax(0, 1fr));
+        gap: 9px;
+      }
+
+      .expense-metric-card {
+        padding: 14px;
+      }
+
+      .expense-form-grid {
+        grid-template-columns:
+          1fr 1fr;
+      }
+
+      .ledger-header {
+        flex-direction: column;
+      }
+
+      .ledger-filters {
+        width: 100%;
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
+      }
+
+    }
+
+
+    /* =====================================================
+       MOBILE
+    ====================================================== */
+
+    @media (max-width: 700px) {
+
+      .expenses-header {
+        margin-bottom: 17px;
+      }
+
+      .expenses-header h1 {
+        font-size: 25px;
+      }
+
+      .expenses-header p {
+        font-size: 12px;
+      }
+
+      .expense-metrics {
+        grid-template-columns:
+          repeat(3, minmax(0, 1fr));
+        gap: 7px;
+      }
+
+      .expense-metric-card {
+        padding: 12px 10px;
+        border-radius: 12px;
+      }
+
+      .expense-metric-label {
+        min-height: 24px;
+        margin-bottom: 5px;
+        font-size: 8px;
+        line-height: 1.25;
+      }
+
+      .expense-metric-value {
+        font-size: 16px;
+      }
+
+      .expense-form-grid {
+        grid-template-columns: 1fr;
+        gap: 13px;
+      }
+
+      .expense-form-full {
+        grid-column: auto;
+      }
+
+      .expense-form-card,
+      .expense-ledger-card {
+        margin-bottom: 14px;
+      }
+
+      .ledger-filters {
+        grid-template-columns:
+          1fr 1fr;
+        gap: 7px;
+      }
+
+      .ledger-filters select {
+        min-height: 42px;
+      }
+
+      .table-wrap {
+        overflow: visible;
+      }
+
+      .expense-table {
+        display: block;
+        min-width: 0;
+      }
+
+      .expense-table thead {
+        display: none;
+      }
+
+      .expense-table tbody {
+        display: grid;
+        gap: 9px;
+        width: 100%;
+      }
+
+      .expense-table tbody tr {
+        display: grid;
+        grid-template-columns:
+          1fr 1fr;
+        gap: 0;
+        width: 100%;
+        min-width: 0;
+        padding: 7px;
+        border: 1px solid #e2e8f0;
+        border-radius: 13px;
+        background: #ffffff;
+        box-shadow:
+          0 3px 12px
+          rgba(15, 23, 42, .035);
+      }
+
+      .expense-table tbody tr td {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: center;
+        width: 100%;
+        min-width: 0;
+        padding: 8px 7px;
+        border: 0 !important;
+        white-space: normal !important;
+        overflow-wrap: anywhere;
+      }
+
+      .expense-table tbody tr td::before {
+        content: attr(data-label);
+        display: block;
+        margin-bottom: 3px;
+        color: #94a3b8;
+        font-size: 8px;
+        font-weight: 800;
+        letter-spacing: .06em;
+        line-height: 1.2;
+        text-transform: uppercase;
+      }
+
+      .expense-table tbody tr td:first-child {
+        grid-column: 1 / -1;
+      }
+
+      .expense-table tbody tr td:nth-child(2) {
+        grid-column: 1 / -1;
+      }
+
+      .expense-description {
+        max-width: 100%;
+      }
+
+      .expense-reference {
+        max-width: 100%;
+      }
+
+      .expense-actions {
+        width: 100%;
+        min-width: 0;
+        gap: 6px;
+      }
+
+      .expense-actions .btn {
+        flex: 1 1 auto;
+        min-width: 0;
+      }
+
+      .expense-empty {
+        display: block !important;
+        grid-column: 1 / -1;
+        padding: 25px 14px !important;
+      }
+
+    }
+
+
+    /* =====================================================
+       SMALL PHONES
+    ====================================================== */
+
+    @media (max-width: 430px) {
+
+      .expense-metrics {
+        gap: 6px;
+      }
+
+      .expense-metric-card {
+        padding: 10px 8px;
+      }
+
+      .expense-metric-label {
+        font-size: 7px;
+      }
+
+      .expense-metric-value {
+        font-size: 14px;
+      }
+
+      .ledger-filters {
+        grid-template-columns: 1fr;
+      }
+
+      .expense-form-actions {
+        width: 100%;
+      }
+
+      #saveExpense {
+        width: 100%;
+      }
+
+      .expense-table tbody tr {
+        grid-template-columns: 1fr;
+      }
+
+      .expense-table tbody tr td:first-child,
+      .expense-table tbody tr td:nth-child(2) {
+        grid-column: auto;
+      }
+
+    }
+
+
+    /* =====================================================
+       REDUCED MOTION
+    ====================================================== */
+
+    @media (
+      prefers-reduced-motion: reduce
+    ) {
+
+      *,
+      *::before,
+      *::after {
+        animation: none !important;
+        transition: none !important;
+        scroll-behavior: auto !important;
+      }
+
+    }
+
+  </style>
+
+<script src="/js/clean-urls.js?v=20261024" defer></script>
+</head>
+
+
+<body>
+
+
+  <!-- =====================================================
+       ADMIN PORTAL HEADER
+       Navigation is injected by admin-layout.js
+  ====================================================== -->
+
+  <header class="topbar">
+
+    <div class="topbar-inner">
+
+      <div class="brand">
+        CHAMA
+        <span>LIVE</span>
+      </div>
+
+      <nav
+        class="top-nav"
+        aria-label="Admin navigation"
+      ></nav>
+
+      <div class="topbar-actions">
+
+        <span
+          data-user-name
+          class="muted user-name"
+        >
+          Admin
+        </span>
+
+        <button
+          id="logout"
+          class="btn btn-secondary"
+          type="button"
+        >
+          Sign out
+        </button>
+
+      </div>
+
+    </div>
+
+  </header>
+
+
+  <!-- =====================================================
+       ADMIN LAYOUT
+  ====================================================== -->
+
+  <div class="layout">
+
+    <aside
+      class="sidebar"
+      aria-label="Admin navigation"
+    ></aside>
+
+
+    <main class="main">
+
+      <div class="expenses-page">
+
+
+        <!-- =================================================
+             PAGE HEADER
+        ================================================== -->
+
+        <header class="expenses-header">
+
+          <div>
+
+            <div class="expenses-eyebrow">
+              FINANCIAL MANAGEMENT
+            </div>
+
+            <h1>
+              Expenses
+            </h1>
+
+            <p class="muted">
+              Record group expenses, review their approval status,
+              and manage the expense ledger. Use the action buttons
+              on each expense to approve, reject, restore, or delete
+              an entry.
+            </p>
+
+            <div class="expenses-header-actions">
+              <button
+                id="refreshExpenses"
+                class="btn btn-secondary"
+                type="button"
+              >
+                Refresh
+              </button>
+            </div>
+
+          </div>
+
+        </header>
+
+
+        <!-- =================================================
+             STATUS
+        ================================================== -->
+
+        <div
+          id="status"
+          class="page-message"
+          hidden
+          aria-live="polite"
+        ></div>
+
+
+        <!-- =================================================
+             ERROR
+        ================================================== -->
+
+        <div
+          id="error"
+          class="page-message"
+          hidden
+          role="alert"
+        ></div>
+
+
+        <!-- =================================================
+             METRICS
+        ================================================== -->
+
+        <section
+          class="expense-metrics"
+          aria-label="Expense summary"
+        >
+
+          <article
+            class="card expense-metric-card metric-approved"
+          >
+
+            <div class="expense-metric-label">
+              Approved
+            </div>
+
+            <div
+              id="approvedTotal"
+              class="expense-metric-value"
+            >
+              KSh 0
+            </div>
+
+          </article>
+
+
+          <article
+            class="card expense-metric-card metric-pending"
+          >
+
+            <div class="expense-metric-label">
+              Pending
+            </div>
+
+            <div
+              id="pendingTotal"
+              class="expense-metric-value"
+            >
+              KSh 0
+            </div>
+
+          </article>
+
+
+          <article
+            class="card expense-metric-card metric-rejected"
+          >
+
+            <div class="expense-metric-label">
+              Rejected
+            </div>
+
+            <div
+              id="rejectedTotal"
+              class="expense-metric-value"
+            >
+              KSh 0
+            </div>
+
+          </article>
+
+        </section>
+
+
+        <!-- =================================================
+             RECORD EXPENSE
+        ================================================== -->
+
+        <section
+          class="card expense-form-card"
+          aria-labelledby="recordExpenseTitle"
+        >
+
+          <div class="expense-card-header">
+
+            <h2 id="recordExpenseTitle">
+              Record Expense
+            </h2>
+
+            <p class="muted">
+              New expenses are recorded as pending
+              until reviewed.
+            </p>
+
+          </div>
+
+
+          <form
+            id="expenseForm"
+            novalidate
+           data-permission-page="expenses" data-permission-action="create">
+
+            <div class="expense-form-grid">
+
+
+              <!-- DESCRIPTION -->
+
+              <div class="form-group">
+
+                <label for="description">
+                  Description
+                </label>
+
+                <input
+                  id="description"
+                  name="description"
+                  type="text"
+                  maxlength="255"
+                  autocomplete="off"
+                  placeholder="e.g. Meeting catering"
+                  required
+                >
+
+              </div>
+
+
+              <!-- CATEGORY -->
+
+              <div class="form-group">
+
+                <label for="category">
+                  Category
+                </label>
+
+                <select
+                  id="category"
+                  name="category"
+                  required
+                >
+
+                  <option value="">
+                    Select category
+                  </option>
+
+                  <option value="meeting">
+                    Meeting
+                  </option>
+
+                  <option value="welfare">
+                    Welfare
+                  </option>
+
+                  <option value="transport">
+                    Transport
+                  </option>
+
+                  <option value="food">
+                    Food
+                  </option>
+
+                  <option value="supplies">
+                    Supplies
+                  </option>
+
+                  <option value="bank_charges">
+                    Bank Charges
+                  </option>
+
+                  <option value="other">
+                    Other
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              <!-- OTHER DETAILS -->
+
+              <div
+                id="otherDetailsBox"
+                class="other-details-box expense-form-full"
+              >
+
+                <div class="form-group">
+
+                  <label for="otherDetails">
+                    Other Expense Details
+                  </label>
+
+                  <input
+                    id="otherDetails"
+                    name="other_details"
+                    type="text"
+                    maxlength="200"
+                    autocomplete="off"
+                    placeholder="Describe what this expense was for"
+                  >
+
+                  <small class="muted other-details-help">
+                    Required when the category is Other.
+                  </small>
+
+                </div>
+
+              </div>
+
+
+              <!-- AMOUNT -->
+
+              <div class="form-group">
+
+                <label for="amount">
+                  Amount
+                </label>
+
+                <input
+                  id="amount"
+                  name="amount"
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  inputmode="decimal"
+                  placeholder="0.00"
+                  required
+                >
+
+              </div>
+
+
+              <!-- DATE -->
+
+              <div class="form-group">
+
+                <label for="expenseDate">
+                  Expense Date
+                </label>
+
+                <input
+                  id="expenseDate"
+                  name="date"
+                  type="date"
+                  required
+                >
+
+              </div>
+
+
+              <!-- RECEIPT -->
+
+              <div
+                class="form-group expense-form-full"
+              >
+
+                <label for="receiptUrl">
+                  Receipt / Reference
+                </label>
+
+                <input
+                  id="receiptUrl"
+                  name="receipt_url"
+                  type="text"
+                  maxlength="500"
+                  autocomplete="off"
+                  placeholder="Receipt number, M-Pesa reference or document URL"
+                >
+
+                <small class="muted">
+                  Optional. Enter a receipt number,
+                  reference or document URL.
+                </small>
+
+              </div>
+
+
+            </div>
+
+
+            <!-- FORM ACTION -->
+
+            <div class="expense-form-actions">
+
+              <button
+                id="saveExpense"
+                class="btn btn-primary"
+                type="submit"
+               data-permission-page="expenses" data-permission-action="create">
+                Record Expense
+              </button>
+
+            </div>
+
+          </form>
+
+        </section>
+
+
+        <!-- =================================================
+             EXPENSE LEDGER
+        ================================================== -->
+
+        <section
+          class="card expense-ledger-card"
+          aria-labelledby="expenseLedgerTitle"
+        >
+
+          <div class="ledger-header">
+
+            <div class="ledger-heading">
+
+              <h2 id="expenseLedgerTitle">
+                Expense Ledger
+              </h2>
+
+              <p class="muted">
+                Review expenses by approval status
+                and category.
+              </p>
+
+            </div>
+
+
+            <!-- FILTERS -->
+
+            <div
+              class="ledger-filters"
+              aria-label="Expense filters"
+            >
+
+              <select
+                id="statusFilter"
+                aria-label="Filter expenses by status"
+              >
+
+                <option value="all">
+                  All Expenses
+                </option>
+
+                <option value="pending">
+                  Pending
+                </option>
+
+                <option value="approved">
+                  Approved
+                </option>
+
+                <option value="rejected">
+                  Rejected
+                </option>
+
+              </select>
+
+
+              <select
+                id="categoryFilter"
+                aria-label="Filter expenses by category"
+              >
+
+                <option value="all">
+                  All Categories
+                </option>
+
+                <option value="meeting">
+                  Meeting
+                </option>
+
+                <option value="welfare">
+                  Welfare
+                </option>
+
+                <option value="transport">
+                  Transport
+                </option>
+
+                <option value="food">
+                  Food
+                </option>
+
+                <option value="supplies">
+                  Supplies
+                </option>
+
+                <option value="bank_charges">
+                  Bank Charges
+                </option>
+
+                <option value="other">
+                  Other
+                </option>
+
+              </select>
+
+            </div>
+
+          </div>
+
+
+          <!-- TABLE -->
+
+          <div class="table-wrap">
+
+            <table class="table expense-table">
+
+              <thead>
+
+                <tr>
+
+                  <th>
+                    Date
+                  </th>
+
+                  <th>
+                    Description
+                  </th>
+
+                  <th>
+                    Category
+                  </th>
+
+                  <th>
+                    Amount
+                  </th>
+
+                  <th>
+                    Status
+                  </th>
+
+                  <th>
+                    Receipt / Reference
+                  </th>
+
+                  <th>
+                    Actions
+                  </th>
+
+                </tr>
+
+              </thead>
+
+
+              <tbody id="expenseRows">
+
+                <tr>
+
+                  <td colspan="7">
+                    Loading expenses...
+                  </td>
+
+                </tr>
+
+              </tbody>
+
+            </table>
+
+          </div>
+
+        </section>
+
+
+      </div>
+
+    </main>
+
+  </div>
+
+
+  <!-- =====================================================
+       ADMIN PORTAL BOOT
+  ====================================================== -->
+
+  <script type="module">
+
+    import {
+      boot
+    } from "./js/admin-layout.js";
+
+    boot();
+
+  </script>
+
+
+</body>
+
+</html>
