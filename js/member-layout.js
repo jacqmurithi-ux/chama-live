@@ -1132,8 +1132,8 @@ function createLogoutButton(
       try {
         await signOut();
 
-        window.location.href =
-          "index.html";
+        // Use an absolute public route so logout works from clean URLs.
+        window.location.replace("/");
 
       } catch (error) {
         console.error(
@@ -1613,8 +1613,9 @@ export async function boot() {
       await getMyApplicationContext();
 
     if (!context?.user) {
-      window.location.href =
-        "index.html";
+      // A missing session should return to the public home page,
+      // not resolve a relative URL under the current clean route.
+      window.location.replace("/");
 
       return;
     }
