@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,follow">
+  <title>Page not found — CHAMA LIVE</title>
+  <link rel="icon" href="/favicon.ico">
+  <script>
+    // GitHub Pages fallback: map known clean routes to their canonical
+    // HTML files if a directory alias is unavailable on the host.
+    (() => {
+      const routes = {
+        "/member-contributions": "/member-contributions.html",
+        "/contributions": "/contributions.html"
+      };
+      const path = window.location.pathname.replace(/\/+$/, "");
+      const target = routes[path];
+      if (target) {
+        window.location.replace(target + window.location.search + window.location.hash);
+      }
+    })();
+  </script>
+  <style>
+    body{font:16px/1.5 system-ui,sans-serif;max-width:38rem;margin:12vh auto;padding:0 1.25rem;color:#17211b}
+    a{color:#0a7d3b}
+  </style>
+</head>
+<body>
+  <h1>Page not found</h1>
+  <p>The page may have moved or the address may be incorrect.</p>
+  <p><a href="/">Return to CHAMA LIVE home</a></p>
+  <p><a href="/member-contributions.html">My Contributions</a> · <a href="/contributions.html">Contributions management</a></p>
+</body>
+</html>
