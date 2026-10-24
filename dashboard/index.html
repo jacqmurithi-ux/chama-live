@@ -1,0 +1,3057 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<base href="/">
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  >
+
+  <meta
+    name="theme-color"
+    content="#ffffff"
+  >
+
+  <title>CHAMA LIVE — Dashboard</title>
+
+  <link
+    rel="stylesheet"
+    href="./css/app.css"
+  >
+
+  <style>
+    /* =====================================================
+       CHAMA LIVE — ADMIN DASHBOARD
+       LIGHT / MOBILE-FRIENDLY DASHBOARD LAYER
+
+       IMPORTANT:
+       - admin-layout.js owns navigation
+       - dashboard.js owns data/accounting rendering
+       - Existing DOM IDs are preserved
+       - No database logic belongs here
+       - Active custom contributions are rendered from
+         backend-owned contribution/accounting data
+    ===================================================== */
+
+    :root {
+      --dashboard-bg: #f8fafc;
+      --dashboard-card: #ffffff;
+      --dashboard-border: #e5e7eb;
+      --dashboard-text: #101828;
+      --dashboard-muted: #667085;
+      --dashboard-soft: #f8fafc;
+      --dashboard-accent: #0f766e;
+      --dashboard-accent-soft: #ecfdf5;
+      --dashboard-warning: #b54708;
+      --dashboard-danger: #b42318;
+      --dashboard-radius: 16px;
+
+      --status-up-to-date: #12b76a;
+      --status-arrears: #f04438;
+      --status-credit: #2e90fa;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-width: 320px;
+      background: var(--dashboard-bg);
+    }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      background: var(--dashboard-bg);
+      color: var(--dashboard-text);
+    }
+
+    /* =====================================================
+       TOPBAR
+    ===================================================== */
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.96);
+      border-bottom: 1px solid var(--dashboard-border);
+      backdrop-filter: blur(10px);
+    }
+
+    .topbar-inner {
+      width: min(1440px, 100%);
+      min-height: 64px;
+      margin: 0 auto;
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .brand {
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      color: #101828;
+      font-size: 17px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+    }
+
+    .brand span {
+      color: var(--dashboard-accent);
+      margin-left: 3px;
+    }
+
+    .top-nav {
+      flex: 1 1 auto;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+    }
+
+    .topbar-actions {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .user-name {
+      max-width: 150px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* =====================================================
+       MOBILE MENU
+    ===================================================== */
+
+    .menu-toggle {
+      display: none;
+      width: 40px;
+      height: 40px;
+      flex: 0 0 40px;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      border: 1px solid var(--dashboard-border);
+      border-radius: 10px;
+      background: #ffffff;
+      color: #344054;
+      font-size: 20px;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .menu-toggle:active {
+      transform: scale(0.97);
+    }
+
+    /* =====================================================
+       MAIN
+    ===================================================== */
+
+    .layout {
+      width: 100%;
+      min-height: calc(100vh - 64px);
+    }
+
+    .sidebar {
+      display: none;
+    }
+
+    .main {
+      width: min(1440px, 100%);
+      margin: 0 auto;
+      padding: 28px 20px 50px;
+    }
+
+    /* =====================================================
+       STATUS / ERROR
+    ===================================================== */
+
+    #status {
+      margin: 0 0 18px;
+      padding: 12px 14px;
+      border: 1px solid #d1fae5;
+      border-radius: 12px;
+      background: #ecfdf5;
+      color: #065f46;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    #error {
+      margin: 0 0 18px;
+      padding: 13px 14px;
+      border: 1px solid #fecaca;
+      border-radius: 12px;
+      background: #fef2f2;
+      color: var(--dashboard-danger);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    /* =====================================================
+       DASHBOARD HEADER
+    ===================================================== */
+
+    .dashboard-header {
+      margin-bottom: 22px;
+    }
+
+    .dashboard-header-copy {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+    }
+
+    .dashboard-header-actions {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+
+    .dashboard-header .btn {
+      min-height: 40px;
+      padding: 8px 13px;
+      border: 1px solid #d0d5dd;
+      border-radius: 10px;
+      background: #ffffff;
+      color: #344054;
+      font: inherit;
+      font-size: 12px;
+      font-weight: 750;
+      cursor: pointer;
+      transition: background .18s ease, border-color .18s ease, transform .18s ease;
+    }
+
+    .dashboard-header .btn:hover {
+      background: #f8fafc;
+      border-color: #98a2b3;
+    }
+
+    .dashboard-header .btn:active {
+      transform: translateY(1px);
+    }
+
+    .dashboard-header .btn:disabled {
+      opacity: .55;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .dashboard-header h1 {
+      margin: 0;
+      color: var(--dashboard-text);
+      font-size: clamp(24px, 3vw, 32px);
+      line-height: 1.15;
+      letter-spacing: -0.03em;
+    }
+
+    .dashboard-header p {
+      margin: 7px 0 0;
+      color: var(--dashboard-muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .dashboard-header strong {
+      color: #344054;
+    }
+
+    /* =====================================================
+       SECTION
+    ===================================================== */
+
+    .dashboard-section {
+      margin-top: 22px;
+    }
+
+    .section-heading {
+      margin-bottom: 11px;
+    }
+
+    .section-heading h2 {
+      margin: 0;
+      color: var(--dashboard-text);
+      font-size: 17px;
+      line-height: 1.3;
+      letter-spacing: -0.01em;
+    }
+
+    .section-heading p {
+      margin: 4px 0 0;
+      color: var(--dashboard-muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    /* =====================================================
+       METRIC CARDS
+    ===================================================== */
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .metric-card {
+      min-width: 0;
+      padding: 18px;
+      border: 1px solid var(--dashboard-border);
+      border-radius: var(--dashboard-radius);
+      background: var(--dashboard-card);
+      box-shadow: 0 1px 2px rgba(16, 24, 40, 0.03);
+    }
+
+    .metric-label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--dashboard-muted);
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .metric-value {
+      display: block;
+      color: var(--dashboard-text);
+      font-size: clamp(22px, 2.6vw, 29px);
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -0.025em;
+      overflow-wrap: anywhere;
+    }
+
+    .metric-meta {
+      display: block;
+      margin-top: 7px;
+      color: var(--dashboard-muted);
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    .metric-value.positive,
+    .metric-value.amount-positive {
+      color: #087443;
+    }
+
+    .metric-value.negative,
+    .metric-value.amount-negative {
+      color: var(--dashboard-danger);
+    }
+
+    /* =====================================================
+       ACTIVE CONTRIBUTION TYPES
+       Monthly + Custom contribution types
+    ===================================================== */
+
+    /* GROUP LOAN SUMMARY */
+    #groupLoanSummarySection[hidden] { display: none !important; }
+    .loan-summary-card { margin-top: 18px; }
+    .loan-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .loan-summary-grid .metric-card { min-width: 0; }
+    @media (max-width: 1100px) {
+      .loan-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 520px) {
+      .loan-summary-grid .metric-value { font-size: 18px; overflow-wrap: anywhere; }
+    }
+
+    .active-contributions-card {
+      border: 1px solid var(--dashboard-border);
+      border-radius: var(--dashboard-radius);
+      background: var(--dashboard-card);
+      box-shadow: 0 1px 2px rgba(16, 24, 40, 0.03);
+      overflow: hidden;
+    }
+
+    .active-contributions-summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      padding: 16px;
+      border-bottom: 1px solid #edf0f4;
+    }
+
+    .active-contribution-summary-item {
+      min-width: 0;
+      padding: 13px;
+      border: 1px solid #edf0f4;
+      border-radius: 12px;
+      background: var(--dashboard-soft);
+    }
+
+    .active-contribution-summary-item span {
+      display: block;
+      color: var(--dashboard-muted);
+      font-size: 10px;
+      font-weight: 700;
+      line-height: 1.3;
+    }
+
+    .active-contribution-summary-item strong {
+      display: block;
+      margin-top: 6px;
+      color: var(--dashboard-text);
+      font-size: 20px;
+      line-height: 1.1;
+    }
+
+    .active-contribution-list {
+      width: 100%;
+    }
+
+    .active-contribution-table {
+      width: 100%;
+      min-width: 850px;
+      border-collapse: collapse;
+    }
+
+    .active-contribution-table th,
+    .active-contribution-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid #edf0f4;
+      text-align: left;
+      vertical-align: middle;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .active-contribution-table th {
+      color: #667085;
+      background: #fcfcfd;
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.045em;
+      white-space: nowrap;
+    }
+
+    .active-contribution-table td {
+      color: #475467;
+    }
+
+    .active-contribution-table tbody tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .active-contribution-name {
+      color: #344054;
+      font-weight: 800;
+    }
+
+    .active-contribution-type {
+      display: inline-flex;
+      align-items: center;
+      min-height: 23px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #eff8ff;
+      color: #175cd3;
+      font-size: 10px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .active-contribution-type.monthly {
+      background: #ecfdf3;
+      color: #067647;
+    }
+
+    .active-contribution-type.custom {
+      background: #f4f3ff;
+      color: #5925dc;
+    }
+
+    .active-contribution-meta {
+      color: #667085;
+      font-size: 11px;
+    }
+
+    /* =====================================================
+       CONTRIBUTION MEMBER STATUS
+    ===================================================== */
+
+    .member-contribution-status-card {
+      border: 1px solid var(--dashboard-border);
+      border-radius: var(--dashboard-radius);
+      background: var(--dashboard-card);
+      box-shadow: 0 1px 2px rgba(16, 24, 40, 0.03);
+      overflow: hidden;
+    }
+
+    .member-contribution-summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      padding: 16px;
+      border-bottom: 1px solid #edf0f4;
+    }
+
+    .member-contribution-summary-item {
+      min-width: 0;
+      padding: 13px;
+      border: 1px solid #edf0f4;
+      border-radius: 12px;
+      background: var(--dashboard-soft);
+    }
+
+    .member-contribution-summary-item span {
+      display: block;
+      color: var(--dashboard-muted);
+      font-size: 10px;
+      font-weight: 700;
+      line-height: 1.3;
+    }
+
+    .member-contribution-summary-item strong {
+      display: block;
+      margin-top: 6px;
+      color: var(--dashboard-text);
+      font-size: 20px;
+      line-height: 1.1;
+    }
+
+    #customContributionActiveCount {
+      color: #5925dc;
+    }
+
+    #customContributionPaidCount {
+      color: var(--status-up-to-date);
+    }
+
+    #customContributionOutstandingCount {
+      color: var(--status-arrears);
+    }
+
+    /* =====================================================
+       PROGRESS CARD
+    ===================================================== */
+
+    .progress-card {
+      padding: 20px;
+      border: 1px solid var(--dashboard-border);
+      border-radius: var(--dashboard-radius);
+      background: var(--dashboard-card);
+      box-shadow: 0 1px 2px rgba(16, 24, 40, 0.03);
+    }
+
+    .progress-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .progress-title {
+      min-width: 0;
+    }
+
+    .progress-title h3 {
+      margin: 0;
+      color: var(--dashboard-text);
+      font-size: 16px;
+    }
+
+    .progress-title p {
+      margin: 4px 0 0;
+      color: var(--dashboard-muted);
+      font-size: 12px;
+    }
+
+    #progressPercentage {
+      flex: 0 0 auto;
+      color: var(--dashboard-accent);
+      font-size: 24px;
+      font-weight: 800;
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 10px;
+      margin-top: 18px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #e5e7eb;
+    }
+
+    #progressBar {
+      width: 0;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--dashboard-accent);
+      transition: width 0.35s ease;
+    }
+
+    .progress-summary {
+      margin-top: 9px;
+      color: var(--dashboard-muted);
+      font-size: 12px;
+    }
+
+    .progress-stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .progress-stat {
+      min-width: 0;
+      padding: 12px;
+      border: 1px solid #edf0f4;
+      border-radius: 12px;
+      background: var(--dashboard-soft);
+    }
+
+    .progress-stat-label {
+      display: block;
+      color: var(--dashboard-muted);
+      font-size: 10px;
+      font-weight: 700;
+      line-height: 1.3;
+    }
+
+    .progress-stat-value {
+      display: block;
+      margin-top: 5px;
+      color: var(--dashboard-text);
+      font-size: 14px;
+      font-weight: 800;
+      overflow-wrap: anywhere;
+    }
+
+    /* =====================================================
+       CUMULATIVE CONTRIBUTION POSITION
+    ===================================================== */
+
+    .cumulative-position-card {
+      border: 1px solid var(--dashboard-border);
+      border-radius: var(--dashboard-radius);
+      background: var(--dashboard-card);
+      box-shadow: 0 1px 2px rgba(16, 24, 40, 0.03);
+      overflow: hidden;
+    }
+
+    .cumulative-status-summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      align-items: start;
+      gap: 14px;
+      padding: 16px;
+    }
+
+    .cumulative-status-column {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .cumulative-status-column .monthly-status-tile {
+      min-height: 132px;
+    }
+
+    .cumulative-amount-tile {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 7px;
+      min-width: 0;
+      min-height: 94px;
+      padding: 15px 18px;
+      border: 1px solid var(--dashboard-border);
+      border-left: 5px solid #12b76a;
+      border-radius: var(--dashboard-radius);
+      background: #fff;
+      box-shadow: 0 1px 2px rgba(16,24,40,.03);
+    }
+
+    .cumulative-amount-tile::before {
+      content: "";
+      display: block;
+      width: 8px;
+      height: 8px;
+      flex: 0 0 8px;
+      border-radius: 50%;
+      background: #12b76a;
+    }
+
+    .cumulative-arrears-amount::before { background: #f04438; }
+    .cumulative-credit-amount::before { background: #2e90fa; }
+
+    .cumulative-amount-tile .monthly-status-label {
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .cumulative-amount-tile strong {
+      font-size: clamp(20px, 2.4vw, 27px);
+      line-height: 1.1;
+      font-weight: 850;
+      font-variant-numeric: tabular-nums;
+      overflow-wrap: anywhere;
+    }
+
+    .cumulative-arrears-amount { border-left-color: #f04438; }
+    .cumulative-arrears-amount .monthly-status-label { color: #b42318; }
+    .cumulative-arrears-amount strong { color: #b42318; }
+    .cumulative-credit-amount { border-left-color: #2e90fa; }
+    .cumulative-credit-amount .monthly-status-label { color: #175cd3; }
+    .cumulative-credit-amount strong { color: #175cd3; }
+
+    .cumulative-position-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+      padding: 16px;
+    }
+
+    .cumulative-position-stat {
+      position: relative;
+      min-width: 0;
+      padding: 13px;
+      border: 1px solid #edf0f4;
+      border-radius: 12px;
+      background: var(--dashboard-soft);
+    }
+
+    .cumulative-filter-button {
+      width: 100%;
+      color: inherit;
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+      transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+    }
+
+    .cumulative-filter-button:hover,
+    .cumulative-filter-button:focus-visible {
+      border-color: #98a2b3;
+      box-shadow: 0 0 0 3px rgba(15, 118, 110, .10);
+      outline: none;
+    }
+
+    .cumulative-filter-button:active { transform: translateY(1px); }
+    .cumulative-filter-button[aria-pressed="true"] {
+      border-color: var(--dashboard-accent);
+      box-shadow: inset 0 0 0 1px var(--dashboard-accent);
+      background: #f0fdfa;
+    }
+
+    .cumulative-filter-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 0 16px 12px;
+      color: var(--dashboard-muted);
+      font-size: 12px;
+    }
+
+    .cumulative-filter-toolbar .btn {
+      border: 1px solid var(--dashboard-border);
+      border-radius: 9px;
+      padding: 7px 10px;
+      background: #fff;
+      color: #344054;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .cumulative-filter-toolbar .btn[hidden] { display: none !important; }
+
+
+    .cumulative-position-stat::before {
+      content: "";
+      display: block;
+      width: 8px;
+      height: 8px;
+      margin-bottom: 9px;
+      border-radius: 50%;
+      background: #98a2b3;
+    }
+
+    .cumulative-position-stat:nth-child(1)::before {
+      background: var(--status-up-to-date);
+    }
+
+    .cumulative-position-stat:nth-child(2)::before {
+      background: var(--status-arrears);
+    }
+
+    .cumulative-position-stat:nth-child(3)::before {
+      background: var(--status-credit);
+    }
+
+    .cumulative-position-stat:nth-child(4)::before {
+      background: #12b76a;
+    }
+
+    .cumulative-position-stat:nth-child(5)::before {
+      background: #f04438;
+    }
+
+    .cumulative-position-stat span {
+      display: block;
+      color: var(--dashboard-muted);
+      font-size: 10px;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .cumulative-position-stat strong {
+      display: block;
+      margin-top: 6px;
+      color: var(--dashboard-text);
+      font-size: 20px;
+      line-height: 1.1;
+      overflow-wrap: anywhere;
+    }
+
+    #cumulativeUpToDateCount {
+      color: var(--status-up-to-date);
+    }
+
+    #cumulativeArrearsCount { color: var(--status-arrears); }
+    #cumulativeCreditCount { color: var(--status-credit); }
+    #cumulativeArrearsAmount { color: #b42318; }
+    #cumulativeCreditAmount { color: #175cd3; }
+
+    .cumulative-summary-note {
+      margin: 0;
+      padding: 0 16px 16px;
+      color: var(--dashboard-muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .cumulative-position-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 680px;
+    }
+
+    .cumulative-position-table th,
+    .cumulative-position-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid #edf0f4;
+      text-align: left;
+      vertical-align: middle;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .cumulative-position-table th {
+      color: #667085;
+      background: #fcfcfd;
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.045em;
+      white-space: nowrap;
+    }
+
+    .cumulative-position-table td {
+      color: #475467;
+    }
+
+    .cumulative-position-table tbody tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .cumulative-position-table td strong {
+      color: #344054;
+    }
+
+    /* =====================================================
+       TWO COLUMN AREA
+    ===================================================== */
+
+    .dashboard-columns {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 16px;
+      margin-top: 22px;
+    }
+
+    /* =====================================================
+       CARD
+    ===================================================== */
+
+    .dashboard-card {
+      min-width: 0;
+      border: 1px solid var(--dashboard-border);
+      border-radius: var(--dashboard-radius);
+      background: var(--dashboard-card);
+      box-shadow: 0 1px 2px rgba(16, 24, 40, 0.03);
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 17px 18px 13px;
+      border-bottom: 1px solid #edf0f4;
+    }
+
+    .card-header h2,
+    .card-header h3 {
+      margin: 0;
+      color: var(--dashboard-text);
+      font-size: 15px;
+      line-height: 1.3;
+    }
+
+    .card-header p {
+      margin: 4px 0 0;
+      color: var(--dashboard-muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .card-body {
+      padding: 0;
+    }
+
+    /* =====================================================
+       OPERATIONS SNAPSHOT
+    ===================================================== */
+
+    .operations-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      padding: 16px;
+    }
+
+    .operation-item {
+      min-width: 0;
+      padding: 13px;
+      border: 1px solid #edf0f4;
+      border-radius: 12px;
+      background: var(--dashboard-soft);
+    }
+
+    .operation-item span {
+      display: block;
+      color: var(--dashboard-muted);
+      font-size: 10px;
+      font-weight: 700;
+      line-height: 1.3;
+    }
+
+    .operation-item strong {
+      display: block;
+      margin-top: 6px;
+      color: var(--dashboard-text);
+      font-size: 20px;
+      line-height: 1.1;
+    }
+
+    /* =====================================================
+       TABLES
+    ===================================================== */
+
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .dashboard-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 620px;
+    }
+
+    .dashboard-table th,
+    .dashboard-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid #edf0f4;
+      text-align: left;
+      vertical-align: middle;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .dashboard-table th {
+      color: #667085;
+      background: #fcfcfd;
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.045em;
+      white-space: nowrap;
+    }
+
+    .dashboard-table td {
+      color: #475467;
+    }
+
+    .dashboard-table tbody tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .dashboard-table td strong {
+      color: #344054;
+    }
+
+    /* =====================================================
+       STATUS BADGES
+    ===================================================== */
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 25px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #f2f4f7;
+      color: #475467;
+      font-size: 10px;
+      font-weight: 800;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .status-paid,
+    .status-approved,
+    .status-active,
+    .status-up-to-date {
+      background: #ecfdf3;
+      color: #067647;
+    }
+
+    .status-partial,
+    .status-pending,
+    .status-upcoming {
+      background: #fffaeb;
+      color: #b54708;
+    }
+
+    .status-outstanding,
+    .status-rejected,
+    .status-inactive,
+    .status-suspended,
+    .status-removed,
+    .status-arrears {
+      background: #fef3f2;
+      color: #b42318;
+    }
+
+    .status-credit {
+      background: #eff8ff;
+      color: #175cd3;
+    }
+
+    .status-custom {
+      background: #f4f3ff;
+      color: #5925dc;
+    }
+
+    /* =====================================================
+       EMPTY STATE
+    ===================================================== */
+
+    .empty-state {
+      min-height: 105px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 5px;
+    }
+
+    .empty-state strong {
+      color: #344054;
+      font-size: 13px;
+    }
+
+    .empty-state span {
+      color: #667085;
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    /* =====================================================
+       GETTING STARTED POPUP
+    ===================================================== */
+
+    #gettingStartedPopup {
+      position: fixed;
+      inset: 0;
+      z-index: 30000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(16, 24, 40, 0.48);
+    }
+
+    #gettingStartedPopup[hidden] {
+      display: none;
+    }
+
+    .getting-started-dialog {
+      width: min(460px, 100%);
+      padding: 24px;
+      border: 1px solid var(--dashboard-border);
+      border-radius: 18px;
+      background: #ffffff;
+      box-shadow: 0 24px 60px rgba(16, 24, 40, 0.22);
+    }
+
+    .getting-started-dialog h2 {
+      margin: 0;
+      color: var(--dashboard-text);
+      font-size: 20px;
+      line-height: 1.25;
+    }
+
+    .getting-started-dialog p {
+      margin: 9px 0 0;
+      color: var(--dashboard-muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .getting-started-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 9px;
+      margin-top: 20px;
+    }
+
+    /* =====================================================
+       TABLET
+    ===================================================== */
+
+    @media (max-width: 1100px) {
+
+      .metrics-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .dashboard-columns {
+        grid-template-columns: 1fr;
+      }
+
+      .cumulative-position-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .active-contributions-summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .member-contribution-summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .topbar-inner {
+        padding-left: 16px;
+        padding-right: 16px;
+      }
+
+      .main {
+        padding-left: 16px;
+        padding-right: 16px;
+      }
+    }
+
+    /* =====================================================
+       MOBILE
+    ===================================================== */
+
+    @media (max-width: 800px) {
+
+      .topbar-inner {
+        min-height: 60px;
+        padding: 0 12px;
+        gap: 9px;
+      }
+
+      .menu-toggle {
+        display: inline-flex;
+      }
+
+      .brand {
+        font-size: 16px;
+      }
+
+      .topbar-actions {
+        margin-left: auto;
+      }
+
+      .topbar-actions .user-name {
+        display: none;
+      }
+
+      .dashboard-header-copy {
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .dashboard-header-actions {
+        width: 100%;
+      }
+
+      .dashboard-header-actions .btn {
+        width: 100%;
+      }
+
+      .topbar-actions .btn {
+        min-height: 38px;
+        padding: 7px 10px;
+        font-size: 12px;
+      }
+
+      .main {
+        padding: 20px 12px 100px;
+      }
+
+      .dashboard-header {
+        margin-bottom: 18px;
+      }
+
+      .dashboard-header h1 {
+        font-size: 25px;
+      }
+
+      .dashboard-header p {
+        font-size: 13px;
+      }
+
+      .metrics-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .metric-card {
+        padding: 14px;
+        border-radius: 14px;
+      }
+
+      .metric-value {
+        font-size: 21px;
+      }
+
+      .progress-card {
+        padding: 16px;
+        border-radius: 14px;
+      }
+
+      .progress-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .active-contributions-card,
+      .member-contribution-status-card,
+      .cumulative-position-card {
+        border-radius: 14px;
+      }
+
+      .active-contributions-summary,
+      .member-contribution-summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        padding: 12px;
+      }
+
+      .active-contribution-summary-item,
+      .member-contribution-summary-item {
+        padding: 11px;
+      }
+
+      .cumulative-position-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        padding: 12px;
+      }
+
+      .operations-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        padding: 12px;
+      }
+
+      .dashboard-card {
+        border-radius: 14px;
+      }
+
+      .card-header {
+        padding: 15px;
+      }
+
+      .dashboard-table {
+        min-width: 600px;
+      }
+
+      .cumulative-position-table {
+        min-width: 680px;
+      }
+
+      .active-contribution-table {
+        min-width: 850px;
+      }
+    }
+
+    /* =====================================================
+       SMALL MOBILE
+    ===================================================== */
+
+    @media (max-width: 520px) {
+
+      .metrics-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .metric-card {
+        padding: 13px;
+      }
+
+      .metric-label {
+        font-size: 10px;
+      }
+
+      .metric-value {
+        font-size: 19px;
+      }
+
+      .metric-meta {
+        font-size: 10px;
+      }
+
+      .progress-top {
+        gap: 10px;
+      }
+
+      #progressPercentage {
+        font-size: 21px;
+      }
+
+      .progress-summary {
+        font-size: 11px;
+      }
+
+      .active-contributions-summary,
+      .member-contribution-summary {
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+
+      .active-contribution-summary-item strong,
+      .member-contribution-summary-item strong {
+        font-size: 18px;
+      }
+
+      .cumulative-position-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+
+      .cumulative-position-stat {
+        padding: 11px;
+      }
+
+      .cumulative-position-stat strong {
+        font-size: 18px;
+      }
+      .cumulative-amount-tile strong { font-size: 21px; }
+
+      .operations-grid {
+        gap: 8px;
+      }
+
+      .operation-item {
+        padding: 11px;
+      }
+
+      .operation-item strong {
+        font-size: 18px;
+      }
+
+      .getting-started-dialog {
+        padding: 20px;
+      }
+
+      .getting-started-actions {
+        flex-direction: column-reverse;
+      }
+
+      .getting-started-actions .btn {
+        width: 100%;
+      }
+    }
+
+    /* =====================================================
+       VERY SMALL DEVICES
+    ===================================================== */
+
+    @media (max-width: 360px) {
+
+      .main {
+        padding-left: 9px;
+        padding-right: 9px;
+      }
+
+      .topbar-inner {
+        padding-left: 8px;
+        padding-right: 8px;
+      }
+
+      .metrics-grid {
+        gap: 7px;
+      }
+
+      .metric-card {
+        padding: 11px;
+      }
+
+      .metric-value {
+        font-size: 17px;
+      }
+
+      .brand {
+        font-size: 14px;
+      }
+
+      .topbar-actions .btn {
+        padding-left: 8px;
+        padding-right: 8px;
+      }
+    }
+
+    /* =====================================================
+       REDUCED MOTION
+    ===================================================== */
+
+    @media (prefers-reduced-motion: reduce) {
+
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        transition: none !important;
+        animation: none !important;
+      }
+
+    }
+  
+    /* Compact, clickable monthly status summary */
+    .monthly-status-summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+    .monthly-status-tile {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 7px;
+      min-width: 0;
+      min-height: 132px;
+      padding: 18px;
+      border: 1px solid var(--dashboard-border);
+      border-left: 5px solid #12b76a;
+      border-radius: var(--dashboard-radius);
+      background: #fff;
+      color: var(--dashboard-text);
+      text-align: left;
+      cursor: pointer;
+      box-shadow: 0 1px 2px rgba(16,24,40,.03);
+      transition: transform .15s ease, box-shadow .15s ease;
+    }
+    .monthly-status-tile:hover { transform: translateY(-1px); box-shadow: 0 5px 14px rgba(16,24,40,.08); }
+    .monthly-status-tile:focus-visible { outline: 3px solid #84caff; outline-offset: 2px; }
+    .monthly-status-up-to-date { border-left-color: #12b76a; }
+    .monthly-status-outstanding { border-left-color: #f04438; }
+    .monthly-status-credit { border-left-color: #2e90fa; }
+    .monthly-status-label { font-size: 13px; font-weight: 800; }
+    .monthly-status-up-to-date .monthly-status-label { color: #087443; }
+    .monthly-status-outstanding .monthly-status-label { color: #b42318; }
+    .monthly-status-credit .monthly-status-label { color: #175cd3; }
+    .monthly-status-tile strong { font-size: clamp(25px, 3vw, 32px); line-height: 1.1; font-weight: 850; font-variant-numeric: tabular-nums; }
+    .monthly-status-hint { color: var(--dashboard-muted); font-size: 11px; font-weight: 600; }
+    .monthly-status-dialog {
+      width: min(1100px, calc(100% - 24px));
+      max-width: 1100px;
+      max-height: min(85vh, 850px);
+      padding: 20px;
+      border: 1px solid var(--dashboard-border);
+      border-radius: 16px;
+      color: var(--dashboard-text);
+      background: #fff;
+      box-shadow: 0 24px 70px rgba(16,24,40,.25);
+    }
+    .monthly-status-dialog::backdrop { background: rgba(16,24,40,.55); }
+    .monthly-status-dialog-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+    .monthly-status-dialog-header h3 { margin: 0; font-size: 19px; }
+    .monthly-status-dialog-header p { margin: 5px 0 0; color: var(--dashboard-muted); font-size: 13px; }
+    .monthly-status-dialog .table-wrap { max-height: 62vh; overflow: auto; }
+    @media (max-width: 640px) {
+      .cumulative-status-summary {
+        grid-template-columns: 1fr;
+        gap: 10px;
+        padding: 12px;
+      }
+      /* Mobile order: all three member counts first, then the two totals. */
+      .cumulative-status-column { display: contents; }
+      .cumulative-status-summary [data-cumulative-filter="UP_TO_DATE"] { order: 1; }
+      .cumulative-status-summary [data-cumulative-filter="ARREARS"] { order: 2; }
+      .cumulative-status-summary [data-cumulative-filter="CREDIT"] { order: 3; }
+      .cumulative-status-summary .cumulative-arrears-amount { order: 4; }
+      .cumulative-status-summary .cumulative-credit-amount { order: 5; }
+      .cumulative-amount-tile { min-height: 82px; padding: 12px 14px; }
+      .cumulative-status-column .monthly-status-tile { min-height: 118px; }
+      .monthly-status-summary { grid-template-columns: 1fr; gap: 10px; }
+      .monthly-status-tile { min-height: 96px; padding: 14px 16px; }
+      .monthly-status-dialog { padding: 14px; }
+    }
+
+
+    .custom-contribution-status-list { display: grid; gap: 14px; }
+    .custom-contribution-status-card { border: 1px solid var(--dashboard-border); border-radius: 14px; padding: 16px; background: #fff; }
+    .custom-contribution-status-card h3 { margin: 0; font-size: 16px; }
+    .custom-contribution-status-meta { color: var(--dashboard-muted); font-size: 12px; margin-top: 4px; }
+    .custom-contribution-status-counts { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; margin-top: 14px; }
+    .custom-contribution-status-button { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-width: 0; padding: 12px; border: 1px solid var(--dashboard-border); border-radius: 10px; background: #fff; text-align: left; cursor: pointer; }
+    .custom-contribution-status-button:focus-visible { outline: 3px solid #84caff; outline-offset: 2px; }
+    .custom-contribution-status-button strong { font-size: 22px; font-variant-numeric: tabular-nums; }
+    .custom-contribution-status-button span { font-size: 12px; font-weight: 800; }
+    .custom-contribution-status-button.paid { border-left: 4px solid #12b76a; color: #087443; }
+    .custom-contribution-status-button.outstanding { border-left: 4px solid #f04438; color: #b42318; }
+    .custom-contribution-status-button.partial { border-left: 4px solid #f79009; color: #b54708; }
+    @media (max-width: 640px) { .custom-contribution-status-counts { grid-template-columns: 1fr; gap: 8px; } .custom-contribution-status-button { padding: 10px 12px; } }
+</style>
+<script src="/js/clean-urls.js?v=20261024" defer></script>
+</head>
+
+<body>
+
+  <!-- =====================================================
+       ADMIN TOPBAR
+       admin-layout.js owns the navigation injected here.
+  ===================================================== -->
+
+  <header class="topbar">
+
+    <div class="topbar-inner">
+
+      <div
+        class="brand"
+        aria-label="CHAMA LIVE"
+      >
+        CHAMA <span>LIVE</span>
+      </div>
+
+      <nav
+        class="top-nav"
+        aria-label="Admin navigation"
+      ></nav>
+
+      <div class="topbar-actions">
+
+        <span
+          data-user-name
+          class="muted user-name"
+        >
+          Member
+        </span>
+
+        <button
+          id="logout"
+          class="btn btn-secondary"
+          type="button"
+        >
+          Sign out
+        </button>
+
+      </div>
+
+    </div>
+
+  </header>
+
+
+  <!-- =====================================================
+       MAIN LAYOUT
+  ===================================================== -->
+
+  <div class="layout">
+
+    <aside
+      class="sidebar"
+      aria-hidden="true"
+    ></aside>
+
+    <main class="main">
+
+      <!-- STATUS -->
+
+      <div
+        id="status"
+        hidden
+        role="status"
+        aria-live="polite"
+      >
+        Loading dashboard...
+      </div>
+
+
+      <!-- ERROR -->
+
+      <div
+        id="error"
+        hidden
+        role="alert"
+        aria-live="assertive"
+      ></div>
+
+
+      <!-- =================================================
+           DASHBOARD HEADER
+      ================================================= -->
+
+      <section class="dashboard-header">
+
+        <div class="dashboard-header-copy">
+          <div>
+            <h1>
+              Group Dashboard
+            </h1>
+
+            <p>
+              Welcome,
+              <strong data-user-name>Member</strong>, to
+              <strong data-group-name>
+                your group
+              </strong>.
+              See your group's financial position, member payment status,
+              ongoing contributions and key group activity in one place.
+            </p>
+          </div>
+
+          <div class="dashboard-header-actions">
+            <button
+              id="refreshDashboard"
+              class="btn btn-secondary"
+              type="button"
+              title="Reload the latest dashboard information"
+            >
+              Refresh
+            </button>
+          </div>
+        </div>
+
+      </section>
+
+      <section id="optionalModules" aria-label="Optional group modules" hidden style="margin:16px 0">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px" id="optionalModuleCards"></div>
+      </section>
+
+
+      <!-- =================================================
+           FINANCIAL OVERVIEW
+      ================================================= -->
+
+      <section
+        class="dashboard-section"
+        aria-labelledby="financialOverviewTitle"
+      >
+
+        <div class="section-heading">
+
+          <h2 id="financialOverviewTitle">
+            Financial overview
+          </h2>
+
+          <p>
+            Current membership, contribution and group
+            balance information.
+          </p>
+
+        </div>
+
+
+        <div class="metrics-grid">
+
+          <article class="metric-card">
+
+            <span class="metric-label">
+              Active Members
+            </span>
+
+            <strong
+              id="activeMembers"
+              class="metric-value"
+            >
+              —
+            </strong>
+
+            <span
+              id="membersCount"
+              class="metric-meta"
+            >
+              —
+            </span>
+
+          </article>
+
+
+          <article class="metric-card">
+
+            <span class="metric-label">
+              Monthly Expected
+            </span>
+
+            <strong
+              id="monthlyExpected"
+              class="metric-value"
+            >
+              KSh 0
+            </strong>
+
+            <span class="metric-meta">
+              Current month obligation
+            </span>
+
+          </article>
+
+
+          <article class="metric-card">
+
+            <span class="metric-label">
+              Applied This Month
+            </span>
+
+            <strong
+              id="monthlyCollected"
+              class="metric-value"
+            >
+              KSh 0
+            </strong>
+
+            <span class="metric-meta">
+              Canonical payment allocation
+            </span>
+
+          </article>
+
+
+          <article class="metric-card">
+
+            <span class="metric-label">
+              Current Balance
+            </span>
+
+            <strong
+              id="currentBalance"
+              class="metric-value"
+            >
+              KSh 0
+            </strong>
+
+            <span class="metric-meta">
+              Contributions less approved expenses
+            </span>
+
+          </article>
+
+        </div>
+
+      </section>
+
+
+      <!-- GROUP LOAN SUMMARY: loaded only when loans are enabled -->
+      <section
+        id="groupLoanSummarySection"
+        class="dashboard-section loan-summary-card"
+        aria-labelledby="groupLoanSummaryTitle"
+        hidden
+      >
+        <div class="section-heading">
+          <h2 id="groupLoanSummaryTitle">Loan Summary</h2>
+          <p>Group-wide loan activity and outstanding principal.</p>
+        </div>
+        <div class="loan-summary-grid">
+          <article class="metric-card">
+            <span class="metric-label">Total Loan Disbursed</span>
+            <strong id="loanSummaryTotalDisbursed" class="metric-value">KSh 0</strong>
+            <span class="metric-meta">Principal issued to members</span>
+          </article>
+          <article class="metric-card">
+            <span class="metric-label">Interest Gained</span>
+            <strong id="loanSummaryInterestGained" class="metric-value">KSh 0</strong>
+            <span class="metric-meta">Interest collected from repayments</span>
+          </article>
+          <article class="metric-card">
+            <span class="metric-label">Members Benefited</span>
+            <strong id="loanSummaryMembersBenefited" class="metric-value">0</strong>
+            <span class="metric-meta">Members with a disbursed loan</span>
+          </article>
+          <article class="metric-card">
+            <span class="metric-label">Current Loans Outstanding</span>
+            <strong id="loanSummaryOutstandingAmount" class="metric-value">KSh 0</strong>
+            <span id="loanSummaryOutstandingCount" class="metric-meta">0 active/overdue loans</span>
+          </article>
+        </div>
+      </section>
+
+      <!-- =================================================
+           ACTIVE CONTRIBUTION TYPES
+           Monthly + active Custom contributions
+      ================================================= -->
+
+      <section
+        class="dashboard-section"
+        aria-labelledby="activeContributionTypesTitle"
+      >
+
+        <div class="section-heading">
+
+          <h2 id="activeContributionTypesTitle">
+            Ongoing Contributions
+          </h2>
+
+          <p>
+            All ongoing contribution definitions currently available to the group.
+            Monthly Contribution is always shown, together with active
+            Custom Contributions in open, due or grace status.
+          </p>
+
+        </div>
+
+
+        <article
+          id="activeContributionTypesCard"
+          class="active-contributions-card"
+        >
+
+          <div class="active-contributions-summary">
+
+            <div class="active-contribution-summary-item">
+
+              <span>
+                Active Contribution Types
+              </span>
+
+              <strong id="activeContributionTypesCount">
+                0
+              </strong>
+
+            </div>
+
+
+            <div class="active-contribution-summary-item">
+
+              <span>
+                Monthly
+              </span>
+
+              <strong id="monthlyContributionActiveCount">
+                0
+              </strong>
+
+            </div>
+
+
+            <div class="active-contribution-summary-item">
+
+              <span>
+                Custom
+              </span>
+
+              <strong id="customContributionTypesCount">
+                0
+              </strong>
+
+            </div>
+
+
+            <div class="active-contribution-summary-item">
+
+              <span>
+                Active Members
+              </span>
+
+              <strong id="activeContributionMembersCount">
+                0
+              </strong>
+
+            </div>
+
+          </div>
+
+
+          <div class="table-wrap">
+
+            <table class="active-contribution-table">
+
+              <thead>
+
+                <tr>
+
+                  <th scope="col">
+                    Contribution
+                  </th>
+
+                  <th scope="col">
+                    Type
+                  </th>
+
+                  <th scope="col">
+                    Amount
+                  </th>
+
+                  <th scope="col">
+                    Cycle
+                  </th>
+
+                  <th scope="col">
+                    Due
+                  </th>
+
+                  <th scope="col">
+                    Closing
+                  </th>
+
+                  <th scope="col">
+                    Fine Rule
+                  </th>
+
+                  <th scope="col">
+                    Status
+                  </th>
+
+                </tr>
+
+              </thead>
+
+
+              <tbody id="activeContributionTypeRows">
+
+                <tr>
+
+                  <td colspan="8">
+
+                    <div class="empty-state">
+
+                      <strong>
+                        Loading ongoing contributions...
+                      </strong>
+
+                      <span>
+                        Monthly and active Custom Contribution
+                        rules will appear here.
+                      </span>
+
+                    </div>
+
+                  </td>
+
+                </tr>
+
+              </tbody>
+
+            </table>
+
+          </div>
+
+        </article>
+
+      </section>
+
+
+      <!-- =================================================
+           CONTRIBUTION PROGRESS
+      ================================================= -->
+
+      <section
+        class="dashboard-section"
+        aria-labelledby="contributionProgressTitle"
+      >
+
+        <div class="section-heading">
+
+          <h2 id="contributionProgressTitle">
+            Contribution progress
+          </h2>
+
+          <p>
+            Canonical monthly obligation and allocation status.
+          </p>
+
+        </div>
+
+
+        <article class="progress-card">
+
+          <div class="progress-top">
+
+            <div class="progress-title">
+
+              <h3 id="progressMonth">
+                Current month
+              </h3>
+
+              <p>
+                Applied contribution against the expected
+                monthly amount.
+              </p>
+
+            </div>
+
+            <strong id="progressPercentage">
+              0%
+            </strong>
+
+          </div>
+
+
+          <div
+            class="progress-track"
+            role="progressbar"
+            aria-label="Monthly contribution progress"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow="0"
+          >
+
+            <div id="progressBar"></div>
+
+          </div>
+
+
+          <div
+            id="progressText"
+            class="progress-summary"
+          >
+            KSh 0 of KSh 0
+          </div>
+
+
+          <div class="progress-stats">
+
+            <div class="progress-stat">
+
+              <span class="progress-stat-label">
+                Contributors
+              </span>
+
+              <strong
+                id="contributorsCount"
+                class="progress-stat-value"
+              >
+                0
+              </strong>
+
+            </div>
+
+
+            <div class="progress-stat">
+
+              <span class="progress-stat-label">
+                Participation
+              </span>
+
+              <strong
+                id="contributorsPercentage"
+                class="progress-stat-value"
+              >
+                0%
+              </strong>
+
+            </div>
+
+
+            <div class="progress-stat">
+
+              <span class="progress-stat-label">
+                Current Outstanding
+              </span>
+
+              <strong
+                id="monthlyOutstanding"
+                class="progress-stat-value"
+              >
+                KSh 0
+              </strong>
+
+            </div>
+
+
+            <div class="progress-stat">
+
+              <span class="progress-stat-label">
+                Applied
+              </span>
+
+              <strong
+                id="progressApplied"
+                class="progress-stat-value"
+              >
+                KSh 0
+              </strong>
+
+            </div>
+
+          </div>
+
+
+          <div
+            class="progress-stats"
+            style="margin-top: 10px;"
+          >
+
+            <div class="progress-stat">
+
+              <span class="progress-stat-label">
+                Carry-forward Credit
+              </span>
+
+              <strong
+                id="progressCarryForward"
+                class="progress-stat-value"
+              >
+                KSh 0
+              </strong>
+
+            </div>
+
+
+            <div class="progress-stat">
+
+              <span class="progress-stat-label">
+                Current Outstanding
+              </span>
+
+              <strong
+                id="progressOutstanding"
+                class="progress-stat-value"
+              >
+                KSh 0
+              </strong>
+
+            </div>
+
+          </div>
+
+        </article>
+
+      </section>
+
+
+      <!-- =================================================
+           MONTHLY CONTRIBUTION STATUS SUMMARY
+           Click a status to view its member list
+      ================================================= -->
+      <section class="dashboard-section" aria-labelledby="memberPaymentsTitle">
+        <div class="section-heading">
+          <h2 id="memberPaymentsTitle">Monthly contribution status</h2>
+          <p>Quick group-wide counts for the selected month. Select a status to view the members in that category.</p>
+        </div>
+
+        <div class="monthly-status-summary" id="monthlyStatusSummary" aria-live="polite">
+          <button type="button" class="monthly-status-tile monthly-status-up-to-date" data-monthly-status="up-to-date" aria-haspopup="dialog" aria-controls="monthlyStatusDialog">
+            <span class="monthly-status-label">Up to date</span>
+            <strong id="monthlyStatusUpToDateCount">—</strong>
+            <span class="monthly-status-hint">Members · View list</span>
+          </button>
+          <button type="button" class="monthly-status-tile monthly-status-outstanding" data-monthly-status="outstanding" aria-haspopup="dialog" aria-controls="monthlyStatusDialog">
+            <span class="monthly-status-label">Outstanding</span>
+            <strong id="monthlyStatusOutstandingCount">—</strong>
+            <span class="monthly-status-hint">Members · View list</span>
+          </button>
+          <button type="button" class="monthly-status-tile monthly-status-credit" data-monthly-status="credit" aria-haspopup="dialog" aria-controls="monthlyStatusDialog">
+            <span class="monthly-status-label">Paid with credit</span>
+            <strong id="monthlyStatusCreditCount">—</strong>
+            <span class="monthly-status-hint">Members · View list</span>
+          </button>
+        </div>
+        <p id="monthlyStatusSummaryNote" class="dashboard-help-text">Counts reflect active members with a monthly obligation for the selected month. Non-monthly contributions are reported separately.</p>
+
+        <dialog id="monthlyStatusDialog" class="monthly-status-dialog" aria-labelledby="monthlyStatusDialogTitle">
+          <div class="monthly-status-dialog-header">
+            <div>
+              <h3 id="monthlyStatusDialogTitle">Monthly contribution status</h3>
+              <p id="monthlyStatusDialogDescription">Members in the selected status.</p>
+            </div>
+            <button type="button" id="monthlyStatusDialogClose" class="btn" aria-label="Close member list">Close</button>
+          </div>
+          <div class="table-wrap">
+            <table class="dashboard-table">
+              <thead>
+                <tr>
+                  <th scope="col">Member</th>
+                  <th scope="col">Monthly Due</th>
+                  <th scope="col">Previous Outstanding</th>
+                  <th scope="col">Applied to This Month</th>
+                  <th scope="col">Carry-forward Credit</th>
+                  <th scope="col">Current Outstanding</th>
+                  <th scope="col">Monthly Status</th>
+                </tr>
+              </thead>
+              <tbody id="memberStatusRows">
+                <tr><td colspan="7"><div class="empty-state"><strong>Loading member status...</strong></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </dialog>
+      </section>
+
+
+      <!-- =================================================
+           NON-MONTHLY CONTRIBUTION TYPE SUMMARY
+      ================================================= -->
+      <section class="dashboard-section" aria-labelledby="nonMonthlyContributionTitle">
+        <div class="section-heading">
+          <h2 id="nonMonthlyContributionTitle">Non-monthly contribution summary</h2>
+          <p>Dev Fund, Special Contribution and other types are reported separately from Monthly Contribution. Amounts follow obligation allocations, not payment date alone.</p>
+        </div>
+        <article class="dashboard-card">
+          <div class="table-wrap">
+            <table class="dashboard-table">
+              <thead><tr>
+                <th scope="col">Contribution Type</th>
+                <th scope="col">Due This Month</th>
+                <th scope="col">Allocated to This Month</th>
+                <th scope="col">Payments Received This Month, Allocated to Type</th>
+                <th scope="col">Outstanding Due to Date</th>
+              </tr></thead>
+              <tbody id="nonMonthlyContributionRows">
+                <tr><td colspan="5"><div class="empty-state"><strong>Loading non-monthly contributions...</strong></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+
+      <!-- =================================================
+           ACTIVE CUSTOM CONTRIBUTION STATUS SUMMARY
+           Counts per active custom contribution; member lists on demand
+      ================================================= -->
+      <section class="dashboard-section" aria-labelledby="customContributionMemberStatusTitle">
+        <div class="section-heading">
+          <h2 id="customContributionMemberStatusTitle">Custom contribution payment status</h2>
+          <p>Each active custom contribution shows its Paid, Outstanding and Partial member counts. Select a status to view the members and amounts.</p>
+        </div>
+
+        <article class="member-contribution-status-card">
+          <div class="member-contribution-summary">
+            <div class="member-contribution-summary-item">
+              <span>Active Custom Contributions</span>
+              <strong id="customContributionActiveCount">0</strong>
+            </div>
+          </div>
+          <div id="customContributionStatusCards" class="custom-contribution-status-list" aria-live="polite">
+            <div class="empty-state"><strong>Loading custom contribution status...</strong><span>Active contributions and member payment status will appear here.</span></div>
+          </div>
+        </article>
+
+        <dialog id="customContributionStatusDialog" class="monthly-status-dialog" aria-labelledby="customContributionStatusDialogTitle">
+          <div class="monthly-status-dialog-header">
+            <div>
+              <h3 id="customContributionStatusDialogTitle">Custom contribution members</h3>
+              <p id="customContributionStatusDialogDescription">Members in the selected payment status.</p>
+            </div>
+            <button type="button" id="customContributionStatusDialogClose" class="btn" aria-label="Close member list">Close</button>
+          </div>
+          <div class="table-wrap">
+            <table class="dashboard-table">
+              <thead><tr>
+                <th scope="col">Member</th>
+                <th scope="col">Contribution</th>
+                <th scope="col">Amount Due</th>
+                <th scope="col">Applied</th>
+                <th scope="col">Outstanding</th>
+                <th scope="col">Status</th>
+              </tr></thead>
+              <tbody id="customContributionMemberStatusRows">
+                <tr><td colspan="6"><div class="empty-state"><strong>Select a status to view members</strong></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </dialog>
+      </section>
+
+
+      <!-- =================================================
+           CUMULATIVE CONTRIBUTION POSITION
+           Separate from monthly and custom contribution
+           obligation status.
+      ================================================= -->
+
+      <section
+        class="dashboard-section"
+        aria-labelledby="cumulativePositionTitle"
+      >
+
+        <div class="section-heading">
+
+          <h2 id="cumulativePositionTitle">
+            Cumulative contribution position
+          </h2>
+
+          <p>
+            Scope: Total Paid counts recorded payments of all contribution types once. Total Due,
+            Total Allocated and Arrears reflect Monthly obligations only. Credit is the unallocated
+            balance on recorded Monthly payment rows; non-monthly payments and obligations are
+            reported separately above and are not Monthly credit.
+          </p>
+
+        </div>
+
+
+        <article
+          id="cumulativePositionCard"
+          class="cumulative-position-card"
+        >
+
+          <div class="cumulative-status-summary">
+            <div class="cumulative-status-column">
+              <button type="button" class="monthly-status-tile monthly-status-up-to-date" data-cumulative-filter="UP_TO_DATE" aria-label="Review members up to date">
+                <span class="monthly-status-label">Members Up to Date</span>
+                <strong id="cumulativeUpToDateCount">0</strong>
+                <span class="monthly-status-hint">Click to review names</span>
+              </button>
+            </div>
+            <div class="cumulative-status-column">
+              <button type="button" class="monthly-status-tile monthly-status-outstanding" data-cumulative-filter="ARREARS" aria-label="Review members in arrears">
+                <span class="monthly-status-label">Members in Arrears</span>
+                <strong id="cumulativeArrearsCount">0</strong>
+                <span class="monthly-status-hint">Click to review names</span>
+              </button>
+              <div class="cumulative-amount-tile cumulative-arrears-amount" aria-label="Cumulative arrears amount">
+                <span class="monthly-status-label">Cumulative Arrears</span>
+                <strong id="cumulativeArrearsAmount" class="amount-negative">KSh 0</strong>
+              </div>
+            </div>
+            <div class="cumulative-status-column">
+              <button type="button" class="monthly-status-tile monthly-status-credit" data-cumulative-filter="CREDIT" aria-label="Review members with credit">
+                <span class="monthly-status-label">Members with Credit</span>
+                <strong id="cumulativeCreditCount">0</strong>
+                <span class="monthly-status-hint">Click to review names</span>
+              </button>
+              <div class="cumulative-amount-tile cumulative-credit-amount" aria-label="Cumulative credit amount">
+                <span class="monthly-status-label">Cumulative Credit</span>
+                <strong id="cumulativeCreditAmount" class="amount-positive">KSh 0</strong>
+              </div>
+            </div>
+          </div>
+
+
+
+        </article>
+
+        <dialog id="cumulativeMemberDialog" class="monthly-status-dialog" aria-labelledby="cumulativeMemberDialogTitle">
+          <div class="monthly-status-dialog-header">
+            <div>
+              <h3 id="cumulativeMemberDialogTitle">Cumulative member positions</h3>
+              <p id="cumulativeMemberDialogDescription">Members in the selected status.</p>
+            </div>
+            <button type="button" id="cumulativeMemberDialogClose" class="btn" aria-label="Close member list">Close</button>
+          </div>
+          <div class="table-wrap">
+            <table class="dashboard-table">
+              <thead><tr>
+                <th scope="col">Member</th>
+                <th scope="col">Total Paid</th>
+                <th scope="col">Total Due</th>
+                <th scope="col">Allocated</th>
+                <th scope="col">Arrears</th>
+                <th scope="col">Credit</th>
+                <th scope="col">Status</th>
+              </tr></thead>
+              <tbody id="cumulativeMemberDialogRows">
+                <tr><td colspan="7"><div class="empty-state"><strong>Select a status to view members</strong></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </dialog>
+
+      </section>
+
+
+      <!-- =================================================
+           OPERATIONS SNAPSHOT
+      ================================================= -->
+
+      <section
+        class="dashboard-section"
+        aria-labelledby="operationsTitle"
+      >
+
+        <div class="section-heading">
+
+          <h2 id="operationsTitle">
+            Operations snapshot
+          </h2>
+
+          <p>
+            Read-only overview of the group's operational records.
+          </p>
+
+        </div>
+
+
+        <article class="dashboard-card">
+
+          <div class="operations-grid">
+
+            <div class="operation-item">
+
+              <span>
+                Support &amp; Welfare
+              </span>
+
+              <strong id="operationsSupportCases">
+                0
+              </strong>
+
+            </div>
+
+
+            <div class="operation-item">
+
+              <span>
+                Plans
+              </span>
+
+              <strong id="operationsPlans">
+                0
+              </strong>
+
+            </div>
+
+
+            <div class="operation-item">
+
+              <span>
+                Activities
+              </span>
+
+              <strong id="operationsActivities">
+                0
+              </strong>
+
+            </div>
+
+
+            <div class="operation-item">
+
+              <span>
+                Milestones
+              </span>
+
+              <strong id="operationsMilestones">
+                0
+              </strong>
+
+            </div>
+
+
+            <div class="operation-item">
+
+              <span>
+                Assets
+              </span>
+
+              <strong id="operationsAssets">
+                0
+              </strong>
+
+            </div>
+
+
+            <div class="operation-item">
+
+              <span>
+                Contribution Goals
+              </span>
+
+              <strong id="operationsContributionGoals">
+                0
+              </strong>
+
+            </div>
+
+          </div>
+
+        </article>
+
+      </section>
+
+
+      <!-- =================================================
+           RECENT CONTRIBUTIONS + RECENT EXPENSES
+      ================================================= -->
+
+      <section class="dashboard-section">
+
+        <div class="dashboard-columns">
+
+
+          <!-- RECENT CONTRIBUTIONS -->
+
+          <article class="dashboard-card">
+
+            <div class="card-header">
+
+              <h2>
+                Recent contributions
+              </h2>
+
+              <p>
+                Latest recorded contribution transactions,
+                including Monthly and active Custom types.
+              </p>
+
+            </div>
+
+
+            <div class="table-wrap">
+
+              <table class="dashboard-table">
+
+                <thead>
+
+                  <tr>
+
+                    <th scope="col">
+                      Member
+                    </th>
+
+                    <th scope="col">
+                      Amount
+                    </th>
+
+                    <th scope="col">
+                      Type
+                    </th>
+
+                    <th scope="col">
+                      Date
+                    </th>
+
+                  </tr>
+
+                </thead>
+
+
+                <tbody id="recentContributionRows">
+
+                  <tr>
+
+                    <td colspan="4">
+
+                      <div class="empty-state">
+
+                        <strong>
+                          Loading contributions...
+                        </strong>
+
+                      </div>
+
+                    </td>
+
+                  </tr>
+
+                </tbody>
+
+              </table>
+
+            </div>
+
+          </article>
+
+
+          <!-- RECENT EXPENSES -->
+
+          <article class="dashboard-card">
+
+            <div class="card-header">
+
+              <h2>
+                Recent expenses
+              </h2>
+
+              <p>
+                Latest group expenses and approval status.
+              </p>
+
+            </div>
+
+
+            <div class="table-wrap">
+
+              <table class="dashboard-table">
+
+                <thead>
+
+                  <tr>
+
+                    <th scope="col">
+                      Description
+                    </th>
+
+                    <th scope="col">
+                      Amount
+                    </th>
+
+                    <th scope="col">
+                      Category
+                    </th>
+
+                    <th scope="col">
+                      Status
+                    </th>
+
+                  </tr>
+
+                </thead>
+
+
+                <tbody id="recentExpenseRows">
+
+                  <tr>
+
+                    <td colspan="4">
+
+                      <div class="empty-state">
+
+                        <strong>
+                          Loading expenses...
+                        </strong>
+
+                      </div>
+
+                    </td>
+
+                  </tr>
+
+                </tbody>
+
+              </table>
+
+            </div>
+
+          </article>
+
+        </div>
+
+      </section>
+
+
+      <!-- =================================================
+           MEETING ATTENDANCE SUMMARY
+      ================================================= -->
+
+      <section
+        class="dashboard-section"
+        aria-labelledby="attendanceSummaryTitle"
+      >
+
+        <div class="section-heading">
+          <h2 id="attendanceSummaryTitle">Meeting attendance summary</h2>
+          <p>Group-level attendance totals. Individual attendance detail remains protected by database RLS.</p>
+        </div>
+
+        <article class="dashboard-card">
+          <div class="operations-grid">
+            <div class="operation-item"><span>Attendance Records</span><strong id="adminAttendanceRecords">—</strong></div>
+            <div class="operation-item"><span>Present</span><strong id="adminAttendancePresent">—</strong></div>
+            <div class="operation-item"><span>Late</span><strong id="adminAttendanceLate">—</strong></div>
+            <div class="operation-item"><span>Apologies</span><strong id="adminAttendanceApology">—</strong></div>
+            <div class="operation-item"><span>Absent</span><strong id="adminAttendanceAbsent">—</strong></div>
+            <div class="operation-item"><span>Attendance Rate</span><strong id="adminAttendanceRate">—</strong></div>
+          </div>
+        </article>
+      </section>
+
+      <!-- =================================================
+           UPCOMING MEETINGS
+      ================================================= -->
+
+      <section
+        class="dashboard-section"
+        aria-labelledby="meetingsTitle"
+      >
+
+        <div class="section-heading">
+
+          <h2 id="meetingsTitle">
+            Upcoming meetings
+          </h2>
+
+          <p id="meetingsSubtitle">
+            Scheduled group meetings from today onward.
+          </p>
+
+        </div>
+
+
+        <article class="dashboard-card">
+
+          <div class="table-wrap">
+
+            <table class="dashboard-table">
+
+              <thead>
+
+                <tr>
+
+                  <th scope="col">
+                    Date
+                  </th>
+
+                  <th scope="col">
+                    Meeting
+                  </th>
+
+                  <th scope="col">
+                    Venue
+                  </th>
+
+                  <th scope="col">
+                    Status
+                  </th>
+
+                </tr>
+
+              </thead>
+
+
+              <tbody id="upcomingMeetingRows">
+
+                <tr>
+
+                  <td colspan="4">
+
+                    <div class="empty-state">
+
+                      <strong>
+                        Loading meetings...
+                      </strong>
+
+                    </div>
+
+                  </td>
+
+                </tr>
+
+              </tbody>
+
+            </table>
+
+          </div>
+
+        </article>
+
+      </section>
+
+      <section class="dashboard-section" aria-labelledby="recentAnnouncementsTitle">
+        <div class="section-heading">
+          <h2 id="recentAnnouncementsTitle">Recent Announcements</h2>
+          <p>Recent notices published for your group.</p>
+        </div>
+        <article class="dashboard-card">
+          <div id="recentAnnouncementList" aria-live="polite">
+            <p class="empty-state">Loading announcements…</p>
+          </div>
+        </article>
+      </section>
+
+    </main>
+
+  </div>
+
+
+  <!-- =====================================================
+       GETTING STARTED POPUP
+  ===================================================== -->
+
+  <div
+    id="gettingStartedPopup"
+    hidden
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="gettingStartedPopupTitle"
+    aria-describedby="gettingStartedPopupMessage"
+  >
+
+    <div
+      class="getting-started-dialog"
+      role="document"
+    >
+
+      <h2 id="gettingStartedPopupTitle">
+        Welcome to CHAMA LIVE
+      </h2>
+
+      <p id="gettingStartedPopupMessage">
+        Your group dashboard is ready.
+      </p>
+
+      <div class="getting-started-actions">
+
+        <button
+          id="gettingStartedPopupClose"
+          type="button"
+          class="btn btn-secondary"
+        >
+          Maybe later
+        </button>
+
+        <button
+          id="gettingStartedPopupTour"
+          type="button"
+          class="btn btn-primary"
+        >
+          Take Guided Tour
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- =====================================================
+       ADMIN PORTAL BOOT
+       Navigation/auth shell only.
+  ===================================================== -->
+
+  <script type="module">
+
+    import {
+      boot
+    } from "./js/admin-layout.js?v=20261015-pilot-onboarding1";
+
+    boot();
+
+  </script>
+
+
+  <!-- =====================================================
+       GETTING STARTED POPUP BEHAVIOUR
+  ===================================================== -->
+
+  <script>
+
+    (() => {
+
+      const POPUP_EVENT_KEY =
+        "chama_live_getting_started_event";
+
+      const POPUP_DELAY =
+        10000;
+
+      const popup =
+        document.getElementById(
+          "gettingStartedPopup"
+        );
+
+      const title =
+        document.getElementById(
+          "gettingStartedPopupTitle"
+        );
+
+      const message =
+        document.getElementById(
+          "gettingStartedPopupMessage"
+        );
+
+      const closeButton =
+        document.getElementById(
+          "gettingStartedPopupClose"
+        );
+
+      const tourButton =
+        document.getElementById(
+          "gettingStartedPopupTour"
+        );
+
+
+      if (
+        !popup ||
+        !title ||
+        !message ||
+        !closeButton ||
+        !tourButton
+      ) {
+        return;
+      }
+
+
+      let eventType = null;
+
+      try {
+
+        eventType =
+          sessionStorage.getItem(
+            POPUP_EVENT_KEY
+          );
+
+      }
+      catch {
+        eventType = null;
+      }
+
+
+      if (
+        eventType !== "new-group" &&
+        eventType !== "new-member"
+      ) {
+        return;
+      }
+
+
+      if (
+        eventType === "new-group"
+      ) {
+
+        title.textContent =
+          "Your group is ready";
+
+        message.textContent =
+          "Welcome to CHAMA LIVE. Take a quick guided tour to see how your group dashboard works.";
+
+      }
+      else {
+
+        title.textContent =
+          "Welcome to CHAMA LIVE";
+
+        message.textContent =
+          "Your account is ready. Take a quick guided tour to learn where to manage your group.";
+
+      }
+
+
+      let timer = null;
+
+
+      function closePopup() {
+
+        popup.hidden =
+          true;
+
+        if (timer) {
+
+          window.clearTimeout(
+            timer
+          );
+
+          timer = null;
+
+        }
+
+      }
+
+
+      function showPopup() {
+
+        popup.hidden =
+          false;
+
+        closeButton.focus();
+
+      }
+
+
+      timer =
+        window.setTimeout(
+          () => {
+
+            try {
+
+              sessionStorage.removeItem(
+                POPUP_EVENT_KEY
+              );
+
+            }
+            catch {
+              /* Ignore storage cleanup failures. */
+            }
+
+            showPopup();
+
+          },
+          POPUP_DELAY
+        );
+
+
+      closeButton.addEventListener(
+        "click",
+        closePopup
+      );
+
+
+      tourButton.addEventListener(
+        "click",
+        () => {
+
+          closePopup();
+
+          window.location.href =
+            "admin-getting-started.html";
+
+        }
+      );
+
+
+      popup.addEventListener(
+        "click",
+        (event) => {
+
+          if (
+            event.target === popup
+          ) {
+            closePopup();
+          }
+
+        }
+      );
+
+
+      document.addEventListener(
+        "keydown",
+        (event) => {
+
+          if (
+            event.key === "Escape" &&
+            !popup.hidden
+          ) {
+            closePopup();
+          }
+
+        }
+      );
+
+    })();
+
+  </script>
+
+</body>
+</html>

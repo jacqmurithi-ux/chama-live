@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<base href="/">
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
+
+  <title>Sign In | CHAMA LIVE</title>
+
+  <meta
+    name="description"
+    content="Choose your CHAMA LIVE account portal."
+  />
+
+  <style>
+    :root {
+      --cl-primary: #0f766e;
+      --cl-primary-dark: #115e59;
+      --cl-accent: #14b8a6;
+      --cl-bg: #f8fafc;
+      --cl-card: #ffffff;
+      --cl-text: #0f172a;
+      --cl-muted: #64748b;
+      --cl-border: #e2e8f0;
+      --cl-success: #166534;
+      --cl-success-bg: #f0fdf4;
+      --cl-danger: #b91c1c;
+      --cl-danger-bg: #fef2f2;
+      --cl-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+    }
+
+    body {
+      font-family:
+        Inter,
+        ui-sans-serif,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+      background: var(--cl-bg);
+      color: var(--cl-text);
+    }
+
+    a {
+      color: inherit;
+    }
+
+    .cl-login-page {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(420px, 0.95fr);
+    }
+
+    .cl-login-brand-panel {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 64px;
+      overflow: hidden;
+      background:
+        radial-gradient(
+          circle at 20% 20%,
+          rgba(20, 184, 166, 0.24),
+          transparent 34%
+        ),
+        linear-gradient(
+          145deg,
+          #064e3b 0%,
+          #0f766e 52%,
+          #115e59 100%
+        );
+      color: #ffffff;
+    }
+
+    .cl-login-brand-panel::before,
+    .cl-login-brand-panel::after {
+      content: "";
+      position: absolute;
+      border-radius: 999px;
+      pointer-events: none;
+    }
+
+    .cl-login-brand-panel::before {
+      width: 420px;
+      height: 420px;
+      right: -180px;
+      top: -160px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .cl-login-brand-panel::after {
+      width: 520px;
+      height: 520px;
+      left: -280px;
+      bottom: -260px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .cl-brand-content {
+      position: relative;
+      z-index: 1;
+      max-width: 560px;
+    }
+
+    .cl-brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      text-decoration: none;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+    }
+
+    .cl-brand span {
+      color: var(--cl-accent);
+    }
+
+    .cl-login-brand {
+      font-size: 32px;
+      color: #ffffff;
+      margin-bottom: 42px;
+    }
+
+    .cl-login-brand-panel h1 {
+      margin: 0 0 22px;
+      font-size: clamp(38px, 5vw, 64px);
+      line-height: 1.03;
+      letter-spacing: -0.045em;
+    }
+
+    .cl-login-brand-panel p {
+      margin: 0;
+      max-width: 500px;
+      font-size: 18px;
+      line-height: 1.7;
+      color: rgba(255, 255, 255, 0.78);
+    }
+
+    .cl-login-highlights {
+      display: grid;
+      gap: 14px;
+      margin-top: 42px;
+    }
+
+    .cl-login-highlight {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .cl-login-highlight-icon {
+      flex: 0 0 auto;
+      width: 24px;
+      height: 24px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.12);
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .cl-login-form-panel {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 32px;
+      background: var(--cl-card);
+    }
+
+    .cl-login-form-container {
+      width: 100%;
+      max-width: 460px;
+    }
+
+    .cl-login-mobile-brand {
+      display: none;
+      font-size: 26px;
+      color: var(--cl-text);
+      margin-bottom: 38px;
+    }
+
+    .cl-eyebrow {
+      margin-bottom: 12px;
+      color: var(--cl-primary);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+    }
+
+    .cl-login-form-container h2 {
+      margin: 0;
+      font-size: 34px;
+      line-height: 1.15;
+      letter-spacing: -0.035em;
+    }
+
+    .cl-login-intro {
+      margin: 12px 0 30px;
+      color: var(--cl-muted);
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .cl-login-form {
+      display: grid;
+      gap: 20px;
+    }
+
+    .cl-form-group {
+      display: grid;
+      gap: 8px;
+    }
+
+    .cl-form-group label {
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .cl-form-group input {
+      width: 100%;
+      min-height: 50px;
+      padding: 0 14px;
+      border: 1px solid var(--cl-border);
+      border-radius: 10px;
+      background: #ffffff;
+      color: var(--cl-text);
+      font: inherit;
+      outline: none;
+      transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
+    }
+
+    .cl-form-group input:focus {
+      border-color: var(--cl-primary);
+      box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
+    }
+
+    .cl-password-wrap {
+      position: relative;
+    }
+
+    .cl-password-wrap input {
+      padding-right: 92px;
+    }
+
+    .cl-password-toggle {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      border: 0;
+      background: transparent;
+      color: var(--cl-primary);
+      font: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .cl-login-button {
+      width: 100%;
+      min-height: 50px;
+      border: 0;
+      border-radius: 10px;
+      padding: 0 18px;
+      background: var(--cl-primary);
+      color: #ffffff;
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 8px 20px rgba(15, 118, 110, 0.16);
+      transition:
+        background 0.2s ease,
+        transform 0.2s ease;
+    }
+
+    .cl-login-button:hover {
+      background: var(--cl-primary-dark);
+      transform: translateY(-1px);
+    }
+
+    .cl-login-button:focus-visible {
+      outline: 3px solid rgba(20, 184, 166, 0.35);
+      outline-offset: 2px;
+    }
+
+    .cl-login-links {
+      margin-top: 24px;
+      display: grid;
+      gap: 10px;
+      text-align: center;
+      color: var(--cl-muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .cl-login-links a {
+      color: var(--cl-primary);
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .cl-login-links a:hover {
+      text-decoration: underline;
+    }
+
+    .cl-security-note {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-top: 28px;
+      padding: 14px;
+      border: 1px solid var(--cl-border);
+      border-radius: 10px;
+      background: #f8fafc;
+      color: var(--cl-muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .cl-security-icon {
+      flex: 0 0 auto;
+      width: 22px;
+      height: 22px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--cl-success-bg);
+      color: var(--cl-success);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    #error,
+    #status {
+      display: none;
+    }
+
+    @media (max-width: 900px) {
+      .cl-login-page {
+        grid-template-columns: 1fr;
+      }
+
+      .cl-login-brand-panel {
+        display: none;
+      }
+
+      .cl-login-form-panel {
+        min-height: 100vh;
+        padding: 36px 24px;
+      }
+
+      .cl-login-mobile-brand {
+        display: inline-flex;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .cl-login-form-panel {
+        padding: 28px 18px;
+      }
+
+      .cl-login-form-container h2 {
+        font-size: 30px;
+      }
+    }
+  </style>
+<script src="/js/clean-urls.js?v=20261024" defer></script>
+</head>
+
+<body>
+
+  <main class="cl-login-page">
+
+    <!-- BRAND PANEL -->
+
+    <section class="cl-login-brand-panel">
+
+      <div class="cl-brand-content">
+
+        <a
+          href="index.html"
+          class="cl-brand cl-login-brand"
+          aria-label="CHAMA LIVE home"
+        >
+          CHAMA <span>LIVE</span>
+        </a>
+
+        <h1>
+          Run your group with clarity.
+        </h1>
+
+        <p>
+          CHAMA LIVE helps groups manage members,
+          contributions, activities, records and
+          group operations in one digital system.
+        </p>
+
+        <div class="cl-login-highlights">
+
+          <div class="cl-login-highlight">
+
+            <div
+              class="cl-login-highlight-icon"
+              aria-hidden="true"
+            >
+              ✓
+            </div>
+
+            <div>
+              Keep group records organized and accessible.
+            </div>
+
+          </div>
+
+          <div class="cl-login-highlight">
+
+            <div
+              class="cl-login-highlight-icon"
+              aria-hidden="true"
+            >
+              ✓
+            </div>
+
+            <div>
+              Give members access to the information they need.
+            </div>
+
+          </div>
+
+          <div class="cl-login-highlight">
+
+            <div
+              class="cl-login-highlight-icon"
+              aria-hidden="true"
+            >
+              ✓
+            </div>
+
+            <div>
+              Keep administration separate from member access.
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- PORTAL SELECTION -->
+
+    <section class="cl-login-form-panel">
+
+      <div class="cl-login-form-container">
+
+        <!-- MOBILE BRAND -->
+
+        <a
+          href="index.html"
+          class="cl-brand cl-login-mobile-brand"
+          aria-label="CHAMA LIVE home"
+        >
+          CHAMA <span>LIVE</span>
+        </a>
+
+        <div class="cl-eyebrow">
+          SECURE GROUP ACCESS
+        </div>
+
+        <h2>
+          Choose your portal
+        </h2>
+
+        <p class="cl-login-intro">
+          Select the CHAMA LIVE portal for your account.
+        </p>
+
+
+        <!-- PORTAL OPTIONS -->
+
+        <div
+          class="cl-portal-options"
+          style="
+            display:flex;
+            flex-direction:column;
+            gap:14px;
+          "
+        >
+
+          <a
+            href="admin-login.html"
+            class="cl-login-button"
+            style="
+              display:flex;
+              align-items:center;
+              justify-content:center;
+              text-decoration:none;
+            "
+          >
+            Admin Login
+          </a>
+
+          <a
+            href="member-login.html"
+            class="cl-login-button"
+            style="
+              display:flex;
+              align-items:center;
+              justify-content:center;
+              text-decoration:none;
+              background:#ffffff;
+              color:var(--cl-primary);
+              border:1px solid var(--cl-primary);
+              box-shadow:none;
+            "
+          >
+            Member Login
+          </a>
+
+        </div>
+
+
+        <!-- PASSWORD RECOVERY / SIGNUP -->
+
+        <div class="cl-login-links">
+
+          <div>
+            Forgot your password?
+
+            <a href="forgot-password.html">
+              Reset it here
+            </a>
+          </div>
+
+          <div style="margin-top:8px;">
+            Don't have a group account?
+
+            <a href="signup.html">
+              Create your group
+            </a>
+          </div>
+
+        </div>
+
+
+        <!-- SECURITY NOTE -->
+
+        <div class="cl-security-note">
+
+          <div
+            class="cl-security-icon"
+            aria-hidden="true"
+          >
+            ✓
+          </div>
+
+          <div>
+            Choose the portal registered for your account.
+            Your account access is checked after sign-in.
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+</body>
+</html>

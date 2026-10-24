@@ -1,0 +1,1484 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<base href="/">
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <meta
+    name="theme-color"
+    content="#0f766e"
+  >
+
+  <title>
+    Member Dashboard — CHAMA LIVE
+  </title>
+
+  <link
+    rel="stylesheet"
+    href="./css/app.css"
+  >
+
+  <style>
+
+    .member-monthly-cycle {
+      margin-top: 14px;
+      padding: 14px;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      background: #f8fafc;
+    }
+    .member-monthly-cycle-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .member-monthly-cycle-item {
+      padding: 10px;
+      border-radius: 9px;
+      background: #fff;
+    }
+    .member-monthly-cycle-label {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #64748b;
+    }
+    .member-monthly-cycle-value {
+      font-weight: 800;
+      color: #334155;
+    }
+    .member-cycle-badge {
+      display: inline-flex;
+      padding: 5px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 800;
+      background: #e2e8f0;
+      color: #334155;
+    }
+    .member-cycle-open {
+      background: #dcfce7;
+      color: #166534;
+    }
+    .member-cycle-grace {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    .member-monthly-cycle-note {
+      margin-top: 10px;
+      color: #64748b;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .member-fine-summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .member-fine-summary > div {
+      padding: 12px;
+      border-radius: 10px;
+      background: #f8fafc;
+    }
+    .member-fine-summary span,
+    .member-fine-item small {
+      display: block;
+      color: #64748b;
+      font-size: 11px;
+    }
+    .member-fine-summary strong {
+      display: block;
+      margin-top: 5px;
+      font-size: 15px;
+      color: #334155;
+    }
+    .member-fine-list {
+      margin-top: 12px;
+    }
+    .member-fine-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 11px 0;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .member-fine-item:last-child {
+      border-bottom: 0;
+    }
+    .member-fine-item strong {
+      display: block;
+      color: #334155;
+    }
+    .member-fine-item > span {
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    /* =====================================================
+       MEMBER FINANCE SUMMARY
+    ====================================================== */
+
+    .member-finance-summary {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: #f8fafc;
+    }
+
+
+    /* GROUP LOAN SUMMARY */
+    #groupLoanSummarySection[hidden] { display: none !important; }
+    .member-loan-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .member-loan-summary-item {
+      min-width: 0;
+      padding: 12px;
+      border: 1px solid #edf0f4;
+      border-radius: 10px;
+      background: #f8fafc;
+    }
+    .member-loan-summary-item span {
+      display: block;
+      color: #64748b;
+      font-size: 10px;
+      font-weight: 700;
+      line-height: 1.35;
+      text-transform: uppercase;
+    }
+    .member-loan-summary-item strong {
+      display: block;
+      margin-top: 6px;
+      color: #334155;
+      font-size: 18px;
+      line-height: 1.25;
+      overflow-wrap: anywhere;
+    }
+    .member-loan-summary-item small {
+      display: block;
+      margin-top: 4px;
+      color: #64748b;
+      font-size: 11px;
+    }
+    @media (max-width: 760px) {
+      .member-loan-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 480px) {
+      .member-loan-summary-grid { grid-template-columns: 1fr; }
+    }
+
+    .member-finance-summary-grid {
+      display: grid;
+      grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+
+    .member-finance-summary-item {
+      min-width: 0;
+      padding: 10px;
+      border-radius: 9px;
+      background: #fff;
+    }
+
+
+    .member-finance-summary-label {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      color: #64748b;
+    }
+
+
+    .member-finance-summary-value {
+      display: block;
+      font-size: 14px;
+      font-weight: 700;
+      color: #334155;
+      word-break: break-word;
+    }
+
+
+    /* =====================================================
+       MEMBER FINANCE STATUS
+    ====================================================== */
+
+    .member-finance-status-value {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+
+    .member-finance-status-value::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      flex: 0 0 8px;
+      border-radius: 50%;
+      background: #94a3b8;
+    }
+
+
+    .member-finance-status-value.status-arrears {
+      color: #b91c1c;
+    }
+
+
+    .member-finance-status-value.status-arrears::before {
+      background: #dc2626;
+    }
+
+
+    .member-finance-status-value.status-credit {
+      color: #1d4ed8;
+    }
+
+
+    .member-finance-status-value.status-credit::before {
+      background: #2563eb;
+    }
+
+
+    .member-finance-status-value.status-up-to-date {
+      color: #15803d;
+    }
+
+
+    .member-finance-status-value.status-up-to-date::before {
+      background: #16a34a;
+    }
+
+
+    .member-finance-status-value.status-unknown {
+      color: #64748b;
+    }
+
+
+    /* =====================================================
+       MOBILE FINANCE GRID
+    ====================================================== */
+
+    @media (max-width: 760px) {
+
+      .member-finance-summary-grid {
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
+      }
+
+    }
+
+
+    @media (max-width: 480px) {
+
+      .member-finance-summary-grid {
+        grid-template-columns:
+          1fr;
+      }
+
+    }
+
+  
+    .member-attendance-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin-top:14px; }
+    .member-attendance-grid > div { min-width:0; padding:13px; border:1px solid #edf0f4; border-radius:12px; background:#f8fafc; }
+    .member-attendance-grid span { display:block; color:#667085; font-size:10px; font-weight:700; line-height:1.3; }
+    .member-attendance-grid strong { display:block; margin-top:6px; color:#101828; font-size:20px; line-height:1.1; }
+    @media (max-width:640px) { .member-attendance-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+    .member-meeting-completed-heading { margin:16px 0 8px; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:#475467; }
+</style>
+
+<script src="/js/clean-urls.js?v=20261024" defer></script>
+</head>
+
+
+<body>
+
+  <!--
+    =========================================================
+    CHAMA LIVE — MEMBER DASHBOARD
+    ---------------------------------------------------------
+    MEMBER PORTAL
+
+    member-layout.js owns:
+      • authentication
+      • member/group context
+      • portal authorization
+      • desktop navigation
+      • mobile navigation
+      • current-page feature loading
+      • logout
+
+    member-dashboard.js owns:
+      • member contribution position
+      • member contribution activity count
+      • group financial overview
+      • recent group contributions
+      • recent group expenses
+      • meetings
+      • activities
+      • plans/goals
+      • group assets
+
+    SECURITY CONTRACT:
+      • Read-only dashboard
+      • No INSERT
+      • No UPDATE
+      • No DELETE
+      • No financial mutation
+      • No group mutation
+      • No member mutation
+
+    ACCOUNTING CONTRACT:
+      • Member position:
+          get_my_contribution_position()
+
+      • Monthly participation:
+          get_canonical_monthly_accounting_summary()
+
+      • Monthly cash contributions:
+          get_monthly_accounting_summary()
+
+    IMPORTANT:
+      member-dashboard.js does not perform any financial
+      mutation.
+
+      Raw contribution rows are used only for read-only
+      activity display/counts.
+
+      Canonical accounting values are never reconstructed
+      from the browser's limited contribution query.
+    =========================================================
+  -->
+
+
+  <!-- =======================================================
+       MEMBER DASHBOARD
+  ======================================================== -->
+
+  <main class="member-dashboard">
+
+
+    <!-- =====================================================
+         MEMBER HERO
+    ====================================================== -->
+
+    <section
+      class="member-hero"
+      aria-labelledby="memberGreeting"
+    >
+
+      <div class="eyebrow">
+        MEMBER PORTAL
+      </div>
+
+      <h1 id="memberGreeting">
+        Welcome
+      </h1>
+
+      <p id="memberGroupName">
+        Your group
+      </p>
+
+    </section>
+
+
+    <!-- =====================================================
+         LOADING
+    ====================================================== -->
+
+    <div
+      id="memberLoading"
+      class="member-loading"
+      aria-live="polite"
+    >
+      Loading your member dashboard...
+    </div>
+
+
+    <!-- =====================================================
+         ERROR
+    ====================================================== -->
+
+    <div
+      id="memberError"
+      class="member-error"
+      role="alert"
+      aria-live="assertive"
+      hidden
+    ></div>
+
+
+    <!-- =====================================================
+         DASHBOARD CONTENT
+    ====================================================== -->
+
+    <section
+      class="member-grid"
+      aria-label="Member dashboard"
+    >
+      <!-- GROUP LOAN SUMMARY: hidden unless the group enables loans -->
+      <article
+        id="groupLoanSummarySection"
+        class="member-card member-card-wide"
+        aria-labelledby="memberGroupLoanSummaryTitle"
+        hidden
+      >
+        <div class="eyebrow">GROUP OVERVIEW</div>
+        <h2 id="memberGroupLoanSummaryTitle">Loan Summary</h2>
+        <p class="member-muted">Group-wide loan activity and outstanding principal.</p>
+        <div class="member-loan-summary-grid">
+          <div class="member-loan-summary-item">
+            <span>Total Loan Disbursed</span>
+            <strong id="memberLoanSummaryTotalDisbursed">KSh 0.00</strong>
+            <small>Principal issued to members</small>
+          </div>
+          <div class="member-loan-summary-item">
+            <span>Interest Gained</span>
+            <strong id="memberLoanSummaryInterestGained">KSh 0.00</strong>
+            <small>Interest collected from repayments</small>
+          </div>
+          <div class="member-loan-summary-item">
+            <span>Members Benefited</span>
+            <strong id="memberLoanSummaryMembersBenefited">0</strong>
+            <small>Members with a disbursed loan</small>
+          </div>
+          <div class="member-loan-summary-item">
+            <span>Current Loans Outstanding</span>
+            <strong id="memberLoanSummaryOutstandingAmount">KSh 0.00</strong>
+            <small id="memberLoanSummaryOutstandingCount">0 active/overdue loans</small>
+          </div>
+        </div>
+      </article>
+
+
+
+      <!-- ===================================================
+           MY CONTRIBUTIONS
+      ==================================================== -->
+
+      <article class="member-card">
+
+        <div class="eyebrow">
+          MY FINANCES
+        </div>
+
+        <h2>
+          My Contributions
+        </h2>
+
+
+        <!-- =================================================
+             CANONICAL MEMBER SUMMARY
+
+             Source:
+               get_my_contribution_position()
+
+             Total Allocated is canonical accounting data.
+             It is NOT calculated from browser-side raw
+             contribution rows.
+        ================================================== -->
+
+        <div class="member-summary">
+
+          <div class="member-summary-item">
+
+            <span class="member-summary-label">
+              Total Allocated
+            </span>
+
+            <span
+              id="myContributionTotal"
+              class="member-summary-value"
+            >
+              —
+            </span>
+
+          </div>
+
+
+          <div class="member-summary-item">
+
+            <span class="member-summary-label">
+              Contribution Records
+            </span>
+
+            <span
+              id="myContributionCount"
+              class="member-summary-value"
+            >
+              —
+            </span>
+
+          </div>
+
+        </div>
+
+
+        <!-- =================================================
+             CANONICAL CONTRIBUTION POSITION
+        ================================================== -->
+
+        <div
+          class="member-finance-summary"
+          id="myContributionPosition"
+        >
+
+          <div class="member-finance-summary-grid">
+
+
+            <!-- STATUS -->
+
+            <div class="member-finance-summary-item">
+
+              <span class="member-finance-summary-label">
+                Status
+              </span>
+
+              <span
+                id="myContributionStatus"
+                class="member-finance-status-value status-unknown"
+                aria-live="polite"
+              >
+                Loading...
+              </span>
+
+            </div>
+
+
+            <!-- TOTAL ALLOCATED -->
+
+            <div class="member-finance-summary-item">
+
+              <span class="member-finance-summary-label">
+                Total Allocated
+              </span>
+
+              <span
+                id="myContributionPositionTotal"
+                class="member-finance-summary-value"
+              >
+                —
+              </span>
+
+            </div>
+
+
+            <!-- ARREARS -->
+
+            <div class="member-finance-summary-item">
+
+              <span class="member-finance-summary-label">
+                Total Arrears
+              </span>
+
+              <span
+                id="myContributionArrears"
+                class="member-finance-summary-value"
+              >
+                —
+              </span>
+
+            </div>
+
+
+            <!-- CREDIT -->
+
+            <div class="member-finance-summary-item">
+
+              <span class="member-finance-summary-label">
+                Total Credit
+              </span>
+
+              <span
+                id="myContributionCredit"
+                class="member-finance-summary-value"
+              >
+                —
+              </span>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- MEMBER CONTRIBUTIONS -->
+
+        <div
+          class="member-actions"
+          style="margin-top:16px;"
+        >
+
+          <a
+            class="member-action"
+            href="./member-contributions.html"
+          >
+
+            <span
+              class="member-action-icon"
+              aria-hidden="true"
+            >
+              →
+            </span>
+
+            <span>
+              View My Contributions
+            </span>
+
+          </a>
+
+        </div>
+
+      </article>
+
+
+      <!-- ===================================================
+           MY FINES
+      ==================================================== -->
+
+      <article class="member-card member-card-wide">
+        <div class="eyebrow">MY FINES</div>
+        <h2>Fine Account</h2>
+        <p class="member-muted">
+          Contribution fines are generated automatically. Other fines are shown
+          here with their type, reason, date and outstanding balance.
+        </p>
+        <div id="myFinePosition">
+          <p class="member-muted">Loading your fine account...</p>
+        </div>
+      </article>
+
+
+      <!-- ===================================================
+           MONTHLY CONTRIBUTION CYCLE
+      ==================================================== -->
+
+      <article class="member-card member-card-wide">
+        <div class="eyebrow">MONTHLY CONTRIBUTION</div>
+        <h2>Contribution Cycle</h2>
+        <span id="memberMonthlyCycleStatus" class="member-cycle-badge">Loading…</span>
+
+        <div class="member-monthly-cycle-grid">
+          <div class="member-monthly-cycle-item">
+            <span class="member-monthly-cycle-label">Current cycle opens</span>
+            <span id="memberMonthlyCycleOpening" class="member-monthly-cycle-value">—</span>
+          </div>
+          <div class="member-monthly-cycle-item">
+            <span class="member-monthly-cycle-label">Current cycle closes</span>
+            <span id="memberMonthlyCycleClosing" class="member-monthly-cycle-value">—</span>
+          </div>
+          <div class="member-monthly-cycle-item">
+            <span class="member-monthly-cycle-label">Grace period</span>
+            <span id="memberMonthlyCycleGrace" class="member-monthly-cycle-value">—</span>
+          </div>
+        </div>
+
+        <div id="memberMonthlyCycleNote" class="member-monthly-cycle-note">
+          Loading contribution cycle…
+        </div>
+      </article>
+
+
+      <!-- ===================================================
+           ACTIVE CONTRIBUTION TYPES
+      ==================================================== -->
+
+      <article class="member-card member-card-wide">
+        <div class="eyebrow">MY CONTRIBUTIONS</div>
+        <h2>Ongoing Contributions</h2>
+        <p class="member-muted">
+          Monthly Contribution and every active Custom Contribution are tracked independently. Each item shows your Paid or Outstanding status and canonical amount due, allocated and outstanding.
+        </p>
+        <div id="myActiveContributions" class="member-list">
+          <div class="member-list-item">
+            <span class="member-muted">Loading ongoing contributions...</span>
+          </div>
+        </div>
+      </article>
+
+
+      <!-- ===================================================
+           MEMBER ACCOUNT
+      ==================================================== -->
+
+      <article class="member-card">
+
+        <div class="eyebrow">
+          MY ACCOUNT
+        </div>
+
+        <h2>
+          My Account
+        </h2>
+
+
+        <div class="member-account-row">
+
+
+          <div class="member-account-item">
+
+            <span class="member-account-label">
+              Name
+            </span>
+
+            <span
+              id="memberName"
+              class="member-account-value"
+            >
+              —
+            </span>
+
+          </div>
+
+
+          <div class="member-account-item">
+
+            <span class="member-account-label">
+              Member Number
+            </span>
+
+            <span
+              id="memberNumber"
+              class="member-account-value"
+            >
+              —
+            </span>
+
+          </div>
+
+
+          <div class="member-account-item">
+
+            <span class="member-account-label">
+              Role
+            </span>
+
+            <span
+              id="memberRole"
+              class="member-account-value"
+            >
+              —
+            </span>
+
+          </div>
+
+
+          <div class="member-account-item">
+
+            <span class="member-account-label">
+              Status
+            </span>
+
+            <span
+              id="memberStatus"
+              class="member-account-value"
+            >
+              —
+            </span>
+
+          </div>
+
+        </div>
+
+
+        <div
+          class="member-actions"
+          style="margin-top:16px;"
+        >
+
+          <a
+            class="member-action"
+            href="./member-my-account.html"
+          >
+
+            <span
+              class="member-action-icon"
+              aria-hidden="true"
+            >
+              →
+            </span>
+
+            <span>
+              View My Account
+            </span>
+
+          </a>
+
+        </div>
+
+      </article>
+
+
+      <!-- ===================================================
+           GROUP FINANCIAL HEALTH
+      ==================================================== -->
+
+      <article
+        class="member-card member-card-wide"
+        aria-labelledby="groupFinancialHealthTitle"
+      >
+
+        <div class="eyebrow">
+          GROUP OVERVIEW
+        </div>
+
+        <h2 id="groupFinancialHealthTitle">
+          Group Financial Health
+        </h2>
+
+
+        <div class="member-financial-health">
+
+
+          <!-- MEMBERS -->
+
+          <div class="member-health-item">
+
+            <span class="member-health-label">
+              Members
+            </span>
+
+            <span
+              id="groupMemberCount"
+              class="member-health-value"
+            >
+              —
+            </span>
+
+          </div>
+
+
+          <!-- MONTHLY CONTRIBUTIONS -->
+
+          <div class="member-health-item">
+
+            <span class="member-health-label">
+              Contributions This Month
+            </span>
+
+            <span
+              id="groupMonthlyContributions"
+              class="member-health-value"
+            >
+              —
+            </span>
+
+          </div>
+
+
+          <!-- MONTHLY EXPENSES -->
+
+          <div class="member-health-item">
+
+            <span class="member-health-label">
+              Expenses This Month
+            </span>
+
+            <span
+              id="groupMonthlyExpenses"
+              class="member-health-value"
+            >
+              —
+            </span>
+
+          </div>
+
+
+          <!-- NET MOVEMENT -->
+
+          <div class="member-health-item">
+
+            <span class="member-health-label">
+              Net Movement
+            </span>
+
+            <span
+              id="groupNetMovement"
+              class="member-health-value"
+            >
+              —
+            </span>
+
+          </div>
+
+
+          <!-- PARTICIPATION -->
+
+          <div class="member-health-item">
+
+            <span class="member-health-label">
+              Contribution Participation
+            </span>
+
+            <span
+              id="groupParticipation"
+              class="member-health-value"
+            >
+              —
+            </span>
+
+
+            <div
+              class="member-progress"
+              role="progressbar"
+              aria-label="Group contribution participation"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              aria-valuenow="0"
+            >
+
+              <span
+                id="groupParticipationBar"
+                style="width:0%"
+              ></span>
+
+            </div>
+
+          </div>
+
+
+          <!-- EXPENSE ACTIVITY -->
+
+          <div class="member-health-item">
+
+            <span class="member-health-label">
+              Expense Activity
+            </span>
+
+            <span
+              id="groupExpenseActivity"
+              class="member-health-value"
+            >
+              —
+            </span>
+
+          </div>
+
+        </div>
+
+      </article>
+
+
+      <!-- ===================================================
+           RECENT GROUP CONTRIBUTIONS
+      ==================================================== -->
+
+      <article class="member-card">
+
+        <div class="eyebrow">
+          GROUP ACTIVITY
+        </div>
+
+        <h2>
+          Recent Group Contributions
+        </h2>
+
+        <div
+          id="memberRecentContributions"
+          class="member-list"
+        >
+
+          <div class="member-list-item">
+
+            <span class="member-muted">
+              Loading recent contributions...
+            </span>
+
+          </div>
+
+        </div>
+
+      </article>
+
+
+      <!-- ===================================================
+           RECENT GROUP EXPENSES
+      ==================================================== -->
+
+      <article class="member-card">
+
+        <div class="eyebrow">
+          ACCOUNTABILITY
+        </div>
+
+        <h2>
+          Recent Group Expenses
+        </h2>
+
+        <div
+          id="memberRecentExpenses"
+          class="member-list"
+        >
+
+          <div class="member-list-item">
+
+            <span class="member-muted">
+              Loading recent expenses...
+            </span>
+
+          </div>
+
+        </div>
+
+      </article>
+
+
+      <!-- ===================================================
+           GROUP ACTIVITIES
+      ==================================================== -->
+
+      <article class="member-card" id="memberActivitiesCard" hidden>
+
+        <div class="eyebrow">
+          PARTICIPATION
+        </div>
+
+        <h2>
+          Group Activities
+        </h2>
+
+        <div
+          id="memberActivities"
+          class="member-list"
+        >
+          Loading group activities...
+        </div>
+
+
+        <div
+          class="member-actions"
+          style="margin-top:16px;"
+        >
+
+          <a
+            class="member-action"
+            href="./member-activities.html"
+          >
+
+            <span
+              class="member-action-icon"
+              aria-hidden="true"
+            >
+              →
+            </span>
+
+            <span>
+              View Activities
+            </span>
+
+          </a>
+
+        </div>
+
+      </article>
+
+
+      <!-- ===================================================
+           MY MEETING ATTENDANCE
+      ==================================================== -->
+
+      <article class="member-card" aria-labelledby="memberAttendanceTitle">
+
+        <div class="eyebrow">MY PARTICIPATION</div>
+
+        <h2 id="memberAttendanceTitle">My Meeting Attendance</h2>
+
+        <p class="member-muted">
+          Your attendance totals only. Other members' attendance details are not shown here.
+        </p>
+
+        <div class="member-attendance-grid">
+          <div><span>Meetings Recorded</span><strong id="memberAttendanceMeetings">—</strong></div>
+          <div><span>Present</span><strong id="memberAttendancePresent">—</strong></div>
+          <div><span>Late</span><strong id="memberAttendanceLate">—</strong></div>
+          <div><span>Apologies</span><strong id="memberAttendanceApology">—</strong></div>
+          <div><span>Absent</span><strong id="memberAttendanceAbsent">—</strong></div>
+          <div><span>Attendance Rate</span><strong id="memberAttendanceRate">—</strong></div>
+        </div>
+
+      </article>
+
+      <!-- ===================================================
+           UPCOMING MEETINGS
+      ==================================================== -->
+
+      <article class="member-card">
+
+        <div class="eyebrow">
+          COMMUNITY
+        </div>
+
+        <h2>
+          Upcoming Meetings
+        </h2>
+
+        <div
+          id="memberMeetings"
+          class="member-list"
+        >
+          Loading meetings...
+        </div>
+
+      </article>
+
+      <article class="member-card" aria-labelledby="memberRecentAnnouncementsTitle">
+        <div class="eyebrow">COMMUNITY</div>
+        <h2 id="memberRecentAnnouncementsTitle">Recent Announcements</h2>
+        <p class="member-muted">Notices published for your group, including meeting briefs and resolutions.</p>
+        <div id="memberRecentAnnouncements" class="member-list" aria-live="polite">
+          Loading announcements...
+        </div>
+      </article>
+
+
+      <!-- ===================================================
+           PLANS AND GOALS
+      ==================================================== -->
+
+      <article class="member-card" id="memberPlansCard" hidden>
+
+        <div class="eyebrow">
+          PROGRESS
+        </div>
+
+        <h2>
+          Plans &amp; Goals
+        </h2>
+
+        <div
+          id="memberPlans"
+          class="member-list"
+        >
+          Loading plans and goals...
+        </div>
+
+      </article>
+
+
+      <!-- ===================================================
+           GROUP ASSETS
+      ==================================================== -->
+
+      <article class="member-card member-card-wide" id="memberAssetsCard" hidden>
+
+        <div class="eyebrow">
+          GROUP RESOURCES
+        </div>
+
+        <h2>
+          Group Assets
+        </h2>
+
+        <div
+          id="memberAssets"
+          class="member-list"
+        >
+          Loading group assets...
+        </div>
+
+
+        <div
+          class="member-actions"
+          style="margin-top:16px;"
+        >
+
+          <a
+            class="member-action"
+            href="./member-assets.html"
+          >
+
+            <span
+              class="member-action-icon"
+              aria-hidden="true"
+            >
+              →
+            </span>
+
+            <span>
+              View Group Assets
+            </span>
+
+          </a>
+
+        </div>
+
+      </article>
+
+
+      <article class="member-card" id="memberMilestonesCard" hidden>
+        <div class="eyebrow">GROUP PROGRESS</div>
+        <h2>Milestones</h2>
+        <p class="member-muted">Review important group achievements and milestone events.</p>
+        <div class="member-actions" style="margin-top:16px">
+          <a class="member-action" href="./member-milestones.html"><span class="member-action-icon" aria-hidden="true">→</span><span>View Milestones</span></a>
+        </div>
+      </article>
+
+      <!-- ===================================================
+           GROUP SNAPSHOT
+      ==================================================== -->
+
+      <article class="member-card member-card-wide">
+
+        <div class="eyebrow">
+          AT A GLANCE
+        </div>
+
+        <h2>
+          Your Group Today
+        </h2>
+
+
+        <div class="member-financial-health">
+
+
+          <div class="member-health-item">
+
+            <span class="member-health-label">
+              Members
+            </span>
+
+            <span
+              id="activityMemberCount"
+              class="member-health-value"
+            >
+              —
+            </span>
+
+          </div>
+
+
+          <div class="member-health-item">
+
+            <span class="member-health-label">
+              Recent Contributions
+            </span>
+
+            <span
+              id="activityContributionCount"
+              class="member-health-value"
+            >
+              —
+            </span>
+
+          </div>
+
+
+          <div class="member-health-item">
+
+            <span class="member-health-label">
+              Recent Expenses
+            </span>
+
+            <span
+              id="activityExpenseCount"
+              class="member-health-value"
+            >
+              —
+            </span>
+
+          </div>
+
+        </div>
+
+      </article>
+
+
+      <!-- ===================================================
+           MEMBER PORTAL DESTINATIONS
+      ==================================================== -->
+
+      <article class="member-card member-card-wide">
+
+        <div class="eyebrow">
+          MEMBER PORTAL
+        </div>
+
+        <h2>
+          Explore Your Portal
+        </h2>
+
+        <p class="member-muted">
+          Access your personal contributions and explore
+          information available to members of your group.
+        </p>
+
+
+        <div
+          class="member-actions"
+          style="
+            margin-top:16px;
+            display:flex;
+            flex-wrap:wrap;
+            gap:10px;
+          "
+        >
+
+
+          <a
+            class="member-action"
+            href="./member-contributions.html"
+          >
+
+            <span
+              class="member-action-icon"
+              aria-hidden="true"
+            >
+              →
+            </span>
+
+            <span>
+              My Contributions
+            </span>
+
+          </a>
+
+
+          <a
+            class="member-action"
+            href="./member-activities.html"
+          >
+
+            <span
+              class="member-action-icon"
+              aria-hidden="true"
+            >
+              →
+            </span>
+
+            <span>
+              Activities
+            </span>
+
+          </a>
+
+
+          <a
+            class="member-action"
+            href="./member-assets.html"
+          >
+
+            <span
+              class="member-action-icon"
+              aria-hidden="true"
+            >
+              →
+            </span>
+
+            <span>
+              Group Assets
+            </span>
+
+          </a>
+
+
+          <a
+            class="member-action"
+            href="./member-milestones.html"
+          >
+
+            <span
+              class="member-action-icon"
+              aria-hidden="true"
+            >
+              →
+            </span>
+
+            <span>
+              Milestones
+            </span>
+
+          </a>
+
+
+          <a
+            class="member-action"
+            href="./member-getting-started.html"
+          >
+
+            <span
+              class="member-action-icon"
+              aria-hidden="true"
+            >
+              →
+            </span>
+
+            <span>
+              Getting Started
+            </span>
+
+          </a>
+
+        </div>
+
+      </article>
+
+
+    </section>
+
+  </main>
+
+
+  <!-- =======================================================
+       MEMBER PORTAL BOOT
+       -------------------------------------------------------
+       member-layout.js owns:
+
+         • authentication
+         • authorization
+         • member/group context
+         • portal navigation
+         • logout
+         • current-page initialization
+
+       It should call:
+
+         initMemberDashboard(context)
+
+       where context is the already-resolved application
+       context.
+
+       member-dashboard.js remains read-only.
+  ======================================================== -->
+
+  <script type="module">
+
+    import {
+      boot
+    } from "./js/member-layout.js?v=20261015-feedback1";
+    import {
+      initMemberMonthlyCycle
+    } from "./js/member-monthly-cycle.js";
+
+    await boot();
+    await initMemberMonthlyCycle();
+
+  </script>
+
+
+</body>
+
+</html>
