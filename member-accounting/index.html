@@ -1,0 +1,1567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<base href="/">
+  <meta charset="UTF-8">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <meta
+    name="description"
+    content="CHAMA LIVE member accounting, monthly outstanding, credit and member statements"
+  >
+
+  <title>Member Accounting | CHAMA LIVE</title>
+
+  <link rel="stylesheet" href="./css/app.css">
+
+  <style>
+    :root {
+      --ma-bg: #f6f8fb;
+      --ma-card: #ffffff;
+      --ma-border: #e2e8f0;
+      --ma-text: #172033;
+      --ma-muted: #64748b;
+      --ma-primary: #166534;
+      --ma-primary-dark: #14532d;
+      --ma-primary-soft: #dcfce7;
+      --ma-warning: #92400e;
+      --ma-warning-soft: #fef3c7;
+      --ma-danger: #991b1b;
+      --ma-danger-soft: #fee2e2;
+      --ma-info: #1e40af;
+      --ma-info-soft: #dbeafe;
+      --ma-shadow: 0 8px 30px rgba(15, 23, 42, 0.07);
+      --ma-radius: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--ma-bg);
+      color: var(--ma-text);
+      font-family:
+        Inter,
+        ui-sans-serif,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .member-accounting-page {
+      width: min(1500px, 100%);
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .print-header {
+      display: none;
+    }
+
+    .accounting-hero {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 24px;
+      padding: 28px;
+      margin-bottom: 20px;
+      background: linear-gradient(
+        135deg,
+        #14532d 0%,
+        #166534 55%,
+        #15803d 100%
+      );
+      color: #fff;
+      border-radius: var(--ma-radius);
+      box-shadow: var(--ma-shadow);
+    }
+
+    .hero-copy {
+      min-width: 0;
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      opacity: 0.8;
+    }
+
+    .accounting-hero h1 {
+      margin: 0;
+      font-size: clamp(1.7rem, 3vw, 2.4rem);
+      line-height: 1.15;
+    }
+
+    .accounting-hero p {
+      margin: 10px 0 0;
+      max-width: 760px;
+      color: rgba(255, 255, 255, 0.88);
+      line-height: 1.6;
+    }
+
+    .group-label {
+      margin-top: 14px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .hero-status {
+      flex: 0 0 auto;
+      min-width: 230px;
+      padding: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .hero-status-label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.76rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      opacity: 0.72;
+    }
+
+    #statusMessage {
+      margin: 0;
+      color: #fff;
+      font-weight: 600;
+      line-height: 1.45;
+    }
+
+    .filters-card,
+    .summary-card,
+    .table-card,
+    .statement-card,
+    .cumulative-card {
+      background: var(--ma-card);
+      border: 1px solid var(--ma-border);
+      border-radius: var(--ma-radius);
+      box-shadow: var(--ma-shadow);
+    }
+
+    .filters-card {
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .section-heading {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .section-heading h2 {
+      margin: 0;
+      font-size: 1.08rem;
+    }
+
+    .section-heading p {
+      margin: 4px 0 0;
+      color: var(--ma-muted);
+      font-size: 0.9rem;
+    }
+
+    .filter-grid {
+      display: grid;
+      grid-template-columns:
+        minmax(150px, 1fr)
+        minmax(180px, 1fr)
+        minmax(180px, 1fr)
+        minmax(220px, 1.4fr);
+      gap: 14px;
+    }
+
+    .field {
+      min-width: 0;
+    }
+
+    .field label {
+      display: block;
+      margin-bottom: 7px;
+      color: #334155;
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+    .field input,
+    .field select {
+      width: 100%;
+      min-height: 44px;
+      padding: 10px 12px;
+      color: var(--ma-text);
+      background: #fff;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      outline: none;
+    }
+
+    .field input:focus,
+    .field select:focus {
+      border-color: #16a34a;
+      box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.12);
+    }
+
+    .filter-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .quick-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .btn,
+    .quick-filter {
+      min-height: 40px;
+      padding: 9px 14px;
+      border-radius: 9px;
+      border: 1px solid #cbd5e1;
+      background: #fff;
+      color: #334155;
+      font-weight: 700;
+      transition:
+        background 0.15s ease,
+        border-color 0.15s ease,
+        color 0.15s ease;
+    }
+
+    .btn:hover,
+    .quick-filter:hover {
+      border-color: #94a3b8;
+      background: #f8fafc;
+    }
+
+    .btn-primary {
+      border-color: var(--ma-primary);
+      background: var(--ma-primary);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      border-color: var(--ma-primary-dark);
+      background: var(--ma-primary-dark);
+    }
+
+    .btn-danger {
+      border-color: #fecaca;
+      background: #fff;
+      color: var(--ma-danger);
+    }
+
+    .quick-filter.active {
+      border-color: #166534;
+      background: var(--ma-primary-soft);
+      color: #166534;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .summary-card {
+      padding: 18px;
+    }
+
+    .summary-label {
+      color: var(--ma-muted);
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .summary-value {
+      margin-top: 8px;
+      font-size: 1.45rem;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+
+    .summary-note {
+      margin-top: 5px;
+      color: var(--ma-muted);
+      font-size: 0.78rem;
+    }
+
+    .table-card {
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    .table-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--ma-border);
+    }
+
+    .table-toolbar h2 {
+      margin: 0;
+      font-size: 1.08rem;
+    }
+
+    .table-toolbar p {
+      margin: 4px 0 0;
+      color: var(--ma-muted);
+      font-size: 0.86rem;
+    }
+
+    .toolbar-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 1050px;
+    }
+
+    th,
+    td {
+      padding: 13px 14px;
+      text-align: left;
+      vertical-align: middle;
+      border-bottom: 1px solid #edf2f7;
+    }
+
+    th {
+      background: #f8fafc;
+      color: #475569;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
+
+    td {
+      color: #334155;
+      font-size: 0.88rem;
+    }
+
+    tbody tr:hover {
+      background: #f8fafc;
+    }
+
+    .member-name {
+      color: #0f172a;
+      font-weight: 800;
+    }
+
+    .member-number {
+      margin-top: 3px;
+      color: var(--ma-muted);
+      font-size: 0.75rem;
+    }
+
+    .amount {
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .positive {
+      color: #166534;
+      font-weight: 800;
+    }
+
+    .negative {
+      color: #b91c1c;
+      font-weight: 800;
+    }
+
+    .muted {
+      color: var(--ma-muted);
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 5px 9px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .status-paid {
+      background: var(--ma-primary-soft);
+      color: #166534;
+    }
+
+    .status-credit {
+      background: var(--ma-info-soft);
+      color: #1e40af;
+    }
+
+    .status-partial {
+      background: var(--ma-warning-soft);
+      color: var(--ma-warning);
+    }
+
+    .status-outstanding {
+      background: var(--ma-danger-soft);
+      color: var(--ma-danger);
+    }
+
+    .status-up-to-date {
+      background: var(--ma-primary-soft);
+      color: #166534;
+    }
+
+    .status-arrears {
+      background: var(--ma-danger-soft);
+      color: var(--ma-danger);
+    }
+
+    .empty-state {
+      padding: 50px 20px;
+      text-align: center;
+      color: var(--ma-muted);
+    }
+
+    .empty-state strong {
+      display: block;
+      margin-bottom: 6px;
+      color: #334155;
+    }
+
+    .statement-card {
+      display: none;
+      padding: 22px;
+      margin-bottom: 20px;
+    }
+
+    .statement-card.visible {
+      display: block;
+    }
+
+    .statement-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .statement-header h2 {
+      margin: 0;
+      font-size: 1.2rem;
+    }
+
+    .statement-header p {
+      margin: 5px 0 0;
+      color: var(--ma-muted);
+      font-size: 0.85rem;
+    }
+
+    .statement-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .statement-summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .statement-metric {
+      padding: 15px;
+      background: #f8fafc;
+      border: 1px solid var(--ma-border);
+      border-radius: 12px;
+    }
+
+    .statement-metric span {
+      display: block;
+      color: var(--ma-muted);
+      font-size: 0.76rem;
+      font-weight: 700;
+    }
+
+    .statement-metric strong {
+      display: block;
+      margin-top: 6px;
+      font-size: 1.2rem;
+    }
+
+    .statement-table-wrap {
+      overflow-x: auto;
+    }
+
+    .statement-table {
+      min-width: 700px;
+    }
+
+    .cumulative-card {
+      padding: 22px;
+      margin-bottom: 20px;
+    }
+
+    .cumulative-position {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .cumulative-metric {
+      padding: 15px;
+      background: #f8fafc;
+      border: 1px solid var(--ma-border);
+      border-radius: 12px;
+    }
+
+    .cumulative-metric span {
+      display: block;
+      color: var(--ma-muted);
+      font-size: 0.76rem;
+      font-weight: 700;
+    }
+
+    .cumulative-metric strong {
+      display: block;
+      margin-top: 6px;
+      font-size: 1.15rem;
+    }
+
+    .cumulative-description {
+      grid-column: 1 / -1;
+      color: var(--ma-muted);
+      font-size: 0.84rem;
+      line-height: 1.55;
+    }
+
+    .table-period {
+      color: var(--ma-muted);
+      font-weight: 600;
+    }
+
+    @media (max-width: 1200px) {
+      .summary-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .cumulative-position {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 900px) {
+      .accounting-hero {
+        flex-direction: column;
+      }
+
+      .hero-status {
+        width: 100%;
+      }
+
+      .filter-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .statement-summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 640px) {
+      .member-accounting-page {
+        padding: 12px;
+      }
+
+      .accounting-hero,
+      .filters-card,
+      .statement-card,
+      .cumulative-card {
+        padding: 16px;
+        border-radius: 12px;
+      }
+
+      .filter-grid,
+      .summary-grid,
+      .statement-summary,
+      .cumulative-position {
+        grid-template-columns: 1fr;
+      }
+
+      .summary-card {
+        padding: 15px;
+      }
+
+      .table-toolbar,
+      .statement-header {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .toolbar-actions,
+      .statement-actions {
+        width: 100%;
+      }
+
+      .toolbar-actions .btn,
+      .statement-actions .btn {
+        flex: 1;
+      }
+    }
+
+    @media print {
+      body {
+        background: #fff;
+      }
+
+      .member-accounting-page {
+        width: 100%;
+        padding: 0;
+      }
+
+      .accounting-hero,
+      .filters-card,
+      .filter-actions,
+      .quick-filters,
+      .toolbar-actions,
+      .statement-actions,
+      .cumulative-card {
+        display: none !important;
+      }
+
+      .print-header {
+        display: block;
+        margin-bottom: 18px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #111;
+      }
+
+      .print-header h1 {
+        margin: 0 0 6px;
+        font-size: 20px;
+      }
+
+      #printMeta {
+        color: #444;
+        font-size: 11px;
+      }
+
+      .summary-grid {
+        grid-template-columns: repeat(3, 1fr);
+        box-shadow: none;
+      }
+
+      .summary-card,
+      .table-card {
+        box-shadow: none;
+        border-color: #bbb;
+      }
+
+      .statement-card {
+        box-shadow: none;
+        border-color: #bbb;
+      }
+
+      table {
+        min-width: 0;
+      }
+    }
+  </style>
+<script src="/js/clean-urls.js?v=20261024" defer></script>
+</head>
+
+<body>
+
+  <main class="member-accounting-page">
+
+    <!-- =======================================================
+         PRINT HEADER
+         ======================================================= -->
+
+    <header class="print-header">
+      <h1>CHAMA LIVE — Member Accounting</h1>
+      <div id="printMeta">
+        Current Accounting Period
+      </div>
+    </header>
+
+
+    <!-- =======================================================
+         HERO
+         ======================================================= -->
+
+    <section class="accounting-hero">
+
+      <div class="hero-copy">
+
+        <p class="eyebrow">
+          Member Portal
+        </p>
+
+        <h1>
+          Member Accounting
+        </h1>
+
+        <p>
+          Review monthly contribution status, outstanding amounts,
+          applied payments, credit and member accounting statements.
+          This page reads canonical accounting data and does not
+          rebuild or modify accounting records.
+        </p>
+
+        <div
+          id="groupLabel"
+          class="group-label"
+        >
+          Loading group...
+        </div>
+
+      </div>
+
+      <div class="hero-status">
+
+        <span class="hero-status-label">
+          Accounting status
+        </span>
+
+        <p id="statusMessage">
+          Loading accounting data...
+        </p>
+
+      </div>
+
+    </section>
+
+
+    <!-- =======================================================
+         FILTERS
+         ======================================================= -->
+
+    <section class="filters-card">
+
+      <div class="section-heading">
+
+        <div>
+          <h2>
+            Accounting filters
+          </h2>
+
+          <p>
+            View your own canonical accounting for the selected period.
+          </p>
+        </div>
+
+      </div>
+
+
+      <div class="filter-grid">
+
+        <div class="field">
+
+          <label for="accountingMonth">
+            Accounting month
+          </label>
+
+          <input
+            id="accountingMonth"
+            type="month"
+            autocomplete="off"
+          >
+
+        </div>
+
+
+        <div class="field">
+
+          <label for="memberFilter">
+            My account
+          </label>
+
+          <select
+            id="memberFilter"
+          >
+            <option value="">
+              All Members
+            </option>
+          </select>
+
+        </div>
+
+
+        <div class="field">
+
+          <label for="statusFilter">
+            Status
+          </label>
+
+          <select
+            id="statusFilter"
+          >
+            <option value="">
+              All Statuses
+            </option>
+
+            <option value="paid">
+              Paid
+            </option>
+
+            <option value="partial">
+              Partial
+            </option>
+
+            <option value="outstanding">
+              Outstanding
+            </option>
+
+            <option value="credit">
+              Credit
+            </option>
+          </select>
+
+        </div>
+
+
+        <div class="field">
+
+          <label for="searchMember">
+            Search member
+          </label>
+
+          <input
+            id="searchMember"
+            type="search"
+            placeholder="Search by member name or number"
+            autocomplete="off"
+          >
+
+        </div>
+
+      </div>
+
+
+      <div class="filter-actions">
+
+        <button
+          id="refreshButton"
+          class="btn btn-primary"
+          type="button"
+        >
+          Refresh
+        </button>
+
+        <button
+          id="resetButton"
+          class="btn"
+          type="button"
+        >
+          Reset
+        </button>
+
+      </div>
+
+
+      <div
+        class="quick-filters"
+        aria-label="Quick accounting filters"
+      >
+
+        <button
+          type="button"
+          class="quick-filter active"
+          data-quick-filter="all"
+        >
+          All
+        </button>
+
+        <button
+          type="button"
+          class="quick-filter"
+          data-quick-filter="attention"
+        >
+          Attention
+        </button>
+
+        <button
+          type="button"
+          class="quick-filter"
+          data-quick-filter="arrears"
+        >
+          Arrears
+        </button>
+
+        <button
+          type="button"
+          class="quick-filter"
+          data-quick-filter="credit"
+        >
+          Credit
+        </button>
+
+      </div>
+
+    </section>
+
+
+    <!-- =======================================================
+         SUMMARY
+         ======================================================= -->
+
+    <section
+      class="summary-grid"
+      aria-label="Accounting summary"
+    >
+
+      <article class="summary-card">
+
+        <div class="summary-label">
+          My Record
+        </div>
+
+        <div
+          id="statMembers"
+          class="summary-value"
+        >
+          0
+        </div>
+
+        <div class="summary-note">
+          Your personal accounting record
+        </div>
+
+      </article>
+
+
+      <article class="summary-card">
+
+        <div class="summary-label">
+          Due
+        </div>
+
+        <div
+          id="statDue"
+          class="summary-value"
+        >
+          KSh 0
+        </div>
+
+        <div class="summary-note">
+          Current monthly due
+        </div>
+
+      </article>
+
+
+      <article class="summary-card">
+
+        <div class="summary-label">
+          Applied
+        </div>
+
+        <div
+          id="statApplied"
+          class="summary-value"
+        >
+          KSh 0
+        </div>
+
+        <div class="summary-note">
+          Payments applied
+        </div>
+
+      </article>
+
+
+      <article class="summary-card">
+
+        <div class="summary-label">
+          Outstanding
+        </div>
+
+        <div
+          id="statOutstanding"
+          class="summary-value"
+        >
+          KSh 0
+        </div>
+
+        <div class="summary-note">
+          Current outstanding
+        </div>
+
+      </article>
+
+
+      <article class="summary-card">
+
+        <div class="summary-label">
+          Credit
+        </div>
+
+        <div
+          id="statCredit"
+          class="summary-value"
+        >
+          KSh 0
+        </div>
+
+        <div class="summary-note">
+          Current credit position
+        </div>
+
+      </article>
+
+
+      <article class="summary-card">
+
+        <div class="summary-label">
+          Attention
+        </div>
+
+        <div
+          id="statAttention"
+          class="summary-value"
+        >
+          0
+        </div>
+
+        <div class="summary-note">
+          Members requiring review
+        </div>
+
+      </article>
+
+    </section>
+
+
+    <!-- =======================================================
+         ACCOUNTING TABLE
+         ======================================================= -->
+
+    <section class="table-card">
+
+      <div class="table-toolbar">
+
+        <div>
+
+          <h2>
+            Monthly accounting
+          </h2>
+
+          <p>
+            Period:
+            <span
+              id="tablePeriod"
+              class="table-period"
+            >
+              Current month
+            </span>
+          </p>
+
+        </div>
+
+
+        <div class="toolbar-actions">
+
+          <button
+            id="printButton"
+            class="btn"
+            type="button"
+          >
+            Print
+          </button>
+
+          <button
+            id="csvButton"
+            class="btn"
+            type="button"
+          >
+            CSV
+          </button>
+
+          <button
+            id="excelButton"
+            class="btn"
+            type="button"
+          >
+            Excel
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <div class="table-wrap">
+
+        <table>
+
+          <thead>
+
+            <tr>
+
+              <th>
+                Member
+              </th>
+
+              <th>
+                Due
+              </th>
+
+              <th>
+                Previous outstanding
+              </th>
+
+              <th>
+                Previous credit
+              </th>
+
+              <th>
+                Current payment
+              </th>
+
+              <th>
+                Applied
+              </th>
+
+              <th>
+                Carry forward
+              </th>
+
+              <th>
+                Outstanding
+              </th>
+
+              <th>
+                Credit
+              </th>
+
+              <th>
+                Status
+              </th>
+
+              <th>
+                Action
+              </th>
+
+            </tr>
+
+          </thead>
+
+          <tbody id="memberAccountingBody">
+
+            <tr>
+
+              <td
+                colspan="11"
+                class="empty-state"
+              >
+
+                <strong>
+                  Loading accounting data
+                </strong>
+
+                Please wait...
+
+              </td>
+
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+
+    <!-- =======================================================
+         MEMBER STATEMENT
+         ======================================================= -->
+
+    <section
+      id="statementSection"
+      class="statement-card"
+      aria-live="polite"
+    >
+
+      <div class="statement-header">
+
+        <div>
+
+          <h2 id="statementTitle">
+            Member Statement
+          </h2>
+
+          <p id="statementMeta">
+            Select a member to view the accounting statement.
+          </p>
+
+        </div>
+
+
+        <div class="statement-actions">
+
+          <button
+            id="statementPrintButton"
+            class="btn"
+            type="button"
+          >
+            Print Statement
+          </button>
+
+          <button
+            id="closeStatementButton"
+            class="btn btn-danger"
+            type="button"
+          >
+            Close
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <div class="statement-summary">
+
+        <article class="statement-metric">
+
+          <span>
+            Monthly due
+          </span>
+
+          <strong id="statementDue">
+            KSh 0
+          </strong>
+
+        </article>
+
+
+        <article class="statement-metric">
+
+          <span>
+            Monthly paid/applied
+          </span>
+
+          <strong id="statementPaid">
+            KSh 0
+          </strong>
+
+        </article>
+
+
+        <article class="statement-metric">
+
+          <span>
+            Outstanding
+          </span>
+
+          <strong id="statementOutstanding">
+            KSh 0
+          </strong>
+
+        </article>
+
+
+        <article class="statement-metric">
+
+          <span>
+            Credit
+          </span>
+
+          <strong id="statementCredit">
+            KSh 0
+          </strong>
+
+        </article>
+
+      </div>
+
+
+      <div class="statement-table-wrap">
+
+        <table class="statement-table">
+
+          <thead>
+
+            <tr>
+
+              <th>
+                Date
+              </th>
+
+              <th>
+                Reference
+              </th>
+
+              <th>
+                Payment method
+              </th>
+
+              <th>
+                Amount
+              </th>
+
+              <th>
+                Applied
+              </th>
+
+              <th>
+                Allocation status
+              </th>
+
+            </tr>
+
+          </thead>
+
+          <tbody id="statementBody">
+
+            <tr>
+
+              <td
+                colspan="6"
+                class="empty-state"
+              >
+
+                <strong>
+                  No statement selected
+                </strong>
+
+                Select a member from the accounting table.
+
+              </td>
+
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+
+    <!-- =======================================================
+         CUMULATIVE POSITION
+         ======================================================= -->
+
+    <section
+      id="memberCumulativePosition"
+      class="cumulative-card"
+    >
+
+      <div class="section-heading">
+
+        <div>
+
+          <h2>
+            Cumulative member position
+          </h2>
+
+          <p>
+            Lifetime scheduled contribution position from the
+            canonical member contribution position.
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <div
+        id="memberCumulativePositionContent"
+        class="cumulative-position"
+      >
+
+        <div class="cumulative-metric">
+
+          <span>
+            Total due
+          </span>
+
+          <strong>
+            KSh 0
+          </strong>
+
+        </div>
+
+
+        <div class="cumulative-metric">
+
+          <span>
+            Total allocated
+          </span>
+
+          <strong>
+            KSh 0
+          </strong>
+
+        </div>
+
+
+        <div class="cumulative-metric">
+
+          <span>
+            Cumulative arrears
+          </span>
+
+          <strong>
+            KSh 0
+          </strong>
+
+        </div>
+
+
+        <div class="cumulative-metric">
+
+          <span>
+            Cumulative credit
+          </span>
+
+          <strong>
+            KSh 0
+          </strong>
+
+        </div>
+
+
+        <div class="cumulative-metric">
+
+          <span>
+            Position
+          </span>
+
+          <strong>
+            —
+          </strong>
+
+        </div>
+
+        <div class="cumulative-description">
+          Select a member statement to load the cumulative
+          contribution position.
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+
+  <!-- =========================================================
+       MEMBER LAYOUT BOOT
+       ---------------------------------------------------------
+       member-layout.js is the sole feature boot owner for this
+       member portal page.
+
+       It dynamically loads:
+         ./js/member-accounting.js?v=20261009-personal-only1
+
+       and calls:
+         initMemberAccounting()
+
+       DO NOT directly import or initialize
+       member-accounting.js from this page.
+       ========================================================= -->
+
+  <script type="module">
+    import { boot } from "./js/member-layout.js?v=20261015-no-group-settings-member-portal";
+
+    boot();
+  </script>
+
+
+  <!-- =========================================================
+       PAGE-LOCAL PRINT METADATA
+       ---------------------------------------------------------
+       This listener does not initialize accounting.
+       ========================================================= -->
+
+  <script type="module">
+
+    window.addEventListener(
+      "beforeprint",
+      () => {
+
+        const groupLabel =
+          document.getElementById("groupLabel");
+
+        const tablePeriod =
+          document.getElementById("tablePeriod");
+
+        const printMeta =
+          document.getElementById("printMeta");
+
+        if (!printMeta) {
+          return;
+        }
+
+        const group =
+          groupLabel?.textContent?.trim() ||
+          "Current Group";
+
+        const period =
+          tablePeriod?.textContent?.trim() ||
+          "Current Accounting Period";
+
+        const generated =
+          new Intl.DateTimeFormat(
+            "en-KE",
+            {
+              dateStyle: "medium",
+              timeStyle: "short"
+            }
+          ).format(new Date());
+
+        printMeta.textContent =
+          `${group} • ${period} • Generated ${generated}`;
+      }
+    );
+
+  </script>
+
+</body>
+</html>

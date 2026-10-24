@@ -1,0 +1,2061 @@
+<!doctype html>
+<html lang="en">
+<head>
+<base href="/">
+  <meta charset="utf-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <meta
+    name="description"
+    content="Manage group details, leadership, contribution settings, payment configuration, subscription, and access context."
+  >
+
+  <meta
+    name="color-scheme"
+    content="light"
+  >
+
+  <title>Group Management — CHAMA LIVE</title>
+
+  <link rel="stylesheet" href="css/app.css">
+
+  <style>
+    /* =====================================================
+       CHAMA LIVE — GROUP MANAGEMENT
+       ===================================================== */
+
+    :root {
+      --gm-primary: #15803d;
+      --gm-primary-dark: #166534;
+      --gm-primary-light: #f0fdf4;
+      --gm-border: #e5e7eb;
+      --gm-border-soft: #edf0f2;
+      --gm-text: #111827;
+      --gm-muted: #6b7280;
+      --gm-bg: #f8faf9;
+      --gm-card: #ffffff;
+      --gm-danger: #b91c1c;
+      --gm-danger-bg: #fef2f2;
+      --gm-warning: #92400e;
+      --gm-warning-bg: #fffbeb;
+      --gm-success: #166534;
+      --gm-success-bg: #f0fdf4;
+      --gm-info: #1d4ed8;
+      --gm-info-bg: #eff6ff;
+      --gm-radius: 14px;
+      --gm-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      background: var(--gm-bg);
+      color: var(--gm-text);
+      font-family:
+        Inter,
+        ui-sans-serif,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+      line-height: 1.5;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    button:disabled,
+    input:disabled,
+    select:disabled,
+    textarea:disabled {
+      cursor: not-allowed;
+    }
+
+    a {
+      color: var(--gm-primary);
+    }
+
+    /* =====================================================
+       PAGE
+       ===================================================== */
+
+    .management-page {
+      width: 100%;
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .management-hero {
+      margin-bottom: 22px;
+    }
+
+    .management-hero h1 {
+      margin: 0;
+      font-size: clamp(1.6rem, 3vw, 2.1rem);
+      line-height: 1.15;
+      font-weight: 750;
+      letter-spacing: -0.025em;
+    }
+
+    .management-hero p {
+      margin: 8px 0 0;
+      color: var(--gm-muted);
+      max-width: 760px;
+      font-size: 0.95rem;
+    }
+
+    /* =====================================================
+       GLOBAL STATUS
+       ===================================================== */
+
+    .management-status {
+      display: none;
+      margin: 0 0 18px;
+      padding: 12px 14px;
+      border: 1px solid var(--gm-border);
+      border-radius: 10px;
+      background: #fff;
+      color: var(--gm-text);
+      font-size: 0.9rem;
+    }
+
+    .management-status.is-visible {
+      display: block;
+    }
+
+    .management-status.success {
+      border-color: #bbf7d0;
+      background: var(--gm-success-bg);
+      color: var(--gm-success);
+    }
+
+    .management-status.error {
+      border-color: #fecaca;
+      background: var(--gm-danger-bg);
+      color: var(--gm-danger);
+    }
+
+    .management-status.warning {
+      border-color: #fde68a;
+      background: var(--gm-warning-bg);
+      color: var(--gm-warning);
+    }
+
+    .management-status.info {
+      border-color: #bfdbfe;
+      background: var(--gm-info-bg);
+      color: var(--gm-info);
+    }
+
+    /* =====================================================
+       LOADING
+       ===================================================== */
+
+    .management-loading {
+      padding: 32px 20px;
+      text-align: center;
+      color: var(--gm-muted);
+      border: 1px solid var(--gm-border);
+      border-radius: var(--gm-radius);
+      background: var(--gm-card);
+      box-shadow: var(--gm-shadow);
+    }
+
+    .management-loading strong {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--gm-text);
+    }
+
+    /* =====================================================
+       MAIN GRID
+       ===================================================== */
+
+    .management-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .management-card {
+      min-width: 0;
+      background: var(--gm-card);
+      border: 1px solid var(--gm-border);
+      border-radius: var(--gm-radius);
+      box-shadow: var(--gm-shadow);
+      overflow: hidden;
+    }
+
+    .management-card.full-width {
+      grid-column: 1 / -1;
+    }
+
+    .management-card-header {
+      padding: 18px 20px 14px;
+      border-bottom: 1px solid var(--gm-border-soft);
+    }
+
+    .management-card-header h2 {
+      margin: 0;
+      font-size: 1.05rem;
+      line-height: 1.3;
+      font-weight: 700;
+    }
+
+    .management-card-header p {
+      margin: 5px 0 0;
+      color: var(--gm-muted);
+      font-size: 0.85rem;
+    }
+
+    .management-card-body {
+      padding: 20px;
+    }
+
+    /* =====================================================
+       FORMS
+       ===================================================== */
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .form-field {
+      min-width: 0;
+    }
+
+    .form-field.full-width {
+      grid-column: 1 / -1;
+    }
+
+    .form-field label {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--gm-text);
+      font-size: 0.83rem;
+      font-weight: 650;
+    }
+
+    .form-field .field-help {
+      margin-top: 5px;
+      color: var(--gm-muted);
+      font-size: 0.75rem;
+    }
+
+    .form-field input,
+    .form-field select,
+    .form-field textarea {
+      width: 100%;
+      min-height: 42px;
+      padding: 9px 11px;
+      border: 1px solid #d1d5db;
+      border-radius: 9px;
+      outline: none;
+      background: #fff;
+      color: var(--gm-text);
+      transition:
+        border-color 0.15s ease,
+        box-shadow 0.15s ease;
+    }
+
+    .form-field textarea {
+      min-height: 90px;
+      resize: vertical;
+    }
+
+    .form-field input:focus,
+    .form-field select:focus,
+    .form-field textarea:focus {
+      border-color: var(--gm-primary);
+      box-shadow: 0 0 0 3px rgba(21, 128, 61, 0.10);
+    }
+
+    .form-field input:disabled,
+    .form-field select:disabled,
+    .form-field textarea:disabled {
+      background: #f3f4f6;
+      color: #9ca3af;
+    }
+
+    .form-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .primary-button,
+    .secondary-button,
+    .danger-button {
+      min-height: 40px;
+      padding: 9px 15px;
+      border-radius: 9px;
+      font-weight: 650;
+      border: 1px solid transparent;
+      transition:
+        background 0.15s ease,
+        border-color 0.15s ease,
+        opacity 0.15s ease;
+    }
+
+    .primary-button {
+      background: var(--gm-primary);
+      color: #fff;
+      border-color: var(--gm-primary);
+    }
+
+    .primary-button:hover:not(:disabled) {
+      background: var(--gm-primary-dark);
+      border-color: var(--gm-primary-dark);
+    }
+
+    .secondary-button {
+      background: #fff;
+      color: var(--gm-text);
+      border-color: #d1d5db;
+    }
+
+    .secondary-button:hover:not(:disabled) {
+      background: #f9fafb;
+    }
+
+    .danger-button {
+      background: #fff;
+      color: var(--gm-danger);
+      border-color: #fecaca;
+    }
+
+    .danger-button:hover:not(:disabled) {
+      background: var(--gm-danger-bg);
+    }
+
+    .primary-button:disabled,
+    .secondary-button:disabled,
+    .danger-button:disabled {
+      opacity: 0.55;
+    }
+
+    /* =====================================================
+       BADGES
+       ===================================================== */
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 27px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      background: #f3f4f6;
+      color: #4b5563;
+      font-size: 0.72rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .status-badge.success {
+      background: var(--gm-success-bg);
+      color: var(--gm-success);
+    }
+
+    .status-badge.warning {
+      background: var(--gm-warning-bg);
+      color: var(--gm-warning);
+    }
+
+    .status-badge.info {
+      background: var(--gm-info-bg);
+      color: var(--gm-info);
+    }
+
+    /* =====================================================
+       LEADERSHIP
+       ===================================================== */
+
+    .leadership-status {
+      margin-bottom: 14px;
+      padding: 10px 12px;
+      border-radius: 9px;
+      background: #f9fafb;
+      color: var(--gm-muted);
+      font-size: 0.82rem;
+    }
+
+    .leadership-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .leadership-item {
+      padding: 13px;
+      border: 1px solid var(--gm-border-soft);
+      border-radius: 10px;
+      background: #fafafa;
+    }
+
+    .leadership-item-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .leadership-item-title {
+      font-weight: 700;
+    }
+
+    .leadership-item-meta {
+      margin-top: 5px;
+      color: var(--gm-muted);
+      font-size: 0.78rem;
+    }
+
+    .members-link {
+      display: inline-flex;
+      margin-top: 14px;
+      font-size: 0.85rem;
+      font-weight: 650;
+      text-decoration: none;
+    }
+
+    .members-link:hover {
+      text-decoration: underline;
+    }
+
+    /* =====================================================
+       CONTRIBUTION SETTINGS
+       ===================================================== */
+
+    .contribution-stack {
+      display: grid;
+      gap: 16px;
+    }
+
+    .contribution-panel {
+      padding: 16px;
+      border: 1px solid var(--gm-border-soft);
+      border-radius: 12px;
+      background: #fafafa;
+    }
+
+    .contribution-panel-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .contribution-panel-header h3 {
+      margin: 0;
+      font-size: 0.98rem;
+    }
+
+    .contribution-panel-header p {
+      margin: 4px 0 0;
+      color: var(--gm-muted);
+      font-size: 0.78rem;
+    }
+
+    .custom-contribution-form-shell {
+      padding: 18px;
+      border: 1px solid #dcfce7;
+      border-radius: 16px;
+      background:
+        linear-gradient(
+          180deg,
+          #ffffff 0%,
+          #f8fff9 100%
+        );
+      box-shadow:
+        0 8px 24px rgba(22, 101, 52, 0.06);
+    }
+
+    .custom-contribution-form-shell .form-grid {
+      gap: 14px;
+    }
+
+    .custom-fine-card {
+      padding: 14px;
+      border: 1px solid #fde68a;
+      border-radius: 12px;
+      background: #fffbeb;
+    }
+
+    .custom-fine-card .fine-option {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-height: 42px;
+      padding: 9px 11px;
+      border: 1px solid #f3e8b0;
+      border-radius: 9px;
+      background: #ffffff;
+    }
+
+    .custom-fine-card .fine-option input {
+      width: auto;
+      min-height: auto;
+      margin: 0;
+    }
+
+    .custom-fine-amount-label {
+      margin-top: 12px !important;
+    }
+
+    .custom-fine-help {
+      margin-top: 5px;
+      color: var(--gm-warning);
+      font-size: 0.74rem;
+      line-height: 1.4;
+    }
+
+    .custom-contribution-summary {
+      position: relative;
+      padding: 16px;
+      border: 1px solid #dcfce7;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #ffffff, #f7fff9);
+      box-shadow: 0 5px 18px rgba(15, 23, 42, 0.04);
+    }
+
+    .custom-contribution-summary strong {
+      font-size: 1rem;
+      color: var(--gm-text);
+    }
+
+    .custom-contribution-summary-meta {
+      margin-top: 4px;
+      line-height: 1.55;
+    }
+
+    .rules-box {
+      margin-top: 18px;
+      padding-top: 16px;
+      border-top: 1px solid var(--gm-border);
+    }
+
+    .rules-box h4 {
+      margin: 0 0 12px;
+      font-size: 0.9rem;
+    }
+
+    .rules-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .radio-row,
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-height: 40px;
+      padding: 8px 10px;
+      border: 1px solid var(--gm-border-soft);
+      border-radius: 9px;
+      background: #fff;
+    }
+
+    .radio-row input,
+    .checkbox-row input {
+      width: auto;
+      min-height: auto;
+      margin: 0;
+    }
+
+    .rule-summary {
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-radius: 9px;
+      background: var(--gm-primary-light);
+      color: var(--gm-success);
+      font-size: 0.8rem;
+    }
+
+    .backend-pending-note {
+      margin-top: 10px;
+      color: var(--gm-muted);
+      font-size: 0.75rem;
+    }
+
+    /* =====================================================
+       CUSTOM CONTRIBUTIONS
+       ===================================================== */
+
+    .custom-contribution-list {
+      display: grid;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .custom-contribution-empty {
+      padding: 16px;
+      border: 1px dashed var(--gm-border);
+      border-radius: 10px;
+      color: var(--gm-muted);
+      background: #fafafa;
+      font-size: 0.85rem;
+    }
+
+    .custom-contribution-summary {
+      padding: 14px;
+      border: 1px solid var(--gm-border-soft);
+      border-radius: 10px;
+      background: #fafafa;
+    }
+
+    .custom-contribution-summary strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .custom-contribution-summary-meta {
+      color: var(--gm-muted);
+      font-size: 0.8rem;
+    }
+
+    .custom-contribution-draft {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--gm-border-soft);
+    }
+
+    .custom-contribution-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .custom-contribution-status {
+      display: inline-flex;
+      align-items: center;
+      min-height: 26px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .custom-contribution-status.active {
+      background: var(--gm-success-bg);
+      color: var(--gm-success);
+    }
+
+    .custom-contribution-status.draft {
+      background: var(--gm-warning-bg);
+      color: var(--gm-warning);
+    }
+
+    .custom-contribution-status.closed {
+      background: #f3f4f6;
+      color: #4b5563;
+    }
+
+    /* =====================================================
+       SUBSCRIPTION
+       ===================================================== */
+
+    .subscription-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .subscription-item {
+      padding: 12px;
+      border: 1px solid var(--gm-border-soft);
+      border-radius: 10px;
+      background: #fafafa;
+    }
+
+    .subscription-label {
+      color: var(--gm-muted);
+      font-size: 0.75rem;
+    }
+
+    .subscription-value {
+      margin-top: 4px;
+      font-weight: 700;
+    }
+
+    /* =====================================================
+       PERMISSION MESSAGE
+       ===================================================== */
+
+    .permission-message {
+      display: none;
+      margin-bottom: 18px;
+      padding: 12px 14px;
+      border: 1px solid #fde68a;
+      border-radius: 10px;
+      background: var(--gm-warning-bg);
+      color: var(--gm-warning);
+      font-size: 0.85rem;
+    }
+
+    .permission-message.is-visible {
+      display: block;
+    }
+
+    .action-primary,
+    .action-info,
+    .action-neutral {
+      min-height: 42px;
+      font-weight: 800;
+    }
+
+    .action-primary {
+      background: #0f766e;
+      color: #fff;
+    }
+
+    .action-info {
+      background: #2563eb;
+      color: #fff;
+    }
+
+    .action-neutral {
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    .action-primary:disabled,
+    .action-info:disabled,
+    .action-neutral:disabled {
+      opacity: .6;
+      cursor: not-allowed;
+    }
+
+    /* =====================================================
+       RESPONSIVE
+       ===================================================== */
+
+    @media (max-width: 900px) {
+      .management-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .management-card.full-width {
+        grid-column: auto;
+      }
+    }
+
+    @media (max-width: 680px) {
+      .management-page {
+        padding: 16px;
+      }
+
+      .management-card-body,
+      .management-card-header {
+        padding-left: 15px;
+        padding-right: 15px;
+      }
+
+      .overview-grid,
+      .form-grid,
+      .subscription-grid,
+      .context-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .form-field.full-width {
+        grid-column: auto;
+      }
+
+      .calendar-summary {
+        grid-template-columns: 1fr;
+      }
+
+      .form-actions {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .form-actions button,
+      .form-actions a {
+        width: 100%;
+        text-align: center;
+      }
+
+      .rules-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .subscription-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .custom-contribution-actions {
+        flex-direction: column;
+      }
+
+      .custom-contribution-actions button {
+        width: 100%;
+      }
+    }
+  </style>
+<script src="/js/clean-urls.js?v=20261024" defer></script>
+</head>
+
+<body>
+
+  <main class="management-page">
+
+    <!-- ===================================================
+         HERO
+         =================================================== -->
+
+    <header class="management-hero">
+
+      <h1>
+        Group Management
+      </h1>
+
+      <p>
+        Manage the group's basic information, review leadership, configure
+        contribution settings and custom contributions, and view the group's
+        subscription and management context from one place.
+      </p>
+
+    </header>
+
+
+    <!-- ===================================================
+         GLOBAL STATUS
+         =================================================== -->
+
+    <div
+      id="groupManagementStatus"
+      class="management-status"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+    ></div>
+
+
+    <!-- ===================================================
+         LOADING
+         =================================================== -->
+
+    <div
+      id="adminLoading"
+      class="management-loading"
+      data-admin-loading
+      aria-live="polite"
+    >
+
+      <strong>
+        Loading group management...
+      </strong>
+
+      <span>
+        Please wait while your group context is loaded.
+      </span>
+
+    </div>
+
+
+    <!-- ===================================================
+         INITIALIZATION ERROR
+         =================================================== -->
+
+    <div
+      id="error"
+      class="management-status error"
+      role="alert"
+      aria-live="assertive"
+      aria-atomic="true"
+      hidden
+    ></div>
+
+
+    <!-- ===================================================
+         PERMISSION MESSAGE
+         =================================================== -->
+
+    <div
+      id="permissionMessage"
+      class="permission-message"
+      role="alert"
+      aria-live="assertive"
+    ></div>
+
+
+    <!-- ===================================================
+         MANAGEMENT CONTENT
+         =================================================== -->
+
+    <div
+      id="managementContent"
+      class="management-grid"
+      hidden
+    >
+
+      <!-- =================================================
+           OPTIONAL MODULE SETTINGS MOVED TO GROUP SETTINGS
+           ================================================= -->
+      <section class="management-card" aria-labelledby="moduleSettingsMovedHeading">
+        <div class="management-card-header">
+          <h2 id="moduleSettingsMovedHeading">Optional module settings</h2>
+          <p>Module availability, including Loans and Merry-go-round, is managed centrally in Group Settings.</p>
+        </div>
+        <div class="management-card-body">
+          <a class="btn btn-primary" href="group-settings.html">Open Group Settings</a>
+        </div>
+      </section>
+
+      <!-- =================================================
+           GROUP INFORMATION
+           ================================================= -->
+
+      <section
+        class="management-card"
+        aria-labelledby="groupInformationHeading"
+      >
+
+        <div class="management-card-header">
+
+          <h2 id="groupInformationHeading">
+            Group
+          </h2>
+
+          <p>
+            Update the group's basic profile information.
+          </p>
+
+        </div>
+
+
+        <div class="management-card-body">
+
+          <form
+            id="groupForm"
+            autocomplete="off"
+           data-permission-page="group-management" data-permission-action="edit">
+
+            <div class="form-grid">
+
+              <div class="form-field">
+
+                <label for="groupName">
+                  Group Name
+                </label>
+
+                <input
+                  id="groupName"
+                  name="groupName"
+                  type="text"
+                  maxlength="150"
+                  required
+                  autocomplete="organization"
+                >
+
+              </div>
+
+
+              <div class="form-field">
+
+                <label for="groupCategory">
+                  Group Type
+                </label>
+
+                <select
+                  id="groupCategory"
+                  name="groupCategory"
+                  required
+                >
+
+                  <option value="">
+                    Select group type
+                  </option>
+
+                  <option value="chama">
+                    Chama
+                  </option>
+
+                  <option value="cbo">
+                    CBO
+                  </option>
+
+                  <option value="other">
+                    Other
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              <div
+                class="form-field"
+                id="otherGroupTypeField"
+              >
+
+                <label for="groupCategoryOther">
+                  Other Group Type
+                </label>
+
+                <input
+                  id="groupCategoryOther"
+                  name="groupCategoryOther"
+                  type="text"
+                  maxlength="100"
+                  placeholder="Enter group type"
+                >
+
+                <div class="field-help">
+                  Complete this only when "Other" is selected.
+                </div>
+
+              </div>
+
+
+              <div class="form-field">
+
+                <label for="groupCountry">
+                  Country
+                </label>
+
+                <input
+                  id="groupCountry"
+                  name="groupCountry"
+                  type="text"
+                  maxlength="100"
+                  value="Kenya"
+                  autocomplete="country-name"
+                >
+
+              </div>
+
+            </div>
+
+
+            <div class="form-actions">
+
+              <button
+                id="saveGroupInformation"
+                type="submit"
+                class="primary-button action-primary"
+              >
+                Save Group Settings
+              </button>
+
+            </div>
+
+          </form>
+
+        </div>
+
+      </section>
+
+
+      <!-- =================================================
+           LEADERSHIP
+           ================================================= -->
+
+      <section
+        id="leadershipCard"
+        class="management-card"
+        aria-labelledby="leadershipHeading"
+      >
+
+        <div class="management-card-header">
+
+          <h2 id="leadershipHeading">
+            Leadership
+          </h2>
+
+          <p>
+            Current leadership assignments. Position changes are managed in Members.
+          </p>
+
+        </div>
+
+
+        <div class="management-card-body">
+
+          <div
+            id="leadershipStatus"
+            class="leadership-status"
+            role="status"
+            aria-live="polite"
+          >
+            Loading leadership information...
+          </div>
+
+
+          <div
+            id="leadershipList"
+            class="leadership-list"
+            aria-live="polite"
+          ></div>
+
+
+          <a
+            class="members-link"
+            href="members.html"
+          >
+            Manage group members →
+          </a>
+
+        </div>
+
+      </section>
+
+
+      <!-- =================================================
+           CONTRIBUTION SETTINGS
+           ================================================= -->
+
+      <section
+        class="management-card full-width"
+        aria-labelledby="contributionSettingsHeading"
+      >
+
+        <div class="management-card-header">
+
+          <h2 id="contributionSettingsHeading">
+            Contributions
+          </h2>
+
+          <p>
+            Configure the normal monthly contribution and create named custom
+            contributions using the same obligation, payment, and allocation model.
+          </p>
+
+        </div>
+
+
+        <div class="management-card-body contribution-stack">
+
+          <!-- ===============================================
+               MONTHLY CONTRIBUTION
+               =============================================== -->
+
+          <form
+            id="monthlyContributionForm"
+            class="contribution-panel"
+            autocomplete="off"
+           data-permission-page="group-management" data-permission-action="edit-contribution-settings">
+
+            <div class="contribution-panel-header">
+
+              <div>
+
+                <h3>
+                  Monthly Contribution
+                </h3>
+
+                <p>
+                  The group's normal recurring contribution.
+                </p>
+
+              </div>
+
+              <span class="status-badge info">
+                Monthly
+              </span>
+
+            </div>
+
+
+            <div class="form-grid">
+
+              <!-- AMOUNT -->
+
+              <div class="form-field">
+
+                <label for="monthlyContribution">
+                  Amount
+                </label>
+
+                <input
+                  id="monthlyContribution"
+                  name="monthlyContribution"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  inputmode="decimal"
+                  placeholder="0.00"
+                  required
+                >
+
+              </div>
+
+
+              <!-- START DATE -->
+
+              <div class="form-field">
+
+                <label for="monthlyStartDate">
+                  Start date
+                </label>
+
+                <input
+                  id="monthlyStartDate"
+                  name="monthlyStartDate"
+                  type="date"
+                >
+
+                <div class="field-help">
+                  Informational only until the monthly cycle activation contract is approved.
+                </div>
+
+              </div>
+
+
+              <!-- CLOSING DAY -->
+
+              <div class="form-field">
+
+                <label for="monthlyClosingDay">
+                  Closing day
+                </label>
+
+                <select
+                  id="monthlyClosingDay"
+                  name="monthlyClosingDay"
+                  required
+                >
+                  <option value="">Select closing day</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                  <option value="6">6</option>
+                  <option value="7">7</option>
+                  <option value="8">8</option>
+                  <option value="9">9</option>
+                  <option value="10">10</option>
+                  <option value="11">11</option>
+                  <option value="12">12</option>
+                  <option value="13">13</option>
+                  <option value="14">14</option>
+                  <option value="15">15</option>
+                  <option value="16">16</option>
+                  <option value="17">17</option>
+                  <option value="18">18</option>
+                  <option value="19">19</option>
+                  <option value="20">20</option>
+                  <option value="21">21</option>
+                  <option value="22">22</option>
+                  <option value="23">23</option>
+                  <option value="24">24</option>
+                  <option value="25">25</option>
+                  <option value="26">26</option>
+                  <option value="27">27</option>
+                  <option value="28">28</option>
+                </select>
+
+                <div class="field-help">
+                  Choose the day the monthly contribution cycle closes. The next cycle opens automatically the following day.
+                </div>
+
+              </div>
+
+              <!-- DERIVED OPENING DAY -->
+
+              <div class="form-field">
+
+                <label for="monthlyOpeningDayDerived">
+                  Next cycle opening day
+                </label>
+
+                <input
+                  id="monthlyOpeningDayDerived"
+                  type="text"
+                  value="—"
+                  readonly
+                  aria-readonly="true"
+                >
+
+                <div class="field-help">
+                  Automatically derived as closing day + 1. It is not a second setting.
+                </div>
+
+              </div>
+
+            </div>
+
+
+            <!-- =============================================
+                 CONTRIBUTION RULES
+                 ============================================= -->
+
+            <div class="rules-box">
+
+              <h4>
+                Contribution Rules &amp; Fines
+              </h4>
+
+
+              <div class="rules-grid">
+
+                <div class="form-field">
+
+                  <label>
+                    Grace period
+                  </label>
+
+                  <label class="radio-row">
+
+                    <input
+                      type="radio"
+                      name="monthlyGraceMode"
+                      value="none"
+                      checked
+                    >
+
+                    No grace period
+
+                  </label>
+
+
+                  <label class="radio-row">
+
+                    <input
+                      type="radio"
+                      name="monthlyGraceMode"
+                      value="days"
+                    >
+
+                    Grace period
+
+                  </label>
+
+
+                  <input
+                    id="monthlyGraceDays"
+                    type="number"
+                    min="0"
+                    max="27"
+                    step="1"
+                    placeholder="0 to 27 days"
+                    disabled
+                  >
+
+                </div>
+
+
+                <div class="form-field">
+
+                  <label>
+                    Apply fine
+                  </label>
+
+
+                  <label class="radio-row">
+
+                    <input
+                      type="radio"
+                      name="monthlyFineMode"
+                      value="no"
+                      checked
+                    >
+
+                    No
+
+                  </label>
+
+
+                  <label class="radio-row">
+
+                    <input
+                      type="radio"
+                      name="monthlyFineMode"
+                      value="yes"
+                    >
+
+                    Yes
+
+                  </label>
+
+
+                  <label for="monthlyFineAmount">
+                    Fine amount
+                  </label>
+
+                  <input
+                    id="monthlyFineAmount"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    inputmode="decimal"
+                    placeholder="0.00"
+                    disabled
+                  >
+
+                </div>
+
+              </div>
+
+
+              <div
+                id="monthlyRuleSummary"
+                class="rule-summary"
+              >
+                No grace period. No fine applies.
+              </div>
+
+              <div
+                id="monthlyCycleSummary"
+                class="rule-summary"
+                style="margin-top:10px;"
+              >
+                Current monthly cycle: loading…
+              </div>
+
+            </div>
+
+
+            <!-- =============================================
+                 SAVE
+                 ============================================= -->
+
+            <div class="form-actions">
+
+              <button
+                id="saveMonthlyContribution"
+                type="submit"
+                class="primary-button action-primary"
+              >
+                Save Monthly Contribution
+              </button>
+
+            </div>
+
+
+            <div class="backend-pending-note">
+
+              The monthly amount, closing day, grace period, and Monthly-specific fine settings are saved through the approved backend contracts.
+              Fine rules remain backend-owned; this page only reads and displays their current state.
+
+            </div>
+
+          </form>
+
+
+          <!-- ===============================================
+               CUSTOM CONTRIBUTIONS
+               =============================================== -->
+
+          <div class="contribution-panel">
+
+            <div class="contribution-panel-header">
+
+              <div>
+
+                <h3>
+                  Custom Contributions
+                </h3>
+
+                <p>
+                  Create a named contribution and activate its current period.
+                  Activation creates the member rules and obligations required
+                  for ongoing contribution tracking.
+                </p>
+
+              </div>
+
+
+              <button
+                id="newCustomContributionButton"
+                type="button"
+                class="secondary-button action-info"
+               data-permission-page="group-management" data-permission-action="edit-contribution-settings">
+                + New Custom Contribution
+              </button>
+
+            </div>
+
+
+            <!-- CUSTOM CONTRIBUTION EDITOR -->
+
+            <div
+              id="customContributionEditor"
+              hidden
+            >
+
+              <form
+                id="customContributionForm"
+                class="custom-contribution-form-shell"
+                autocomplete="off"
+               data-permission-page="group-management" data-permission-action="edit-contribution-settings">
+
+                <div class="form-grid">
+
+                  <div class="form-field full-width">
+
+                    <label for="customContributionName">
+                      Contribution name
+                    </label>
+
+                    <input
+                      id="customContributionName"
+                      type="text"
+                      maxlength="150"
+                      placeholder="e.g. School Fund"
+                      required
+                    >
+
+                  </div>
+
+
+                  <div class="form-field">
+
+                    <label for="customContributionAmount">
+                      Amount due
+                    </label>
+
+                    <input
+                      id="customContributionAmount"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      inputmode="decimal"
+                      placeholder="0.00"
+                      required
+                    >
+
+                  </div>
+
+
+                  <div class="form-field">
+
+                    <label for="customContributionCycle">
+                      Cycle
+                    </label>
+
+                    <select
+                      id="customContributionCycle"
+                      required
+                    >
+
+                      <option value="one_time">
+                        One-time
+                      </option>
+
+                      <option value="weekly">
+                        Weekly
+                      </option>
+
+                      <option value="monthly">
+                        Monthly
+                      </option>
+
+                      <option value="quarterly">
+                        Quarterly
+                      </option>
+
+                      <option value="annual">
+                        Annual
+                      </option>
+
+                    </select>
+
+                  </div>
+
+
+                  <div class="form-field">
+
+                    <label for="customContributionStartDate">
+                      Start date
+                    </label>
+
+                    <input
+                      id="customContributionStartDate"
+                      type="date"
+                      required
+                    >
+
+                  </div>
+
+
+                  <div class="form-field">
+
+                    <label for="customContributionDueDate">
+                      Due date
+                    </label>
+
+                    <input
+                      id="customContributionDueDate"
+                      type="date"
+                      required
+                    >
+
+                    <div class="field-help">
+                      The date the contribution becomes due.
+                      It must fall between the start and closing dates.
+                    </div>
+
+                  </div>
+
+
+                  <div class="form-field">
+
+                    <label for="customContributionEndDate">
+                      Closing date
+                    </label>
+
+                    <input
+                      id="customContributionEndDate"
+                      type="date"
+                      required
+                    >
+
+                  </div>
+
+
+                  <div class="form-field full-width">
+
+                    <label for="customContributionDescription">
+                      Description
+                    </label>
+
+                    <textarea
+                      id="customContributionDescription"
+                      maxlength="500"
+                      placeholder="Optional description"
+                    ></textarea>
+
+                  </div>
+
+                </div>
+
+
+                <!-- CUSTOM RULES -->
+
+                <div class="rules-box custom-fine-card">
+
+                  <h4>
+                    Contribution Rules &amp; Fines
+                  </h4>
+
+
+                  <div class="rules-grid">
+
+                    <div class="form-field">
+
+                      <label>
+                        Grace period
+                      </label>
+
+
+                      <label class="radio-row">
+
+                        <input
+                          type="radio"
+                          name="customGraceMode"
+                          value="none"
+                          checked
+                        >
+
+                        No grace period
+
+                      </label>
+
+
+                      <label class="radio-row">
+
+                        <input
+                          type="radio"
+                          name="customGraceMode"
+                          value="days"
+                        >
+
+                        Grace period
+
+                      </label>
+
+
+                      <input
+                        id="customGraceDays"
+                        type="number"
+                        min="0"
+                        max="365"
+                        step="1"
+                        placeholder="0 or more days"
+                        disabled
+                      >
+
+                    </div>
+
+
+                    <div class="form-field">
+
+                      <label>
+                        Apply fine
+                      </label>
+
+
+                      <label class="radio-row">
+
+                        <input
+                          type="radio"
+                          name="customFineMode"
+                          value="no"
+                          checked
+                        >
+
+                        No
+
+                      </label>
+
+
+                      <label class="radio-row fine-option">
+
+                        <input
+                          type="radio"
+                          name="customFineMode"
+                          value="yes"
+                        >
+
+                        Yes — apply a fine
+
+                      </label>
+
+
+                      <label
+                        for="customFineAmount"
+                        class="custom-fine-amount-label"
+                      >
+                        Fine amount (KSh)
+                      </label>
+
+                      <input
+                        id="customFineAmount"
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        inputmode="decimal"
+                        placeholder="e.g. 100"
+                        disabled
+                      >
+
+                      <div class="custom-fine-help">
+                        Choose “Yes” to enter the amount charged when the fine applies. The amount must be greater than zero.
+                      </div>
+
+                    </div>
+
+                  </div>
+
+
+                  <div
+                    id="customRuleSummary"
+                    class="rule-summary"
+                  >
+                    No grace period. No fine applies.
+                  </div>
+
+                </div>
+
+
+                <!-- CUSTOM ACTIONS -->
+
+                <div class="form-actions">
+
+                  <button
+                    id="saveCustomContribution"
+                    type="submit"
+                    class="primary-button"
+                  >
+                    Save &amp; Activate
+                  </button>
+
+
+                  <button
+                    id="cancelCustomContribution"
+                    type="button"
+                    class="secondary-button"
+                  >
+                    Cancel
+                  </button>
+
+                </div>
+
+
+                <div class="backend-pending-note">
+
+                  Saving creates the contribution definition through the approved
+                  backend RPC. Activation is also performed by the approved backend
+                  activation RPC, which creates the member rules and obligations.
+                  The frontend does not write accounting tables directly.
+
+                </div>
+
+              </form>
+
+            </div>
+
+
+            <!-- CUSTOM LIST -->
+
+            <div
+              id="customContributionsList"
+              class="custom-contribution-list"
+              aria-live="polite"
+            >
+
+              <div class="custom-contribution-empty">
+                No active custom contributions have been configured.
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- =================================================
+           SUBSCRIPTION
+           ================================================= -->
+
+      <section
+        class="management-card"
+        aria-labelledby="subscriptionHeading"
+      >
+
+        <div class="management-card-header">
+
+          <h2 id="subscriptionHeading">
+            CHAMA LIVE Account
+          </h2>
+
+          <p>
+            Current platform subscription and billing information.
+          </p>
+
+        </div>
+
+
+        <div class="management-card-body">
+
+          <a
+            class="secondary-button"
+            href="billing.html"
+            style="text-decoration:none;"
+          >
+            View Billing →
+          </a>
+
+
+          <div class="subscription-grid">
+
+            <div class="subscription-item">
+
+              <div class="subscription-label">
+                Status
+              </div>
+
+              <div
+                id="subscriptionStatus"
+                class="subscription-value"
+              >
+                —
+              </div>
+
+            </div>
+
+
+            <div class="subscription-item">
+
+              <div class="subscription-label">
+                Plan
+              </div>
+
+              <div
+                id="subscriptionPlan"
+                class="subscription-value"
+              >
+                —
+              </div>
+
+            </div>
+
+
+            <div class="subscription-item">
+
+              <div class="subscription-label">
+                End Date
+              </div>
+
+              <div
+                id="subscriptionEndDate"
+                class="subscription-value"
+              >
+                —
+              </div>
+
+            </div>
+
+
+            <div class="subscription-item">
+
+              <div class="subscription-label">
+                Amount
+              </div>
+
+              <div
+                id="subscriptionAmount"
+                class="subscription-value"
+              >
+                —
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+    </div>
+
+  </main>
+
+
+  <!-- =====================================================
+       PAGE BOOT
+       ===================================================== -->
+
+  <noscript>
+
+    <div
+      style="
+        margin:20px;
+        padding:14px;
+        border:1px solid #fecaca;
+        border-radius:10px;
+        background:#fef2f2;
+        color:#b91c1c;
+        font-family:system-ui,sans-serif;
+      "
+    >
+      CHAMA LIVE Group Management requires JavaScript to load and
+      manage your group securely.
+    </div>
+
+  </noscript>
+
+
+  <script type="module">
+
+    import { boot } from "./js/admin-layout.js";
+    import { initMonthlyContributionCycle } from "./js/monthly-contribution-cycle.js";
+
+    /*
+     * =========================================================
+     * CHAMA LIVE — GROUP MANAGEMENT BOOT CONTRACT
+     * =========================================================
+     *
+     * admin-layout.js remains the SINGLE page-shell boot owner.
+     *
+     * group-management.js must:
+     *
+     *   - NOT auto-run from this HTML file
+     *   - NOT create its own page boot
+     *   - NOT create a second authentication flow
+     *   - NOT directly mutate accounting tables
+     *   - NOT call get_group_active_contributions()
+     *
+     * Group Management functionality is loaded by admin-layout.js.
+     * =========================================================
+     */
+
+    try {
+
+      await boot();
+      await initMonthlyContributionCycle();
+
+    } catch (error) {
+
+      console.error(
+        "CHAMA LIVE Group Management boot failed:",
+        error
+      );
+
+      const loading =
+        document.getElementById("adminLoading");
+
+      const errorBox =
+        document.getElementById("error");
+
+      const status =
+        document.getElementById("groupManagementStatus");
+
+
+      if (loading) {
+
+        loading.hidden = true;
+        loading.style.display = "none";
+
+      }
+
+
+      const message =
+        error?.message ||
+        "The Group Management page could not be initialized.";
+
+
+      if (errorBox) {
+
+        errorBox.hidden = false;
+
+        errorBox.textContent =
+          `Group Management could not be loaded. ${message}`;
+
+      }
+
+
+      if (status) {
+
+        status.className =
+          "management-status error is-visible";
+
+        status.textContent =
+          `Group Management could not be loaded. ${message}`;
+
+      }
+
+    }
+
+  </script>
+
+</body>
+</html>
