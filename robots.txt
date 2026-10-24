@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://chamalive.co.ke/sitemap.xml
