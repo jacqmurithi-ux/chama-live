@@ -1,27 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://chamalive.co.ke/</loc>
-    <lastmod>2026-10-24</lastmod>
-  </url>
-  <url>
-    <loc>https://chamalive.co.ke/pricing.html</loc>
-    <lastmod>2026-10-24</lastmod>
-  </url>
-  <url>
-    <loc>https://chamalive.co.ke/faq.html</loc>
-    <lastmod>2026-10-24</lastmod>
-  </url>
-  <url>
-    <loc>https://chamalive.co.ke/terms.html</loc>
-    <lastmod>2026-10-24</lastmod>
-  </url>
-  <url>
-    <loc>https://chamalive.co.ke/privacy.html</loc>
-    <lastmod>2026-10-24</lastmod>
-  </url>
-  <url>
-    <loc>https://chamalive.co.ke/sitemap.html</loc>
-    <lastmod>2026-10-24</lastmod>
-  </url>
+  <url><loc>https://chamalive.co.ke/</loc><lastmod>2026-10-24</lastmod></url>
+  <url><loc>https://chamalive.co.ke/pricing/</loc><lastmod>2026-10-24</lastmod></url>
+  <url><loc>https://chamalive.co.ke/faq/</loc><lastmod>2026-10-24</lastmod></url>
+  <url><loc>https://chamalive.co.ke/terms/</loc><lastmod>2026-10-24</lastmod></url>
+  <url><loc>https://chamalive.co.ke/privacy/</loc><lastmod>2026-10-24</lastmod></url>
+  <url><loc>https://chamalive.co.ke/sitemap/</loc><lastmod>2026-10-24</lastmod></url>
 </urlset>

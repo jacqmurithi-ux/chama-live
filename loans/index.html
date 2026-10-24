@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<base href="/">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Apply for, review and manage group loans in CHAMA LIVE.">
+<title>Loans — CHAMA LIVE</title>
+<link rel="stylesheet" href="css/app.css">
+<style>
+.loan-page{max-width:1480px;margin:auto;padding:16px}.loan-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,310px),1fr));gap:16px}.loan-card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:18px;min-width:0}.loan-card h2{margin-top:0}.loan-form{display:grid;gap:12px}.loan-form label{display:grid;gap:5px;font-size:.9rem;font-weight:600}.loan-form input,.loan-form select,.loan-form textarea{width:100%;min-width:0;padding:10px;border:1px solid #cbd5e1;border-radius:8px;font:inherit}.loan-form textarea{min-height:76px}.loan-btn{border:0;border-radius:8px;padding:10px 14px;background:#087f5b;color:white;font-weight:700;cursor:pointer}.loan-btn.secondary{background:#fff;color:#344054;border:1px solid #cbd5e1}.loan-btn:disabled{opacity:.5;cursor:not-allowed}.loan-status{padding:10px 12px;border-radius:8px;background:#f1f5f9;margin:10px 0}.loan-status.error{background:#fef2f2;color:#991b1b}.loan-muted{color:#64748b;font-size:.9rem}.loan-table-wrap{overflow:auto}.loan-table{border-collapse:collapse;width:100%;font-size:.88rem}.loan-table th,.loan-table td{text-align:left;padding:10px;border-bottom:1px solid #e5e7eb;vertical-align:top}.loan-table th{background:#f8fafc;white-space:nowrap}.loan-actions{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.loan-pill{display:inline-block;border-radius:99px;padding:3px 8px;background:#f1f5f9;font-size:.76rem;font-weight:700}.loan-hidden{display:none!important}.loan-notification{padding:12px 0;border-bottom:1px solid #e5e7eb}.loan-notification:last-child{border-bottom:0}.loan-notification.unread{background:#f0fdf4;padding:12px;border-radius:8px}.loan-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:12px 0}.loan-stat{border:1px solid #e5e7eb;border-radius:10px;padding:12px}.loan-stat small{display:block;color:#64748b}.loan-stat strong{font-size:1.1rem}
+@media(max-width:640px){.loan-table-wrap{overflow:visible}.loan-table,.loan-table tbody{display:block;width:100%}.loan-table thead{display:none}.loan-table tr{display:block;border:1px solid #e5e7eb;border-radius:10px;padding:8px;margin:0 0 10px;background:#fff}.loan-table td{display:grid;grid-template-columns:minmax(95px,38%) minmax(0,1fr);gap:8px;padding:8px 4px;overflow-wrap:anywhere}.loan-table td:before{content:attr(data-label);font-weight:700;color:#475569}.loan-table td[colspan]{display:block}.loan-table td[colspan]:before{content:none}}
+@media(min-width:641px){.loan-table td:before{content:none}}
+</style>
+<script src="/js/clean-urls.js?v=20261024" defer></script>
+</head>
+<body>
+<main class="main loan-page">
+<header class="contributions-page-header">
+<p class="eyebrow">GROUP FINANCE</p><h1>Loans</h1>
+<p class="loan-muted">Apply for and manage group loans. Chairperson, Treasurer and Secretary must each decide before a loan can be disbursed. Admin approval counts only when Admin also holds one of those offices. Loan records and repayments are separate from contribution accounting.</p>
+</header>
+<div id="error" class="loan-status error" role="alert" hidden></div>
+<div id="loanStatus" class="loan-status" role="status">Checking group access…</div>
+<section id="loanContent" class="loan-hidden">
+<section id="loanNotificationsCard" class="loan-card" style="margin-bottom:16px"><h2>Loan notifications</h2><p class="loan-muted">Application decisions, disbursements and repayment updates for your account.</p><div id="loanNotifications" aria-live="polite"><p class="loan-muted">Loading notifications…</p></div></section>
+<section id="loanSettingsCard" class="loan-card loan-hidden" style="margin-bottom:16px">
+<h2>Loan settings</h2><p class="loan-muted">Admin controls interest, limits and late penalties. Changes apply only to new applications.</p><p id="loanSettingsUpdated" class="loan-muted">Settings update history loads here.</p>
+<label style="display:flex;gap:8px;align-items:center;font-weight:700"><input id="loanEnabled" type="checkbox" disabled style="width:auto"> Loans module enabled (manage this in Group Management)</label>
+<form id="loanSettingsForm" class="loan-form" data-permission-page="loans" data-permission-action="settings">
+<div class="loan-grid">
+<label>Annual interest rate (%)<input name="interest_rate" type="number" min="0" max="100" step="0.0001" required></label>
+<label>Interest method<select name="interest_type" required><option value="flat">Flat rate</option><option value="reducing_balance">Reducing balance</option></select></label>
+<label>Maximum loan amount (KES)<input name="max_loan_amount" type="number" min="1" step="0.01" required></label>
+<label>Maximum repayment period (months)<input name="max_period_months" type="number" min="1" max="120" step="1" required></label>
+<label>Late penalty per overdue installment (KES)<input name="late_penalty" type="number" min="0" step="0.01" required></label>
+</div><button class="loan-btn" type="submit">Save loan settings</button>
+</form>
+</section>
+<div id="loanApplyOverviewGrid" class="loan-grid">
+<section id="loanApplyCard" class="loan-card">
+<h2>Apply for a loan</h2><p id="loanLimits" class="loan-muted">Loan limits load after settings are configured.</p>
+<form id="loanApplyForm" class="loan-form" data-permission-page="loans" data-permission-action="apply">
+<label>Requested amount (KES)<input name="amount" type="number" min="1" step="0.01" required></label>
+<label>Repayment period (months)<input name="period" type="number" min="1" max="120" step="1" required></label>
+<label>Purpose<textarea name="purpose" minlength="3" maxlength="2000" required placeholder="Explain what the loan will be used for"></textarea></label>
+<label>Guarantors (optional; select up to 5)<select name="guarantor" multiple size="5" aria-describedby="loanGuarantorHelp"></select></label><p id="loanGuarantorHelp" class="loan-muted">Choose one or more active members. Leave unselected if no guarantor is required.</p>
+<div id="loanPreview" class="loan-status" aria-live="polite">Enter an amount and period to preview repayments.</div>
+<button class="loan-btn" type="submit">Submit application</button>
+<p id="loanApplicationGate" class="loan-muted" role="status"></p>
+</form>
+</section>
+<section class="loan-card">
+<h2>Loan overview</h2><p class="loan-muted">Officials can review group loan totals. Members see only their own loans.</p>
+<div class="loan-summary"><div class="loan-stat"><small>Applications / loans</small><strong id="loanCount">—</strong></div><div class="loan-stat"><small>Outstanding principal + charges</small><strong id="loanOutstanding">KES —</strong></div><div class="loan-stat"><small>Overdue loans</small><strong id="loanOverdue">—</strong></div><div class="loan-stat"><small>Next installment due</small><strong id="loanNextDue">—</strong></div></div>
+<p id="loanViewMode" class="loan-muted"></p>
+</section>
+</div>
+<section id="loanGuarantorCard" class="loan-card loan-hidden" style="margin-top:16px"><h2>Guarantor requests</h2><div id="loanGuarantorRows"><p class="loan-muted">No guarantor requests.</p></div></section>
+<section id="loanReviewCard" class="loan-card loan-hidden" style="margin-top:16px"><h2>Loans awaiting my decision</h2><p class="loan-muted">You can decide only for your explicitly recorded office.</p><div class="loan-table-wrap"><table id="loanReviewTable" class="loan-table"><thead><tr><th>Applicant</th><th>Amount</th><th>Period</th><th>Purpose</th><th>Guarantor</th><th>History / balance</th><th>Action</th></tr></thead><tbody id="loanReviewRows"><tr><td colspan="7">No loans awaiting your decision.</td></tr></tbody></table></div></section>
+<section id="loanPendingRepaymentsCard" class="loan-card loan-hidden" style="margin-top:16px"><h2>Repayments awaiting confirmation</h2><div class="loan-table-wrap"><table id="loanPendingRepaymentTable" class="loan-table"><thead><tr><th>Member</th><th>Amount</th><th>Date</th><th>Reference</th><th>Action</th></tr></thead><tbody id="loanPendingRepaymentRows"><tr><td colspan="5">No pending repayments.</td></tr></tbody></table></div></section>
+<section id="loanOverdueCard" class="loan-card loan-hidden" style="margin-top:16px"><h2>Overdue loans</h2><div id="loanOverdueRows"><p class="loan-muted">No overdue loans.</p></div></section>
+<section id="loanGroupSummaryCard" class="loan-card loan-hidden" style="margin-top:16px"><h2>Group loan overview</h2><div id="loanGroupSummary" class="loan-summary"></div></section>
+<section id="loanApplicationsCard" class="loan-card" style="margin-top:16px">
+<div style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap"><h2>Loan applications and active loans</h2><button id="loanExportCsv" class="loan-btn secondary" type="button" data-permission-page="loans" data-permission-action="export">Export loan report (CSV)</button></div><div id="loanTableFilters" class="loan-grid loan-hidden" style="margin:12px 0"><label>Search by member<input id="loanSearch" type="search" placeholder="Member name"></label><label>Filter by status<select id="loanStatusFilter"><option value="">All statuses</option><option value="submitted">Pending</option><option value="approved">Approved / awaiting disbursement</option><option value="rejected">Rejected</option><option value="active">Active</option><option value="overdue">Overdue</option><option value="cleared">Cleared</option><option value="cancelled">Cancelled</option></select></label></div>
+<div class="loan-table-wrap"><table id="loanApplicationsTable" class="loan-table"><thead><tr><th>Member</th><th>Requested</th><th>Approved</th><th>Period</th><th>Status</th><th>Submitted</th><th>Actions</th></tr></thead><tbody id="loanRows"><tr><td colspan="7">Loading loans…</td></tr></tbody></table></div>
+</section>
+<section id="loanDetailCard" class="loan-card loan-hidden" style="margin-top:16px">
+<h2 id="loanDetailTitle">Loan details</h2><div id="loanApprovalProgress"></div><div id="loanSchedule" class="loan-table-wrap"></div><div id="loanAuditTrail" class="loan-table-wrap"></div>
+<div id="loanRepaymentPanel" class="loan-hidden" style="margin-top:16px">
+<h3>Record repayment</h3><form id="loanRepaymentForm" class="loan-form" data-permission-page="loans" data-permission-action="repayment">
+<div class="loan-grid">
+<label>Amount (KES)<input name="amount" type="number" min="0.01" step="0.01" required></label>
+<label>Payment date<input name="payment_date" type="date" required></label>
+<label>Method<select name="method"><option value="cash">Cash</option><option value="mpesa">M-Pesa</option><option value="bank">Bank</option><option value="other">Other</option></select></label>
+<label>Reference (optional)<input name="reference" maxlength="200"></label>
+<label>Note (optional)<input name="note" maxlength="1000"></label>
+</div><button class="loan-btn" type="submit">Record repayment</button>
+</form></div>
+</section>
+</section>
+</main>
+<script type="module">
+import { boot as bootAdmin } from "./js/admin-layout.js?v=20261015-loans-syntax-fix1";
+import { boot as bootMember } from "./js/member-layout.js?v=20261015-no-group-settings-member-portal";
+if (new URLSearchParams(window.location.search).get("portal") === "member") {
+  bootMember();
+} else {
+  bootAdmin();
+}
+</script>
+</body></html>

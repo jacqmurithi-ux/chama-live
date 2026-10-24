@@ -1,0 +1,451 @@
+import { supabase } from "./supabase.js";
+
+const $ = (id) =>
+document.getElementById(id);
+
+const form =
+$("memberForm");
+
+const submitButton =
+$("submitButton");
+
+const status =
+$("status");
+
+const errorBox =
+$("error");
+
+const successCard =
+$("successCard");
+
+const addAnother =
+$("addAnother");
+
+/* =====================================================
+STATUS
+===================================================== */
+
+function setStatus(message) {
+
+if (status) {
+status.textContent =
+message;
+}
+
+}
+
+/* =====================================================
+ERROR
+===================================================== */
+
+function clearError() {
+
+if (!errorBox) {
+return;
+}
+
+errorBox.hidden =
+true;
+
+errorBox.textContent =
+"";
+
+}
+
+function showError(message) {
+
+console.error(message);
+
+if (errorBox) {
+
+```
+errorBox.hidden =
+  false;
+
+errorBox.textContent =
+  message;
+```
+
+}
+
+}
+
+/* =====================================================
+LOADING
+===================================================== */
+
+function setLoading(loading) {
+
+if (!submitButton) {
+return;
+}
+
+submitButton.disabled =
+loading;
+
+submitButton.textContent =
+loading
+? "Adding Member..."
+: "Add Member";
+
+}
+
+/* =====================================================
+ROLE LABEL
+===================================================== */
+
+function roleLabel(role) {
+
+const labels = {
+
+```
+member:
+  "Member",
+
+secretary:
+  "Secretary",
+
+treasurer:
+  "Treasurer"
+```
+
+};
+
+return (
+labels[role] ||
+role
+);
+
+}
+
+/* =====================================================
+RESET
+===================================================== */
+
+function resetForm() {
+
+if (form) {
+form.reset();
+}
+
+const role =
+$("role");
+
+if (role) {
+role.value =
+"member";
+}
+
+if (successCard) {
+successCard.hidden =
+true;
+}
+
+clearError();
+
+setStatus(
+"Enter the member's details below."
+);
+
+}
+
+/* =====================================================
+SUBMIT
+===================================================== */
+
+async function submitMember(event) {
+
+event.preventDefault();
+
+clearError();
+
+if (!form) {
+return;
+}
+
+const name =
+$("name")?.value.trim();
+
+const email =
+$("email")?.value.trim().toLowerCase();
+
+const phone =
+$("phone")?.value.trim();
+
+const role =
+$("role")?.value;
+
+if (!name) {
+
+```
+showError(
+  "Please enter the member's full name."
+);
+
+$("name")?.focus();
+
+return;
+```
+
+}
+
+if (!email) {
+
+```
+showError(
+  "Please enter the member's email address."
+);
+
+$("email")?.focus();
+
+return;
+```
+
+}
+
+if (!isValidEmail(email)) {
+
+```
+showError(
+  "Please enter a valid email address."
+);
+
+$("email")?.focus();
+
+return;
+```
+
+}
+
+if (
+![
+"member",
+"secretary",
+"treasurer"
+].includes(role)
+) {
+
+```
+showError(
+  "Please select a valid group role."
+);
+
+return;
+```
+
+}
+
+setLoading(true);
+
+setStatus(
+"Creating member record and sending invitation..."
+);
+
+try {
+
+```
+/* -----------------------------------------------
+   Confirm current login
+------------------------------------------------ */
+
+const {
+  data: {
+    session
+  },
+  error: sessionError
+} =
+  await supabase.auth.getSession();
+
+if (sessionError) {
+  throw sessionError;
+}
+
+if (!session) {
+
+  window.location.href =
+    "login.html";
+
+  return;
+
+}
+
+
+/* -----------------------------------------------
+   Call Edge Function
+------------------------------------------------ */
+
+const {
+  data,
+  error
+} =
+  await supabase.functions.invoke(
+    "admin-add-member",
+    {
+      body: {
+
+        name,
+
+        email,
+
+        phone,
+
+        role
+
+      }
+
+    }
+  );
+
+
+if (error) {
+
+  console.error(
+    "Edge function error:",
+    error
+  );
+
+  throw new Error(
+    error.message ||
+    "Unable to add member."
+  );
+
+}
+
+
+/* -----------------------------------------------
+   Backend error
+------------------------------------------------ */
+
+if (
+  data?.error
+) {
+
+  throw new Error(
+    data.error
+  );
+
+}
+
+
+if (
+  !data?.success
+) {
+
+  throw new Error(
+    "The member could not be added."
+  );
+
+}
+
+
+/* -----------------------------------------------
+   Success
+------------------------------------------------ */
+
+const member =
+  data.member || {};
+
+$("successMemberNumber").textContent =
+  member.membership_number ||
+  member.member_number ||
+  "—";
+
+$("successRole").textContent =
+  roleLabel(
+    member.role ||
+    role
+  );
+
+$("successEmail").textContent =
+  member.email ||
+  email;
+
+if (successCard) {
+  successCard.hidden =
+    false;
+}
+
+setStatus(
+  data.message ||
+  "Member added successfully."
+);
+
+form.reset();
+
+$("role").value =
+  "member";
+
+window.scrollTo({
+  top: 0,
+  behavior: "smooth"
+});
+```
+
+} catch (error) {
+
+```
+console.error(
+  error
+);
+
+showError(
+  error?.message ||
+  "Unable to add member. Please try again."
+);
+
+setStatus(
+  "Member could not be added."
+);
+```
+
+} finally {
+
+```
+setLoading(false);
+```
+
+}
+
+}
+
+/* =====================================================
+EMAIL VALIDATION
+===================================================== */
+
+function isValidEmail(email) {
+
+return /^[^\s@]+@[^\s@]+.[^\s@]+$/
+.test(email);
+
+}
+
+/* =====================================================
+EVENTS
+===================================================== */
+
+if (form) {
+
+form.addEventListener(
+"submit",
+submitMember
+);
+
+}
+
+if (addAnother) {
+
+addAnother.addEventListener(
+"click",
+() => {
+
+```
+  resetForm();
+
+  $("name")?.focus();
+
+}
+```
+
+);
+
+}

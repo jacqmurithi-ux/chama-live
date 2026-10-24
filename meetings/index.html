@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<base href="/">
+  <meta charset="UTF-8">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Meetings | CHAMA LIVE</title>
+
+  <meta
+    name="description"
+    content="Schedule meetings, manage attendance, and retain a clear meeting brief and history."
+  >
+
+  <link rel="stylesheet" href="./css/app.css">
+
+  <style>
+    .meeting-page {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .meeting-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+
+    .meeting-header h1 {
+      margin: 0 0 8px;
+    }
+
+    .meeting-header p {
+      margin: 0;
+      color: var(--text-muted, #667085);
+    }
+
+    .meeting-status {
+      display: none;
+      margin-bottom: 18px;
+      padding: 12px 14px;
+      border-radius: 8px;
+    }
+
+    .meeting-status.is-visible {
+      display: block;
+    }
+
+    .meeting-status.error {
+      background: #fef3f2;
+      color: #b42318;
+      border: 1px solid #fecdca;
+    }
+
+    .meeting-status.success {
+      background: #ecfdf3;
+      color: #027a48;
+      border: 1px solid #abefc6;
+    }
+
+    .meeting-metrics {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .meeting-metric {
+      background: #fff;
+      border: 1px solid #e4e7ec;
+      border-radius: 12px;
+      padding: 18px;
+    }
+
+    .meeting-metric-label {
+      display: block;
+      margin-bottom: 8px;
+      color: #667085;
+      font-size: 14px;
+    }
+
+    .meeting-metric-value {
+      display: block;
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1.1;
+    }
+
+    .meeting-section {
+      background: #fff;
+      border: 1px solid #e4e7ec;
+      border-radius: 12px;
+      margin-bottom: 24px;
+      overflow: hidden;
+    }
+
+    .meeting-section-header {
+      padding: 18px 20px;
+      border-bottom: 1px solid #eaecf0;
+    }
+
+    .meeting-section-header h2 {
+      margin: 0 0 4px;
+      font-size: 20px;
+    }
+
+    .meeting-section-header p {
+      margin: 0;
+      color: #667085;
+      font-size: 14px;
+    }
+
+    .meeting-section-body {
+      padding: 20px;
+    }
+
+    .meeting-form {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .meeting-form .form-group {
+      margin: 0;
+    }
+
+    .meeting-form .form-group-full {
+      grid-column: 1 / -1;
+    }
+
+    .meeting-form label {
+      display: block;
+      margin-bottom: 7px;
+      font-weight: 600;
+    }
+
+    .meeting-form input,
+    .meeting-form textarea,
+    .meeting-form select {
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .meeting-form textarea {
+      min-height: 140px;
+      resize: vertical;
+    }
+
+    .meeting-form-help {
+      margin-top: 6px;
+      color: #667085;
+      font-size: 13px;
+    }
+
+    .meeting-form-actions {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+    }
+
+    .meeting-filter {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .meeting-filter label {
+      font-weight: 600;
+    }
+
+    .meeting-filter select {
+      min-width: 220px;
+    }
+
+    .meeting-table-wrapper {
+      overflow-x: auto;
+    }
+
+    .meeting-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 760px;
+    }
+
+    .meeting-table th,
+    .meeting-table td {
+      padding: 14px 12px;
+      text-align: left;
+      vertical-align: middle;
+      border-bottom: 1px solid #eaecf0;
+    }
+
+    .meeting-table th {
+      color: #475467;
+      background: #f9fafb;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .meeting-table tbody tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .meeting-title {
+      font-weight: 600;
+    }
+
+    .meeting-date {
+      white-space: nowrap;
+    }
+
+    .meeting-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .meeting-status-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 9px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: capitalize;
+    }
+
+    .meeting-status-badge.upcoming {
+      background: #eff8ff;
+      color: #175cd3;
+    }
+
+    .meeting-status-badge.completed {
+      background: #ecfdf3;
+      color: #027a48;
+    }
+
+    .meeting-status-badge.cancelled {
+      background: #fef3f2;
+      color: #b42318;
+    }
+
+    .meeting-empty {
+      padding: 36px 20px;
+      text-align: center;
+      color: #667085;
+    }
+
+    .meeting-details {
+      display: none;
+    }
+
+    .meeting-details.is-visible {
+      display: block;
+    }
+
+    .meeting-details-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .meeting-details-title {
+      margin: 0 0 8px;
+    }
+
+    .meeting-details-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 18px;
+      color: #667085;
+      font-size: 14px;
+    }
+
+    .meeting-detail-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      margin-bottom: 22px;
+    }
+
+    .meeting-detail-card {
+      border: 1px solid #eaecf0;
+      border-radius: 10px;
+      padding: 16px;
+      background: #fcfcfd;
+    }
+
+    .meeting-detail-card h3 {
+      margin: 0 0 10px;
+      font-size: 15px;
+    }
+
+    .meeting-detail-card p {
+      margin: 0;
+      white-space: pre-wrap;
+      line-height: 1.6;
+    }
+
+    .meeting-content-section {
+      margin-top: 24px;
+    }
+
+    .meeting-content-section h3 {
+      margin-bottom: 12px;
+    }
+
+    .meeting-agenda-list {
+      margin: 0;
+      padding-left: 22px;
+    }
+
+    .meeting-agenda-list li {
+      margin-bottom: 7px;
+    }
+
+    .meeting-reading-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 18px 0;
+      padding: 12px;
+      border: 1px solid #eaecf0;
+      border-radius: 10px;
+      background: #f9fafb;
+    }
+
+    .meeting-readable-view {
+      border: 1px solid #d0d5dd;
+      border-radius: 10px;
+      background: #fff;
+      padding: 28px;
+      line-height: 1.7;
+    }
+
+    .meeting-readable-view h2,
+    .meeting-readable-view h3 {
+      margin-top: 0;
+    }
+
+    .meeting-readable-view.is-expanded {
+      max-width: none;
+    }
+
+    .meeting-fullscreen {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      overflow: auto;
+      background: #fff;
+      padding: 32px;
+    }
+
+    .meeting-print-document {
+      display: none;
+    }
+
+    .meeting-attendance {
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 1px solid #eaecf0;
+    }
+
+    .meeting-attendance-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .meeting-attendance-header h3 {
+      margin: 0 0 6px;
+    }
+
+    .meeting-attendance-header p {
+      margin: 0;
+      color: #667085;
+      font-size: 14px;
+    }
+
+    .meeting-attendance-stats {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .attendance-stat {
+      padding: 12px;
+      border: 1px solid #eaecf0;
+      border-radius: 8px;
+      background: #fcfcfd;
+    }
+
+    .attendance-stat-label {
+      display: block;
+      color: #667085;
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+
+    .attendance-stat-value {
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .meeting-attendance-list {
+      overflow-x: auto;
+    }
+
+    .meeting-attendance-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 620px;
+    }
+
+    .meeting-attendance-table th,
+    .meeting-attendance-table td {
+      padding: 11px 10px;
+      border-bottom: 1px solid #eaecf0;
+      text-align: left;
+    }
+
+    .meeting-attendance-table th {
+      background: #f9fafb;
+      font-size: 13px;
+    }
+
+    .attendance-status-select {
+      min-width: 150px;
+    }
+
+    .meeting-attendance-actions {
+      margin-top: 14px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .meeting-document-panel {
+      display: none;
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 1px solid #eaecf0;
+    }
+
+    .meeting-document-panel.is-visible {
+      display: block;
+    }
+
+    .meeting-document-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 14px;
+    }
+
+    .meeting-document-header h3 {
+      margin: 0 0 6px;
+    }
+
+    .meeting-document-meta {
+      color: #667085;
+      font-size: 14px;
+    }
+
+    .meeting-document-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .meeting-document-message {
+      margin-top: 10px;
+      color: #667085;
+      font-size: 14px;
+    }
+
+    .meeting-document-viewer {
+      display: none;
+      margin-top: 16px;
+      min-height: 500px;
+      border: 1px solid #d0d5dd;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #f9fafb;
+    }
+
+    .meeting-document-viewer.is-visible {
+      display: block;
+    }
+
+    .meeting-document-viewer iframe {
+      width: 100%;
+      height: 700px;
+      border: 0;
+      background: #fff;
+    }
+
+    .meeting-file-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 12px 0;
+      border-bottom: 1px solid #eaecf0;
+    }
+
+    .meeting-file-row:last-child {
+      border-bottom: 0;
+    }
+
+    #meetingLifecycleControls textarea {
+      margin-top: 10px;
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    .meeting-detail-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 22px;
+      padding-top: 18px;
+      border-top: 1px solid #eaecf0;
+    }
+
+    .btn-danger {
+      color: #fff;
+      background: #d92d20;
+      border-color: #d92d20;
+    }
+
+    .btn-danger:hover {
+      background: #b42318;
+      border-color: #b42318;
+    }
+
+    @media (max-width: 900px) {
+      .meeting-metrics {
+        grid-template-columns: 1fr;
+      }
+
+      .meeting-form,
+      .meeting-detail-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .meeting-form .form-group-full {
+        grid-column: auto;
+      }
+
+      .meeting-attendance-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .meeting-header,
+      .meeting-details-header,
+      .meeting-attendance-header,
+      .meeting-document-header {
+        flex-direction: column;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .meeting-page {
+        padding: 16px;
+      }
+
+      .meeting-section-body {
+        padding: 16px;
+      }
+
+      .meeting-filter {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .meeting-filter select {
+        width: 100%;
+        min-width: 0;
+      }
+
+      .meeting-attendance-stats {
+        grid-template-columns: 1fr;
+      }
+
+      .meeting-readable-view {
+        padding: 18px;
+      }
+    }
+
+    @media print {
+      body * {
+        visibility: hidden !important;
+      }
+
+      .meeting-print-document,
+      .meeting-print-document * {
+        visibility: visible !important;
+      }
+
+      .meeting-print-document {
+        display: block !important;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+      }
+    }
+  </style>
+<script src="/js/clean-urls.js?v=20261024" defer></script>
+</head>
+
+<body>
+
+  <!-- =========================================================
+       TOP BAR
+       ========================================================= -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <a href="./dashboard.html" class="brand">
+        CHAMA LIVE
+      </a>
+    </div>
+
+    <div class="topbar-right">
+      <span data-user-name></span>
+
+      <button
+        type="button"
+        id="logout"
+        class="btn btn-secondary"
+      >
+        Logout
+      </button>
+    </div>
+  </header>
+
+
+  <!-- =========================================================
+       SIDEBAR
+       ========================================================= -->
+  <aside class="sidebar">
+    <nav class="sidebar-nav" aria-label="Main navigation">
+
+      <a href="./dashboard.html">
+        Dashboard
+      </a>
+
+      <a href="./members.html">
+        Members
+      </a>
+
+      <a href="./contributions.html">
+        Contributions
+      </a>
+
+      <a href="./fines.html">
+        Fines
+      </a>
+
+      <a href="./reports.html">
+        Reports
+      </a>
+
+      <a href="./meetings.html" class="active" aria-current="page">
+        Meetings
+      </a>
+
+      <a href="./group-management.html">
+        Group Management
+      </a>
+
+    </nav>
+  </aside>
+
+
+  <!-- =========================================================
+       MAIN
+       ========================================================= -->
+  <main class="main-content">
+
+    <div class="meeting-page">
+
+      <!-- PAGE HEADER -->
+      <div class="meeting-header">
+
+        <div>
+          <h1>Meetings</h1>
+
+          <p>
+            Schedule meetings, manage the meeting lifecycle, record attendance,
+            and keep a clear meeting brief and history for your group.
+          </p>
+        </div>
+
+      </div>
+
+
+      <!-- STATUS MESSAGE -->
+      <div
+        id="meetingStatus"
+        class="meeting-status"
+        role="status"
+        aria-live="polite"
+      ></div>
+
+
+      <!-- =======================================================
+           METRICS
+           ======================================================= -->
+      <section class="meeting-metrics" aria-label="Meeting summary">
+
+        <article class="meeting-metric">
+          <span class="meeting-metric-label">
+            Upcoming
+          </span>
+
+          <strong
+            id="upcomingCount"
+            class="meeting-metric-value"
+          >
+            0
+          </strong>
+        </article>
+
+        <article class="meeting-metric">
+          <span class="meeting-metric-label">
+            Completed
+          </span>
+
+          <strong
+            id="completedCount"
+            class="meeting-metric-value"
+          >
+            0
+          </strong>
+        </article>
+
+        <article class="meeting-metric">
+          <span class="meeting-metric-label">
+            Cancelled
+          </span>
+
+          <strong
+            id="cancelledCount"
+            class="meeting-metric-value"
+          >
+            0
+          </strong>
+        </article>
+
+      </section>
+
+
+      <!-- =======================================================
+           SCHEDULE MEETING
+           ======================================================= -->
+      <section class="meeting-section">
+
+        <div class="meeting-section-header">
+          <h2>Schedule Meeting</h2>
+
+          <p>
+            Create a meeting and add its agenda.
+          </p>
+        </div>
+
+        <div class="meeting-section-body">
+
+          <form
+            id="meetingForm"
+            class="meeting-form"
+            novalidate
+           data-permission-page="meetings" data-permission-action="create">
+
+            <!-- TITLE -->
+            <div class="form-group form-group-full">
+
+              <label for="meetingTitle">
+                Meeting Title
+              </label>
+
+              <input
+                id="meetingTitle"
+                name="title"
+                type="text"
+                maxlength="200"
+                required
+                autocomplete="off"
+              >
+
+            </div>
+
+
+            <!-- DATE -->
+            <div class="form-group">
+
+              <label for="meetingDate">
+                Date
+              </label>
+
+              <input
+                id="meetingDate"
+                name="date"
+                type="date"
+                required
+              >
+
+            </div>
+
+
+            <!-- VENUE -->
+            <div class="form-group">
+
+              <label for="venue">
+                Venue
+              </label>
+
+              <input
+                id="venue"
+                name="venue"
+                type="text"
+                maxlength="255"
+                autocomplete="off"
+              >
+
+            </div>
+
+
+            <!-- AGENDA -->
+            <div class="form-group form-group-full">
+
+              <label for="agenda">
+                Agenda
+              </label>
+
+              <textarea
+                id="agenda"
+                name="agenda"
+                rows="7"
+                maxlength="10000"
+                placeholder="Enter each agenda item on a separate line."
+              ></textarea>
+
+              <div class="meeting-form-help">
+                Add each agenda item on a separate line.
+              </div>
+
+            </div>
+
+
+            <!-- FORM ACTIONS -->
+            <div class="meeting-form-actions">
+
+              <button
+                type="submit"
+                id="saveMeeting"
+                class="btn btn-primary"
+               data-permission-page="meetings" data-permission-action="create">
+                Schedule Meeting
+              </button>
+
+              <button
+                type="button"
+                id="cancelEdit"
+                class="btn btn-secondary"
+                hidden
+              >
+                Cancel Edit
+              </button>
+
+            </div>
+
+          </form>
+
+        </div>
+
+      </section>
+
+
+      <!-- =======================================================
+           MEETING RECORDS
+           ======================================================= -->
+      <section class="meeting-section">
+
+        <div class="meeting-section-header">
+
+          <h2>
+            Meeting Records
+          </h2>
+
+          <p>
+            View and manage your group's meeting history.
+          </p>
+
+        </div>
+
+        <div class="meeting-section-body">
+
+          <!-- FILTER -->
+          <div class="meeting-filter">
+
+            <label for="statusFilter">
+              Filter meetings
+            </label>
+
+            <select id="statusFilter">
+
+              <option value="all">
+                All Meetings
+              </option>
+
+              <option value="upcoming">
+                Upcoming
+              </option>
+
+              <option value="completed">
+                Completed
+              </option>
+
+              <option value="cancelled">
+                Cancelled
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <!-- TABLE -->
+          <div class="meeting-table-wrapper">
+
+            <table class="meeting-table">
+
+              <thead>
+
+                <tr>
+
+                  <th scope="col">
+                    Date
+                  </th>
+
+                  <th scope="col">
+                    Meeting
+                  </th>
+
+                  <th scope="col">
+                    Venue
+                  </th>
+
+                  <th scope="col">
+                    Status
+                  </th>
+
+                  <th scope="col">
+                    Actions
+                  </th>
+
+                </tr>
+
+              </thead>
+
+              <tbody id="meetingRows">
+
+                <tr>
+                  <td
+                    colspan="5"
+                    class="meeting-empty"
+                  >
+                    Loading meetings...
+                  </td>
+                </tr>
+
+              </tbody>
+
+            </table>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- =======================================================
+           MEETING DETAILS
+           ======================================================= -->
+      <section
+        id="detailsCard"
+        class="meeting-section meeting-details"
+        aria-labelledby="meetingRecordTitle"
+      >
+
+        <div
+          id="meetingDetails"
+          class="meeting-section-body"
+        >
+          <!-- Populated by meetings.js -->
+        </div>
+
+        <div class="meeting-section-body" id="meetingLifecycleControls">
+          <div class="meeting-detail-grid" style="grid-template-columns:minmax(0,1fr)">
+            <div class="meeting-detail-card">
+              <h3 for="minutes">Meeting Brief</h3>
+              <p class="meeting-form-help">Summarize the key discussions and what happened. Required before completing and notifying members.</p>
+              <textarea id="minutes" rows="5" maxlength="3000" style="width:100%;box-sizing:border-box" placeholder="Briefly summarize the meeting (max 3,000 characters)."></textarea>
+            </div>
+          </div>
+          <div class="meeting-detail-actions">
+            <button type="button" id="saveMinutes" class="btn btn-secondary" data-permission-page="meetings" data-permission-action="edit">Save Meeting Brief</button>
+            <button type="button" id="completeMeeting" class="btn btn-primary" data-permission-page="meetings" data-permission-action="edit">Complete Meeting & Notify Members</button>
+            <button type="button" id="cancelMeeting" class="btn btn-secondary" data-permission-page="meetings" data-permission-action="edit">Cancel Meeting</button>
+            <button type="button" id="restoreMeeting" class="btn btn-secondary" data-permission-page="meetings" data-permission-action="edit" hidden>Restore Meeting</button>
+            <button type="button" id="deleteMeeting" class="btn btn-danger" data-permission-page="meetings" data-permission-action="delete">Delete Meeting</button>
+          </div>
+          <p class="meeting-form-help">Completing a meeting publishes its brief as a group announcement. This does not change the recorded attendance or quorum.</p>
+        </div>
+
+      </section>
+
+
+      <!-- =======================================================
+           READABLE MEETING VIEW
+           ======================================================= -->
+      <section
+        id="meetingReadableSection"
+        class="meeting-section"
+        hidden
+      >
+
+        <div class="meeting-section-header">
+
+          <h2>
+            Meeting Reading View
+          </h2>
+
+          <p>
+            Read the meeting record in a clean format.
+          </p>
+
+        </div>
+
+        <div class="meeting-section-body">
+
+          <div class="meeting-reading-toolbar">
+
+            <button
+              type="button"
+              id="expandAllMeetings"
+              class="btn btn-secondary"
+            >
+              Expand all
+            </button>
+
+            <button
+              type="button"
+              id="collapseAllMeetings"
+              class="btn btn-secondary"
+            >
+              Collapse all
+            </button>
+
+            <button
+              type="button"
+              id="fullscreenMinutes"
+              class="btn btn-secondary"
+            >
+              Full-screen reading
+            </button>
+
+            <button
+              type="button"
+              id="printMeetingMinutes"
+              class="btn btn-secondary"
+            >
+              Print / Download PDF
+            </button>
+
+          </div>
+
+
+          <div
+            id="meetingReadableView"
+            class="meeting-readable-view"
+          >
+            <!-- Populated by meetings.js -->
+          </div>
+
+
+          <div
+            id="meetingPrintDocument"
+            class="meeting-print-document"
+          >
+            <!-- Populated by meetings.js -->
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- =======================================================
+           MEETING ATTENDANCE
+           ======================================================= -->
+      <section
+        id="meetingAttendance"
+        class="meeting-section"
+        hidden
+      >
+
+        <div class="meeting-section-header">
+
+          <h2>
+            Attendance
+          </h2>
+
+          <p>
+            Record the actual attendance after the meeting.
+            Select Present, Late, Apology, or Absent for each active group member.
+          </p>
+
+        </div>
+
+        <div class="meeting-section-body">
+
+          <!-- ATTENDANCE STATS -->
+          <div
+            id="meetingAttendanceStats"
+            class="meeting-attendance-stats"
+          >
+            <!-- Populated by meetings.js -->
+          </div>
+
+
+          <!-- ATTENDANCE LIST -->
+          <div
+            id="meetingAttendanceList"
+            class="meeting-attendance-list"
+          >
+            <!-- Populated by meetings.js -->
+          </div>
+
+
+          <!-- SAVE -->
+          <div class="meeting-attendance-actions">
+
+            <button
+              type="button"
+              id="saveMeetingAttendance"
+              class="btn btn-primary"
+             data-permission-page="meetings" data-permission-action="edit">
+              Save Attendance
+            </button>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- =======================================================
+           PRIVATE MEETING FILES
+           =======================================================
+           Files are stored in a private Supabase Storage bucket and
+           access is restricted to the meeting's group.
+      -->
+      <section
+        id="meetingDocumentPanel"
+        class="meeting-section meeting-document-panel"
+        hidden
+      >
+
+        <div class="meeting-section-body">
+
+          <div class="meeting-document-header">
+
+            <div>
+
+              <h3>
+                Meeting Documents
+              </h3>
+
+              <div
+                id="meetingDocumentMeta"
+                class="meeting-document-meta"
+              >
+                No minutes documents linked yet. Upload a document in Documents and link it to this meeting.
+              </div>
+
+            </div>
+
+            <div
+              id="meetingDocumentActions"
+              class="meeting-document-actions"
+            >
+
+              <button
+                type="button"
+                id="downloadMeetingDocument"
+                class="btn btn-secondary"
+                hidden
+              >
+                Download
+              </button>
+
+            </div>
+
+          </div>
+
+
+          <div
+            id="meetingDocumentMessage"
+            class="meeting-document-message"
+            role="status"
+            aria-live="polite"
+          ></div>
+
+          <div id="meetingDocumentList" aria-live="polite">
+            <p class="muted">Select a meeting to view documents linked from the Documents page.</p>
+          </div>
+
+
+          <div
+            id="meetingDocumentViewer"
+            class="meeting-document-viewer"
+          >
+            <!-- PDF viewer inserted by meetings.js -->
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- =======================================================
+           PRINT CONTAINER
+           ======================================================= -->
+      <div
+        id="meetingPrintContainer"
+        hidden
+      ></div>
+
+    </div>
+
+  </main>
+
+
+  <!-- =========================================================
+       APPLICATION BOOTSTRAP
+       ========================================================= -->
+  <script type="module">
+
+    import { boot } from "./js/admin-layout.js";
+
+    boot();
+
+  </script>
+
+</body>
+</html>

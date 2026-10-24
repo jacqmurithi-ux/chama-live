@@ -1,0 +1,1060 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+<base href="/">
+
+  <meta charset="utf-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  >
+
+  <meta
+    name="theme-color"
+    content="#ffffff"
+  >
+
+  <meta
+    name="description"
+    content="CHAMA LIVE — Add a new group member"
+  >
+
+  <title>
+    Add Member — CHAMA LIVE
+  </title>
+
+  <link
+    rel="stylesheet"
+    href="./css/app.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="./css/add-member.css"
+  >
+
+<script src="/js/clean-urls.js?v=20261024" defer></script>
+</head>
+
+
+<body>
+
+  <!-- =====================================================
+       ADMIN TOPBAR
+       admin-layout.js owns navigation.
+  ====================================================== -->
+
+  <header class="topbar">
+
+    <div class="topbar-inner">
+
+      <div
+        class="brand"
+        aria-label="CHAMA LIVE"
+      >
+        CHAMA <span>LIVE</span>
+      </div>
+
+
+      <nav
+        class="top-nav"
+        aria-label="Admin navigation"
+      ></nav>
+
+
+      <div class="topbar-actions">
+
+        <span
+          data-user-name
+          class="muted user-name"
+        >
+          Member
+        </span>
+
+
+        <button
+          id="logout"
+          class="btn btn-secondary"
+          type="button"
+        >
+          Sign out
+        </button>
+
+      </div>
+
+    </div>
+
+  </header>
+
+
+  <!-- =====================================================
+       MAIN LAYOUT
+  ====================================================== -->
+
+  <div class="layout">
+
+    <aside
+      class="sidebar"
+      aria-hidden="true"
+    ></aside>
+
+
+    <main class="main add-member-page">
+
+      <!-- =================================================
+           AUTH / PAGE LOADING
+      ================================================== -->
+
+      <section
+        id="addMemberLoading"
+        class="add-member-state"
+        aria-live="polite"
+      >
+
+        <strong>
+          Loading Add Member
+        </strong>
+
+        <span>
+          Checking your session, group and member-management permission…
+        </span>
+
+      </section>
+
+
+      <!-- =================================================
+           PAGE ERROR
+      ================================================== -->
+
+      <section
+        id="addMemberAccessError"
+        class="add-member-alert add-member-alert-error"
+        hidden
+        role="alert"
+      ></section>
+
+
+      <!-- =================================================
+           PAGE HEADER
+      ================================================== -->
+
+      <section
+        id="addMemberWorkspace"
+        hidden
+      >
+
+        <header class="add-member-header">
+
+          <div>
+
+            <div class="eyebrow">
+              MEMBERS
+            </div>
+
+            <h1>
+              Add Member
+            </h1>
+
+            <p>
+              Register a member and establish the member's
+              canonical Monthly contribution accounting state.
+            </p>
+
+          </div>
+
+
+          <div class="add-member-header-actions">
+
+            <a
+              href="./members.html"
+              class="btn"
+            >
+              Back to Members
+            </a>
+
+          </div>
+
+        </header>
+
+
+        <!-- =================================================
+             FORM ERROR / SUCCESS
+        ================================================== -->
+
+        <div
+          id="addMemberMessage"
+          class="add-member-alert"
+          hidden
+          role="alert"
+          aria-live="assertive"
+        ></div>
+
+
+        <!-- =================================================
+             FORM
+        ================================================== -->
+
+        <form
+          id="addMemberForm"
+          novalidate
+         data-permission-page="add-member" data-permission-action="create">
+
+          <!-- =================================================
+               1. MEMBER DETAILS
+          ================================================== -->
+
+          <section class="add-member-card">
+
+            <div class="add-member-section-head">
+
+              <div>
+
+                <div class="section-kicker">
+                  STEP 1
+                </div>
+
+                <h2>
+                  Member details
+                </h2>
+
+                <p>
+                  Enter the member identity and account state.
+                </p>
+
+              </div>
+
+            </div>
+
+
+            <div class="add-member-grid">
+
+              <div class="add-member-field">
+
+                <label for="addMemberNumber">
+                  Member Number
+                  <span class="required">*</span>
+                </label>
+
+                <input
+                  id="addMemberNumber"
+                  name="member_number"
+                  type="text"
+                  autocomplete="off"
+                  required
+                >
+
+                <small>
+                  Enter the group's existing member number.
+                </small>
+
+              </div>
+
+
+              <div class="add-member-field">
+
+                <label for="addMembershipNumber">
+                  Membership Number
+                  <span class="required">*</span>
+                </label>
+
+                <input
+                  id="addMembershipNumber"
+                  name="membership_number"
+                  type="text"
+                  autocomplete="off"
+                  required
+                >
+
+              </div>
+
+
+              <div class="add-member-field add-member-field-full">
+
+                <label for="addMemberName">
+                  Full Name
+                  <span class="required">*</span>
+                </label>
+
+                <input
+                  id="addMemberName"
+                  name="name"
+                  type="text"
+                  autocomplete="name"
+                  required
+                >
+
+              </div>
+
+
+              <div class="add-member-field">
+
+                <label for="addMemberPhone">
+                  Phone
+                  <span class="required">*</span>
+                </label>
+
+                <input
+                  id="addMemberPhone"
+                  name="phone"
+                  type="tel"
+                  autocomplete="tel"
+                  required
+                >
+
+              </div>
+
+
+              <div class="add-member-field">
+
+                <label for="addMemberEmail">
+                  Email
+                </label>
+
+                <input
+                  id="addMemberEmail"
+                  name="email"
+                  type="email"
+                  autocomplete="email"
+                >
+
+              </div>
+
+
+              <div class="add-member-field">
+
+                <label for="addMemberNationalId">
+                  National ID
+                </label>
+
+                <input
+                  id="addMemberNationalId"
+                  name="national_id"
+                  type="text"
+                  autocomplete="off"
+                >
+
+              </div>
+
+
+              <div class="add-member-field">
+
+                <label for="addMemberJoinDate">
+                  Join Date
+                  <span class="required">*</span>
+                </label>
+
+                <input
+                  id="addMemberJoinDate"
+                  name="join_date"
+                  type="date"
+                  required
+                >
+
+              </div>
+
+
+              <div class="add-member-field">
+
+                <label for="addMemberRole">
+                  Security Role
+                  <span class="required">*</span>
+                </label>
+
+                <select
+                  id="addMemberRole"
+                  name="role"
+                  required
+                >
+
+                  <option value="member">
+                    Member
+                  </option>
+
+                  <option value="chairperson">
+                    Chairperson
+                  </option>
+
+                  <option value="admin">
+                    Admin
+                  </option>
+
+                  <option value="treasurer">
+                    Treasurer
+                  </option>
+
+                  <option value="secretary">
+                    Secretary
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              <div class="add-member-field">
+
+                <label for="addMemberStatus">
+                  Member Status
+                  <span class="required">*</span>
+                </label>
+
+                <select
+                  id="addMemberStatus"
+                  name="status"
+                  required
+                >
+
+                  <option value="active">
+                    Active
+                  </option>
+
+                  <option value="inactive">
+                    Inactive
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              <div class="add-member-field">
+
+                <label for="addMemberOnboardingStatus">
+                  Onboarding Status
+                  <span class="required">*</span>
+                </label>
+
+                <select
+                  id="addMemberOnboardingStatus"
+                  name="onboarding_status"
+                  required
+                >
+
+                  <option value="pending">
+                    Pending
+                  </option>
+
+                  <option value="invited">
+                    Invited
+                  </option>
+
+                  <option value="active">
+                    Active
+                  </option>
+
+                  <option value="suspended">
+                    Suspended
+                  </option>
+
+                </select>
+
+              </div>
+
+            </div>
+
+          </section>
+
+
+          <!-- =================================================
+               2. POSITION
+          ================================================== -->
+
+          <section class="add-member-card">
+
+            <div class="add-member-section-head">
+
+              <div>
+
+                <div class="section-kicker">
+                  STEP 2
+                </div>
+
+                <h2>
+                  Position
+                </h2>
+
+                <p>
+                  Optional governance position information.
+                </p>
+
+              </div>
+
+            </div>
+
+
+            <div class="add-member-grid">
+
+              <div class="add-member-field">
+
+                <label for="addMemberActualPosition">
+                  Actual Position
+                </label>
+
+                <select
+                  id="addMemberActualPosition"
+                  name="actual_position"
+                >
+
+                  <option value="">
+                    No position recorded
+                  </option>
+
+                  <option value="chairperson">
+                    Chairperson
+                  </option>
+
+                  <option value="vice_chairperson">
+                    Vice Chairperson
+                  </option>
+
+                  <option value="treasurer">
+                    Treasurer
+                  </option>
+
+                  <option value="secretary">
+                    Secretary
+                  </option>
+
+                  <option value="vice_secretary">
+                    Vice Secretary
+                  </option>
+
+                  <option value="committee_member">
+                    Committee Member
+                  </option>
+
+                  <option value="member">
+                    Member
+                  </option>
+
+                  <option value="other">
+                    Other
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              <div
+                id="addMemberPositionNameWrap"
+                class="add-member-field"
+                hidden
+              >
+
+                <label for="addMemberActualPositionName">
+                  Position Name
+                  <span class="required">*</span>
+                </label>
+
+                <input
+                  id="addMemberActualPositionName"
+                  name="actual_position_name"
+                  type="text"
+                  maxlength="120"
+                >
+
+              </div>
+
+
+              <div class="add-member-field">
+
+                <label for="addMemberPositionEffectiveFrom">
+                  Position Effective From
+                </label>
+
+                <input
+                  id="addMemberPositionEffectiveFrom"
+                  name="actual_position_effective_from"
+                  type="date"
+                >
+
+              </div>
+
+            </div>
+
+          </section>
+
+
+          <!-- =================================================
+               3. MONTHLY CONTRIBUTION PLAN
+          ================================================== -->
+
+          <section class="add-member-card">
+
+            <div class="add-member-section-head">
+
+              <div>
+
+                <div class="section-kicker">
+                  STEP 3
+                </div>
+
+                <h2>
+                  Monthly contribution plan
+                </h2>
+
+                <p>
+                  CHAMA LIVE uses the group's canonical Monthly
+                  contribution type.
+                </p>
+
+              </div>
+
+              <span
+                id="addMemberMonthlyTypeStatus"
+                class="add-member-badge"
+              >
+                Loading…
+              </span>
+
+            </div>
+
+
+            <div class="add-member-type-card">
+
+              <div>
+
+                <span class="label">
+                  Contribution Type
+                </span>
+
+                <strong id="addMemberMonthlyTypeName">
+                  Loading Monthly type…
+                </strong>
+
+              </div>
+
+
+              <div>
+
+                <span class="label">
+                  Type ID
+                </span>
+
+                <code id="addMemberMonthlyTypeId">
+                  —
+                </code>
+
+              </div>
+
+            </div>
+
+
+            <div class="add-member-grid">
+
+              <div class="add-member-field">
+
+                <label for="addMemberContributionAmount">
+                  Monthly Amount
+                  <span class="required">*</span>
+                </label>
+
+                <input
+                  id="addMemberContributionAmount"
+                  name="amount"
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  inputmode="decimal"
+                  required
+                >
+
+              </div>
+
+
+              <div class="add-member-field">
+
+                <label for="addMemberFrequency">
+                  Frequency
+                </label>
+
+                <select
+                  id="addMemberFrequency"
+                  name="frequency"
+                  disabled
+                >
+
+                  <option value="monthly">
+                    Monthly
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              <div class="add-member-field">
+
+                <label for="addMemberContributionEffectiveFrom">
+                  Effective From
+                  <span class="required">*</span>
+                </label>
+
+                <input
+                  id="addMemberContributionEffectiveFrom"
+                  name="effective_from"
+                  type="date"
+                  required
+                >
+
+              </div>
+
+
+              <div class="add-member-field">
+
+                <label for="addMemberContributionEffectiveTo">
+                  Effective To
+                </label>
+
+                <input
+                  id="addMemberContributionEffectiveTo"
+                  name="effective_to"
+                  type="date"
+                >
+
+                <small>
+                  Leave empty for an open-ended rule.
+                </small>
+
+              </div>
+
+
+              <div class="add-member-field">
+
+                <label for="addMemberFirstPeriodRule">
+                  First Period Rule
+                  <span class="required">*</span>
+                </label>
+
+                <select
+                  id="addMemberFirstPeriodRule"
+                  name="first_period_rule"
+                  required
+                >
+
+                  <option value="full_period">
+                    Full Period
+                  </option>
+
+                  <option value="next_full_period">
+                    Next Full Period
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              <div class="add-member-field">
+
+                <label for="addMemberRuleStatus">
+                  Rule Status
+                  <span class="required">*</span>
+                </label>
+
+                <select
+                  id="addMemberRuleStatus"
+                  name="status"
+                  required
+                >
+
+                  <option value="active">
+                    Active
+                  </option>
+
+                  <option value="inactive">
+                    Inactive
+                  </option>
+
+                  <option value="ended">
+                    Ended
+                  </option>
+
+                </select>
+
+              </div>
+
+            </div>
+
+
+            <div
+              id="addMemberObligationPreview"
+              class="add-member-preview"
+              aria-live="polite"
+            >
+              Enter the member's join date and contribution settings
+              to preview the first obligation month.
+            </div>
+
+          </section>
+
+
+          <!-- =================================================
+               4. HISTORICAL CONTRIBUTIONS
+          ================================================== -->
+
+          <section class="add-member-card">
+
+            <details id="addMemberHistoricalDetails" data-permission-page="add-member" data-permission-action="historical-payment">
+
+              <summary>
+                <span>
+                  <strong>
+                    Historical contributions
+                  </strong>
+
+                  <small>
+                    Optional controlled historical onboarding
+                  </small>
+                </span>
+
+                <span class="summary-indicator">
+                  +
+                </span>
+              </summary>
+
+
+              <div class="add-member-collapsible">
+
+                <div class="add-member-info">
+                  Historical onboarding uses the separate
+                  idempotent backend workflow. The historical
+                  monthly amount must equal the current Monthly
+                  contribution amount.
+                </div>
+
+
+                <div class="add-member-grid">
+
+                  <div class="add-member-field">
+
+                    <label for="addMemberHistoricalPaidThrough">
+                      Paid Through
+                      <span class="required">*</span>
+                    </label>
+
+                    <input
+                      id="addMemberHistoricalPaidThrough"
+                      name="paid_through"
+                      type="date"
+                    >
+
+                    <small>
+                      Must not be in the future.
+                    </small>
+
+                  </div>
+
+
+                  <div class="add-member-field">
+
+                    <label for="addMemberHistoricalPaymentMethod">
+                      Payment Method
+                      <span class="required">*</span>
+                    </label>
+
+                    <select
+                      id="addMemberHistoricalPaymentMethod"
+                      name="payment_method"
+                    >
+
+                      <option value="M-Pesa">
+                        M-Pesa
+                      </option>
+
+                      <option value="Cash">
+                        Cash
+                      </option>
+
+                      <option value="Bank transfer">
+                        Bank transfer
+                      </option>
+
+                    </select>
+
+                  </div>
+
+
+                  <div class="add-member-field">
+
+                    <label for="addMemberHistoricalAmount">
+                      Historical Monthly Amount
+                    </label>
+
+                    <input
+                      id="addMemberHistoricalAmount"
+                      type="number"
+                      readonly
+                    >
+
+                    <small>
+                      Automatically equals the current Monthly amount.
+                    </small>
+
+                  </div>
+
+                </div>
+
+
+                <div
+                  id="addMemberHistoricalPreview"
+                  class="add-member-preview"
+                  aria-live="polite"
+                >
+                  Enable this section by choosing a Paid Through month.
+                </div>
+
+              </div>
+
+            </details>
+
+          </section>
+
+
+          <!-- =================================================
+               5. REVIEW / SUBMIT
+          ================================================== -->
+
+          <section class="add-member-card">
+
+            <div class="add-member-section-head">
+
+              <div>
+
+                <div class="section-kicker">
+                  STEP 5
+                </div>
+
+                <h2>
+                  Review and Submit
+                </h2>
+
+                <p>
+                  Verify the member details and accounting preview
+                  before creating the member.
+                </p>
+
+              </div>
+
+            </div>
+
+
+            <div
+              id="addMemberReview"
+              class="add-member-review"
+            ></div>
+
+
+            <div class="add-member-submit-row">
+
+              <a
+                href="./members.html"
+                class="btn"
+              >
+                Cancel
+              </a>
+
+
+              <button
+                id="addMemberSubmit"
+                class="btn btn-primary"
+                type="submit"
+                disabled
+              >
+                Add Member
+              </button>
+
+            </div>
+
+          </section>
+
+        </form>
+
+
+        <!-- =================================================
+             SUCCESS
+        ================================================== -->
+
+        <section
+          id="addMemberSuccess"
+          class="add-member-card add-member-success"
+          hidden
+        >
+
+          <div class="success-icon">
+            ✓
+          </div>
+
+          <div>
+
+            <div class="section-kicker">
+              MEMBER CREATED
+            </div>
+
+            <h2>
+              Member added successfully
+            </h2>
+
+            <p>
+              The member and their canonical accounting state
+              have been created.
+            </p>
+
+          </div>
+
+
+          <div
+            id="addMemberSuccessSummary"
+            class="add-member-result-grid"
+          ></div>
+
+
+          <div class="add-member-submit-row">
+
+            <button
+              id="addMemberAnother"
+              class="btn btn-primary"
+              type="button"
+             data-permission-page="add-member" data-permission-action="create">
+              Add Another Member
+            </button>
+
+
+            <a
+              href="./members.html"
+              class="btn"
+            >
+              View Members
+            </a>
+
+          </div>
+
+        </section>
+
+      </section>
+
+    </main>
+
+  </div>
+
+
+  <!-- =====================================================
+       SINGLE ADMIN BOOT OWNER
+  ====================================================== -->
+
+  <script type="module">
+
+    import {
+      boot
+    } from "./js/admin-layout.js";
+
+    boot();
+
+  </script>
+
+</body>
+
+</html>

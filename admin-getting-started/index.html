@@ -1,0 +1,1020 @@
+<!doctype html>
+<html lang="en">
+<head>
+<base href="/">
+
+  <meta charset="utf-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <meta
+    name="theme-color"
+    content="#0f766e"
+  >
+
+  <meta
+    name="description"
+    content="Getting started with the CHAMA LIVE Admin Portal."
+  >
+
+  <title>Admin Getting Started — CHAMA LIVE</title>
+
+  <link
+    rel="stylesheet"
+    href="./css/app.css"
+  >
+
+  <style>
+
+    /* =====================================================
+       ADMIN GETTING STARTED
+       -----------------------------------------------------
+       IMPORTANT:
+       - admin-layout.js owns authentication
+       - admin-layout.js owns navigation
+       - admin-layout.js owns logout
+       - This page owns Getting Started content only
+    ===================================================== */
+
+    .getting-started {
+      width: 100%;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding-bottom: 40px;
+    }
+
+    /* =====================================================
+       HERO
+    ===================================================== */
+
+    .getting-started-hero {
+      position: relative;
+      overflow: hidden;
+      padding: 42px;
+      margin-bottom: 24px;
+      border: 1px solid #99f6e4;
+      border-radius: 22px;
+      background:
+        linear-gradient(
+          135deg,
+          #f0fdfa 0%,
+          #ffffff 58%,
+          #f8fafc 100%
+        );
+    }
+
+    .getting-started-hero::after {
+      content: "";
+      position: absolute;
+      width: 220px;
+      height: 220px;
+      right: -80px;
+      top: -90px;
+      border-radius: 50%;
+      background: rgba(20, 184, 166, 0.08);
+      pointer-events: none;
+    }
+
+    .getting-started-eyebrow {
+      margin-bottom: 9px;
+      color: #0f766e;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .getting-started-hero h1 {
+      position: relative;
+      z-index: 1;
+      margin: 0 0 12px;
+      font-size: 34px;
+      line-height: 1.2;
+      color: #101828;
+    }
+
+    .getting-started-hero p {
+      position: relative;
+      z-index: 1;
+      margin: 0;
+      max-width: 760px;
+      color: #667085;
+      line-height: 1.7;
+      font-size: 16px;
+    }
+
+    .getting-started-hero-actions {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 26px;
+    }
+
+    .getting-started-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 0 20px;
+      border-radius: 10px;
+      background: #0f766e;
+      color: #ffffff;
+      text-decoration: none;
+      font-weight: 800;
+      box-shadow: 0 4px 12px rgba(15, 118, 110, 0.18);
+      transition:
+        transform 0.15s ease,
+        background 0.15s ease,
+        box-shadow 0.15s ease;
+    }
+
+    .getting-started-button:hover {
+      background: #115e59;
+      transform: translateY(-1px);
+      box-shadow: 0 7px 16px rgba(15, 118, 110, 0.22);
+    }
+
+    .getting-started-hero-note {
+      color: #667085;
+      font-size: 13px;
+    }
+
+    /* =====================================================
+       SECTION HEADER
+    ===================================================== */
+
+    .getting-started-section-heading {
+      margin: 0 0 14px;
+      color: #101828;
+      font-size: 20px;
+    }
+
+    .getting-started-section-description {
+      margin: 0 0 20px;
+      color: #667085;
+      line-height: 1.6;
+    }
+
+    /* =====================================================
+       CARDS
+    ===================================================== */
+
+    .getting-started-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .getting-started-card {
+      padding: 24px;
+      border: 1px solid #e5e7eb;
+      border-radius: 18px;
+      background: #ffffff;
+      transition:
+        border-color 0.15s ease,
+        box-shadow 0.15s ease,
+        transform 0.15s ease;
+    }
+
+    .getting-started-card:hover {
+      border-color: #d0d5dd;
+      box-shadow: 0 8px 24px rgba(16, 24, 40, 0.06);
+      transform: translateY(-1px);
+    }
+
+    .getting-started-card-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 42px;
+      height: 42px;
+      margin-bottom: 14px;
+      border-radius: 12px;
+      background: #f0fdfa;
+      color: #0f766e;
+      font-size: 20px;
+    }
+
+    .getting-started-card h2 {
+      margin: 0 0 8px;
+      font-size: 19px;
+      color: #101828;
+    }
+
+    .getting-started-card p {
+      margin: 0 0 14px;
+      color: #667085;
+      line-height: 1.6;
+    }
+
+    .getting-started-card ul {
+      margin: 0;
+      padding-left: 20px;
+      color: #475467;
+      line-height: 1.7;
+    }
+
+    .getting-started-card li + li {
+      margin-top: 5px;
+    }
+
+    /* =====================================================
+       TOUR FEATURE
+    ===================================================== */
+
+    .getting-started-tour {
+      border-color: #99f6e4;
+      background:
+        linear-gradient(
+          145deg,
+          #f0fdfa 0%,
+          #ffffff 75%
+        );
+    }
+
+    .getting-started-tour-badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      margin-bottom: 14px;
+      padding: 0 10px;
+      border-radius: 999px;
+      background: #ccfbf1;
+      color: #0f766e;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    .getting-started-tour-link {
+      display: inline-flex;
+      align-items: center;
+      margin-top: 4px;
+      color: #0f766e;
+      text-decoration: none;
+      font-weight: 800;
+    }
+
+    .getting-started-tour-link:hover {
+      text-decoration: underline;
+    }
+
+    .getting-started-note {
+      margin-top: 12px !important;
+      margin-bottom: 0 !important;
+      font-size: 13px;
+      color: #667085;
+    }
+
+    /* =====================================================
+       NEXT STEP
+    ===================================================== */
+
+    .getting-started-next {
+      grid-column: 1 / -1;
+      padding: 28px;
+      border: 1px solid #e5e7eb;
+      border-radius: 18px;
+      background: #ffffff;
+    }
+
+    .getting-started-next h2 {
+      margin: 0 0 8px;
+      color: #101828;
+    }
+
+    .getting-started-next p {
+      margin: 0;
+      max-width: 780px;
+      color: #475467;
+      line-height: 1.6;
+    }
+
+    .getting-started-next-steps {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .getting-started-step {
+      padding: 14px;
+      border: 1px solid #eaecf0;
+      border-radius: 12px;
+      background: #f9fafb;
+    }
+
+    .getting-started-step-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      margin-bottom: 8px;
+      border-radius: 50%;
+      background: #ccfbf1;
+      color: #0f766e;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .getting-started-step strong {
+      display: block;
+      margin-bottom: 4px;
+      color: #101828;
+      font-size: 14px;
+    }
+
+    .getting-started-step span {
+      color: #667085;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .getting-started-next-action {
+      margin-top: 20px;
+    }
+
+    /* =====================================================
+       SUPPORT
+    ===================================================== */
+
+    .getting-started-link {
+      color: #0f766e;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .getting-started-link:hover {
+      text-decoration: underline;
+    }
+
+    /* =====================================================
+       RESPONSIVE
+    ===================================================== */
+
+    @media (max-width: 800px) {
+
+      .getting-started-hero {
+        padding: 30px;
+      }
+
+      .getting-started-next-steps {
+        grid-template-columns: 1fr;
+      }
+
+    }
+
+    @media (max-width: 700px) {
+
+      .getting-started-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .getting-started-hero {
+        padding: 24px;
+        border-radius: 18px;
+      }
+
+      .getting-started-hero h1 {
+        font-size: 27px;
+      }
+
+      .getting-started-card {
+        padding: 20px;
+      }
+
+      .getting-started-next {
+        grid-column: auto;
+        padding: 22px;
+      }
+
+      .getting-started-hero-actions {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .getting-started-button {
+        width: 100%;
+      }
+
+    }
+
+    /* =====================================================
+       REDUCED MOTION
+    ===================================================== */
+
+    @media (prefers-reduced-motion: reduce) {
+
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        transition: none !important;
+        animation: none !important;
+      }
+
+    }
+
+  </style>
+
+<script src="/js/clean-urls.js?v=20261024" defer></script>
+</head>
+
+<body>
+
+  <!-- =====================================================
+       ADMIN PORTAL SHELL
+       -----------------------------------------------------
+       admin-layout.js owns:
+       - authentication
+       - authorization
+       - navigation
+       - mobile navigation
+       - logout
+  ====================================================== -->
+
+  <header class="topbar">
+
+    <div class="topbar-inner">
+
+      <div
+        class="brand"
+        aria-label="CHAMA LIVE"
+      >
+        CHAMA <span>LIVE</span>
+      </div>
+
+      <nav
+        class="top-nav"
+        aria-label="Admin navigation"
+      ></nav>
+
+      <div class="topbar-actions">
+
+        <span
+          data-user-name
+          class="muted user-name"
+        >
+          Admin
+        </span>
+
+        <button
+          id="logout"
+          class="btn btn-secondary"
+          type="button"
+        >
+          Sign out
+        </button>
+
+      </div>
+
+    </div>
+
+  </header>
+
+
+  <!-- =====================================================
+       ADMIN LAYOUT
+  ====================================================== -->
+
+  <div class="layout">
+
+    <aside
+      class="sidebar"
+      aria-hidden="true"
+    ></aside>
+
+    <main class="main">
+
+      <div class="getting-started">
+
+
+        <!-- =================================================
+             HERO
+        ================================================== -->
+
+        <section class="getting-started-hero">
+
+          <div class="getting-started-eyebrow">
+            CHAMA LIVE · ADMIN PORTAL
+          </div>
+
+          <h1>
+            Welcome to your Admin workspace
+          </h1>
+
+          <p>
+            The Admin Portal gives authorised group leaders
+            the tools to manage members, contributions,
+            expenses, meetings, reports and group operations
+            from one connected workspace.
+          </p>
+
+          <div class="getting-started-hero-actions">
+
+            <a
+              class="getting-started-button"
+              href="dashboard.html"
+            >
+              Go to Admin Dashboard →
+            </a>
+
+            <span class="getting-started-hero-note">
+              Your dashboard is the starting point for managing the group
+            </span>
+
+          </div>
+
+        </section>
+
+
+        <!-- =================================================
+             CONTENT
+        ================================================== -->
+
+        <section
+          aria-label="Admin Portal getting started information"
+        >
+
+          <h2 class="getting-started-section-heading">
+            Everything you need to manage your group
+          </h2>
+
+          <p class="getting-started-section-description">
+            Learn the main areas of the Admin Portal and how
+            they work together when managing your group's
+            records and operations.
+          </p>
+
+
+          <div class="getting-started-grid">
+
+
+            <!-- =================================================
+                 ADMIN WORKSPACE
+            ================================================== -->
+
+            <article class="getting-started-card getting-started-tour">
+
+              <div class="getting-started-tour-badge">
+                Start here
+              </div>
+
+              <div class="getting-started-card-icon">
+                ▶
+              </div>
+
+              <h2>
+                Admin Dashboard
+              </h2>
+
+              <p>
+                Start from the Admin Dashboard to see the
+                current state of your group and access the
+                main management areas.
+              </p>
+
+              <a
+                class="getting-started-tour-link"
+                href="dashboard.html"
+              >
+                Open Admin Dashboard →
+              </a>
+
+              <p class="getting-started-note">
+                You can return to the dashboard at any time.
+              </p>
+
+            </article>
+
+
+            <!-- =================================================
+                 MEMBERS
+            ================================================== -->
+
+            <article class="getting-started-card">
+
+              <div class="getting-started-card-icon">
+                👥
+              </div>
+
+              <h2>
+                Members
+              </h2>
+
+              <p>
+                Keep the group's member records organised and
+                maintain the information needed for day-to-day
+                administration.
+              </p>
+
+              <ul>
+
+                <li>
+                  Add and review member records.
+                </li>
+
+                <li>
+                  Check member roles and account status.
+                </li>
+
+                <li>
+                  Review member activity and information.
+                </li>
+
+                <li>
+                  Keep membership records up to date.
+                </li>
+
+              </ul>
+
+            </article>
+
+
+            <!-- =================================================
+                 FINANCE
+            ================================================== -->
+
+            <article class="getting-started-card">
+
+              <div class="getting-started-card-icon">
+                KSh
+              </div>
+
+              <h2>
+                Contributions &amp; Expenses
+              </h2>
+
+              <p>
+                Record and review the financial activity of
+                the group using the dedicated finance areas.
+              </p>
+
+              <ul>
+
+                <li>
+                  Record member contributions.
+                </li>
+
+                <li>
+                  Review contribution activity.
+                </li>
+
+                <li>
+                  Record and manage group expenses.
+                </li>
+
+                <li>
+                  Use reports to review financial activity.
+                </li>
+
+                <li>
+                  Use monthly closing when the group's
+                  accounting workflow requires it.
+                </li>
+
+              </ul>
+
+            </article>
+
+
+            <!-- =================================================
+                 GROUP OPERATIONS
+            ================================================== -->
+
+            <article class="getting-started-card">
+
+              <div class="getting-started-card-icon">
+                ✓
+              </div>
+
+              <h2>
+                Group Operations
+              </h2>
+
+              <p>
+                Keep the group's activities and organisational
+                records in one place.
+              </p>
+
+              <ul>
+
+                <li>
+                  Record meetings and resolutions.
+                </li>
+
+                <li>
+                  Manage plans and activities.
+                </li>
+
+                <li>
+                  Track group milestones.
+                </li>
+
+                <li>
+                  Manage group assets.
+                </li>
+
+                <li>
+                  Manage support and welfare information.
+                </li>
+
+              </ul>
+
+            </article>
+
+
+            <!-- =================================================
+                 GROUP MANAGEMENT
+            ================================================== -->
+
+            <article class="getting-started-card">
+
+              <div class="getting-started-card-icon">
+                ⚙
+              </div>
+
+              <h2>
+                Group Management
+              </h2>
+
+              <p>
+                Group Management contains group-level
+                administration and account information.
+              </p>
+
+              <ul>
+
+                <li>
+                  Review your group's information.
+                </li>
+
+                <li>
+                  Manage group-level settings.
+                </li>
+
+                <li>
+                  Access subscription and account information
+                  where available.
+                </li>
+
+                <li>
+                  Keep administrative information organised.
+                </li>
+
+              </ul>
+
+            </article>
+
+
+            <!-- =================================================
+                 DATA MIGRATION
+            ================================================== -->
+
+            <article class="getting-started-card">
+
+              <div class="getting-started-card-icon">
+                ⇄
+              </div>
+
+              <h2>
+                Data Migration
+              </h2>
+
+              <p>
+                Data Migration is available for controlled
+                movement of existing group records into
+                CHAMA LIVE.
+              </p>
+
+              <ul>
+
+                <li>
+                  Prepare existing records before migration.
+                </li>
+
+                <li>
+                  Review migration information carefully.
+                </li>
+
+                <li>
+                  Use the migration workflow only when required.
+                </li>
+
+                <li>
+                  Verify imported information after migration.
+                </li>
+
+              </ul>
+
+            </article>
+
+
+            <!-- =================================================
+                 ADMIN WORKFLOW
+            ================================================== -->
+
+            <article class="getting-started-card">
+
+              <div class="getting-started-card-icon">
+                →
+              </div>
+
+              <h2>
+                A Simple Admin Workflow
+              </h2>
+
+              <p>
+                A typical management workflow can follow
+                this sequence.
+              </p>
+
+              <ul>
+
+                <li>
+                  Review the dashboard.
+                </li>
+
+                <li>
+                  Keep member information current.
+                </li>
+
+                <li>
+                  Record contributions and expenses.
+                </li>
+
+                <li>
+                  Record meetings and group activities.
+                </li>
+
+                <li>
+                  Review reports and outstanding work.
+                </li>
+
+              </ul>
+
+            </article>
+
+
+            <!-- =================================================
+                 NEED HELP
+            ================================================== -->
+
+            <article class="getting-started-card">
+
+              <div class="getting-started-card-icon">
+                ?
+              </div>
+
+              <h2>
+                Need Help?
+              </h2>
+
+              <p>
+                If something is unclear, return to the Admin
+                Dashboard and open the relevant management
+                area. Each section is focused on a specific
+                part of your group's administration.
+              </p>
+
+              <p>
+                For group welfare matters, use the
+                <a
+                  class="getting-started-link"
+                  href="support-welfare.html"
+                >
+                  Support &amp; Welfare
+                </a>
+                section.
+              </p>
+
+            </article>
+
+
+            <!-- =================================================
+                 NEXT STEP
+            ================================================== -->
+
+            <section class="getting-started-next">
+
+              <div class="getting-started-eyebrow">
+                YOUR NEXT STEP
+              </div>
+
+              <h2>
+                Start managing your group
+              </h2>
+
+              <p>
+                Begin with the Admin Dashboard, review your
+                group information, then work through the areas
+                that your group uses most often.
+              </p>
+
+
+              <div class="getting-started-next-steps">
+
+                <div class="getting-started-step">
+
+                  <div class="getting-started-step-number">
+                    1
+                  </div>
+
+                  <strong>
+                    Review the dashboard
+                  </strong>
+
+                  <span>
+                    Get an overview of your group's current activity.
+                  </span>
+
+                </div>
+
+
+                <div class="getting-started-step">
+
+                  <div class="getting-started-step-number">
+                    2
+                  </div>
+
+                  <strong>
+                    Check your records
+                  </strong>
+
+                  <span>
+                    Review members, contributions and other group information.
+                  </span>
+
+                </div>
+
+
+                <div class="getting-started-step">
+
+                  <div class="getting-started-step-number">
+                    3
+                  </div>
+
+                  <strong>
+                    Manage daily activity
+                  </strong>
+
+                  <span>
+                    Record and review the group's ongoing operations.
+                  </span>
+
+                </div>
+
+              </div>
+
+
+              <div class="getting-started-next-action">
+
+                <a
+                  class="getting-started-button"
+                  href="dashboard.html"
+                >
+                  Go to Admin Dashboard →
+                </a>
+
+              </div>
+
+            </section>
+
+          </div>
+
+        </section>
+
+      </div>
+
+    </main>
+
+  </div>
+
+
+  <!-- =====================================================
+       ADMIN PORTAL BOOT
+       -----------------------------------------------------
+       admin-layout.js is the sole authentication,
+       authorization and navigation owner.
+  ====================================================== -->
+
+  <script type="module">
+
+    import {
+      boot
+    } from "./js/admin-layout.js";
+
+    boot();
+
+  </script>
+
+</body>
+</html>

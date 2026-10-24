@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<base href="/">
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <meta
+    name="description"
+    content="View contribution accounting in the CHAMA LIVE Member Portal."
+  >
+
+  <title>Contribution Accounting | CHAMA LIVE</title>
+
+  <link
+    rel="stylesheet"
+    href="./css/app.css"
+  >
+
+  <style>
+
+    .member-fine-summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .member-fine-stat {
+      padding: 14px;
+      border: 1px solid var(--cl-border, #e5e7eb);
+      border-radius: 12px;
+      background: var(--cl-surface-soft, #f8fafc);
+    }
+    .member-fine-stat span {
+      display: block;
+      color: var(--cl-muted, #667085);
+      font-size: .76rem;
+      font-weight: 700;
+    }
+    .member-fine-stat strong {
+      display: block;
+      margin-top: 5px;
+      font-size: 1rem;
+    }
+    .member-fine-status.outstanding { color: #b42318; }
+    .member-fine-status.settled { color: #067647; }
+    .member-fine-table-wrap { overflow-x: auto; }
+    .member-fine-table { width: 100%; min-width: 760px; border-collapse: collapse; }
+    .member-fine-table th, .member-fine-table td {
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--cl-border, #e5e7eb);
+      text-align: left;
+      vertical-align: top;
+      font-size: .82rem;
+    }
+    .member-fine-table th {
+      background: var(--cl-surface-soft, #f8fafc);
+      color: var(--cl-muted, #667085);
+      font-size: .72rem;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    @media (max-width: 700px) {
+      .member-fine-summary { grid-template-columns: 1fr; }
+    }
+
+    .member-accounting-page {
+      width: min(1180px, 100%);
+      margin: 0 auto;
+      padding: 24px 16px 100px;
+    }
+
+    .member-accounting-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 22px;
+    }
+
+    .member-accounting-header h1 {
+      margin: 0 0 7px;
+      font-size: clamp(1.6rem, 5vw, 2.25rem);
+    }
+
+    .member-accounting-header p {
+      margin: 0;
+      color: var(--cl-muted, #667085);
+      line-height: 1.55;
+    }
+
+    .member-accounting-back {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      padding: 9px 14px;
+      border: 1px solid var(--cl-border, #e5e7eb);
+      border-radius: 10px;
+      background: var(--cl-surface, #fff);
+      color: var(--cl-text, #101828);
+      text-decoration: none;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .member-accounting-back:hover {
+      border-color: var(--cl-primary, #0f766e);
+      color: var(--cl-primary, #0f766e);
+    }
+
+    .member-accounting-toolbar {
+      display: grid;
+      grid-template-columns:
+        minmax(160px, 0.8fr)
+        minmax(180px, 1fr)
+        minmax(180px, 1fr)
+        minmax(180px, 1fr);
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .member-accounting-field {
+      display: grid;
+      gap: 6px;
+    }
+
+    .member-accounting-field label {
+      color: var(--cl-muted, #667085);
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    .member-accounting-field input,
+    .member-accounting-field select {
+      width: 100%;
+      min-height: 42px;
+      padding: 9px 11px;
+      border: 1px solid var(--cl-border, #d0d5dd);
+      border-radius: 10px;
+      background: var(--cl-surface, #fff);
+      color: var(--cl-text, #101828);
+      box-sizing: border-box;
+    }
+
+    .member-accounting-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+
+    .member-accounting-button {
+      min-height: 40px;
+      padding: 8px 13px;
+      border: 1px solid var(--cl-border, #d0d5dd);
+      border-radius: 9px;
+      background: var(--cl-surface, #fff);
+      color: var(--cl-text, #101828);
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .member-accounting-button:hover {
+      border-color: var(--cl-primary, #0f766e);
+      color: var(--cl-primary, #0f766e);
+    }
+
+    .member-accounting-button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .member-accounting-message {
+      margin-bottom: 18px;
+      padding: 13px 15px;
+      border-radius: 10px;
+      line-height: 1.45;
+    }
+
+    .member-accounting-message[hidden] {
+      display: none;
+    }
+
+    .member-accounting-status {
+      color: var(--cl-muted, #667085);
+      background: var(--cl-surface-soft, #f8fafc);
+    }
+
+    .member-accounting-error {
+      color: var(--cl-danger, #b42318);
+      background: var(--cl-danger-soft, #fef3f2);
+      border: 1px solid #fecdca;
+    }
+
+    .member-accounting-summary {
+      display: grid;
+      grid-template-columns:
+        repeat(6, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .member-accounting-stat {
+      min-width: 0;
+      padding: 16px;
+      border: 1px solid var(--cl-border, #e5e7eb);
+      border-radius: 14px;
+      background: var(--cl-surface, #fff);
+    }
+
+    .member-accounting-stat-label {
+      margin-bottom: 7px;
+      color: var(--cl-muted, #667085);
+      font-size: 0.76rem;
+      font-weight: 700;
+    }
+
+    .member-accounting-stat-value {
+      color: var(--cl-text, #101828);
+      font-size: 1.05rem;
+      font-weight: 800;
+      overflow-wrap: anywhere;
+    }
+
+    .member-accounting-card {
+      min-width: 0;
+      margin-bottom: 18px;
+      padding: 20px;
+      border: 1px solid var(--cl-border, #e5e7eb);
+      border-radius: 16px;
+      background: var(--cl-surface, #fff);
+      overflow: hidden;
+    }
+
+    .member-accounting-card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .member-accounting-card-header h2 {
+      margin: 0 0 5px;
+      font-size: 1.05rem;
+    }
+
+    .member-accounting-card-header p {
+      margin: 0;
+      color: var(--cl-muted, #667085);
+      font-size: 0.82rem;
+    }
+
+    .member-accounting-table-wrap {
+      width: 100%;
+      overflow-x: auto;
+    }
+
+    .member-accounting-table {
+      width: 100%;
+      min-width: 1050px;
+      border-collapse: collapse;
+    }
+
+    .member-accounting-table th,
+    .member-accounting-table td {
+      padding: 11px 10px;
+      border-bottom: 1px solid
+        var(--cl-border-soft, #edf0f2);
+      text-align: left;
+      vertical-align: top;
+      font-size: 0.82rem;
+    }
+
+    .member-accounting-table th {
+      color: var(--cl-muted, #667085);
+      font-size: 0.74rem;
+      font-weight: 750;
+      white-space: nowrap;
+    }
+
+    .member-accounting-table td {
+      color: var(--cl-text, #101828);
+    }
+
+    .member-accounting-empty {
+      padding: 24px;
+      text-align: center;
+      color: var(--cl-muted, #667085);
+    }
+
+    .member-accounting-status-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: var(--cl-surface-soft, #f2f4f7);
+      color: var(--cl-text, #344054);
+      font-size: 0.72rem;
+      font-weight: 750;
+      text-transform: capitalize;
+    }
+
+    .member-accounting-statement {
+      display: none;
+      margin-top: 18px;
+      padding-top: 18px;
+      border-top: 1px solid var(--cl-border, #e5e7eb);
+    }
+
+    .member-accounting-statement.is-visible {
+      display: block;
+    }
+
+    .member-accounting-statement-meta {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .member-accounting-statement-stat {
+      padding: 12px;
+      border-radius: 10px;
+      background: var(--cl-surface-soft, #f8fafc);
+    }
+
+    .member-accounting-statement-stat-label {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--cl-muted, #667085);
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+
+    .member-accounting-statement-stat-value {
+      font-weight: 800;
+    }
+
+    .member-accounting-close {
+      min-height: 38px;
+      padding: 7px 11px;
+      border: 1px solid var(--cl-border, #d0d5dd);
+      border-radius: 8px;
+      background: var(--cl-surface, #fff);
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .member-statement-link {
+      border: 0;
+      padding: 0;
+      background: transparent;
+      color: var(--cl-primary, #0f766e);
+      font-weight: 750;
+      cursor: pointer;
+    }
+
+    [data-quick] {
+      cursor: pointer;
+    }
+
+    @media (max-width: 1000px) {
+
+      .member-accounting-toolbar {
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
+      }
+
+      .member-accounting-summary {
+        grid-template-columns:
+          repeat(3, minmax(0, 1fr));
+      }
+
+    }
+
+    @media (max-width: 680px) {
+
+      .member-accounting-page {
+        padding: 18px 12px 100px;
+      }
+
+      .member-accounting-header {
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      .member-accounting-back {
+        width: 100%;
+      }
+
+      .member-accounting-toolbar {
+        grid-template-columns: 1fr;
+      }
+
+      .member-accounting-summary {
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
+      }
+
+      .member-accounting-card {
+        padding: 16px;
+      }
+
+      .member-accounting-statement-meta {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+    }
+
+    @media (max-width: 420px) {
+
+      .member-accounting-summary {
+        grid-template-columns: 1fr;
+      }
+
+      .member-accounting-statement-meta {
+        grid-template-columns: 1fr;
+      }
+
+    }
+
+    @media print {
+
+      .member-accounting-header,
+      .member-accounting-toolbar,
+      .member-accounting-actions,
+      #statusMessage,
+      .member-accounting-close {
+        display: none !important;
+      }
+
+      .member-accounting-page {
+        width: 100%;
+        padding: 0;
+      }
+
+      .member-accounting-card {
+        border: 0;
+        box-shadow: none;
+      }
+
+    }
+
+  </style>
+
+<script src="/js/clean-urls.js?v=20261024" defer></script>
+</head>
+
+<body>
+
+  <main class="member-accounting-page">
+
+    <header class="member-accounting-header">
+
+      <div>
+
+        <p class="eyebrow">
+          Member Portal
+        </p>
+
+        <h1>
+          Contribution Accounting
+        </h1>
+
+        <p>
+          View canonical contribution accounting for
+          your group and contribution period.
+        </p>
+
+      </div>
+
+      <a
+        class="member-accounting-back"
+        href="./member-dashboard.html"
+      >
+        ← Back to Dashboard
+      </a>
+
+    </header>
+
+
+    <div
+      id="statusMessage"
+      class="member-accounting-message member-accounting-status"
+      aria-live="polite"
+    >
+      Loading contribution accounting…
+    </div>
+
+
+    <div
+      id="groupLabel"
+      class="member-accounting-message member-accounting-status"
+    >
+      Group: —
+    </div>
+
+
+    <section
+      class="member-accounting-toolbar"
+      aria-label="Accounting filters"
+    >
+
+      <div class="member-accounting-field">
+
+        <label for="accountingMonth">
+          Accounting Month
+        </label>
+
+        <input
+          id="accountingMonth"
+          type="month"
+        >
+
+      </div>
+
+
+      <div class="member-accounting-field">
+
+        <label for="memberFilter">
+          Member
+        </label>
+
+        <select id="memberFilter">
+
+          <option value="">
+            My account
+          </option>
+
+        </select>
+
+      </div>
+
+
+      <div class="member-accounting-field">
+
+        <label for="statusFilter">
+          Status
+        </label>
+
+        <select id="statusFilter">
+
+          <option value="">
+            All statuses
+          </option>
+
+          <option value="ARREARS">
+            Arrears
+          </option>
+
+          <option value="CURRENT">
+            Current
+          </option>
+
+          <option value="CREDIT">
+            Credit
+          </option>
+
+        </select>
+
+      </div>
+
+
+      <div class="member-accounting-field">
+
+        <label for="searchMember">
+          Search Member
+        </label>
+
+        <input
+          id="searchMember"
+          type="search"
+          placeholder="Search member…"
+          autocomplete="off"
+        >
+
+      </div>
+
+    </section>
+
+
+    <div class="member-accounting-actions">
+
+      <button
+        id="refreshButton"
+        class="member-accounting-button"
+        type="button"
+      >
+        Refresh
+      </button>
+
+      <button
+        id="resetButton"
+        class="member-accounting-button"
+        type="button"
+      >
+        Reset
+      </button>
+
+      <button
+        id="printButton"
+        class="member-accounting-button"
+        type="button"
+      >
+        Print
+      </button>
+
+      <button
+        id="csvButton"
+        class="member-accounting-button"
+        type="button"
+      >
+        CSV
+      </button>
+
+      <button
+        id="excelButton"
+        class="member-accounting-button"
+        type="button"
+      >
+        Excel
+      </button>
+
+    </div>
+
+
+    <section
+      class="member-accounting-summary"
+      aria-label="Accounting summary"
+    >
+
+      <article class="member-accounting-stat">
+
+        <div class="member-accounting-stat-label">
+          Members
+        </div>
+
+        <div
+          id="statMembers"
+          class="member-accounting-stat-value"
+        >
+          —
+        </div>
+
+      </article>
+
+
+      <article class="member-accounting-stat">
+
+        <div class="member-accounting-stat-label">
+          Monthly Due
+        </div>
+
+        <div
+          id="statDue"
+          class="member-accounting-stat-value"
+        >
+          —
+        </div>
+
+      </article>
+
+
+      <article class="member-accounting-stat">
+
+        <div class="member-accounting-stat-label">
+          Applied
+        </div>
+
+        <div
+          id="statApplied"
+          class="member-accounting-stat-value"
+        >
+          —
+        </div>
+
+      </article>
+
+
+      <article class="member-accounting-stat">
+
+        <div class="member-accounting-stat-label">
+          Outstanding
+        </div>
+
+        <div
+          id="statOutstanding"
+          class="member-accounting-stat-value"
+        >
+          —
+        </div>
+
+      </article>
+
+
+      <article class="member-accounting-stat">
+
+        <div class="member-accounting-stat-label">
+          Credit
+        </div>
+
+        <div
+          id="statCredit"
+          class="member-accounting-stat-value"
+        >
+          —
+        </div>
+
+      </article>
+
+
+      <article class="member-accounting-stat">
+
+        <div class="member-accounting-stat-label">
+          Attention
+        </div>
+
+        <div
+          id="statAttention"
+          class="member-accounting-stat-value"
+        >
+          —
+        </div>
+
+      </article>
+
+    </section>
+
+
+    <section
+      id="memberCumulativePosition"
+      class="member-accounting-card"
+    >
+
+      <div class="member-accounting-card-header">
+
+        <div>
+
+          <h2>
+            Contribution Position
+          </h2>
+
+          <p>
+            Canonical cumulative accounting position.
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <div
+        id="memberCumulativePositionContent"
+        class="member-profile-details"
+      >
+
+        <div class="member-profile-row">
+
+          <div class="member-profile-label">
+            Status
+          </div>
+
+          <div
+            id="cumulativeStatus"
+            class="member-profile-value"
+          >
+            —
+          </div>
+
+        </div>
+
+
+        <div class="member-profile-row">
+
+          <div class="member-profile-label">
+            Total Paid
+          </div>
+
+          <div
+            id="cumulativeDue"
+            class="member-profile-value"
+          >
+            —
+          </div>
+
+        </div>
+
+
+        <div class="member-profile-row">
+
+          <div class="member-profile-label">
+            Total Due
+          </div>
+
+          <div
+            id="cumulativeTotalDue"
+            class="member-profile-value"
+          >
+            —
+          </div>
+
+        </div>
+
+
+        <div class="member-profile-row">
+
+          <div class="member-profile-label">
+            Allocated
+          </div>
+
+          <div
+            id="cumulativeAllocated"
+            class="member-profile-value"
+          >
+            —
+          </div>
+
+        </div>
+
+
+        <div class="member-profile-row">
+
+          <div class="member-profile-label">
+            Arrears
+          </div>
+
+          <div
+            id="cumulativeArrears"
+            class="member-profile-value"
+          >
+            —
+          </div>
+
+        </div>
+
+
+        <div class="member-profile-row">
+
+          <div class="member-profile-label">
+            Credit
+          </div>
+
+          <div
+            id="cumulativeCredit"
+            class="member-profile-value"
+          >
+            —
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <section class="member-accounting-card">
+
+      <div class="member-accounting-card-header">
+
+        <div>
+
+          <h2>
+            Monthly Accounting
+          </h2>
+
+          <p>
+            Canonical monthly accounting status.
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <div class="member-accounting-table-wrap">
+
+        <table class="member-accounting-table">
+
+          <thead>
+
+            <tr>
+
+              <th>Member</th>
+              <th>Period</th>
+              <th>Monthly Due</th>
+              <th>Previous Outstanding</th>
+              <th>Previous Credit</th>
+              <th>Current Month Payment</th>
+              <th>Applied</th>
+              <th>Carry Forward</th>
+              <th>Current Outstanding</th>
+              <th>Total Paid</th>
+              <th>Status</th>
+
+            </tr>
+
+          </thead>
+
+          <tbody id="memberAccountingBody">
+
+            <tr>
+
+              <td
+                colspan="11"
+                class="member-accounting-empty"
+              >
+                Loading accounting…
+              </td>
+
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+
+    <section
+      id="statementSection"
+      class="member-accounting-card member-accounting-statement"
+      aria-live="polite"
+    >
+
+      <div class="member-accounting-card-header">
+
+        <div>
+
+          <h2 id="statementTitle">
+            Member Statement
+          </h2>
+
+          <p id="statementMeta">
+            —
+          </p>
+
+        </div>
+
+        <button
+          id="closeStatementButton"
+          class="member-accounting-close"
+          type="button"
+        >
+          Close
+        </button>
+
+      </div>
+
+
+      <div class="member-accounting-statement-meta">
+
+        <div class="member-accounting-statement-stat">
+
+          <span class="member-accounting-statement-stat-label">
+            Monthly Due
+          </span>
+
+          <span
+            id="statementDue"
+            class="member-accounting-statement-stat-value"
+          >
+            —
+          </span>
+
+        </div>
+
+
+        <div class="member-accounting-statement-stat">
+
+          <span class="member-accounting-statement-stat-label">
+            Current Month Payment
+          </span>
+
+          <span
+            id="statementPaid"
+            class="member-accounting-statement-stat-value"
+          >
+            —
+          </span>
+
+        </div>
+
+
+        <div class="member-accounting-statement-stat">
+
+          <span class="member-accounting-statement-stat-label">
+            Current Outstanding
+          </span>
+
+          <span
+            id="statementOutstanding"
+            class="member-accounting-statement-stat-value"
+          >
+            —
+          </span>
+
+        </div>
+
+
+        <div class="member-accounting-statement-stat">
+
+          <span class="member-accounting-statement-stat-label">
+            Previous Credit
+          </span>
+
+          <span
+            id="statementCredit"
+            class="member-accounting-statement-stat-value"
+          >
+            —
+          </span>
+
+        </div>
+
+      </div>
+
+
+      <div class="member-accounting-table-wrap">
+
+        <table class="member-accounting-table">
+
+          <thead>
+
+            <tr>
+
+              <th>
+                Statement Item
+              </th>
+
+              <th>
+                Amount / Status
+              </th>
+
+            </tr>
+
+          </thead>
+
+          <tbody id="statementBody">
+
+            <tr>
+
+              <td
+                colspan="2"
+                class="member-accounting-empty"
+              >
+                No statement selected.
+              </td>
+
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+  </main>
+
+
+  <!-- =====================================================
+       MEMBER LAYOUT IS THE SOLE BOOT OWNER.
+       member-layout.js resolves authentication,
+       member/group context and loads this feature.
+  ====================================================== -->
+
+  <script type="module">
+
+    import { boot } from "./js/member-layout.js?v=20261015-no-group-settings-member-portal";
+
+    boot();
+
+  </script>
+
+</body>
+</html>

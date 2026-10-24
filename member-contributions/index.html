@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<base href="/">
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
+
+  <title>My Contributions — CHAMA LIVE</title>
+
+  <link
+    rel="stylesheet"
+    href="css/app.css"
+  />
+
+  <style>
+    /* =====================================================
+       CHAMA LIVE — MEMBER CONTRIBUTIONS
+       Page-specific presentation only.
+       Portal navigation/auth remains owned by member-layout.js.
+    ===================================================== */
+
+    .member-contributions-page {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px 16px 48px;
+    }
+
+    .member-contributions-header {
+      margin-bottom: 24px;
+    }
+
+    .member-contributions-header h1 {
+      margin: 0 0 6px;
+    }
+
+    .member-contributions-header p {
+      margin: 0;
+    }
+
+    .member-contribution-card {
+      margin-bottom: 20px;
+    }
+
+    .member-contribution-card h2 {
+      margin-top: 0;
+    }
+
+    .member-position-grid {
+      display: grid;
+      grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .member-position-stat {
+      padding: 16px;
+      border: 1px solid var(--cl-border, #e5e7eb);
+      border-radius: 12px;
+      background: var(--cl-surface-soft, #f8fafc);
+    }
+
+    .member-position-label {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--cl-muted, #64748b);
+      font-size: .82rem;
+      font-weight: 600;
+    }
+
+    .member-position-value {
+      display: block;
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+
+    .member-payment-form-grid {
+      display: grid;
+      grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .member-payment-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .member-payment-field.full {
+      grid-column: 1 / -1;
+    }
+
+    .member-payment-field label {
+      font-size: .9rem;
+      font-weight: 600;
+    }
+
+    .member-payment-field input,
+    .member-payment-field select,
+    .member-payment-field textarea {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 11px 12px;
+      border: 1px solid var(--cl-border, #d1d5db);
+      border-radius: 10px;
+      background: var(--cl-surface, #fff);
+      color: inherit;
+      font: inherit;
+    }
+
+    .member-payment-field input:focus,
+    .member-payment-field select:focus,
+    .member-payment-field textarea:focus {
+      outline: none;
+      border-color: var(--cl-primary, #0f766e);
+      box-shadow:
+        0 0 0 3px
+        rgba(15, 118, 110, .12);
+    }
+
+    .member-payment-field textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    .member-contribution-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .member-contribution-actions button {
+      cursor: pointer;
+    }
+
+    .member-contribution-actions button:disabled {
+      cursor: not-allowed;
+      opacity: .65;
+    }
+
+    .member-inline-note {
+      margin: 12px 0 0;
+      color: var(--cl-muted, #64748b);
+      font-size: .88rem;
+      line-height: 1.5;
+    }
+
+    .member-evidence-message {
+      margin-bottom: 16px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: var(--cl-surface-soft, #f8fafc);
+    }
+
+    .member-records-details { border-radius: 12px; }
+
+    .member-records-summary {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; padding: 16px 18px; cursor: pointer; list-style: none;
+      border-radius: 10px; background: var(--cl-surface-soft, #f8fafc);
+    }
+    .member-records-summary::-webkit-details-marker { display: none; }
+    .member-records-summary > span:first-child { display: grid; gap: 4px; }
+    .member-records-summary strong { font-size: 1rem; }
+    .member-records-summary small, .member-records-count {
+      color: var(--cl-muted, #64748b); font-size: .85rem;
+    }
+    .member-records-toggle { flex: 0 0 auto; font-size: 1.35rem; font-weight: 600; }
+    .member-records-details[open] .member-records-toggle { font-size: 0; }
+    .member-records-details[open] .member-records-toggle::after {
+      content: "−"; font-size: 1.35rem;
+    }
+    .member-records-content { padding: 8px 0 0; }
+    .member-records-filter {
+      display: grid; grid-template-columns: auto minmax(150px, 240px) 1fr;
+      align-items: center; gap: 10px; margin: 12px 0 16px;
+    }
+    .member-records-filter label { font-size: .9rem; font-weight: 600; }
+    .member-records-filter select {
+      width: 100%; min-width: 0; box-sizing: border-box; padding: 10px 12px;
+      border: 1px solid var(--cl-border, #d1d5db); border-radius: 10px;
+      background: var(--cl-surface, #fff); color: inherit; font: inherit;
+    }
+    .member-records-filter select:focus {
+      outline: none; border-color: var(--cl-primary, #0f766e);
+      box-shadow: 0 0 0 3px rgba(15, 118, 110, .12);
+    }
+
+    .member-table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .member-contribution-table {
+      width: 100%;
+      min-width: 760px;
+      border-collapse: collapse;
+    }
+
+    .member-contribution-table th,
+    .member-contribution-table td {
+      padding: 12px 10px;
+      border-bottom:
+        1px solid var(--cl-border, #e5e7eb);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .member-contribution-table th {
+      white-space: nowrap;
+      font-size: .84rem;
+      font-weight: 700;
+    }
+
+    .member-contribution-table td {
+      font-size: .92rem;
+    }
+
+    .cl-money-cell {
+      white-space: nowrap;
+    }
+
+    .cl-empty,
+    .cl-evidence-empty {
+      padding: 24px !important;
+      text-align: center !important;
+      color: var(--cl-muted, #64748b);
+    }
+
+    .cl-status-paid,
+    .cl-evidence-status-verified {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: fit-content;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: rgba(34, 197, 94, .14);
+      color: inherit;
+      font-size: .75rem;
+      font-weight: 700;
+    }
+
+    .cl-status-partial,
+    .cl-evidence-status-pending {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: fit-content;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: rgba(234, 179, 8, .16);
+      color: inherit;
+      font-size: .75rem;
+      font-weight: 700;
+    }
+
+    .cl-status-credit {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: fit-content;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: rgba(59, 130, 246, .14);
+      color: inherit;
+      font-size: .75rem;
+      font-weight: 700;
+    }
+
+    .cl-status-outstanding,
+    .cl-evidence-status-rejected {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: fit-content;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: rgba(239, 68, 68, .14);
+      color: inherit;
+      font-size: .75rem;
+      font-weight: 700;
+    }
+
+    .cl-status-neutral {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: fit-content;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: rgba(127, 127, 127, .14);
+      font-size: .75rem;
+      font-weight: 700;
+    }
+
+    @media (max-width: 800px) {
+      .member-contributions-page {
+        padding: 18px 12px 36px;
+      }
+
+      .member-position-grid,
+      .member-payment-form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .member-payment-field.full {
+        grid-column: auto;
+      }
+
+      .member-contribution-card {
+        margin-bottom: 16px;
+      }
+
+      .member-records-filter { grid-template-columns: 1fr; gap: 7px; }
+      .member-records-summary { padding: 14px; }
+    }
+
+    @media (max-width: 600px) {
+      .member-contributions-header h1 {
+        font-size: 1.55rem;
+      }
+
+      .member-position-grid {
+        gap: 10px;
+      }
+
+      .member-position-stat {
+        padding: 14px;
+      }
+
+      .member-contribution-actions {
+        flex-direction: column;
+      }
+
+      .member-contribution-actions button {
+        width: 100%;
+      }
+    }
+
+    @media print {
+      .member-payment-evidence-card,
+      .member-evidence-card,
+      .member-contribution-actions,
+      .member-inline-note {
+        display: none !important;
+      }
+
+      .member-contributions-page {
+        max-width: none;
+        padding: 0;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        transition: none !important;
+        animation: none !important;
+      }
+    }
+  </style>
+<script src="/js/clean-urls.js?v=20261024" defer></script>
+</head>
+
+<body>
+
+  <main class="member-contributions-page">
+
+    <!-- ===================================================
+         PAGE HEADER
+    ==================================================== -->
+
+    <header class="member-contributions-header">
+      <h1>My Contributions</h1>
+
+      <p id="memberContributionSubtitle">
+        Your contribution record
+      </p>
+    </header>
+
+
+    <!-- ===================================================
+         PAGE STATE
+    ==================================================== -->
+
+    <div
+      id="memberContributionLoading"
+      class="member-message info"
+      role="status"
+      aria-live="polite"
+    >
+      Loading your contribution information...
+    </div>
+
+    <div
+      id="memberContributionError"
+      class="member-message error"
+      role="alert"
+      hidden
+    ></div>
+
+    <div
+      id="memberContributionSuccess"
+      class="member-message success"
+      role="status"
+      aria-live="polite"
+      hidden
+    ></div>
+
+
+    <!-- ===================================================
+         MEMBER CONTRIBUTION CONTENT
+    ==================================================== -->
+
+    <div
+      id="memberContributionContent"
+      hidden
+    >
+
+      <!-- ================================================
+           CURRENT CONTRIBUTION POSITION
+      ================================================= -->
+
+      <section class="card member-contribution-card">
+
+        <div class="card-header">
+          <div>
+            <h2>Current Contribution Position</h2>
+
+            <p class="member-inline-note">
+              Your canonical contribution position for the
+              current accounting month.
+            </p>
+          </div>
+        </div>
+
+        <div class="member-position-grid">
+
+          <div class="member-position-stat">
+
+            <span class="member-position-label">
+              Accounting Month
+            </span>
+
+            <span
+              id="memberAccountingMonth"
+              class="member-position-value"
+            >
+              —
+            </span>
+
+          </div>
+
+
+          <div class="member-position-stat">
+
+            <span class="member-position-label">
+              Status
+            </span>
+
+            <span
+              id="memberContributionStatus"
+              class="cl-status-neutral"
+            >
+              —
+            </span>
+
+          </div>
+
+
+          <div class="member-position-stat">
+
+            <span class="member-position-label">
+              Current Due
+            </span>
+
+            <span
+              id="memberCurrentDue"
+              class="member-position-value"
+            >
+              KES 0
+            </span>
+
+          </div>
+
+
+          <div class="member-position-stat">
+
+            <span class="member-position-label">
+              Previous Outstanding
+            </span>
+
+            <span
+              id="memberPreviousOutstanding"
+              class="member-position-value"
+            >
+              KES 0
+            </span>
+
+          </div>
+
+
+          <div class="member-position-stat">
+
+            <span class="member-position-label">
+              Current Paid
+            </span>
+
+            <span
+              id="memberCurrentPaid"
+              class="member-position-value"
+            >
+              KES 0
+            </span>
+
+          </div>
+
+
+          <div class="member-position-stat">
+
+            <span class="member-position-label">
+              Outstanding
+            </span>
+
+            <span
+              id="memberOutstanding"
+              class="member-position-value"
+            >
+              KES 0
+            </span>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- ================================================
+           STATEMENT SUMMARY
+      ================================================= -->
+
+      <section class="card member-contribution-card">
+
+        <div class="card-header">
+          <div>
+            <h2>My Statement</h2>
+
+            <p class="member-inline-note">
+              Your recorded contribution history and
+              current canonical contribution position.
+            </p>
+          </div>
+        </div>
+
+        <div class="member-position-grid">
+
+          <div class="member-position-stat">
+
+            <span class="member-position-label">
+              Total Recorded Contributions
+            </span>
+
+            <span
+              id="memberStatementTotal"
+              class="member-position-value"
+            >
+              KES 0
+            </span>
+
+          </div>
+
+
+          <div class="member-position-stat">
+
+            <span class="member-position-label">
+              Contribution Records
+            </span>
+
+            <span
+              id="memberStatementCount"
+              class="member-position-value"
+            >
+              0
+            </span>
+
+          </div>
+
+        </div>
+
+        <div class="member-contribution-actions">
+
+          <button
+            id="downloadMemberStatement"
+            type="button"
+            class="btn btn-primary"
+          >
+            Download Statement
+          </button>
+
+          <button
+            id="printMemberStatement"
+            type="button"
+            class="btn btn-secondary"
+          >
+            Print Statement
+          </button>
+
+        </div>
+
+        <p class="member-inline-note">
+          Payment evidence that has not been verified is not
+          included in the recorded contribution total.
+        </p>
+
+      </section>
+
+
+      <!-- ================================================
+           PAYMENT EVIDENCE SUBMISSION
+      ================================================= -->
+
+      <section
+        id="memberPaymentEvidenceCard"
+        class="card member-contribution-card member-payment-evidence-card"
+      >
+
+        <div class="card-header">
+          <div>
+            <h2>Submit Payment Evidence</h2>
+
+            <p class="member-inline-note">
+              If you have made a payment that is not yet
+              reflected in your contribution record, submit
+              the payment details for verification.
+            </p>
+          </div>
+        </div>
+
+
+        <div
+          id="memberEvidenceMessage"
+          class="member-evidence-message"
+          role="status"
+          aria-live="polite"
+          hidden
+        ></div>
+
+
+        <form id="memberPaymentEvidenceForm">
+
+          <div class="member-payment-form-grid">
+
+            <div class="member-payment-field">
+
+              <label for="memberEvidenceAmount">
+                Amount
+              </label>
+
+              <input
+                id="memberEvidenceAmount"
+                name="amount"
+                type="number"
+                min="0.01"
+                step="0.01"
+                inputmode="decimal"
+                autocomplete="off"
+                placeholder="Enter amount"
+                required
+              />
+
+            </div>
+
+
+            <div class="member-payment-field">
+
+              <label for="memberEvidenceDate">
+                Payment Date
+              </label>
+
+              <input
+                id="memberEvidenceDate"
+                name="payment_date"
+                type="date"
+                required
+              />
+
+            </div>
+
+
+            <div class="member-payment-field">
+
+              <label for="memberEvidenceMethod">
+                Payment Method
+              </label>
+
+              <select
+                id="memberEvidenceMethod"
+                name="payment_method"
+                required
+              >
+
+                <option value="M-Pesa">
+                  M-Pesa
+                </option>
+
+                <option value="Cash">
+                  Cash
+                </option>
+
+                <option value="Bank transfer">
+                  Bank transfer
+                </option>
+
+              </select>
+
+            </div>
+
+
+            <div
+              id="memberEvidenceMpesaWrap"
+              class="member-payment-field"
+            >
+
+              <label for="memberEvidenceMpesaReference">
+                M-Pesa Reference
+              </label>
+
+              <input
+                id="memberEvidenceMpesaReference"
+                name="mpesa_reference"
+                type="text"
+                maxlength="100"
+                autocomplete="off"
+                placeholder="e.g. ABC123XYZ"
+              />
+
+            </div>
+
+
+            <div class="member-payment-field full">
+
+              <label for="memberEvidenceText">
+                Payment Details
+              </label>
+
+              <textarea
+                id="memberEvidenceText"
+                name="evidence_text"
+                maxlength="1000"
+                placeholder="Add any useful payment details"
+                required
+              ></textarea>
+
+            </div>
+
+          </div>
+
+
+          <div class="member-contribution-actions">
+
+            <button
+              id="submitMemberPaymentEvidence"
+              type="submit"
+              class="btn btn-primary"
+            >
+              Submit Payment Evidence
+            </button>
+
+          </div>
+
+        </form>
+
+
+        <p class="member-inline-note">
+          Submission creates a pending payment-evidence record.
+          It does not immediately create a contribution.
+          An authorised verifier must verify the payment first.
+        </p>
+
+      </section>
+
+
+      <!-- ================================================
+           PAYMENT EVIDENCE HISTORY
+      ================================================= -->
+
+      <section
+        id="memberEvidenceCard"
+        class="card member-contribution-card member-evidence-card"
+      >
+
+        <div class="card-header">
+          <div>
+            <h2>My Payment Evidence</h2>
+
+            <p class="member-inline-note">
+              Payments you have submitted for verification.
+            </p>
+          </div>
+        </div>
+
+
+        <div class="member-table-wrap">
+
+          <table class="member-contribution-table">
+
+            <thead>
+
+              <tr>
+                <th>Date</th>
+                <th>Amount</th>
+                <th>Method</th>
+                <th>Reference</th>
+                <th>Submitted</th>
+                <th>Status</th>
+                <th>Details</th>
+              </tr>
+
+            </thead>
+
+
+            <tbody id="memberPaymentEvidenceRows">
+            </tbody>
+
+          </table>
+
+        </div>
+
+      </section>
+
+
+      <!-- ================================================
+           CONTRIBUTION HISTORY
+      ================================================= -->
+
+      <section class="card member-contribution-card member-records-card">
+
+        <details id="memberContributionHistoryDetails" class="member-records-details">
+          <summary class="member-records-summary">
+            <span>
+              <strong>My Contribution Records</strong>
+              <small>View your recorded payments by month</small>
+            </span>
+            <span class="member-records-toggle" aria-hidden="true">＋</span>
+          </summary>
+
+          <div class="member-records-content">
+            <p class="member-inline-note">
+              Contributions already recorded for your member account.
+            </p>
+
+            <div class="member-records-filter">
+              <label for="memberContributionMonthFilter">Filter by month</label>
+              <select id="memberContributionMonthFilter">
+                <option value="all">All months</option>
+              </select>
+              <span id="memberContributionFilterCount" class="member-records-count" aria-live="polite"></span>
+            </div>
+
+            <div class="member-table-wrap">
+              <table class="member-contribution-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Amount</th>
+                    <th>Type</th>
+                    <th>Payment Method</th>
+                    <th>Reference</th>
+                    <th>Notes</th>
+                  </tr>
+                </thead>
+                <tbody id="memberContributionRows">
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </details>
+
+      </section>
+
+    </div>
+
+  </main>
+
+
+  <!-- =====================================================
+       MEMBER PORTAL SHELL
+       member-layout.js owns member navigation,
+       authentication boundary, mobile navigation and
+       portal context.
+  ====================================================== -->
+
+  <script type="module">
+    import { boot } from "./js/member-layout.js?v=20261015-no-group-settings-member-portal";
+
+    boot();
+  </script>
+
+
+  <!-- =====================================================
+       MEMBER CONTRIBUTIONS CONTROLLER
+  ====================================================== -->
+
+  <script
+    type="module"
+    src="./js/member-contributions.js"
+  ></script>
+
+  <script type="module">
+    import { supabase } from "./js/supabase.js";
+    import { getMyMember } from "./js/auth.js";
+    const money=v=>`KSh ${Number(v||0).toLocaleString("en-KE",{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+    async function showCanonicalBreakdown(){
+      try{
+        const m=await getMyMember(); if(!m?.id||!m?.group_id)return;
+        const month=new Date(); const p_month=`${month.getFullYear()}-${String(month.getMonth()+1).padStart(2,"0")}`;
+        const {data,error}=await supabase.rpc("get_canonical_member_monthly_status",{p_group_id:m.group_id,p_month});
+        if(error)throw error;
+        const row=(Array.isArray(data)?data:[]).find(x=>String(x.member_id)===String(m.id)); if(!row)return;
+        let box=document.getElementById("canonicalAllocationBreakdown");
+        if(!box){box=document.createElement("div");box.id="canonicalAllocationBreakdown";box.style.cssText="margin:16px 0;padding:16px;border:1px solid #e2e8f0;border-radius:12px;background:#f8fafc";document.getElementById("memberContributionContent")?.appendChild(box);}
+        const credit=Math.max(Number(row.current_credit??row.credit??row.carry_forward??0),0);
+        box.innerHTML=`<strong>Canonical payment allocation</strong><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin-top:12px;font-size:.9rem"><div>Current due<br><b>${money(row.monthly_due)}</b></div><div>Previous arrears<br><b>${money(row.previous_outstanding)}</b></div><div>Payment received<br><b>${money(row.current_month_payment)}</b></div><div>Applied to obligations<br><b>${money(row.applied_this_month)}</b></div><div>Outstanding<br><b>${money(row.current_outstanding)}</b></div><div>Credit / unapplied<br><b>${money(credit)}</b></div></div><small style="display:block;margin-top:10px;color:#64748b">Payments settle eligible obligations first. Any remaining amount is shown as credit/unapplied value.</small>`;
+      }catch(e){console.warn("Canonical allocation UI:",e)}
+    }
+    window.addEventListener("load",showCanonicalBreakdown);
+  </script>
+</body>
+</html>
