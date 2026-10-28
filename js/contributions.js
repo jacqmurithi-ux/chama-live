@@ -1058,6 +1058,15 @@ function showError(error) {
   const message =
     String(error?.message || "Something went wrong. Please refresh and try again.");
 
+  if (memberSelect && /select member|loading/i.test(memberSelect.options[0]?.textContent || "")) {
+    memberSelect.innerHTML = "";
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = "Member list unavailable — refresh to retry";
+    memberSelect.appendChild(option);
+    memberSelect.disabled = true;
+  }
+
   if (statusEl) {
     statusEl.hidden = false;
     statusEl.textContent =
@@ -8335,7 +8344,9 @@ export async function initContributions(
       memberStatusRows.appendChild(row);
     }
 
-    renderSummary();
+    if (!loadFailures.some(item => item.section === "contribution history")) {
+      renderSummary();
+    }
 
     if (!loadFailures.some(item => item.section === "contribution goals")) {
       renderContributionGoals();
