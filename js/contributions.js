@@ -968,12 +968,18 @@ async function changeAccountingMonth() {
     renderSummary();
 
     if (statusEl) {
-
-      statusEl.textContent =
-        `${formatAccountingMonth(
-          accountingMonth
-        )} accounting loaded.`;
-
+      if (loadFailures.length) {
+        const failedSections = loadFailures
+          .map(item => item.section)
+          .join(", ");
+        statusEl.textContent =
+          `Some contribution data could not load (${failedSections}). Successfully loaded sections remain available. Select Refresh to retry.`;
+        statusEl.setAttribute("role", "alert");
+      } else {
+        statusEl.textContent =
+          `${formatAccountingMonth(accountingMonth)} accounting loaded.`;
+        statusEl.removeAttribute("role");
+      }
     }
 
   }
@@ -8156,25 +8162,52 @@ export async function initContributions(
       await getGroupId();
 
 
-    await Promise.all([
+    /*
+     * These reads are independent. A failure in one optional section
+     * must not prevent the member selector or other successfully loaded
+     * sections from rendering.
+     */
+    const loadTasks = [
+      ["group", loadGroup()],
+      ["members", loadMembers()],
+      ["active custom contributions", loadActiveCustomContributions()],
+      ["draft custom contributions", loadDraftCustomContributions()],
+      ["contribution history", loadContributions()],
+      ["contribution goals", loadContributionGoals()]
+    ];
 
-      loadGroup(),
-
-      loadMembers(),
-
-      loadActiveCustomContributions(),
-
-      loadDraftCustomContributions(),
-
-      loadContributions(),
-
-      loadContributionGoals()
-
-    ]);
-
-    await loadCanonicalMemberStatus(
-      accountingMonth
+    const loadResults = await Promise.allSettled(
+      loadTasks.map(([, promise]) => promise)
     );
+
+    const loadFailures = [];
+    loadResults.forEach((result, index) => {
+      if (result.status === "rejected") {
+        loadFailures.push({
+          section: loadTasks[index][0],
+          error: result.reason
+        });
+        console.error(
+          `CHAMA LIVE Contributions: failed to load ${loadTasks[index][0]}.`,
+          result.reason
+        );
+      }
+    });
+
+    let canonicalStatusFailed = false;
+    try {
+      await loadCanonicalMemberStatus(accountingMonth);
+    } catch (error) {
+      canonicalStatusFailed = true;
+      loadFailures.push({
+        section: "monthly member accounting",
+        error
+      });
+      console.error(
+        "CHAMA LIVE Contributions: failed to load monthly member accounting.",
+        error
+      );
+    }
 
 
     /*
@@ -8275,13 +8308,51 @@ export async function initContributions(
 
 
     renderAccountingMonthLabel();
-    renderLedger();
 
-    renderMemberStatus();
+    if (!loadFailures.some(item => item.section === "contribution history")) {
+      renderLedger();
+    } else if (contributionRows) {
+      contributionRows.innerHTML = "";
+      const row = document.createElement("tr");
+      const cell = document.createElement("td");
+      cell.colSpan = 8;
+      cell.setAttribute("role", "alert");
+      cell.textContent = "Contribution history could not be loaded. Use Refresh to retry.";
+      row.appendChild(cell);
+      contributionRows.appendChild(row);
+    }
+
+    if (!canonicalStatusFailed) {
+      renderMemberStatus();
+    } else if (memberStatusRows) {
+      memberStatusRows.innerHTML = "";
+      const row = document.createElement("tr");
+      const cell = document.createElement("td");
+      cell.colSpan = 7;
+      cell.setAttribute("role", "alert");
+      cell.textContent = "Monthly member accounting could not be loaded. Use Refresh to retry.";
+      row.appendChild(cell);
+      memberStatusRows.appendChild(row);
+    }
 
     renderSummary();
 
-    renderContributionGoals();
+    if (!loadFailures.some(item => item.section === "contribution goals")) {
+      renderContributionGoals();
+    } else if (goalProgressContainer) {
+      goalProgressContainer.textContent = "Contribution goals could not be loaded. Use Refresh to retry.";
+    }
+
+    if (loadFailures.some(item => item.section === "members") && memberSelect) {
+      memberSelect.innerHTML = "";
+      const option = document.createElement("option");
+      option.value = "";
+      option.textContent = "Member list unavailable — use Refresh to retry";
+      memberSelect.appendChild(option);
+      memberSelect.disabled = true;
+    } else if (memberSelect) {
+      memberSelect.disabled = false;
+    }
 
 
     /*
