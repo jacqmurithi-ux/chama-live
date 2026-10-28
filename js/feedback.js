@@ -24,10 +24,10 @@ function buildDialog() {
       <p style="margin:0;color:#667085;font-size:13px">Tell us what happened or what would help. Do not include passwords or verification codes.</p>
       <label for="chamaFeedbackCategory" style="font-weight:700;font-size:13px">Type</label>
       <select id="chamaFeedbackCategory" name="category" style="width:100%;padding:10px;border:1px solid #d0d5dd;border-radius:8px">
-        <option value="issue">Something isn't working</option>
-        <option value="suggestion">Suggestion</option>
-        <option value="question">Question</option>
-        <option value="other">Other</option>
+        <option value="bug">Something isn't working</option>
+        <option value="missing_feature">Suggestion</option>
+        <option value="confusing">Question</option>
+        <option value="general">Other</option>
       </select>
       <label for="chamaFeedbackMessage" style="font-weight:700;font-size:13px">Message</label>
       <textarea id="chamaFeedbackMessage" name="message" required maxlength="5000" rows="5" style="width:100%;resize:vertical;padding:10px;border:1px solid #d0d5dd;border-radius:8px" placeholder="Describe the page, what you expected, and what happened."></textarea>
@@ -72,7 +72,7 @@ export async function initFeedbackButton() {
   button.addEventListener("click", () => {
     status.textContent = "";
     message.value = "";
-    category.value = "issue";
+    category.value = "bug";
     if (typeof dialog.showModal === "function") dialog.showModal();
     else dialog.setAttribute("open", "");
     message.focus();
@@ -109,7 +109,7 @@ export async function initFeedbackButton() {
         group_id: groupId,
         member_id: memberId,
         page: currentPageLabel(),
-        category: String(category.value || "other"),
+        category: String(category.value || "general"),
         message: text
       });
       if (error) throw error;
