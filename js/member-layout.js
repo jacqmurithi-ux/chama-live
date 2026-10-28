@@ -26,6 +26,7 @@
    • No group mutations.
    ========================================================= */
 
+import { resolvePageFromPathname } from "./route-utils.js?v=20261028-clean-route-resolution1";
 import {
   getMyApplicationContext,
   signOut
@@ -166,13 +167,7 @@ async function loadOptionalModuleFlags() {
    ========================================================= */
 
 function getCurrentPage() {
-  const pathname =
-    window.location.pathname || "";
-
-  const filename =
-    pathname.split("/").pop();
-
-  return filename || "member-dashboard.html";
+  return resolvePageFromPathname(window.location.pathname, "member-dashboard.html");
 }
 
 
