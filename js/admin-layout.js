@@ -2220,12 +2220,11 @@ function showBootError(
     `Admin Portal loading failed during ${stage}: ${message}`;
 
 
-  errorBox.hidden =
-    false;
-
-
-  errorBox.textContent =
-    `Admin Portal loading failed during ${stage}: ${message}`;
+  if (visibleError) {
+    visibleError.hidden = false;
+    visibleError.textContent =
+      `Admin Portal loading failed during ${stage}: ${message}`;
+  }
 
 }
 
