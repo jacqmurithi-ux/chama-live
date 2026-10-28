@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { resolvePageFromPathname } from "../js/route-utils.js";
 
 const read = path => readFile(new URL(path, import.meta.url), "utf8");
 const service = await read("../js/my-account-service.js");
@@ -156,4 +157,29 @@ test("both personal account pages include every shared renderer HTML target", ()
       assert.ok(page.includes(`id="${id}"`), `personal account page is missing #${id}`);
     }
   }
+});
+
+
+test("clean directory URLs resolve to their matching page modules", () => {
+  assert.equal(resolvePageFromPathname("/contributions/"), "contributions.html");
+  assert.equal(resolvePageFromPathname("/contributions"), "contributions.html");
+  assert.equal(resolvePageFromPathname("/contributions/index.html"), "contributions.html");
+  assert.equal(resolvePageFromPathname("/member-contributions/"), "member-contributions.html");
+  assert.equal(resolvePageFromPathname("/member-contributions/index.html"), "member-contributions.html");
+  assert.equal(resolvePageFromPathname("/dashboard.html"), "dashboard.html");
+  assert.equal(resolvePageFromPathname("/"), "dashboard.html");
+  assert.equal(resolvePageFromPathname("/", "member-dashboard.html"), "member-dashboard.html");
+});
+
+test("contribution directory route keeps the canonical contribution initializer", async () => {
+  const contributionPage = await read("../contributions/index.html");
+  const contributionModule = await read("../js/contributions.js");
+  assert.match(adminLayout, /resolvePageFromPathname\(window\.location\.pathname, "dashboard\.html"\)/);
+  assert.match(contributionPage, /admin-layout\.js\?v=20261028-clean-route-resolution1/);
+  assert.match(adminLayout, /"contributions\.html": \[[\s\S]*?"\.\/contributions\.js\?v=[\w-]+",\s*"initContributions"/);
+  assert.match(contributionModule, /export async function initContributions\(/);
+  assert.match(contributionModule, /await getGroupId\(\)/);
+  assert.match(contributionModule, /\["members", loadMembers\(\)\]/);
+  assert.match(contributionModule, /\["contribution goals", loadContributionGoals\(\)\]/);
+  assert.match(contributionModule, /\["contribution history", loadContributions\(\)\]/);
 });
