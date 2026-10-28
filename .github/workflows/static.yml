@@ -31,6 +31,17 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validate JavaScript syntax
+        run: |
+          set -e
+          find js -type f -name '*.js' -print0 | xargs -0 -n1 node --check
+          node --check sw.js
+      - name: Run account contract tests
+        run: node --test tests/my-account.test.mjs
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
