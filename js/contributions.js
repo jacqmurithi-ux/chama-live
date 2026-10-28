@@ -1049,14 +1049,56 @@ function showError(error) {
 
   }
 
+  const message =
+    String(error?.message || "Something went wrong. Please refresh and try again.");
+
   if (statusEl) {
-
-    statusEl.hidden =
-      false;
-
+    statusEl.hidden = false;
     statusEl.textContent =
-      "Unable to complete the contribution request.";
+      "Contribution data could not finish loading. " + message;
+  }
 
+  /* Replace only untouched loading placeholders. Keep any data that
+     loaded successfully visible, and never substitute invented totals. */
+  if (accountingMonthSelect && accountingMonthSelect.options.length === 1 &&
+      /loading months/i.test(accountingMonthSelect.options[0]?.textContent || "")) {
+    accountingMonthSelect.innerHTML = "";
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = "Accounting months unavailable";
+    accountingMonthSelect.appendChild(option);
+    accountingMonthSelect.disabled = true;
+  }
+
+  if (memberStatusRows && /loading/i.test(memberStatusRows.textContent || "")) {
+    memberStatusRows.textContent = "";
+    const row = document.createElement("tr");
+    const cell = document.createElement("td");
+    cell.colSpan = 7;
+    cell.setAttribute("role", "alert");
+    cell.textContent = "Monthly member status unavailable. " + message;
+    row.appendChild(cell);
+    memberStatusRows.appendChild(row);
+  }
+
+  if (contributionRows && /loading/i.test(contributionRows.textContent || "")) {
+    contributionRows.textContent = "";
+    const row = document.createElement("tr");
+    const cell = document.createElement("td");
+    cell.colSpan = 8;
+    cell.setAttribute("role", "alert");
+    cell.textContent = "Contribution history unavailable. " + message;
+    row.appendChild(cell);
+    contributionRows.appendChild(row);
+  }
+
+  if (goalProgressContainer && /loading contribution goals/i.test(goalProgressContainer.textContent || "")) {
+    goalProgressContainer.textContent = "";
+    const note = document.createElement("p");
+    note.className = "muted";
+    note.setAttribute("role", "alert");
+    note.textContent = "Contribution goals unavailable. " + message;
+    goalProgressContainer.appendChild(note);
   }
 
 }
