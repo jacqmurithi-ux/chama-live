@@ -192,7 +192,7 @@ const PAGE_SCRIPTS = {
   ],
 
   "contributions.html": [
-    "./contributions.js?v=20261009-treasurer-custom-draft2",
+    "./contributions.js?v=20261028-independent-loads1",
     "initContributions"
   ],
 
