@@ -160,6 +160,16 @@ test("both personal account pages include every shared renderer HTML target", ()
 });
 
 
+test("feedback form submits only categories allowed by the database constraint", async () => {
+  const feedback = await read("../js/feedback.js");
+  for (const category of ["bug", "missing_feature", "confusing", "general"]) {
+    assert.match(feedback, new RegExp(`<option value="${category}">`));
+  }
+  assert.match(feedback, /category\.value = "bug"/);
+  assert.match(feedback, /category: String\(category\.value \|\| "general"\)/);
+  assert.doesNotMatch(feedback, /<option value="(?:issue|suggestion|question|other)">/);
+});
+
 test("clean directory URLs resolve to their matching page modules", () => {
   assert.equal(resolvePageFromPathname("/contributions/"), "contributions.html");
   assert.equal(resolvePageFromPathname("/contributions"), "contributions.html");
