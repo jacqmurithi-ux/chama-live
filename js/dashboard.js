@@ -4399,7 +4399,6 @@ export async function initDashboard() {
     showError(error);
     renderLoadErrors();
     renderUnresolvedLoadingPlaceholders(error);
-    renderUnresolvedLoadingPlaceholders(error);
 
   }
 
