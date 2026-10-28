@@ -75,6 +75,7 @@
 ========================================================= */
 
 
+import { resolvePageFromPathname } from "./route-utils.js?v=20261028-clean-route-resolution1";
 import {
   getMyApplicationContext,
   signOut
@@ -414,15 +415,7 @@ function withBootTimeout(promise, milliseconds, label) {
 }
 
 function getCurrentPage() {
-
-  return (
-    window.location.pathname
-      .split("/")
-      .pop()
-      .toLowerCase() ||
-    "dashboard.html"
-  );
-
+  return resolvePageFromPathname(window.location.pathname, "dashboard.html");
 }
 
 
