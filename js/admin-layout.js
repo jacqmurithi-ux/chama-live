@@ -400,6 +400,19 @@ function ensureAdminPortalShell() {
    CURRENT PAGE
 ========================================================= */
 
+/* Bound waits so a stalled auth request or page initializer cannot
+   leave the portal showing an endless loading state. This does not
+   bypass authorization or alter the underlying request. */
+function withBootTimeout(promise, milliseconds, label) {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = window.setTimeout(() => {
+      reject(new Error(label + " timed out. Check your connection and refresh the page. If it repeats, report the page and time to support."));
+    }, milliseconds);
+  });
+  return Promise.race([promise, timeout]).finally(() => window.clearTimeout(timer));
+}
+
 function getCurrentPage() {
 
   return (
@@ -2090,7 +2103,11 @@ async function loadCurrentPageFeature() {
 
   try {
 
-    await initializer();
+    await withBootTimeout(
+      initializer(),
+      30000,
+      page === "contributions.html" ? "Contributions data loading" : "Page initialization"
+    );
 
   }
 
@@ -2183,29 +2200,24 @@ function showBootError(
     );
 
 
-  if (!errorBox) {
+  const visibleError =
+    errorBox ||
+    document.getElementById("billingError") ||
+    (() => {
+      const box = document.createElement("div");
+      box.id = "chama-boot-error";
+      box.setAttribute("role", "alert");
+      box.setAttribute("aria-live", "assertive");
+      box.className = "error-message";
+      box.style.cssText = "display:block;margin:12px;padding:12px;border:1px solid #b91c1c;border-radius:8px;background:#fef2f2;color:#7f1d1d;overflow-wrap:anywhere";
+      const main = document.querySelector("main") || document.body;
+      main.prepend(box);
+      return box;
+    })();
 
-    const billingError =
-      document.getElementById(
-        "billingError"
-      );
-
-
-    if (billingError) {
-
-      billingError.hidden =
-        false;
-
-
-      billingError.textContent =
-        `Admin Portal loading failed during ${stage}: ${message}`;
-
-    }
-
-
-    return;
-
-  }
+  visibleError.hidden = false;
+  visibleError.textContent =
+    `Admin Portal loading failed during ${stage}: ${message}`;
 
 
   errorBox.hidden =
@@ -2259,7 +2271,11 @@ export async function boot() {
       "application context";
 
     context =
-      await getMyApplicationContext();
+      await withBootTimeout(
+        getMyApplicationContext(),
+        20000,
+        "Authenticated group identity"
+      );
 
     if (
       !context?.member?.group_id ||
