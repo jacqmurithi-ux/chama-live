@@ -1380,6 +1380,17 @@ async function saveMeetingForm(event) {
 
     showError(error);
 
+    if (meetingRows && meetings.length === 0) {
+      meetingRows.innerHTML = "";
+      const row = document.createElement("tr");
+      const cell = document.createElement("td");
+      cell.colSpan = 5;
+      cell.setAttribute("role", "alert");
+      cell.textContent = "The meeting was saved or updated, but the list could not refresh. Use Refresh or reload the page to try again.";
+      row.appendChild(cell);
+      meetingRows.appendChild(row);
+    }
+
   }
   finally {
 
@@ -2283,6 +2294,17 @@ export async function initPage() {
     initialized = false;
     showStatus("");
     showError(error);
+
+    if (meetingRows) {
+      meetingRows.innerHTML = "";
+      const row = document.createElement("tr");
+      const cell = document.createElement("td");
+      cell.colSpan = 5;
+      cell.setAttribute("role", "alert");
+      cell.textContent = "Meetings could not be loaded. Check the error above and refresh to retry.";
+      row.appendChild(cell);
+      meetingRows.appendChild(row);
+    }
 
   }
 
