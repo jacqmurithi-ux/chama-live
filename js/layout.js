@@ -1,4 +1,3 @@
-Yes. Below is the complete revised layout.js, preserving your existing structure and adding only the Member Activities integration.
 /* =========================================================
    CHAMA LIVE — GLOBAL LAYOUT
    PORTAL-AWARE VERSION
@@ -2511,16 +2510,3 @@ export function getLayoutState() {
 console.log(
   "CHAMA LIVE: layout.js ready — portal-aware boot() exported"
 );
-Controlled change set
-This version adds only the Member Activities portal integration:
-member-activities.html is a recognized Member Portal page.
-Members get Group Activities in the mobile menu.
-Members get Activity in the bottom navigation.
-The Activity bottom-nav button now opens member-activities.html.
-Admins are redirected away from the member-only page.
-Members attempting the admin plans-activities.html page are still redirected to their Member Dashboard.
-layout.js automatically loads ./member-activities.js.
-It expects member-activities.js to export initMemberActivities().
-No Supabase/database authorization or schema is changed.
-Existing Admin Plans & Activities remains untouched.
-One important upload rule: because this layout.js now owns the page-script loading, your member-activities.html should not separately import member-activities.js. Otherwise the module can initialize twice.
