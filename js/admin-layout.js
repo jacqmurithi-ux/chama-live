@@ -217,7 +217,7 @@ const PAGE_SCRIPTS = {
   ],
 
   "meetings.html": [
-    "./meetings.js?v=20261009-meetings-schema-fix3",
+    "./meetings.js?v=20261028-meetings-refresh1",
     "initPage"
   ],
 
