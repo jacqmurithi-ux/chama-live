@@ -374,6 +374,9 @@ let monthlyContribution = 0;
 
 let initialized = false;
 
+// Tracks independent section failures across initialization and month changes.
+let loadFailures = [];
+
 let accountingMonth =
   getCurrentMonth();
 
@@ -967,6 +970,9 @@ async function changeAccountingMonth() {
 
     renderSummary();
 
+    // A successful month refresh clears only the monthly-accounting failure.
+    loadFailures = loadFailures.filter(item => item.section !== "monthly member accounting");
+
     if (statusEl) {
       if (loadFailures.length) {
         const failedSections = loadFailures
@@ -984,6 +990,20 @@ async function changeAccountingMonth() {
 
   }
   catch (error) {
+
+    loadFailures = loadFailures.filter(item => item.section !== "monthly member accounting");
+    loadFailures.push({
+      section: "monthly member accounting",
+      error
+    });
+    canonicalMemberStatus = [];
+    renderMemberStatus();
+
+    if (statusEl) {
+      statusEl.hidden = false;
+      statusEl.textContent = `${formatAccountingMonth(accountingMonth)} accounting could not be loaded. Select Refresh to retry.`;
+      statusEl.setAttribute("role", "alert");
+    }
 
     showError(error);
 
@@ -8114,6 +8134,8 @@ export async function initContributions(
 
     clearError();
 
+    loadFailures = [];
+
     clearMemberEvidenceMessage();
 
     clearVerifierPaymentEvidenceMessage();
@@ -8189,7 +8211,6 @@ export async function initContributions(
       loadTasks.map(([, promise]) => promise)
     );
 
-    const loadFailures = [];
     loadResults.forEach((result, index) => {
       if (result.status === "rejected") {
         loadFailures.push({
@@ -8382,12 +8403,14 @@ export async function initContributions(
 
 
     if (statusEl) {
-
-      statusEl.textContent =
-        `${formatAccountingMonth(
-          accountingMonth
-        )} accounting loaded.`;
-
+      if (loadFailures.length) {
+        const failedSections = loadFailures.map(item => item.section).join(", ");
+        statusEl.textContent = `Some contribution data could not load (${failedSections}). Successfully loaded sections remain available. Select Refresh to retry.`;
+        statusEl.setAttribute("role", "alert");
+      } else {
+        statusEl.textContent = `${formatAccountingMonth(accountingMonth)} accounting loaded.`;
+        statusEl.removeAttribute("role");
+      }
     }
 
 
