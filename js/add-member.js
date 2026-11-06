@@ -246,7 +246,7 @@ function mapRpcError(error) {
       "Only an Admin, Chairperson or Treasurer can add a member.",
 
     MEMBER_ROLE_ASSIGNMENT_NOT_AUTHORIZED:
-      "Only an Admin or Chairperson can assign or change a member's security role or actual group position.",
+      "Only the original Group Admin (Member 001) or the appointed Chairperson can assign member roles and positions.",
 
     MEMBER_NUMBER_ALREADY_EXISTS:
       "That member number already exists in this group.",
