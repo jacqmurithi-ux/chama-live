@@ -2075,9 +2075,8 @@ async function openEditMember(memberId) {
   );
 
   /*
-   * Security roles and actual group offices may only be assigned
-   * by an Admin or Chairperson. Keep the current values visible
-   * but prevent other officers from changing them in the form.
+   * Only the original Member 001 or appointed Chairperson can
+   * assign roles, and neither may edit their own role.
    */
   const canAssignRoles =
     isRoleManager() &&
@@ -2400,8 +2399,6 @@ async function saveMemberEdit(event) {
         "No member record was updated. Your account may not have permission to edit this member."
       );
     }
-
-    const savedMember = updatedRows[0];
 
     // Role and office assignments are never performed on the acting member's own record.
 
