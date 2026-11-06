@@ -1088,7 +1088,8 @@
             </select>
 
             <small>
-              System permission role. It is separate from
+              System permission role. Only an Admin or Chairperson
+              can assign or change this role. It is separate from
               the actual group position.
             </small>
 
@@ -1145,8 +1146,9 @@
 
             <p>
               The actual position is separate from the
-              security role. Existing-member changes use
-              the canonical position-history RPC.
+              security role. This field is read-only here.
+              Only an Admin or Chairperson can change it through
+              the dedicated position-history action.
             </p>
 
           </div>
