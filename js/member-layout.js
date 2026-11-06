@@ -1125,10 +1125,8 @@ function createLogoutButton(
         "Signing out…";
 
       try {
+        // signOut() owns the post-logout redirect to the public home page.
         await signOut();
-
-        // Use an absolute public route so logout works from clean URLs.
-        window.location.replace("/");
 
       } catch (error) {
         console.error(
