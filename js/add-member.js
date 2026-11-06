@@ -242,7 +242,7 @@ function mapRpcError(error) {
       "Your account must be an active member of this group.",
 
     MEMBER_MANAGEMENT_NOT_AUTHORIZED:
-      "Only a group admin, chairperson, or treasurer can add members.",
+      "Only a group Admin or Chairperson can add members and assign their security roles or actual group positions.",
 
     MEMBER_NUMBER_ALREADY_EXISTS:
       "That member number already exists in this group.",
