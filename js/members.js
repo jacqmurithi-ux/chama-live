@@ -206,7 +206,9 @@ function effectiveMemberRoles(member = currentMember) {
   // A group admin remains a distinct role and cannot inherit an office role.
   if (technical === "admin" || technical === "administrator") return new Set(["admin"]);
   const roles = new Set([technical]);
-  const office = normalizedOfficeRole(member?.actual_position_name || member?.actual_position);
+  // Only the canonical actual_position value grants an office role.
+  // A custom display name (actual_position_name) is descriptive only.
+  const office = normalizedOfficeRole(member?.actual_position);
   if (office && office !== "other") roles.add(office);
   return roles;
 }
