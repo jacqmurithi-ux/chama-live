@@ -1077,7 +1077,12 @@ export async function signOut() {
   }
 
 
-  redirectToLogin();
+  // Logout always returns to the public CHAMA LIVE home page.
+  // Use an origin-root URL so clean routes cannot resolve it beneath
+  // the current member/admin directory alias.
+  if (typeof window !== "undefined") {
+    window.location.replace("/");
+  }
 
 }
 
