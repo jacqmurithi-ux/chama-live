@@ -2347,6 +2347,33 @@ async function saveMemberEdit(event) {
     }
 
     /*
+     * A member changing their own security role must refresh the
+     * authenticated application context and portal shell. Those
+     * are loaded once during page boot, so updating the directory
+     * alone would leave the old role (for example Treasurer) visible
+     * and keep the old role-based permissions active until navigation.
+     */
+    const isEditingOwnMember =
+      String(member.id) === String(currentMember?.id);
+
+    const ownRoleChanged =
+      isEditingOwnMember &&
+      normalize(currentMember?.role) !== payload.role;
+
+    if (ownRoleChanged) {
+      const refreshedMember = await getMyMember();
+
+      if (normalize(refreshedMember?.role) !== payload.role) {
+        throw new Error(
+          "The updated security role could not be confirmed from your authenticated member record. Please refresh and try again."
+        );
+      }
+
+      window.location.reload();
+      return;
+    }
+
+    /*
      * Refresh the directory from the database so every page
      * consumer sees the same current member record.
      */
