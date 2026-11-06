@@ -1967,9 +1967,9 @@ async function openEditMember(memberId) {
     return;
   }
 
-  if (!isManager()) {
+  if (!isRoleManager()) {
     showError(
-      "Only an administrator, chairperson or treasurer can edit members."
+      "Only an Admin or Chairperson can edit member profiles and assign security roles."
     );
     return;
   }
@@ -2074,14 +2074,20 @@ async function openEditMember(memberId) {
    * but prevent other officers from changing them in the form.
    */
   const canAssignRoles = isRoleManager();
+  const roleField = byId("memberRole");
+  if (roleField) roleField.disabled = !canAssignRoles;
+
+  /*
+   * Actual position changes must go through the dedicated
+   * position-history action, never the profile form.
+   */
   for (const id of [
-    "memberRole",
     "memberActualPosition",
     "memberActualPositionName",
     "memberActualPositionEffectiveFrom"
   ]) {
     const field = byId(id);
-    if (field) field.disabled = !canAssignRoles;
+    if (field) field.disabled = true;
   }
 
   /*
@@ -2255,9 +2261,9 @@ async function saveMemberEdit(event) {
     return;
   }
 
-  if (!isManager()) {
+  if (!isRoleManager()) {
     showError(
-      "Only an admin or chairperson can edit members."
+      "Only an Admin or Chairperson can edit member profiles and assign security roles."
     );
     return;
   }
