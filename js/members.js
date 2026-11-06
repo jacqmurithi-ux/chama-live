@@ -211,6 +211,12 @@ function effectiveMemberRoles(member = currentMember) {
   return roles;
 }
 
+function isRoleManager() {
+  const roles = effectiveMemberRoles();
+  return ["admin", "administrator", "chairperson"]
+    .some(role => roles.has(role));
+}
+
 function isManager() {
   const roles = effectiveMemberRoles();
   return ["admin", "administrator", "chairperson", "vice chairperson", "treasurer"]
@@ -2063,6 +2069,22 @@ async function openEditMember(memberId) {
   );
 
   /*
+   * Security roles and actual group offices may only be assigned
+   * by an Admin or Chairperson. Keep the current values visible
+   * but prevent other officers from changing them in the form.
+   */
+  const canAssignRoles = isRoleManager();
+  for (const id of [
+    "memberRole",
+    "memberActualPosition",
+    "memberActualPositionName",
+    "memberActualPositionEffectiveFrom"
+  ]) {
+    const field = byId(id);
+    if (field) field.disabled = !canAssignRoles;
+  }
+
+  /*
    * Existing-member editing must not expose creation-time
    * accounting controls.
    */
@@ -2263,6 +2285,7 @@ async function saveMemberEdit(event) {
       "";
   }
 
+  const canAssignRoles = isRoleManager();
   const payload = {
     name:
       text(byId("memberName")?.value),
@@ -2274,13 +2297,16 @@ async function saveMemberEdit(event) {
     email:
       text(byId("memberEmail")?.value) ||
       null,
-    role:
-      normalize(byId("memberRole")?.value) ||
-      "member",
     status:
       normalize(byId("memberStatus")?.value) ||
       "active"
   };
+
+  if (canAssignRoles) {
+    payload.role =
+      normalize(byId("memberRole")?.value) ||
+      "member";
+  }
 
   if (!payload.name) {
     showError(
@@ -2297,6 +2323,7 @@ async function saveMemberEdit(event) {
   }
 
   if (
+    canAssignRoles &&
     ![
       "member",
       "admin",
@@ -2371,6 +2398,7 @@ async function saveMemberEdit(event) {
       String(member.id) === String(currentMember?.id);
 
     const ownRoleChanged =
+      canAssignRoles &&
       isEditingOwnMember &&
       normalize(currentMember?.role) !== payload.role;
 
@@ -2460,7 +2488,7 @@ function preparePositionEditor(member) {
 
   if (section) {
     section.hidden =
-      !isManager();
+      !isRoleManager();
   }
 
   const reconcile =
@@ -2477,9 +2505,9 @@ async function savePositionChange() {
     return;
   }
 
-  if (!isManager()) {
+  if (!isRoleManager()) {
     showError(
-      "Only an administrator, chairperson or treasurer can change a member position."
+      "Only an Admin or Chairperson can assign or change an actual group position."
     );
     return;
   }
