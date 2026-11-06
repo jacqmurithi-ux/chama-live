@@ -2331,12 +2331,13 @@ async function saveMemberEdit(event) {
   }
 
   try {
-    const { error } =
+    const { data: updatedRows, error } =
       await supabase
         .from("members")
         .update(payload)
         .eq("id", member.id)
-        .eq("group_id", groupId);
+        .eq("group_id", groupId)
+        .select("id, role");
 
     if (error) {
       console.error(
@@ -2345,6 +2346,19 @@ async function saveMemberEdit(event) {
       );
       throw error;
     }
+
+    /*
+     * PostgREST may return no error when RLS filters every row
+     * from an UPDATE. Require the updated row so a blocked write
+     * cannot be reported as a successful profile save.
+     */
+    if (!Array.isArray(updatedRows) || updatedRows.length !== 1) {
+      throw new Error(
+        "No member record was updated. Your account may not have permission to edit this member."
+      );
+    }
+
+    const savedMember = updatedRows[0];
 
     /*
      * A member changing their own security role must refresh the
@@ -2361,6 +2375,12 @@ async function saveMemberEdit(event) {
       normalize(currentMember?.role) !== payload.role;
 
     if (ownRoleChanged) {
+      if (normalize(savedMember?.role) !== payload.role) {
+        throw new Error(
+          "The database did not save the selected security role. Please refresh and try again."
+        );
+      }
+
       const refreshedMember = await getMyMember();
 
       if (normalize(refreshedMember?.role) !== payload.role) {
