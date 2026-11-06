@@ -213,10 +213,14 @@ function effectiveMemberRoles(member = currentMember) {
   return roles;
 }
 
-function isRoleManager() {
-  const roles = effectiveMemberRoles();
-  return ["admin", "administrator", "chairperson"]
-    .some(role => roles.has(role));
+function isRoleManager(member = currentMember) {
+  const memberNumber = String(member?.member_number || "").trim();
+  const isOriginalGroupAdmin =
+    memberNumber === "0001" &&
+    ["admin", "administrator"].includes(normalize(member?.role));
+  const isAppointedChairperson =
+    normalizedOfficeRole(member?.actual_position) === "chairperson";
+  return isOriginalGroupAdmin || isAppointedChairperson;
 }
 
 function isManager() {
@@ -1971,7 +1975,7 @@ async function openEditMember(memberId) {
 
   if (!isRoleManager()) {
     showError(
-      "Only an Admin or Chairperson can edit member profiles and assign security roles."
+      "Only the original Group Admin (Member 001) or the appointed Chairperson can manage member profiles and roles."
     );
     return;
   }
@@ -2075,7 +2079,9 @@ async function openEditMember(memberId) {
    * by an Admin or Chairperson. Keep the current values visible
    * but prevent other officers from changing them in the form.
    */
-  const canAssignRoles = isRoleManager();
+  const canAssignRoles =
+    isRoleManager() &&
+    String(member.id) !== String(currentMember?.id);
   const roleField = byId("memberRole");
   if (roleField) roleField.disabled = !canAssignRoles;
 
@@ -2265,7 +2271,7 @@ async function saveMemberEdit(event) {
 
   if (!isRoleManager()) {
     showError(
-      "Only an Admin or Chairperson can edit member profiles and assign security roles."
+      "Only the original Group Admin (Member 001) or the appointed Chairperson can manage member profiles and roles."
     );
     return;
   }
@@ -2293,7 +2299,9 @@ async function saveMemberEdit(event) {
       "";
   }
 
-  const canAssignRoles = isRoleManager();
+  const canAssignRoles =
+    isRoleManager() &&
+    String(member.id) !== String(currentMember?.id);
   const payload = {
     name:
       text(byId("memberName")?.value),
@@ -2395,39 +2403,7 @@ async function saveMemberEdit(event) {
 
     const savedMember = updatedRows[0];
 
-    /*
-     * A member changing their own security role must refresh the
-     * authenticated application context and portal shell. Those
-     * are loaded once during page boot, so updating the directory
-     * alone would leave the old role (for example Treasurer) visible
-     * and keep the old role-based permissions active until navigation.
-     */
-    const isEditingOwnMember =
-      String(member.id) === String(currentMember?.id);
-
-    const ownRoleChanged =
-      canAssignRoles &&
-      isEditingOwnMember &&
-      normalize(currentMember?.role) !== payload.role;
-
-    if (ownRoleChanged) {
-      if (normalize(savedMember?.role) !== payload.role) {
-        throw new Error(
-          "The database did not save the selected security role. Please refresh and try again."
-        );
-      }
-
-      const refreshedMember = await getMyMember();
-
-      if (normalize(refreshedMember?.role) !== payload.role) {
-        throw new Error(
-          "The updated security role could not be confirmed from your authenticated member record. Please refresh and try again."
-        );
-      }
-
-      window.location.reload();
-      return;
-    }
+    // Role and office assignments are never performed on the acting member's own record.
 
     /*
      * Refresh the directory from the database so every page
@@ -2515,8 +2491,13 @@ async function savePositionChange() {
 
   if (!isRoleManager()) {
     showError(
-      "Only an Admin or Chairperson can assign or change an actual group position."
+      "Only the original Group Admin (Member 001) or the appointed Chairperson can change another member’s actual group position."
     );
+    return;
+  }
+
+  if (String(selectedMemberId) === String(currentMember?.id)) {
+    showError("You cannot change your own actual group position.");
     return;
   }
 
