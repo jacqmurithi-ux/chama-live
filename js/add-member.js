@@ -52,6 +52,7 @@ const state = {
   monthlyType: null,
   context: null,
   readOnly: false,
+  canAssignRoles: false,
 };
 
 /* =========================================================
@@ -242,7 +243,10 @@ function mapRpcError(error) {
       "Your account must be an active member of this group.",
 
     MEMBER_MANAGEMENT_NOT_AUTHORIZED:
-      "Only a group Admin or Chairperson can add members and assign their security roles or actual group positions.",
+      "Only an Admin, Chairperson or Treasurer can add a member.",
+
+    MEMBER_ROLE_ASSIGNMENT_NOT_AUTHORIZED:
+      "Only an Admin or Chairperson can assign or change a member's security role or actual group position.",
 
     MEMBER_NUMBER_ALREADY_EXISTS:
       "That member number already exists in this group.",
@@ -1191,8 +1195,9 @@ function buildMemberPayload() {
       null,
 
     role:
-      value("addMemberRole") ||
-      "member",
+      state.canAssignRoles
+        ? (value("addMemberRole") || "member")
+        : "member",
 
     status:
       value("addMemberStatus") ||
@@ -1208,23 +1213,20 @@ function buildMemberPayload() {
       value("addMemberJoinDate"),
 
     actual_position:
-      value(
-        "addMemberActualPosition"
-      ) || null,
+      state.canAssignRoles
+        ? (value("addMemberActualPosition") || null)
+        : null,
 
     actual_position_name:
-      value(
-        "addMemberActualPosition"
-      ) === "other"
-        ? value(
-            "addMemberActualPositionName"
-          )
+      state.canAssignRoles &&
+      value("addMemberActualPosition") === "other"
+        ? value("addMemberActualPositionName")
         : null,
 
     actual_position_effective_from:
-      value(
-        "addMemberPositionEffectiveFrom"
-      ) || null,
+      state.canAssignRoles
+        ? (value("addMemberPositionEffectiveFrom") || null)
+        : null,
   };
 }
 
@@ -1512,6 +1514,7 @@ function resetForAnotherMember(
   }
 
   applyDefaults();
+  applyRoleAssignmentPermissions();
   renderMonthlyType();
   updatePositionFields();
   renderObligationPreview();
@@ -1889,6 +1892,37 @@ async function checkMemberManagementAccess(
   return data === true;
 }
 
+async function checkRoleAssignmentAccess(groupId) {
+  const { data, error } = await supabase.rpc(
+    "can_manage_members",
+    { p_group_id: groupId }
+  );
+
+  if (error) throw error;
+  return data === true;
+}
+
+function applyRoleAssignmentPermissions() {
+  const role = $("addMemberRole");
+  const position = $("addMemberActualPosition");
+  const positionName = $("addMemberActualPositionName");
+  const positionDate = $("addMemberPositionEffectiveFrom");
+
+  if (role) {
+    role.disabled = !state.canAssignRoles;
+    if (!state.canAssignRoles) role.value = "member";
+  }
+
+  for (const field of [position, positionName, positionDate]) {
+    if (field) field.disabled = !state.canAssignRoles;
+  }
+
+  if (!state.canAssignRoles && position) {
+    position.value = "";
+    updatePositionFields();
+  }
+}
+
 /* =========================================================
    UI STATES
    ========================================================= */
@@ -2015,6 +2049,13 @@ export async function addMemberInit() {
     }
 
     state.readOnly = !canAddMembers;
+    state.canAssignRoles =
+      await checkRoleAssignmentAccess(groupId);
+
+    console.info(
+      "CHAMA LIVE Add Member: role assignment permission:",
+      state.canAssignRoles
+    );
 
     console.info(
       "CHAMA LIVE Add Member: loading Monthly contribution type."
@@ -2030,6 +2071,7 @@ export async function addMemberInit() {
     );
 
     applyDefaults();
+    applyRoleAssignmentPermissions();
 
     bindFormEvents();
 
